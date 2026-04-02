@@ -315,7 +315,7 @@ export default function InsightDetailPage() {
 
       {/* Comments */}
       <div className="mt-12">
-        <CommentSection reportId={report.id} comments={[]} />
+        <CommentSection reportId={report.id} slug={slug} comments={[]} />
       </div>
     </div>
   );

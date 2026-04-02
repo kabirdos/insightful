@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import {
@@ -28,6 +28,7 @@ interface Comment {
 
 interface CommentSectionProps {
   reportId: string;
+  slug: string;
   comments: Comment[];
   className?: string;
 }
@@ -52,11 +53,11 @@ function formatTimeAgo(dateStr: string) {
 
 function CommentItem({
   comment,
-  reportId,
+  slug,
   depth = 0,
 }: {
   comment: Comment;
-  reportId: string;
+  slug: string;
   depth?: number;
 }) {
   const { data: session } = useSession();
@@ -70,11 +71,10 @@ function CommentItem({
     setIsSubmitting(true);
 
     try {
-      await fetch("/api/comments", {
+      await fetch(`/api/insights/${slug}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          reportId,
           parentId: comment.id,
           body: replyBody.trim(),
         }),
@@ -177,7 +177,7 @@ function CommentItem({
           <CommentItem
             key={reply.id}
             comment={reply}
-            reportId={reportId}
+            slug={slug}
             depth={depth + 1}
           />
         ))}
@@ -187,25 +187,37 @@ function CommentItem({
 
 export default function CommentSection({
   reportId,
-  comments,
+  slug,
+  comments: initialComments,
   className,
 }: CommentSectionProps) {
   const { data: session } = useSession();
+  const [comments, setComments] = useState<Comment[]>(initialComments);
   const [body, setBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/insights/${slug}/comments`)
+      .then((r) => r.json())
+      .then((json) => setComments(json.data || []))
+      .catch(() => {});
+  }, [slug]);
 
   async function handleSubmit() {
     if (!body.trim() || isSubmitting) return;
     setIsSubmitting(true);
 
     try {
-      await fetch("/api/comments", {
+      const res = await fetch(`/api/insights/${slug}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reportId, body: body.trim() }),
+        body: JSON.stringify({ body: body.trim() }),
       });
-      setBody("");
-      // In a real app, we'd refetch or optimistically update
+      if (res.ok) {
+        const json = await res.json();
+        setComments((prev) => [json.data, ...prev]);
+        setBody("");
+      }
     } catch {
       // Handle error
     } finally {
@@ -271,11 +283,7 @@ export default function CommentSection({
       {comments.length > 0 ? (
         <div className="divide-y divide-slate-100 dark:divide-slate-800">
           {comments.map((comment) => (
-            <CommentItem
-              key={comment.id}
-              comment={comment}
-              reportId={reportId}
-            />
+            <CommentItem key={comment.id} comment={comment} slug={slug} />
           ))}
         </div>
       ) : (
