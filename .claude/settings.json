@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": ["readFile", "listDir", "run:git"],
+    "ask": ["writeFile", "run:pnpm", "run:node", "webFetch:docs.anthropic.com"],
+    "deny": ["run:sudo", "access:systemOutsideRepo"]
+  }
+}
