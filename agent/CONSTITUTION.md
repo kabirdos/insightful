@@ -13,8 +13,6 @@ Insightful — project bootstrapped, stack TBD. Update this file once the stack 
 
 # Invariants
 
-<!-- Note: Universal rules (git workflow, Gemini review, secrets) are in ~/.claude/CLAUDE.md -->
-
 - TODO: Add project-specific invariants once requirements are defined
 
 # Architecture
