@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  githubId    String   @unique
+  username    String   @unique
+  displayName String?
+  avatarUrl   String?
+  bio         String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  reports    InsightReport[]
+  votes      SectionVote[]
+  highlights SectionHighlight[]
+  comments   Comment[]
+}
+
+model InsightReport {
+  id          String   @id @default(cuid())
+  authorId    String
+  title       String
+  slug        String   @unique
+  publishedAt DateTime @default(now())
+
+  // Stats
+  sessionCount  Int?
+  messageCount  Int?
+  commitCount   Int?
+  dateRangeStart String?
+  dateRangeEnd   String?
+
+  // Content sections (stored as redacted JSON)
+  atAGlance          Json?
+  interactionStyle   Json?
+  projectAreas       Json?
+  impressiveWorkflows Json?
+  frictionAnalysis   Json?
+  suggestions        Json?
+  onTheHorizon       Json?
+  funEnding          Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author       User               @relation(fields: [authorId], references: [id])
+  projectLinks ProjectLink[]
+  votes        SectionVote[]
+  highlights   SectionHighlight[]
+  comments     Comment[]
+  annotations  AuthorAnnotation[]
+}
+
+model ProjectLink {
+  id          String  @id @default(cuid())
+  reportId    String
+  name        String
+  githubUrl   String?
+  liveUrl     String?
+  description String?
+
+  report InsightReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+}
+
+model SectionVote {
+  id         String   @id @default(cuid())
+  userId     String
+  reportId   String
+  sectionKey String
+  createdAt  DateTime @default(now())
+
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  report InsightReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, reportId, sectionKey])
+}
+
+model SectionHighlight {
+  id         String   @id @default(cuid())
+  userId     String
+  reportId   String
+  sectionKey String
+  createdAt  DateTime @default(now())
+
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  report InsightReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, reportId, sectionKey])
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  authorId   String
+  reportId   String
+  parentId   String?
+  sectionKey String?
+  body       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  author  User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  report  InsightReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  parent  Comment?      @relation("CommentReplies", fields: [parentId], references: [id])
+  replies Comment[]     @relation("CommentReplies")
+}
+
+model AuthorAnnotation {
+  id         String   @id @default(cuid())
+  reportId   String
+  sectionKey String
+  body       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  report InsightReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@unique([reportId, sectionKey])
+}
