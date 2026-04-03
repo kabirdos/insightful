@@ -98,6 +98,11 @@ export interface ParsedInsightsReport {
     commitCount: number;
     dateRangeStart: string;
     dateRangeEnd: string;
+    linesAdded?: number | null;
+    linesRemoved?: number | null;
+    fileCount?: number | null;
+    dayCount?: number | null;
+    msgsPerDay?: number | null;
   };
   data: InsightsData;
   detectedRedactions: RedactionItem[];

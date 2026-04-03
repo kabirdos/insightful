@@ -170,7 +170,7 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const {
-      title,
+      title: providedTitle,
       sessionCount,
       messageCount,
       commitCount,
@@ -189,11 +189,13 @@ export async function POST(request: Request) {
       suggestions,
       onTheHorizon,
       funEnding,
+      projectLinks,
     } = body;
 
-    if (!title) {
-      return NextResponse.json({ error: "Title is required" }, { status: 400 });
-    }
+    // Auto-generate title if not provided
+    const title =
+      providedTitle ||
+      `${user.username}'s Claude Code Insights - ${new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" })}`;
 
     const slug = generateSlug(user.username);
 
@@ -220,6 +222,25 @@ export async function POST(request: Request) {
         suggestions: suggestions ?? undefined,
         onTheHorizon: onTheHorizon ?? undefined,
         funEnding: funEnding ?? undefined,
+        ...(Array.isArray(projectLinks) && projectLinks.length > 0
+          ? {
+              projectLinks: {
+                create: projectLinks.map(
+                  (link: {
+                    name: string;
+                    githubUrl?: string;
+                    liveUrl?: string;
+                    description?: string;
+                  }) => ({
+                    name: link.name,
+                    githubUrl: link.githubUrl || null,
+                    liveUrl: link.liveUrl || null,
+                    description: link.description || null,
+                  }),
+                ),
+              },
+            }
+          : {}),
       },
       include: {
         author: {
@@ -230,6 +251,7 @@ export async function POST(request: Request) {
             avatarUrl: true,
           },
         },
+        projectLinks: true,
       },
     });
 

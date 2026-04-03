@@ -18,7 +18,12 @@ import {
   Trash2,
 } from "lucide-react";
 import clsx from "clsx";
-import type { ParsedInsightsReport, RedactionItem } from "@/types/insights";
+import type {
+  ParsedInsightsReport,
+  RedactionItem,
+  InsightsData,
+} from "@/types/insights";
+import { applyRedactions } from "@/lib/redaction";
 import SectionRenderer from "@/components/SectionRenderer";
 
 type Step = "upload" | "redact" | "projects" | "preview";
@@ -52,16 +57,49 @@ export default function UploadPage() {
   const [publishing, setPublishing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
-  const SECTION_OPTIONS = [
-    { key: "at_a_glance", label: "At a Glance" },
-    { key: "interaction_style", label: "Interaction Style" },
-    { key: "project_areas", label: "Project Areas" },
-    { key: "impressive_workflows", label: "Impressive Workflows" },
-    { key: "friction_analysis", label: "Friction Analysis" },
-    { key: "suggestions", label: "Suggestions" },
-    { key: "on_the_horizon", label: "On the Horizon" },
-    { key: "fun_ending", label: "Fun Ending" },
-  ] as const;
+  // Maps InsightsData keys to SectionRenderer sectionType and display label
+  const SECTION_OPTIONS: {
+    dataKey: keyof InsightsData;
+    sectionType: string;
+    label: string;
+  }[] = [
+    {
+      dataKey: "at_a_glance",
+      sectionType: "at_a_glance",
+      label: "At a Glance",
+    },
+    {
+      dataKey: "interaction_style",
+      sectionType: "interaction_style",
+      label: "Interaction Style",
+    },
+    {
+      dataKey: "project_areas",
+      sectionType: "project_areas",
+      label: "Project Areas",
+    },
+    {
+      dataKey: "what_works",
+      sectionType: "impressive_workflows",
+      label: "Impressive Workflows",
+    },
+    {
+      dataKey: "friction_analysis",
+      sectionType: "friction_analysis",
+      label: "Friction Analysis",
+    },
+    {
+      dataKey: "suggestions",
+      sectionType: "suggestions",
+      label: "Suggestions",
+    },
+    {
+      dataKey: "on_the_horizon",
+      sectionType: "on_the_horizon",
+      label: "On the Horizon",
+    },
+    { dataKey: "fun_ending", sectionType: "fun_ending", label: "Fun Ending" },
+  ];
 
   const toggleSection = (key: string) => {
     setDisabledSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -163,17 +201,73 @@ export default function UploadPage() {
     setError(null);
 
     try {
+      // Apply redactions client-side
+      const redactedData = applyRedactions(parsed.data, redactions);
+
+      // Build the disabled sections set
+      const disabledSet = new Set(
+        Object.entries(disabledSections)
+          .filter(([, v]) => v)
+          .map(([k]) => k),
+      );
+
+      // Auto-generate title from date range
+      const userName = session?.user?.name || "User";
+      const firstName = userName.split(" ")[0];
+      const endDate = parsed.stats.dateRangeEnd;
+      let titleDate = "";
+      if (endDate) {
+        const d = new Date(endDate + "T00:00:00");
+        titleDate = d.toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
+        });
+      } else {
+        titleDate = new Date().toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
+        });
+      }
+      const title = `${firstName}'s Claude Code Insights - ${titleDate}`;
+
+      // Map InsightsData snake_case keys to Prisma camelCase fields
+      // and remove disabled sections
+      const sectionMap: Record<keyof InsightsData, string> = {
+        at_a_glance: "atAGlance",
+        interaction_style: "interactionStyle",
+        project_areas: "projectAreas",
+        what_works: "impressiveWorkflows",
+        friction_analysis: "frictionAnalysis",
+        suggestions: "suggestions",
+        on_the_horizon: "onTheHorizon",
+        fun_ending: "funEnding",
+      };
+
+      const sectionFields: Record<string, unknown> = {};
+      for (const [dataKey, prismaKey] of Object.entries(sectionMap)) {
+        if (!disabledSet.has(dataKey)) {
+          sectionFields[prismaKey] =
+            redactedData[dataKey as keyof InsightsData] ?? null;
+        }
+      }
+
       const res = await fetch("/api/insights", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          stats: parsed.stats,
-          data: parsed.data,
-          redactions,
+          title,
+          sessionCount: parsed.stats.sessionCount ?? null,
+          messageCount: parsed.stats.messageCount ?? null,
+          commitCount: parsed.stats.commitCount ?? null,
+          dateRangeStart: parsed.stats.dateRangeStart ?? null,
+          dateRangeEnd: parsed.stats.dateRangeEnd ?? null,
+          linesAdded: parsed.stats.linesAdded ?? null,
+          linesRemoved: parsed.stats.linesRemoved ?? null,
+          fileCount: parsed.stats.fileCount ?? null,
+          dayCount: parsed.stats.dayCount ?? null,
+          msgsPerDay: parsed.stats.msgsPerDay ?? null,
+          ...sectionFields,
           projectLinks,
-          disabledSections: Object.entries(disabledSections)
-            .filter(([, v]) => v)
-            .map(([k]) => k),
         }),
       });
 
@@ -182,8 +276,8 @@ export default function UploadPage() {
         throw new Error(data.error || "Failed to publish");
       }
 
-      const { slug } = await res.json();
-      router.push(`/insights/${slug}`);
+      const result = await res.json();
+      router.push(`/insights/${result.data?.slug || result.slug}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to publish");
     } finally {
@@ -336,15 +430,14 @@ export default function UploadPage() {
               Toggle off any sections you don&apos;t want to share publicly.
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
-              {SECTION_OPTIONS.map(({ key, label }) => {
-                const hasData =
-                  parsed?.data?.[key as keyof typeof parsed.data] != null;
+              {SECTION_OPTIONS.map(({ dataKey, label }) => {
+                const hasData = parsed?.data?.[dataKey] != null;
                 if (!hasData) return null;
-                const disabled = !!disabledSections[key];
+                const disabled = !!disabledSections[dataKey];
                 return (
                   <button
-                    key={key}
-                    onClick={() => toggleSection(key)}
+                    key={dataKey}
+                    onClick={() => toggleSection(dataKey)}
                     className={clsx(
                       "flex items-center justify-between rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
                       disabled
@@ -586,17 +679,25 @@ export default function UploadPage() {
               )}
             </div>
 
-            {/* Section previews */}
-            {parsed.data.at_a_glance && (
-              <SectionRenderer
-                sectionKey="at_a_glance"
-                sectionType="at_a_glance"
-                data={parsed.data.at_a_glance}
-                reportId="preview"
-                voteCount={0}
-                voted={false}
-              />
-            )}
+            {/* Section previews — render all enabled sections */}
+            <div className="space-y-8">
+              {SECTION_OPTIONS.map(({ dataKey, sectionType }) => {
+                if (disabledSections[dataKey]) return null;
+                const sectionData = parsed.data[dataKey];
+                if (!sectionData) return null;
+                return (
+                  <SectionRenderer
+                    key={dataKey}
+                    sectionKey={dataKey}
+                    sectionType={sectionType}
+                    data={sectionData}
+                    reportId="preview"
+                    voteCount={0}
+                    voted={false}
+                  />
+                );
+              })}
+            </div>
           </div>
 
           <div className="mt-6 flex justify-end">
