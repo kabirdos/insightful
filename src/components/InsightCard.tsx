@@ -17,6 +17,11 @@ interface InsightCardProps {
   sessionCount?: number | null;
   messageCount?: number | null;
   commitCount?: number | null;
+  linesAdded?: number | null;
+  linesRemoved?: number | null;
+  fileCount?: number | null;
+  dayCount?: number | null;
+  msgsPerDay?: number | null;
   whatsWorkingPreview?: string | null;
   voteCount: number;
   commentCount: number;
@@ -86,6 +91,11 @@ export default function InsightCard({
   sessionCount,
   messageCount,
   commitCount,
+  linesAdded,
+  linesRemoved,
+  fileCount,
+  dayCount,
+  msgsPerDay,
   whatsWorkingPreview,
   voteCount,
   commentCount,
@@ -129,10 +139,22 @@ export default function InsightCard({
       {/* Stats row */}
       {(sessionCount || messageCount || commitCount) && (
         <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
-          {sessionCount != null && <span>{sessionCount} sessions</span>}
           {messageCount != null && (
-            <span>{messageCount.toLocaleString()} messages</span>
+            <span>{messageCount.toLocaleString()} msgs</span>
           )}
+          {linesAdded != null && linesRemoved != null && (
+            <span className="text-green-600 dark:text-green-400">
+              +{linesAdded.toLocaleString()}
+            </span>
+          )}
+          {linesRemoved != null && (
+            <span className="text-red-500 dark:text-red-400">
+              -{linesRemoved.toLocaleString()}
+            </span>
+          )}
+          {fileCount != null && <span>{fileCount} files</span>}
+          {dayCount != null && <span>{dayCount} days</span>}
+          {msgsPerDay != null && <span>{msgsPerDay.toFixed(1)}/day</span>}
           {commitCount != null && <span>{commitCount} commits</span>}
         </div>
       )}
