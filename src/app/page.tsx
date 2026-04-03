@@ -16,6 +16,11 @@ interface InsightSummary {
   sessionCount?: number | null;
   messageCount?: number | null;
   commitCount?: number | null;
+  linesAdded?: number | null;
+  linesRemoved?: number | null;
+  fileCount?: number | null;
+  dayCount?: number | null;
+  msgsPerDay?: number | null;
   whatsWorkingPreview?: string | null;
   voteCount: number;
   commentCount: number;
@@ -67,6 +72,11 @@ export default function HomePage() {
             sessionCount: r.sessionCount,
             messageCount: r.messageCount,
             commitCount: r.commitCount,
+            linesAdded: r.linesAdded as number | null,
+            linesRemoved: r.linesRemoved as number | null,
+            fileCount: r.fileCount as number | null,
+            dayCount: r.dayCount as number | null,
+            msgsPerDay: r.msgsPerDay as number | null,
             whatsWorkingPreview:
               atAGlance?.whats_working?.slice(0, 150) || null,
             voteCount: totalVotes,
@@ -98,7 +108,7 @@ export default function HomePage() {
       </div>
 
       {/* Sort Tabs */}
-      <div className="mb-6 flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800/50 w-fit mx-auto">
+      <div className="mb-6 flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800/50 w-fit mx-auto overflow-x-auto max-w-full">
         {sortOptions.map(({ value, label, icon: Icon }) => (
           <button
             key={value}
@@ -154,6 +164,11 @@ export default function HomePage() {
               sessionCount={insight.sessionCount}
               messageCount={insight.messageCount}
               commitCount={insight.commitCount}
+              linesAdded={insight.linesAdded}
+              linesRemoved={insight.linesRemoved}
+              fileCount={insight.fileCount}
+              dayCount={insight.dayCount}
+              msgsPerDay={insight.msgsPerDay}
               whatsWorkingPreview={insight.whatsWorkingPreview}
               voteCount={insight.voteCount}
               commentCount={insight.commentCount}
