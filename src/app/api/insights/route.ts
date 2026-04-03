@@ -29,14 +29,15 @@ export async function GET(request: Request) {
     );
     const skip = (page - 1) * limit;
 
+    const isTrending = sort === "trending";
+
     let orderBy: Record<string, unknown>;
     switch (sort) {
       case "votes":
-        // Sort by total vote count — use publishedAt as secondary
         orderBy = { votes: { _count: "desc" } };
         break;
       case "trending":
-        // Recent reports with most votes — sort by publishedAt descending as proxy
+        // Fetch more to score and re-rank client-side
         orderBy = { publishedAt: "desc" };
         break;
       case "newest":
@@ -45,9 +46,13 @@ export async function GET(request: Request) {
         break;
     }
 
+    // For trending, fetch a wider window then score and slice
+    const fetchLimit = isTrending ? Math.max(limit * 3, 60) : limit;
+    const fetchSkip = isTrending ? 0 : skip;
+
     const reportsQuery = prisma.insightReport.findMany({
-      skip,
-      take: limit,
+      skip: fetchSkip,
+      take: fetchLimit,
       orderBy,
       include: {
         author: {
@@ -65,7 +70,7 @@ export async function GET(request: Request) {
           },
         },
         votes: {
-          select: { sectionKey: true },
+          select: { sectionKey: true, createdAt: true },
         },
       },
     });
@@ -74,7 +79,7 @@ export async function GET(request: Request) {
     const [reports, total] = await Promise.all([reportsQuery, countQuery]);
 
     // Aggregate vote counts per section for each report
-    const results = reports.map((report) => {
+    const mapped = reports.map((report) => {
       const voteCounts: Record<string, number> = {};
       for (const key of SECTION_KEYS) {
         voteCounts[key] = report.votes.filter(
@@ -86,8 +91,47 @@ export async function GET(request: Request) {
       return {
         ...rest,
         voteCounts,
+        _trendingVotes: report.votes,
       };
     });
+
+    let results;
+    if (isTrending) {
+      // Trending algorithm: score = sum of vote recency weights + comment bonus + publish recency
+      const now = Date.now();
+      const DAY_MS = 86_400_000;
+
+      const scored = mapped.map((r) => {
+        // Vote score: each vote weighted by how recent it is (max 1.0 for today, decays over 14 days)
+        const voteScore = r._trendingVotes.reduce(
+          (sum: number, v: { createdAt: Date }) => {
+            const ageInDays = (now - new Date(v.createdAt).getTime()) / DAY_MS;
+            const weight = Math.max(0, 1 - ageInDays / 14);
+            return sum + weight;
+          },
+          0,
+        );
+
+        // Comment bonus
+        const commentScore = (r._count.comments || 0) * 0.3;
+
+        // Publish recency: bonus for newer reports (decays over 7 days)
+        const publishAge = (now - new Date(r.publishedAt).getTime()) / DAY_MS;
+        const recencyBonus = Math.max(0, 2 * (1 - publishAge / 7));
+
+        return {
+          ...r,
+          _trendingScore: voteScore + commentScore + recencyBonus,
+        };
+      });
+
+      scored.sort((a, b) => b._trendingScore - a._trendingScore);
+      results = scored
+        .slice(skip, skip + limit)
+        .map(({ _trendingVotes, _trendingScore, ...rest }) => rest);
+    } else {
+      results = mapped.map(({ _trendingVotes, ...rest }) => rest);
+    }
 
     return NextResponse.json({
       data: results,
@@ -132,6 +176,11 @@ export async function POST(request: Request) {
       commitCount,
       dateRangeStart,
       dateRangeEnd,
+      linesAdded,
+      linesRemoved,
+      fileCount,
+      dayCount,
+      msgsPerDay,
       atAGlance,
       interactionStyle,
       projectAreas,
@@ -158,6 +207,11 @@ export async function POST(request: Request) {
         commitCount: commitCount ?? null,
         dateRangeStart: dateRangeStart ?? null,
         dateRangeEnd: dateRangeEnd ?? null,
+        linesAdded: linesAdded ?? null,
+        linesRemoved: linesRemoved ?? null,
+        fileCount: fileCount ?? null,
+        dayCount: dayCount ?? null,
+        msgsPerDay: msgsPerDay ?? null,
         atAGlance: atAGlance ?? undefined,
         interactionStyle: interactionStyle ?? undefined,
         projectAreas: projectAreas ?? undefined,
