@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  outputFileTracingIncludes: {
+    "/api/**/*": ["./src/generated/prisma/*.node"],
+    "/insights/**/*": ["./src/generated/prisma/*.node"],
+    "/u/**/*": ["./src/generated/prisma/*.node"],
+  },
   images: {
     remotePatterns: [
       {
