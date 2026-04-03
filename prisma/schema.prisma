@@ -38,6 +38,11 @@ model InsightReport {
   commitCount   Int?
   dateRangeStart String?
   dateRangeEnd   String?
+  linesAdded    Int?
+  linesRemoved  Int?
+  fileCount     Int?
+  dayCount      Int?
+  msgsPerDay    Float?
 
   // Content sections (stored as redacted JSON)
   atAGlance          Json?
