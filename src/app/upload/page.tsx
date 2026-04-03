@@ -44,10 +44,28 @@ export default function UploadPage() {
     liveUrl: "",
     description: "",
   });
+  const [disabledSections, setDisabledSections] = useState<
+    Record<string, boolean>
+  >({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+
+  const SECTION_OPTIONS = [
+    { key: "at_a_glance", label: "At a Glance" },
+    { key: "interaction_style", label: "Interaction Style" },
+    { key: "project_areas", label: "Project Areas" },
+    { key: "impressive_workflows", label: "Impressive Workflows" },
+    { key: "friction_analysis", label: "Friction Analysis" },
+    { key: "suggestions", label: "Suggestions" },
+    { key: "on_the_horizon", label: "On the Horizon" },
+    { key: "fun_ending", label: "Fun Ending" },
+  ] as const;
+
+  const toggleSection = (key: string) => {
+    setDisabledSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   if (!session) {
     return (
@@ -153,6 +171,9 @@ export default function UploadPage() {
           data: parsed.data,
           redactions,
           projectLinks,
+          disabledSections: Object.entries(disabledSections)
+            .filter(([, v]) => v)
+            .map(([k]) => k),
         }),
       });
 
@@ -303,6 +324,43 @@ export default function UploadPage() {
               >
                 Keep All
               </button>
+            </div>
+          </div>
+
+          {/* Section Toggles */}
+          <div className="mb-6 rounded-lg border border-slate-200 bg-white p-4">
+            <h3 className="mb-3 text-sm font-semibold text-slate-700">
+              Include/Exclude Sections
+            </h3>
+            <p className="mb-3 text-xs text-slate-500">
+              Toggle off any sections you don&apos;t want to share publicly.
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {SECTION_OPTIONS.map(({ key, label }) => {
+                const hasData =
+                  parsed?.data?.[key as keyof typeof parsed.data] != null;
+                if (!hasData) return null;
+                const disabled = !!disabledSections[key];
+                return (
+                  <button
+                    key={key}
+                    onClick={() => toggleSection(key)}
+                    className={clsx(
+                      "flex items-center justify-between rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+                      disabled
+                        ? "border-slate-200 bg-slate-50 text-slate-400"
+                        : "border-green-200 bg-green-50 text-green-700",
+                    )}
+                  >
+                    <span>{label}</span>
+                    {disabled ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
