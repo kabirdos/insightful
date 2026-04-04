@@ -106,7 +106,7 @@ export default function InsightCard({
   return (
     <Link
       href={`/insights/${slug}`}
-      className="group block overflow-hidden rounded-xl border border-slate-200 bg-white p-5 transition-all duration-200 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-blue-900 dark:hover:shadow-blue-500/10"
+      className="group block overflow-hidden break-words rounded-xl border border-slate-200 bg-white p-5 transition-all duration-200 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-blue-900 dark:hover:shadow-blue-500/10"
     >
       {/* Author Row */}
       <div className="flex items-center gap-2.5">

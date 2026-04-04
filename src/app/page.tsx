@@ -101,7 +101,7 @@ export default function HomePage() {
             Insightful
           </h1>
         </div>
-        <p className="mx-auto max-w-lg text-base text-slate-600 dark:text-slate-400">
+        <p className="mx-auto max-w-lg text-sm sm:text-base text-slate-600 dark:text-slate-400 px-2">
           Discover how developers use Claude Code. Browse shared /insights
           reports, learn new workflows, and share your own.
         </p>
