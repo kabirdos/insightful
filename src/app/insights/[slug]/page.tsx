@@ -10,7 +10,12 @@ import CommentSection from "@/components/CommentSection";
 import ProjectLinks from "@/components/ProjectLinks";
 import SnapshotCard from "@/components/SnapshotCard";
 import CollapsibleSection from "@/components/CollapsibleSection";
-import type { InsightsData, ChartData, SkillKey } from "@/types/insights";
+import {
+  normalizeSkills,
+  type InsightsData,
+  type ChartData,
+  type SkillKey,
+} from "@/types/insights";
 
 interface ReportData {
   id: string;
@@ -190,7 +195,13 @@ export default function InsightDetailPage() {
         if (!res.ok) throw new Error("Report not found");
         return res.json();
       })
-      .then((json) => setReport(json.data || json))
+      .then((json) => {
+        const raw = json.data || json;
+        if (raw) {
+          raw.detectedSkills = normalizeSkills(raw.detectedSkills);
+        }
+        setReport(raw);
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [slug]);

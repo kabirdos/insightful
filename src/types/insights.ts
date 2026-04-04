@@ -208,3 +208,25 @@ export const SKILL_METADATA: Record<SkillKey, SkillMetadata> = {
     colorClass: "bg-teal-100 text-teal-700",
   },
 };
+
+/**
+ * Type guard: returns true if the given value is a known SkillKey.
+ * Use at any boundary where untrusted data (DB rows, API responses) enters
+ * a context that expects a typed SkillKey.
+ */
+export function isSkillKey(value: unknown): value is SkillKey {
+  return (
+    typeof value === "string" &&
+    (SKILL_KEYS as readonly string[]).includes(value)
+  );
+}
+
+/**
+ * Normalize an unknown input (e.g. `string[]` from Prisma) into a clean
+ * `SkillKey[]`, silently dropping any values that aren't recognized.
+ * Returns an empty array for null/undefined/non-array inputs.
+ */
+export function normalizeSkills(raw: unknown): SkillKey[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(isSkillKey);
+}

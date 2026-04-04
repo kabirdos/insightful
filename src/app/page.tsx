@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Sparkles, TrendingUp, Clock, Flame } from "lucide-react";
 import clsx from "clsx";
-import type { SkillKey } from "@/types/insights";
+import { normalizeSkills, type SkillKey } from "@/types/insights";
 import ContributorRow from "@/components/ContributorRow";
 
 type SortOption = "newest" | "most_voted" | "trending";
@@ -58,7 +58,7 @@ export default function HomePage() {
             linesRemoved: r.linesRemoved as number | null,
             fileCount: r.fileCount as number | null,
             commitCount: r.commitCount as number | null,
-            detectedSkills: (r.detectedSkills as SkillKey[]) ?? [],
+            detectedSkills: normalizeSkills(r.detectedSkills),
             author: r.author as InsightSummary["author"],
           };
         });
