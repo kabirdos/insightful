@@ -1,10 +1,7 @@
-import NextAuth from "next-auth";
-import authConfig from "@/lib/auth.config";
-
-const { auth } = NextAuth(authConfig);
-
-export default auth;
+// Middleware intentionally left minimal - auth checks happen in route handlers and pages
+export { default } from "next-auth/middleware";
 
 export const config = {
-  matcher: ["/upload"],
+  // Don't match any routes - let pages handle their own auth
+  matcher: [],
 };
