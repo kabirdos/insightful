@@ -105,22 +105,6 @@ export default function UploadPage() {
     setDisabledSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  if (!session) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center">
-          <Upload className="mx-auto mb-4 h-12 w-12 text-slate-400" />
-          <h2 className="mb-2 text-xl font-semibold text-slate-900">
-            Sign in to share your insights
-          </h2>
-          <p className="text-slate-500">
-            You need to be logged in to upload insights.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   const handleFile = async (f: File) => {
     setFile(f);
     setLoading(true);
@@ -297,6 +281,22 @@ export default function UploadPage() {
   ];
 
   const stepIndex = steps.findIndex((s) => s.key === step);
+
+  if (!session) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <Upload className="mx-auto mb-4 h-12 w-12 text-slate-400" />
+          <h2 className="mb-2 text-xl font-semibold text-slate-900">
+            Sign in to share your insights
+          </h2>
+          <p className="text-slate-500">
+            You need to be logged in to upload insights.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
