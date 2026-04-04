@@ -4,18 +4,13 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  Calendar,
-  MessageSquare,
-  GitCommitHorizontal,
-  Activity,
-  Clock,
-  Share2,
-} from "lucide-react";
+import { Calendar, Share2 } from "lucide-react";
 import SectionRenderer from "@/components/SectionRenderer";
 import CommentSection from "@/components/CommentSection";
 import ProjectLinks from "@/components/ProjectLinks";
-import type { InsightsData } from "@/types/insights";
+import SnapshotCard from "@/components/SnapshotCard";
+import CollapsibleSection from "@/components/CollapsibleSection";
+import type { InsightsData, ChartData, SkillKey } from "@/types/insights";
 
 interface ReportData {
   id: string;
@@ -27,6 +22,13 @@ interface ReportData {
   commitCount: number | null;
   dateRangeStart: string | null;
   dateRangeEnd: string | null;
+  linesAdded: number | null;
+  linesRemoved: number | null;
+  fileCount: number | null;
+  dayCount: number | null;
+  msgsPerDay: number | null;
+  chartData: ChartData | null;
+  detectedSkills: SkillKey[];
   atAGlance: InsightsData["at_a_glance"] | null;
   interactionStyle: InsightsData["interaction_style"] | null;
   projectAreas: InsightsData["project_areas"] | null;
@@ -58,59 +60,121 @@ interface ReportData {
 
 const SECTIONS: Array<{
   key: string;
-  type: string;
   label: string;
-  field: keyof ReportData;
+  dataKey: keyof ReportData;
+  sectionType: string;
+  icon: string;
+  iconBgClass: string;
 }> = [
   {
     key: "at_a_glance",
-    type: "at_a_glance",
     label: "At a Glance",
-    field: "atAGlance",
+    dataKey: "atAGlance",
+    sectionType: "at_a_glance",
+    icon: "✨",
+    iconBgClass: "bg-amber-100 dark:bg-amber-900/30",
   },
   {
     key: "interaction_style",
-    type: "interaction_style",
-    label: "Your Interaction Style",
-    field: "interactionStyle",
+    label: "How They Use Claude Code",
+    dataKey: "interactionStyle",
+    sectionType: "interaction_style",
+    icon: "🎯",
+    iconBgClass: "bg-indigo-100 dark:bg-indigo-900/30",
   },
   {
     key: "project_areas",
-    type: "project_areas",
     label: "Project Areas",
-    field: "projectAreas",
+    dataKey: "projectAreas",
+    sectionType: "project_areas",
+    icon: "📁",
+    iconBgClass: "bg-slate-100 dark:bg-slate-800",
   },
   {
     key: "impressive_workflows",
-    type: "impressive_workflows",
-    label: "Impressive Things You Did",
-    field: "impressiveWorkflows",
+    label: "Impressive Workflows",
+    dataKey: "impressiveWorkflows",
+    sectionType: "impressive_workflows",
+    icon: "🏆",
+    iconBgClass: "bg-green-100 dark:bg-green-900/30",
   },
   {
     key: "friction_analysis",
-    type: "friction_analysis",
     label: "Where Things Go Wrong",
-    field: "frictionAnalysis",
+    dataKey: "frictionAnalysis",
+    sectionType: "friction_analysis",
+    icon: "⚡",
+    iconBgClass: "bg-red-100 dark:bg-red-900/30",
   },
   {
     key: "suggestions",
-    type: "suggestions",
     label: "Suggestions",
-    field: "suggestions",
+    dataKey: "suggestions",
+    sectionType: "suggestions",
+    icon: "💡",
+    iconBgClass: "bg-yellow-100 dark:bg-yellow-900/30",
   },
   {
     key: "on_the_horizon",
-    type: "on_the_horizon",
     label: "On the Horizon",
-    field: "onTheHorizon",
+    dataKey: "onTheHorizon",
+    sectionType: "on_the_horizon",
+    icon: "🔮",
+    iconBgClass: "bg-purple-100 dark:bg-purple-900/30",
   },
   {
     key: "fun_ending",
-    type: "fun_ending",
     label: "Fun Ending",
-    field: "funEnding",
+    dataKey: "funEnding",
+    sectionType: "fun_ending",
+    icon: "🎉",
+    iconBgClass: "bg-pink-100 dark:bg-pink-900/30",
   },
 ];
+
+function getSectionSummary(
+  sectionKey: string,
+  report: ReportData,
+): string | null {
+  const atAGlance = report.atAGlance;
+  const interactionStyle = report.interactionStyle;
+  const projectAreas = report.projectAreas;
+  const funEnding = report.funEnding;
+
+  switch (sectionKey) {
+    case "interaction_style": {
+      if (!interactionStyle?.narrative) return null;
+      const sentences = interactionStyle.narrative.match(/[^.!?]+[.!?]+/g);
+      return sentences?.slice(0, 2).join(" ").trim() || null;
+    }
+    case "project_areas": {
+      const areas = projectAreas?.areas ?? [];
+      if (areas.length === 0) return null;
+      const total = areas.reduce((sum, a) => sum + (a.session_count ?? 0), 0);
+      const topNames = areas
+        .slice(0, 2)
+        .map((a) => a.name)
+        .join(", ");
+      return `${areas.length} project areas across ~${total} sessions. Major projects include ${topNames}.`;
+    }
+    case "impressive_workflows":
+      return atAGlance?.whats_working ?? null;
+    case "friction_analysis":
+      return atAGlance?.whats_hindering ?? null;
+    case "suggestions":
+      return atAGlance?.quick_wins ?? null;
+    case "on_the_horizon":
+      return atAGlance?.ambitious_workflows ?? null;
+    case "fun_ending": {
+      if (!funEnding?.headline) return null;
+      return funEnding.detail
+        ? `${funEnding.headline}. ${funEnding.detail.split(".")[0]}.`
+        : funEnding.headline;
+    }
+    default:
+      return null;
+  }
+}
 
 export default function InsightDetailPage() {
   const params = useParams();
@@ -219,90 +283,51 @@ export default function InsightDetailPage() {
         </button>
       </div>
 
-      {/* Stats banner */}
-      <div className="mb-8 flex flex-wrap gap-8 rounded-xl border border-slate-200 bg-white px-6 py-4">
-        {report.sessionCount && (
-          <div className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-blue-500" />
-            <div>
-              <div className="text-lg font-bold text-slate-900">
-                {report.sessionCount}
-              </div>
-              <div className="text-xs uppercase text-slate-500">Sessions</div>
-            </div>
-          </div>
-        )}
-        {report.messageCount && (
-          <div className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-green-500" />
-            <div>
-              <div className="text-lg font-bold text-slate-900">
-                {report.messageCount.toLocaleString()}
-              </div>
-              <div className="text-xs uppercase text-slate-500">Messages</div>
-            </div>
-          </div>
-        )}
-        {report.commitCount && (
-          <div className="flex items-center gap-2">
-            <GitCommitHorizontal className="h-5 w-5 text-purple-500" />
-            <div>
-              <div className="text-lg font-bold text-slate-900">
-                {report.commitCount}
-              </div>
-              <div className="text-xs uppercase text-slate-500">Commits</div>
-            </div>
-          </div>
-        )}
-        {report.dateRangeStart && report.dateRangeEnd && (
-          <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-amber-500" />
-            <div>
-              <div className="text-sm font-semibold text-slate-900">
-                {report.dateRangeStart} to {report.dateRangeEnd}
-              </div>
-              <div className="text-xs uppercase text-slate-500">Period</div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Table of contents */}
-      <div className="mb-8 rounded-xl border border-slate-200 bg-white p-4">
-        <h3 className="mb-3 text-sm font-semibold uppercase text-slate-500">
-          Sections
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {SECTIONS.filter((s) => report[s.field]).map((s) => (
-            <a
-              key={s.key}
-              href={`#${s.key}`}
-              className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-200"
-            >
-              {s.label}
-            </a>
-          ))}
-        </div>
+      {/* Snapshot */}
+      <div className="mb-8">
+        <SnapshotCard
+          sessionCount={report.sessionCount}
+          messageCount={report.messageCount}
+          linesAdded={report.linesAdded ?? null}
+          linesRemoved={report.linesRemoved ?? null}
+          fileCount={report.fileCount ?? null}
+          dayCount={report.dayCount ?? null}
+          commitCount={report.commitCount}
+          chartData={report.chartData}
+          detectedSkills={report.detectedSkills}
+          keyPattern={report.interactionStyle?.key_pattern ?? null}
+        />
       </div>
 
       {/* Sections */}
-      <div className="space-y-8">
+      <div className="space-y-4">
         {SECTIONS.map((section) => {
-          const data = report[section.field];
+          const data = (report as unknown as Record<string, unknown>)[
+            section.dataKey
+          ];
           if (!data) return null;
+          const summary = getSectionSummary(section.key, report);
+          const isAtAGlance = section.key === "at_a_glance";
           return (
-            <div key={section.key} id={section.key}>
+            <CollapsibleSection
+              key={section.key}
+              icon={section.icon}
+              iconBgClass={section.iconBgClass}
+              title={section.label}
+              summary={isAtAGlance ? null : summary}
+              defaultOpen={isAtAGlance}
+            >
               <SectionRenderer
                 slug={slug}
                 sectionKey={section.key}
-                sectionType={section.type}
+                sectionType={section.sectionType}
                 data={data}
                 reportId={report.id}
-                voteCount={report.voteCounts[section.key] || 0}
-                voted={report.userVotes[section.key] || false}
+                voteCount={report.voteCounts[section.key] ?? 0}
+                voted={report.userVotes[section.key] ?? false}
                 annotation={annotations[section.key]}
               />
-            </div>
+            </CollapsibleSection>
           );
         })}
       </div>
