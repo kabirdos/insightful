@@ -118,7 +118,7 @@ export default function Header() {
                       </p>
                     </div>
                     <Link
-                      href={`/u/${session.user.name}`}
+                      href={`/u/${session.user.username}`}
                       onClick={() => setDropdownOpen(false)}
                       className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
                     >
@@ -197,7 +197,7 @@ export default function Header() {
                   Upload Report
                 </Link>
                 <Link
-                  href={`/u/${session.user.name}`}
+                  href={`/u/${session.user.username}`}
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300"
                 >

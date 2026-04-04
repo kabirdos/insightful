@@ -22,11 +22,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
 
         token.sub = user.id;
+        token.username = user.username;
       }
       return token;
     },
     session({ session, token }) {
       if (token.sub) session.user.id = token.sub;
+      if (token.username) session.user.username = token.username as string;
       return session;
     },
   },
