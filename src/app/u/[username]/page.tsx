@@ -43,7 +43,7 @@ export default function UserProfilePage() {
         if (!r.ok) throw new Error("Not found");
         return r.json();
       })
-      .then((data) => setProfile(data))
+      .then((json) => setProfile(json.data ?? json))
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [username]);
