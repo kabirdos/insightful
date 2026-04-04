@@ -137,6 +137,26 @@ export function applyRedactions(
   // Walk every string field in the clone and apply replacements
   applyToObject(clone as unknown as Record<string, unknown>, replaceInString);
 
+  // v2: If a project name is marked for full redaction, also clear its description
+  const redactedProjectNames = new Set(
+    decisions
+      .filter(
+        (d) =>
+          d.type === "project_name" &&
+          d.sectionKey === "project_areas" &&
+          d.action === "redact",
+      )
+      .map((d) => d.text),
+  );
+
+  if (redactedProjectNames.size > 0 && clone.project_areas?.areas) {
+    for (const area of clone.project_areas.areas) {
+      if (area.name === "[redacted]") {
+        area.description = "[redacted]";
+      }
+    }
+  }
+
   return clone;
 }
 

@@ -134,10 +134,8 @@ describe("applyRedactions", () => {
 
     const result = applyRedactions(data, decisions);
     expect(result.project_areas.areas[0].name).toBe("[redacted]");
-    // Should also replace in description (consistent replacement)
-    expect(result.project_areas.areas[0].description).toBe(
-      "The [redacted] is great",
-    );
+    // v2: when project name is redacted, description is fully wiped
+    expect(result.project_areas.areas[0].description).toBe("[redacted]");
   });
 
   it("should replace aliased text with alias value", () => {
@@ -250,6 +248,52 @@ describe("applyRedactions", () => {
     expect(result.what_works.impressive_workflows[0].title).toBe(
       "[redacted] deployment",
     );
+  });
+
+  it("also redacts project description when project name is redacted", () => {
+    const data: InsightsData = {
+      at_a_glance: {
+        whats_working: "",
+        whats_hindering: "",
+        quick_wins: "",
+        ambitious_workflows: "",
+      },
+      interaction_style: { narrative: "", key_pattern: "" },
+      project_areas: {
+        areas: [
+          {
+            name: "SecretProject",
+            session_count: 10,
+            description: "A secret health insurance app with Stripe payments",
+          },
+        ],
+      },
+      what_works: { intro: "", impressive_workflows: [] },
+      friction_analysis: { intro: "", categories: [] },
+      suggestions: {
+        claude_md_additions: [],
+        features_to_try: [],
+        usage_patterns: [],
+      },
+      on_the_horizon: { intro: "", opportunities: [] },
+      fun_ending: { headline: "", detail: "" },
+    };
+
+    const decisions: RedactionItem[] = [
+      {
+        id: "1",
+        text: "SecretProject",
+        type: "project_name",
+        context: "",
+        sectionKey: "project_areas",
+        action: "redact",
+      },
+    ];
+
+    const result = applyRedactions(data, decisions);
+    const area = result.project_areas.areas[0];
+    expect(area.name).toBe("[redacted]");
+    expect(area.description).toBe("[redacted]");
   });
 });
 
