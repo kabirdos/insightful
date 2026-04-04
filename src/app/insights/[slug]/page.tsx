@@ -293,6 +293,7 @@ export default function InsightDetailPage() {
           return (
             <div key={section.key} id={section.key}>
               <SectionRenderer
+                slug={slug}
                 sectionKey={section.key}
                 sectionType={section.type}
                 data={data}

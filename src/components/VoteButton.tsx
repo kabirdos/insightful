@@ -5,6 +5,7 @@ import { Heart } from "lucide-react";
 import clsx from "clsx";
 
 interface VoteButtonProps {
+  slug: string;
   reportId: string;
   sectionKey: string;
   initialCount: number;
@@ -12,6 +13,7 @@ interface VoteButtonProps {
 }
 
 export default function VoteButton({
+  slug,
   reportId,
   sectionKey,
   initialCount,
@@ -30,10 +32,11 @@ export default function VoteButton({
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/votes", {
-        method: "POST",
+      const method = voted ? "DELETE" : "POST";
+      const res = await fetch(`/api/insights/${slug}/vote`, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reportId, sectionKey }),
+        body: JSON.stringify({ sectionKey }),
       });
 
       if (!res.ok) {

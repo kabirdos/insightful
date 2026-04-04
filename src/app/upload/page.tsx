@@ -688,6 +688,7 @@ export default function UploadPage() {
                 return (
                   <SectionRenderer
                     key={dataKey}
+                    slug="preview"
                     sectionKey={dataKey}
                     sectionType={sectionType}
                     data={sectionData}

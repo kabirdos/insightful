@@ -28,6 +28,7 @@ import type {
 } from "@/types/insights";
 
 interface SectionRendererProps {
+  slug: string;
   reportId: string;
   sectionKey: string;
   sectionType: string;
@@ -562,6 +563,7 @@ const sectionMeta: Record<
 };
 
 export default function SectionRenderer({
+  slug,
   reportId,
   sectionKey,
   sectionType,
@@ -659,6 +661,7 @@ export default function SectionRenderer({
       {/* Actions */}
       <div className="mt-5 flex items-center gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
         <VoteButton
+          slug={slug}
           reportId={reportId}
           sectionKey={sectionKey}
           initialCount={voteCount}
