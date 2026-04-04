@@ -1,0 +1,114 @@
+name: QA Testing on Mac Mini
+
+on:
+  push:
+    branches: ['feat/*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # Allow manual triggers
+
+jobs:
+  qa-browser-test:
+    name: Browser QA (Playwright)
+    runs-on: self-hosted
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+      AUTH_GITHUB_ID: ${{ secrets.AUTH_GITHUB_ID }}
+      AUTH_GITHUB_SECRET: ${{ secrets.AUTH_GITHUB_SECRET }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Start dev server
+        run: |
+          npm run dev &
+          # Wait for server to be ready
+          for i in $(seq 1 30); do
+            curl -s http://localhost:3000/api/health > /dev/null && break
+            sleep 1
+          done
+
+      - name: Run Claude QA
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude --print --output-format json "$(cat <<'PROMPT'
+          You are QA testing a Next.js web app running at http://localhost:3000.
+          Use Playwright MCP to open a real browser and test these flows:
+
+          ## Pages to test
+          1. **Homepage** (/) — loads, renders content, navigation works
+          2. **Login** (/login) — page loads, GitHub OAuth button present
+          3. **Upload** (/upload) — page loads (may redirect to login if auth required)
+          4. **Top insights** (/top) — page loads, displays insights list
+          5. **Search** (/search) — page loads, search input works
+          6. **Insight detail** (/insights/*) — navigate from top page, detail renders
+          7. **User profile** (/u/*) — navigate from an insight, profile renders
+
+          ## For each page, check:
+          - Page loads without errors (no white screen, no 500)
+          - No console errors in browser
+          - Layout renders correctly (no overlapping elements, text is readable)
+          - Navigation links work
+          - Mobile viewport (375px) and desktop (1280px) both render properly
+
+          ## Output format
+          Return a structured report:
+          - PASS/FAIL for each test
+          - Screenshots of any failures
+          - Summary with total pass/fail count
+          PROMPT
+          )" > qa-results.json
+
+      - name: Parse and display results
+        if: always()
+        run: |
+          if [ -f qa-results.json ]; then
+            cat qa-results.json | jq -r '.result // .content // .' 2>/dev/null || cat qa-results.json
+          else
+            echo "No QA results file generated"
+          fi
+
+      - name: Comment results on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let results = 'QA run completed but no results file was generated.';
+            try {
+              const raw = fs.readFileSync('qa-results.json', 'utf8');
+              const parsed = JSON.parse(raw);
+              results = parsed.result || parsed.content || raw;
+            } catch {
+              try { results = fs.readFileSync('qa-results.json', 'utf8'); } catch {}
+            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `## 🧪 QA Results (Mac Mini)\n\n${results}`
+            });
+
+      - name: Stop dev server
+        if: always()
+        run: |
+          pkill -f "next dev" || true
