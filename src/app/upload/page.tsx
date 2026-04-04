@@ -252,6 +252,8 @@ export default function UploadPage() {
           msgsPerDay: parsed.stats.msgsPerDay ?? null,
           ...sectionFields,
           projectLinks,
+          chartData: parsed.chartData,
+          detectedSkills: parsed.detectedSkills,
         }),
       });
 

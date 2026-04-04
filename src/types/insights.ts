@@ -106,6 +106,8 @@ export interface ParsedInsightsReport {
   };
   data: InsightsData;
   detectedRedactions: RedactionItem[];
+  chartData?: ChartData;
+  detectedSkills?: SkillKey[];
 }
 
 // v2: Chart data parsed from HTML report
