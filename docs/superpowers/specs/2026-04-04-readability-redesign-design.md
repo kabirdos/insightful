@@ -13,11 +13,16 @@ Replace the current report-card grid with a contributor-grouped list. One row pe
 **Layout:** Clean list rows, each containing:
 
 - GitHub avatar (already stored from OAuth)
-- Display name + @username
-- Inline key stats: messages, days active, lines added/removed, commits
-- Top 2-3 tools as small text (e.g., "Bash, Read, Edit")
-- Skills badges: small colored chips (e.g., `Parallel Agents`, `Worktrees`, `Custom Skills`)
+- Display name + @username + date + days tracked (e.g., "@craigdossantos · Apr 3, 2026 · 18 days tracked")
+- **Normalized per-week stats** for comparability: messages/week, lines/week
+- Absolute labeled stats: "+N added" (green), "-N removed" (red), files, commits
+- "Skills Used" label above badges row
+- Skills badges: small colored chips
 - Click entire row → report detail page
+
+**Per-week calculation:** `messagesPerWeek = messageCount / (dayCount / 7)`, `linesPerWeek = (linesAdded + linesRemoved) / (dayCount / 7)`. Computed at read time — not stored.
+
+**Raw tool counts NOT shown** on homepage rows (Bash is always at top for everyone — not differentiating). Tools belong in the detail page only.
 
 If a user has multiple reports, they appear as separate rows but visually grouped under the same contributor header.
 
@@ -112,32 +117,35 @@ Migration: add columns via SQL applied through `npx supabase db query --linked -
 
 #### 4a. Top Snapshot Card
 
-A visually prominent card at the top of the report, above all sections:
+A visually prominent card at the top of the report, above all sections. **Order matters — skills first, tools collapsed.**
 
-**Row 1: Stats bar** (existing, but redesigned)
+**Row 1: Stats bar**
 
 - Larger numbers, bolder typography
-- Stats: Sessions | Messages | Lines (+/-) | Files | Days | Msgs/Day | Commits
+- Stats: Sessions | Messages | Msgs/Week | Lines Added (green) | Removed (red) | Files | Commits
+- `Msgs/Week = messageCount / (dayCount / 7)` computed at read time
 
-**Row 2: Tool usage chart**
+**Row 2: Skills & Features (primary, always visible)**
 
-- Horizontal bar chart rendered from `chartData.toolUsage`
-- Top 5-6 tools, proportional bars with values
-- Clean, minimal design (no axis labels, just bars with inline labels)
-- If `chartData.toolUsage` is missing/empty, hide this row entirely
-
-**Row 3: Skills badges**
-
+- Header: "Skills & Features Used"
 - Colored chip/badge for each detected skill
 - e.g., `🔀 Parallel Agents` `🌳 Worktrees` `⚡ Custom Skills` `🎭 Playwright`
 - Muted colors, small text, pill-shaped
 - If `detectedSkills` is empty, hide this row entirely
 
-**Row 4: Key pattern highlight**
+**Row 3: Key pattern highlight**
 
 - The one-liner from `interactionStyle.key_pattern` (derived at read time)
-- Displayed in a slightly highlighted/quoted style
+- Displayed in a slightly highlighted/quoted style with left border accent
 - If missing, hide this row
+
+**Row 4: Tool usage chart (secondary, collapsed by default)**
+
+- Wrapped in a native `<details>` element with summary "Top Tools Used ▸"
+- Horizontal bar chart rendered from `chartData.toolUsage`
+- Top 5-6 tools, proportional bars with values
+- If `chartData.toolUsage` is missing/empty, hide entirely
+- **Rationale:** Bash is always at the top for everyone, so this is lower-value info than skills
 
 #### 4b. Collapsible Sections
 
@@ -146,7 +154,7 @@ Each of the 8 content sections becomes a collapsible card:
 **Header (always visible):**
 
 - Section icon + section name (larger, bolder than current)
-- 1-2 sentence summary (see mapping below)
+- **2-3 sentence summary** (see mapping below) — long enough to give real sense of what's inside
 - Expand/collapse chevron
 
 **Body (collapsed by default except "At a Glance"):**
@@ -154,16 +162,16 @@ Each of the 8 content sections becomes a collapsible card:
 - Full section content with improved typography
 - Section-specific card layouts for structured content (project areas, friction categories, etc.)
 
-**Section → summary mapping:**
+**Section → summary mapping (2-3 sentences each):**
 
 - At a Glance: always expanded, shows 4 sub-cards
-- Interaction Style: `key_pattern` as summary
-- Project Areas: count of projects with data (e.g., "5 project areas")
-- Impressive Workflows: `at_a_glance.whats_working` first sentence
-- Friction Analysis: `at_a_glance.whats_hindering` first sentence
-- Suggestions: `at_a_glance.quick_wins` first sentence
-- On the Horizon: `at_a_glance.ambitious_workflows` first sentence
-- Fun Ending: the headline as summary
+- Interaction Style: first 2-3 sentences of `interaction_style.narrative`
+- Project Areas: computed text like "{N} project areas across ~{total} sessions. Major projects include {top_2_names}."
+- Impressive Workflows: full `at_a_glance.whats_working` text (already 2-3 sentences)
+- Friction Analysis: full `at_a_glance.whats_hindering` text
+- Suggestions: full `at_a_glance.quick_wins` text
+- On the Horizon: full `at_a_glance.ambitious_workflows` text
+- Fun Ending: the headline + first sentence of detail
 
 **Fallback:** If a summary source is missing, show only the section name with no summary text.
 
