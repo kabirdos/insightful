@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { Sparkles, TrendingUp, Clock, Flame } from "lucide-react";
 import clsx from "clsx";
-import InsightCard from "@/components/InsightCard";
+import type { SkillKey } from "@/types/insights";
+import ContributorRow from "@/components/ContributorRow";
 
 type SortOption = "newest" | "most_voted" | "trending";
 
@@ -11,20 +12,13 @@ interface InsightSummary {
   slug: string;
   title: string;
   publishedAt: string;
-  dateRangeStart?: string | null;
-  dateRangeEnd?: string | null;
-  sessionCount?: number | null;
+  dayCount?: number | null;
   messageCount?: number | null;
-  commitCount?: number | null;
   linesAdded?: number | null;
   linesRemoved?: number | null;
   fileCount?: number | null;
-  dayCount?: number | null;
-  msgsPerDay?: number | null;
-  whatsWorkingPreview?: string | null;
-  voteCount: number;
-  commentCount: number;
-  sectionTags: string[];
+  commitCount?: number | null;
+  detectedSkills: SkillKey[];
   author: {
     username: string;
     displayName?: string | null;
@@ -54,35 +48,18 @@ export default function HomePage() {
       .then((json) => {
         const reports = json.data || json.insights || [];
         const mapped = reports.map((r: Record<string, unknown>) => {
-          const atAGlance = r.atAGlance as Record<string, string> | null;
-          const counts = r._count as Record<string, number> | undefined;
-          const voteCounts = r.voteCounts as Record<string, number> | undefined;
-          const totalVotes = voteCounts
-            ? Object.values(voteCounts).reduce(
-                (a: number, b: number) => a + b,
-                0,
-              )
-            : (counts?.votes ?? 0);
           return {
-            slug: r.slug,
-            title: r.title,
-            publishedAt: r.publishedAt,
-            dateRangeStart: r.dateRangeStart,
-            dateRangeEnd: r.dateRangeEnd,
-            sessionCount: r.sessionCount,
-            messageCount: r.messageCount,
-            commitCount: r.commitCount,
+            slug: r.slug as string,
+            title: r.title as string,
+            publishedAt: r.publishedAt as string,
+            dayCount: r.dayCount as number | null,
+            messageCount: r.messageCount as number | null,
             linesAdded: r.linesAdded as number | null,
             linesRemoved: r.linesRemoved as number | null,
             fileCount: r.fileCount as number | null,
-            dayCount: r.dayCount as number | null,
-            msgsPerDay: r.msgsPerDay as number | null,
-            whatsWorkingPreview:
-              atAGlance?.whats_working?.slice(0, 150) || null,
-            voteCount: totalVotes,
-            commentCount: counts?.comments ?? 0,
-            sectionTags: [],
-            author: r.author,
+            commitCount: r.commitCount as number | null,
+            detectedSkills: (r.detectedSkills as SkillKey[]) ?? [],
+            author: r.author as InsightSummary["author"],
           };
         });
         setInsights(mapped);
@@ -152,30 +129,22 @@ export default function HomePage() {
           ))}
         </div>
       ) : insights.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
+        <div className="space-y-3">
           {insights.map((insight) => (
-            <InsightCard
+            <ContributorRow
               key={insight.slug}
               slug={insight.slug}
-              title={insight.title}
-              authorUsername={insight.author.username}
-              authorAvatar={insight.author.avatarUrl}
-              authorDisplayName={insight.author.displayName}
+              username={insight.author.username}
+              displayName={insight.author.displayName ?? null}
+              avatarUrl={insight.author.avatarUrl ?? null}
               publishedAt={insight.publishedAt}
-              dateRangeStart={insight.dateRangeStart}
-              dateRangeEnd={insight.dateRangeEnd}
-              sessionCount={insight.sessionCount}
-              messageCount={insight.messageCount}
-              commitCount={insight.commitCount}
-              linesAdded={insight.linesAdded}
-              linesRemoved={insight.linesRemoved}
-              fileCount={insight.fileCount}
-              dayCount={insight.dayCount}
-              msgsPerDay={insight.msgsPerDay}
-              whatsWorkingPreview={insight.whatsWorkingPreview}
-              voteCount={insight.voteCount}
-              commentCount={insight.commentCount}
-              sectionTags={insight.sectionTags}
+              dayCount={insight.dayCount ?? null}
+              messageCount={insight.messageCount ?? null}
+              linesAdded={insight.linesAdded ?? null}
+              linesRemoved={insight.linesRemoved ?? null}
+              fileCount={insight.fileCount ?? null}
+              commitCount={insight.commitCount ?? null}
+              detectedSkills={insight.detectedSkills}
             />
           ))}
         </div>
