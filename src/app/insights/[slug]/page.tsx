@@ -16,6 +16,7 @@ import {
   type ChartData,
   type SkillKey,
 } from "@/types/insights";
+import { normalizeChartData } from "@/lib/chart-parser";
 
 interface ReportData {
   id: string;
@@ -199,6 +200,7 @@ export default function InsightDetailPage() {
         const raw = json.data || json;
         if (raw) {
           raw.detectedSkills = normalizeSkills(raw.detectedSkills);
+          raw.chartData = normalizeChartData(raw.chartData);
         }
         setReport(raw);
       })

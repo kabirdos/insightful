@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseChartData } from "../chart-parser";
+import { parseChartData, normalizeChartData } from "../chart-parser";
 
 const SAMPLE_HTML = `
 <html><body>
@@ -109,5 +109,89 @@ describe("parseChartData", () => {
     expect(result.requestTypes).toBeUndefined();
     expect(result.languages).toBeUndefined();
     expect(result.sessionTypes).toBeUndefined();
+  });
+});
+
+describe("normalizeChartData", () => {
+  it("returns null for null", () => {
+    expect(normalizeChartData(null)).toBeNull();
+  });
+
+  it("returns null for undefined", () => {
+    expect(normalizeChartData(undefined)).toBeNull();
+  });
+
+  it("returns null for non-objects", () => {
+    expect(normalizeChartData("string")).toBeNull();
+    expect(normalizeChartData(42)).toBeNull();
+    expect(normalizeChartData([])).toBeNull();
+  });
+
+  it("returns a clean ChartData for a valid object", () => {
+    const input = {
+      toolUsage: [
+        { label: "Bash", value: 100 },
+        { label: "Read", value: 50 },
+      ],
+    };
+    expect(normalizeChartData(input)).toEqual(input);
+  });
+
+  it("filters out malformed items in a series", () => {
+    const input = {
+      toolUsage: [
+        { label: "Bash", value: 100 },
+        { label: "Missing value" },
+        { value: 50 },
+        "not an object",
+        null,
+        { label: "Read", value: 50 },
+      ],
+    };
+    expect(normalizeChartData(input)).toEqual({
+      toolUsage: [
+        { label: "Bash", value: 100 },
+        { label: "Read", value: 50 },
+      ],
+    });
+  });
+
+  it("drops a series entirely if all items are invalid", () => {
+    const input = {
+      toolUsage: [{ label: "x" }, { value: 1 }],
+      languages: [{ label: "TypeScript", value: 1 }],
+    };
+    expect(normalizeChartData(input)).toEqual({
+      languages: [{ label: "TypeScript", value: 1 }],
+    });
+  });
+
+  it("ignores unknown top-level keys", () => {
+    const input = {
+      toolUsage: [{ label: "Bash", value: 100 }],
+      someFutureKey: [{ label: "x", value: 1 }],
+    };
+    expect(normalizeChartData(input)).toEqual({
+      toolUsage: [{ label: "Bash", value: 100 }],
+    });
+  });
+
+  it("returns null if every series is invalid or missing", () => {
+    expect(normalizeChartData({})).toBeNull();
+    expect(normalizeChartData({ toolUsage: "broken" })).toBeNull();
+    expect(normalizeChartData({ toolUsage: [{ bad: true }] })).toBeNull();
+  });
+
+  it("rejects non-finite numbers (NaN, Infinity)", () => {
+    const input = {
+      toolUsage: [
+        { label: "A", value: NaN },
+        { label: "B", value: Infinity },
+        { label: "C", value: 42 },
+      ],
+    };
+    expect(normalizeChartData(input)).toEqual({
+      toolUsage: [{ label: "C", value: 42 }],
+    });
   });
 });
