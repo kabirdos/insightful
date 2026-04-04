@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { parseInsightsHtml } from "@/lib/parser";
 import { detectRedactions } from "@/lib/redaction";
+import { parseChartData } from "@/lib/chart-parser";
+import { detectSkills } from "@/lib/skill-detector";
 import * as cheerio from "cheerio";
 
 /**
@@ -84,6 +86,10 @@ export async function POST(request: Request) {
     // Parse using the cheerio-based parser
     const parsed = parseInsightsHtml(html);
 
+    // Extract chart data and detect skills
+    const chartData = parseChartData(html);
+    const detectedSkills = detectSkills(parsed.data, chartData);
+
     // Detect sensitive data using the redaction engine
     const detectedRedactions = detectRedactions(parsed.data);
 
@@ -97,6 +103,8 @@ export async function POST(request: Request) {
       },
       data: parsed.data,
       detectedRedactions,
+      chartData,
+      detectedSkills,
     });
   } catch (error) {
     console.error("POST /api/upload error:", error);
