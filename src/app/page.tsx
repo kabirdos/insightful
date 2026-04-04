@@ -92,7 +92,7 @@ export default function HomePage() {
   }, [sort]);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 overflow-hidden">
       {/* Hero */}
       <div className="mb-10 text-center">
         <div className="flex items-center justify-center gap-2 mb-3">
@@ -108,7 +108,10 @@ export default function HomePage() {
       </div>
 
       {/* Sort Tabs */}
-      <div className="mb-6 flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800/50 w-fit mx-auto overflow-x-auto max-w-full">
+      <div
+        className="mb-6 inline-flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800/50 mx-auto overflow-x-auto"
+        style={{ maxWidth: "calc(100vw - 2rem)" }}
+      >
         {sortOptions.map(({ value, label, icon: Icon }) => (
           <button
             key={value}
