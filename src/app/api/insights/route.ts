@@ -191,6 +191,8 @@ export async function POST(request: Request) {
       onTheHorizon,
       funEnding,
       projectLinks,
+      chartData,
+      detectedSkills,
     } = body;
 
     // Auto-generate title if not provided
@@ -223,6 +225,8 @@ export async function POST(request: Request) {
         suggestions: suggestions ?? undefined,
         onTheHorizon: onTheHorizon ?? undefined,
         funEnding: funEnding ?? undefined,
+        chartData: chartData ?? undefined,
+        detectedSkills: detectedSkills ?? [],
         ...(Array.isArray(projectLinks) && projectLinks.length > 0
           ? {
               projectLinks: {
