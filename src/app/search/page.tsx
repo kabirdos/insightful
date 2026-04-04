@@ -39,11 +39,9 @@ export default function SearchPage() {
     setLoading(true);
     setSearched(true);
     try {
-      const res = await fetch(
-        `/api/insights?search=${encodeURIComponent(q.trim())}`,
-      );
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}`);
       const data = await res.json();
-      setResults(data.insights || []);
+      setResults(data.data || []);
     } catch {
       setResults([]);
     } finally {
