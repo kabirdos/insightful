@@ -34,6 +34,7 @@ export async function GET(request: Request) {
     let orderBy: Record<string, unknown>;
     switch (sort) {
       case "votes":
+      case "most_voted":
         orderBy = { votes: { _count: "desc" } };
         break;
       case "trending":
