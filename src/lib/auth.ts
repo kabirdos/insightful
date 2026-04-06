@@ -23,6 +23,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         token.sub = user.id;
         token.username = user.username;
+      } else if (token.sub && !token.username) {
+        // Existing session without username — look it up from DB
+        const user = await prisma.user.findUnique({
+          where: { id: token.sub },
+          select: { username: true },
+        });
+        if (user) token.username = user.username;
       }
       return token;
     },
