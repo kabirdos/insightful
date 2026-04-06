@@ -1,0 +1,2311 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insightful v2 — Readability Redesign</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          sans-serif;
+        background: #f5f5f0;
+        color: #333;
+      }
+
+      /* ── Sticky Nav ── */
+      .mockup-nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: #1e1e1e;
+        color: #fff;
+        padding: 10px 16px;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+      .mockup-nav .title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-right: 12px;
+        white-space: nowrap;
+      }
+      .mockup-nav a {
+        color: #a8c8ff;
+        text-decoration: none;
+        font-size: 12px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        transition: background 0.15s;
+      }
+      .mockup-nav a:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .viewport-toggle {
+        display: flex;
+        gap: 2px;
+        margin-left: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        padding: 2px;
+      }
+      .viewport-toggle button {
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.5);
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s;
+      }
+      .viewport-toggle button:hover {
+        color: rgba(255, 255, 255, 0.8);
+      }
+      .viewport-toggle button.active {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+      }
+      .mockup-nav .copy-all-btn {
+        margin-left: auto;
+        background: #2563eb;
+        color: #fff;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .mockup-nav .copy-all-btn:hover {
+        background: #1d4ed8;
+      }
+      .mockup-nav .copy-all-btn.copied {
+        background: #16a34a;
+      }
+
+      /* ── Section layout ── */
+      .mockup-section {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+      .mockup-section.wide {
+        max-width: 1200px;
+      }
+      body.viewport-mobile .mockup-section,
+      body.viewport-mobile .mockup-section.wide {
+        max-width: 600px;
+      }
+      body.viewport-desktop .mockup-section {
+        max-width: 900px;
+      }
+      body.viewport-desktop .mockup-section.wide {
+        max-width: 1200px;
+      }
+
+      .iframe-frame {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #fff;
+        position: relative;
+        margin: 0 auto;
+      }
+      .iframe-frame iframe {
+        width: 100%;
+        border: none;
+        display: block;
+      }
+      body.viewport-mobile .iframe-frame {
+        max-width: 375px;
+      }
+      body.viewport-mobile .iframe-frame::before {
+        content: "";
+        display: block;
+        height: 24px;
+        background: #f3f4f6;
+        border-bottom: 1px solid #e5e5e5;
+        border-radius: 8px 8px 0 0;
+      }
+
+      .section-label {
+        background: #1e1e1e;
+        color: #fff;
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 12px;
+      }
+      .section-desc {
+        font-size: 13px;
+        color: #888;
+        margin-bottom: 16px;
+        line-height: 1.5;
+      }
+      .section-divider {
+        height: 1px;
+        background: #ddd;
+        margin: 48px 0;
+      }
+
+      .version-container {
+        position: relative;
+      }
+      .version {
+        display: none;
+      }
+      .version.active {
+        display: block;
+      }
+      .version-nav {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 12px;
+        padding: 8px;
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+      }
+      .version-nav.visible {
+        display: flex;
+      }
+      .version-nav button {
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-size: 12px;
+        font-family: inherit;
+        cursor: pointer;
+        color: #374151;
+      }
+      .version-nav button:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+      .version-nav .version-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        min-width: 80px;
+        text-align: center;
+      }
+
+      .feedback-area {
+        margin-top: 16px;
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        padding: 12px;
+      }
+      .feedback-area label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #888;
+        margin-bottom: 6px;
+      }
+      .feedback-area textarea {
+        width: 100%;
+        min-height: 80px;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        padding: 10px;
+        font-family: inherit;
+        font-size: 14px;
+        line-height: 1.5;
+        resize: vertical;
+        color: #333;
+      }
+      .feedback-area textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .feedback-area .char-count {
+        font-size: 11px;
+        color: #aaa;
+        text-align: right;
+        margin-top: 4px;
+      }
+
+      .design-note {
+        background: #fffbeb;
+        border: 1px solid #fcd34d;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin: 12px 0;
+        font-size: 12px;
+        color: #92400e;
+        line-height: 1.5;
+      }
+      .design-note strong {
+        font-weight: 600;
+      }
+      .design-note.info {
+        background: #f0fdf4;
+        border-color: #86efac;
+        color: #166534;
+      }
+      .design-note.future {
+        background: #eff6ff;
+        border-color: #93c5fd;
+        color: #1e40af;
+      }
+
+      /* ══════════════════════════════════════════════════════════════
+   INSIGHTFUL MOCKUP STYLES — matches project Tailwind/design
+   ══════════════════════════════════════════════════════════════ */
+
+      .i-page {
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+      }
+
+      /* ── Homepage list ── */
+      .i-list-header {
+        padding: 32px 24px 0;
+        text-align: center;
+      }
+      .i-list-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .i-list-header h1 svg {
+        color: #2563eb;
+      }
+      .i-list-header p {
+        color: #64748b;
+        font-size: 15px;
+        margin-top: 8px;
+      }
+
+      .i-sort-tabs {
+        display: flex;
+        gap: 4px;
+        background: #f1f5f9;
+        border-radius: 12px;
+        padding: 4px;
+        width: fit-content;
+        margin: 20px auto 0;
+      }
+      .i-sort-tabs button {
+        background: none;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        color: #64748b;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .i-sort-tabs button.active {
+        background: white;
+        color: #0f172a;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      }
+
+      .i-contributor-list {
+        padding: 20px 24px 24px;
+      }
+      .i-contributor-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        background: white;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .i-contributor-row:hover {
+        border-color: #93c5fd;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+      }
+      .i-contributor-row img {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .i-contributor-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .i-contributor-info .name {
+        font-weight: 600;
+        font-size: 15px;
+        color: #0f172a;
+      }
+      .i-contributor-info .handle {
+        font-size: 13px;
+        color: #94a3b8;
+      }
+      .i-contributor-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        margin-top: 6px;
+        font-size: 12px;
+        color: #64748b;
+      }
+      .i-contributor-stats .stat {
+        white-space: nowrap;
+      }
+      .i-contributor-stats .stat strong {
+        font-weight: 600;
+        color: #334155;
+      }
+      .i-contributor-stats .green {
+        color: #16a34a;
+      }
+      .i-contributor-stats .red {
+        color: #dc2626;
+      }
+      .i-tools {
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 4px;
+      }
+      .i-skills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 6px;
+      }
+      .i-skill-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .i-skill-badge.agents {
+        background: #ede9fe;
+        color: #6d28d9;
+      }
+      .i-skill-badge.worktrees {
+        background: #dcfce7;
+        color: #15803d;
+      }
+      .i-skill-badge.skills {
+        background: #fef3c7;
+        color: #b45309;
+      }
+      .i-skill-badge.playwright {
+        background: #fce7f3;
+        color: #be185d;
+      }
+      .i-skill-badge.hooks {
+        background: #e0f2fe;
+        color: #0369a1;
+      }
+      .i-skill-badge.mcp {
+        background: #f1f5f9;
+        color: #475569;
+      }
+      .i-skill-badge.review {
+        background: #fef2f2;
+        color: #b91c1c;
+      }
+      .i-skill-badge.plan {
+        background: #ecfdf5;
+        color: #065f46;
+      }
+
+      /* ── Report detail ── */
+      .i-detail {
+        padding: 32px 24px;
+      }
+      .i-detail-author {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+      .i-detail-author img {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+      }
+      .i-detail-author .info .name {
+        font-weight: 600;
+        font-size: 15px;
+        color: #0f172a;
+      }
+      .i-detail-author .info .date {
+        font-size: 13px;
+        color: #94a3b8;
+      }
+
+      /* Snapshot card */
+      .i-snapshot {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 32px;
+      }
+      .i-stats-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #f1f5f9;
+      }
+      .i-stat {
+        text-align: center;
+      }
+      .i-stat .val {
+        font-size: 24px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .i-stat .label {
+        font-size: 11px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-top: 2px;
+      }
+      .i-stat .val.green {
+        color: #16a34a;
+      }
+      .i-stat .val.red {
+        color: #dc2626;
+      }
+
+      /* Tool chart */
+      .i-tool-chart {
+        margin-top: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #f1f5f9;
+      }
+      .i-tool-chart h3 {
+        font-size: 11px;
+        font-weight: 600;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 12px;
+      }
+      .i-bar-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+      .i-bar-label {
+        width: 80px;
+        font-size: 12px;
+        color: #475569;
+        flex-shrink: 0;
+      }
+      .i-bar-track {
+        flex: 1;
+        height: 8px;
+        background: #f1f5f9;
+        border-radius: 4px;
+        margin: 0 8px;
+        overflow: hidden;
+      }
+      .i-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        background: #3b82f6;
+      }
+      .i-bar-value {
+        width: 40px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #64748b;
+        text-align: right;
+      }
+
+      /* Skills row */
+      .i-skills-row {
+        margin-top: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #f1f5f9;
+      }
+      .i-skills-row h3 {
+        font-size: 11px;
+        font-weight: 600;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 10px;
+      }
+
+      /* Key pattern */
+      .i-key-pattern {
+        margin-top: 20px;
+        padding: 16px;
+        background: #f0f9ff;
+        border-radius: 10px;
+        border-left: 3px solid #3b82f6;
+      }
+      .i-key-pattern p {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #334155;
+        font-style: italic;
+      }
+
+      /* Collapsible sections */
+      .i-section-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        overflow: hidden;
+      }
+      .i-section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 18px 20px;
+        cursor: pointer;
+        transition: background 0.1s;
+      }
+      .i-section-header:hover {
+        background: #f8fafc;
+      }
+      .i-section-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+      .i-section-icon.glance {
+        background: #fef3c7;
+      }
+      .i-section-icon.style {
+        background: #e0e7ff;
+      }
+      .i-section-icon.projects {
+        background: #f1f5f9;
+      }
+      .i-section-icon.workflows {
+        background: #dcfce7;
+      }
+      .i-section-icon.friction {
+        background: #fef2f2;
+      }
+      .i-section-icon.suggestions {
+        background: #fef9c3;
+      }
+      .i-section-icon.horizon {
+        background: #f5f3ff;
+      }
+      .i-section-icon.fun {
+        background: #fce7f3;
+      }
+      .i-section-title {
+        flex: 1;
+        min-width: 0;
+      }
+      .i-section-title h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0f172a;
+      }
+      .i-section-title p {
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 2px;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .i-section-chevron {
+        color: #94a3b8;
+        font-size: 18px;
+        flex-shrink: 0;
+        transition: transform 0.2s;
+      }
+      .i-section-chevron.open {
+        transform: rotate(180deg);
+      }
+      .i-section-body {
+        padding: 0 20px 20px;
+        border-top: 1px solid #f1f5f9;
+      }
+      .i-section-body p {
+        font-size: 15px;
+        line-height: 1.75;
+        color: #334155;
+        margin-top: 16px;
+      }
+      .i-section-body .key-insight {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-top: 12px;
+        font-size: 14px;
+        color: #166534;
+        line-height: 1.6;
+      }
+
+      /* Project area cards */
+      .i-project-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 12px;
+        margin-top: 16px;
+      }
+      .i-project-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 16px;
+      }
+      .i-project-card .name {
+        font-weight: 600;
+        font-size: 14px;
+        color: #0f172a;
+        margin-bottom: 4px;
+      }
+      .i-project-card .sessions {
+        font-size: 12px;
+        color: #64748b;
+        margin-bottom: 8px;
+      }
+      .i-project-card .desc {
+        font-size: 13px;
+        color: #475569;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body class="viewport-desktop">
+    <nav class="mockup-nav">
+      <span class="title">Insightful v2 — Readability Redesign</span>
+      <a href="#homepage">Homepage</a>
+      <a href="#detail">Report Detail</a>
+      <div class="viewport-toggle">
+        <button data-viewport="mobile" title="Mobile (375px)">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+            <path
+              d="M7 2h10a2 2 0 012 2v16a2 2 0 01-2 2H7a2 2 0 01-2-2V4a2 2 0 012-2zm5 18a1 1 0 100-2 1 1 0 000 2z"
+            />
+          </svg>
+          Mobile
+        </button>
+        <button data-viewport="desktop" class="active" title="Desktop">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+            <path
+              d="M3 4h18a1 1 0 011 1v11a1 1 0 01-1 1H3a1 1 0 01-1-1V5a1 1 0 011-1zm5 16h8m-4-3v3"
+            />
+          </svg>
+          Desktop
+        </button>
+      </div>
+      <button class="copy-all-btn" onclick="copyAllFeedback()">
+        Copy All Feedback
+      </button>
+    </nav>
+
+    <!-- ═══════════════════════════════════════════════════════
+     SECTION 1: Homepage — Contributor Directory
+     ═══════════════════════════════════════════════════════ -->
+    <div class="mockup-section wide" data-section-id="homepage" id="homepage">
+      <span class="section-label">Homepage — Contributor List</span>
+      <p class="section-desc">
+        Replaces the current card grid with a contributor-focused list. Each row
+        shows avatar, stats, top tools, and skill badges.
+      </p>
+
+      <div class="version-container">
+        <div class="version" data-version="1">
+          <div class="design-note info">
+            <strong>Note:</strong> v1 — original proposal. See v2 for updated
+            version with per-week stats and clearer labels.
+          </div>
+
+          <div class="i-page">
+            <div class="i-list-header">
+              <h1>
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"
+                  />
+                </svg>
+                Insightful
+              </h1>
+              <p>
+                Discover how developers use Claude Code. Browse shared insights
+                and learn new workflows.
+              </p>
+            </div>
+
+            <div class="i-sort-tabs">
+              <button class="active">Newest</button>
+              <button>Most Voted</button>
+              <button>Trending</button>
+            </div>
+
+            <div class="i-contributor-list">
+              <!-- Row 1 -->
+              <div class="i-contributor-row">
+                <img
+                  src="https://avatars.githubusercontent.com/u/124315902?v=4"
+                  alt=""
+                />
+                <div class="i-contributor-info">
+                  <div class="name">craigdossantos</div>
+                  <div class="handle">@craigdossantos · Apr 3, 2026</div>
+                  <div class="i-contributor-stats">
+                    <span class="stat"><strong>1,268</strong> msgs</span>
+                    <span class="stat green">+47,313</span>
+                    <span class="stat red">-2,967</span>
+                    <span class="stat"><strong>405</strong> files</span>
+                    <span class="stat"><strong>18</strong> days</span>
+                    <span class="stat"><strong>70.4</strong>/day</span>
+                  </div>
+                  <div class="i-tools">
+                    Top tools: Bash (2,922) · Read (1,318) · Edit (714)
+                  </div>
+                  <div class="i-skills">
+                    <span class="i-skill-badge agents">🔀 Parallel Agents</span>
+                    <span class="i-skill-badge skills">⚡ Custom Skills</span>
+                    <span class="i-skill-badge playwright">🎭 Playwright</span>
+                    <span class="i-skill-badge hooks">🪝 Hooks</span>
+                    <span class="i-skill-badge mcp">🔌 MCP Servers</span>
+                    <span class="i-skill-badge review">📝 Code Review</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Row 2: example other user -->
+              <div class="i-contributor-row">
+                <img
+                  src="https://api.dicebear.com/7.x/initials/svg?seed=SA&backgroundColor=6366f1"
+                  alt=""
+                  style="width: 48px; height: 48px; border-radius: 50%"
+                />
+                <div class="i-contributor-info">
+                  <div class="name">sarahdev</div>
+                  <div class="handle">@sarahdev · Apr 1, 2026</div>
+                  <div class="i-contributor-stats">
+                    <span class="stat"><strong>843</strong> msgs</span>
+                    <span class="stat green">+22,105</span>
+                    <span class="stat red">-1,230</span>
+                    <span class="stat"><strong>189</strong> files</span>
+                    <span class="stat"><strong>24</strong> days</span>
+                    <span class="stat"><strong>35.1</strong>/day</span>
+                  </div>
+                  <div class="i-tools">
+                    Top tools: Read (1,450) · Edit (890) · Bash (670)
+                  </div>
+                  <div class="i-skills">
+                    <span class="i-skill-badge worktrees">🌳 Worktrees</span>
+                    <span class="i-skill-badge plan">📋 Plan Mode</span>
+                    <span class="i-skill-badge review">📝 Code Review</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Row 3: example -->
+              <div class="i-contributor-row">
+                <img
+                  src="https://api.dicebear.com/7.x/initials/svg?seed=MK&backgroundColor=059669"
+                  alt=""
+                  style="width: 48px; height: 48px; border-radius: 50%"
+                />
+                <div class="i-contributor-info">
+                  <div class="name">Mike Kim</div>
+                  <div class="handle">@mikekim · Mar 28, 2026</div>
+                  <div class="i-contributor-stats">
+                    <span class="stat"><strong>2,104</strong> msgs</span>
+                    <span class="stat green">+91,230</span>
+                    <span class="stat red">-8,422</span>
+                    <span class="stat"><strong>612</strong> files</span>
+                    <span class="stat"><strong>30</strong> days</span>
+                    <span class="stat"><strong>70.1</strong>/day</span>
+                  </div>
+                  <div class="i-tools">
+                    Top tools: Bash (4,100) · Agent (1,200) · Edit (980)
+                  </div>
+                  <div class="i-skills">
+                    <span class="i-skill-badge agents">🔀 Parallel Agents</span>
+                    <span class="i-skill-badge worktrees">🌳 Worktrees</span>
+                    <span class="i-skill-badge skills">⚡ Custom Skills</span>
+                    <span class="i-skill-badge hooks">🪝 Hooks</span>
+                    <span class="i-skill-badge mcp">🔌 MCP Servers</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ HOMEPAGE V2 ═══ -->
+        <div class="version active" data-version="2">
+          <div class="design-note">
+            <strong>Change (v2):</strong> Added per-week normalized stats for
+            comparability. Labeled lines added/removed clearly. Added "Skills
+            Used" label above badges. Removed raw tool counts from inline
+            display.
+          </div>
+
+          <div class="i-page">
+            <div class="i-list-header">
+              <h1>
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"
+                  />
+                </svg>
+                Insightful
+              </h1>
+              <p>
+                Discover how developers use Claude Code. Browse shared insights
+                and learn new workflows.
+              </p>
+            </div>
+
+            <div class="i-sort-tabs">
+              <button class="active">Newest</button>
+              <button>Most Voted</button>
+              <button>Trending</button>
+            </div>
+
+            <div class="i-contributor-list">
+              <!-- Row 1: Craig -->
+              <div class="i-contributor-row">
+                <img
+                  src="https://avatars.githubusercontent.com/u/124315902?v=4"
+                  alt=""
+                />
+                <div class="i-contributor-info">
+                  <div class="name">craigdossantos</div>
+                  <div class="handle">
+                    @craigdossantos · Apr 3, 2026 · 18 days tracked
+                  </div>
+                  <div class="i-contributor-stats">
+                    <span class="stat"><strong>493</strong> msgs/wk</span>
+                    <span class="stat"><strong>18,340</strong> lines/wk</span>
+                    <span class="stat" style="color: #16a34a"
+                      >+47,313 added</span
+                    >
+                    <span class="stat" style="color: #dc2626"
+                      >-2,967 removed</span
+                    >
+                    <span class="stat"><strong>405</strong> files</span>
+                    <span class="stat"><strong>124</strong> commits</span>
+                  </div>
+                  <div style="margin-top: 8px">
+                    <span
+                      style="
+                        font-size: 11px;
+                        font-weight: 600;
+                        color: #94a3b8;
+                        text-transform: uppercase;
+                        letter-spacing: 0.05em;
+                      "
+                      >Skills Used</span
+                    >
+                    <div class="i-skills" style="margin-top: 4px">
+                      <span class="i-skill-badge agents"
+                        >🔀 Parallel Agents</span
+                      >
+                      <span class="i-skill-badge skills">⚡ Custom Skills</span>
+                      <span class="i-skill-badge playwright"
+                        >🎭 Playwright</span
+                      >
+                      <span class="i-skill-badge hooks">🪝 Hooks</span>
+                      <span class="i-skill-badge mcp">🔌 MCP Servers</span>
+                      <span class="i-skill-badge review">📝 Code Review</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Row 2: Sarah -->
+              <div class="i-contributor-row">
+                <img
+                  src="https://api.dicebear.com/7.x/initials/svg?seed=SA&backgroundColor=6366f1"
+                  alt=""
+                  style="width: 48px; height: 48px; border-radius: 50%"
+                />
+                <div class="i-contributor-info">
+                  <div class="name">sarahdev</div>
+                  <div class="handle">
+                    @sarahdev · Apr 1, 2026 · 24 days tracked
+                  </div>
+                  <div class="i-contributor-stats">
+                    <span class="stat"><strong>246</strong> msgs/wk</span>
+                    <span class="stat"><strong>6,806</strong> lines/wk</span>
+                    <span class="stat" style="color: #16a34a"
+                      >+22,105 added</span
+                    >
+                    <span class="stat" style="color: #dc2626"
+                      >-1,230 removed</span
+                    >
+                    <span class="stat"><strong>189</strong> files</span>
+                    <span class="stat"><strong>87</strong> commits</span>
+                  </div>
+                  <div style="margin-top: 8px">
+                    <span
+                      style="
+                        font-size: 11px;
+                        font-weight: 600;
+                        color: #94a3b8;
+                        text-transform: uppercase;
+                        letter-spacing: 0.05em;
+                      "
+                      >Skills Used</span
+                    >
+                    <div class="i-skills" style="margin-top: 4px">
+                      <span class="i-skill-badge worktrees">🌳 Worktrees</span>
+                      <span class="i-skill-badge plan">📋 Plan Mode</span>
+                      <span class="i-skill-badge review">📝 Code Review</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Row 3: Mike -->
+              <div class="i-contributor-row">
+                <img
+                  src="https://api.dicebear.com/7.x/initials/svg?seed=MK&backgroundColor=059669"
+                  alt=""
+                  style="width: 48px; height: 48px; border-radius: 50%"
+                />
+                <div class="i-contributor-info">
+                  <div class="name">Mike Kim</div>
+                  <div class="handle">
+                    @mikekim · Mar 28, 2026 · 30 days tracked
+                  </div>
+                  <div class="i-contributor-stats">
+                    <span class="stat"><strong>491</strong> msgs/wk</span>
+                    <span class="stat"><strong>19,370</strong> lines/wk</span>
+                    <span class="stat" style="color: #16a34a"
+                      >+91,230 added</span
+                    >
+                    <span class="stat" style="color: #dc2626"
+                      >-8,422 removed</span
+                    >
+                    <span class="stat"><strong>612</strong> files</span>
+                    <span class="stat"><strong>210</strong> commits</span>
+                  </div>
+                  <div style="margin-top: 8px">
+                    <span
+                      style="
+                        font-size: 11px;
+                        font-weight: 600;
+                        color: #94a3b8;
+                        text-transform: uppercase;
+                        letter-spacing: 0.05em;
+                      "
+                      >Skills Used</span
+                    >
+                    <div class="i-skills" style="margin-top: 4px">
+                      <span class="i-skill-badge agents"
+                        >🔀 Parallel Agents</span
+                      >
+                      <span class="i-skill-badge worktrees">🌳 Worktrees</span>
+                      <span class="i-skill-badge skills">⚡ Custom Skills</span>
+                      <span class="i-skill-badge hooks">🪝 Hooks</span>
+                      <span class="i-skill-badge mcp">🔌 MCP Servers</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="version-nav">
+        <button data-dir="prev" disabled>&larr; Prev</button
+        ><span class="version-label">v2 of 2</span
+        ><button data-dir="next" disabled>Next &rarr;</button>
+      </div>
+      <div class="feedback-area">
+        <label for="fb-homepage">Feedback</label
+        ><textarea
+          id="fb-homepage"
+          placeholder="Voice transcribe or type feedback for this section..."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ═══════════════════════════════════════════════════════
+     SECTION 2: Report Detail — Snapshot + Collapsible
+     ═══════════════════════════════════════════════════════ -->
+    <div class="mockup-section wide" data-section-id="detail" id="detail">
+      <span class="section-label">Report Detail — Redesigned</span>
+      <p class="section-desc">
+        Top snapshot card with stats, tool chart, skill badges, and key pattern.
+        Sections below are collapsible with summary headers.
+      </p>
+
+      <div class="version-container">
+        <div class="version" data-version="1">
+          <div class="design-note info">
+            <strong>Note:</strong> v1 — see v2 for updated version. The snapshot
+            card surfaces the most interesting data immediately. Sections
+            collapse to show summaries, expandable for full content.
+          </div>
+
+          <div class="i-page">
+            <div class="i-detail">
+              <!-- Author row -->
+              <div class="i-detail-author">
+                <img
+                  src="https://avatars.githubusercontent.com/u/124315902?v=4"
+                  alt=""
+                />
+                <div class="info">
+                  <div class="name">craigdossantos</div>
+                  <div class="date">Apr 3, 2026 · Mar 2 – Apr 2, 2026</div>
+                </div>
+              </div>
+
+              <!-- ══ SNAPSHOT CARD ══ -->
+              <div class="i-snapshot">
+                <!-- Stats bar -->
+                <div class="i-stats-bar">
+                  <div class="i-stat">
+                    <div class="val">126</div>
+                    <div class="label">Sessions</div>
+                  </div>
+                  <div class="i-stat">
+                    <div class="val">1,268</div>
+                    <div class="label">Messages</div>
+                  </div>
+                  <div class="i-stat">
+                    <div class="val green">+47,313</div>
+                    <div class="label">Lines Added</div>
+                  </div>
+                  <div class="i-stat">
+                    <div class="val red">-2,967</div>
+                    <div class="label">Removed</div>
+                  </div>
+                  <div class="i-stat">
+                    <div class="val">405</div>
+                    <div class="label">Files</div>
+                  </div>
+                  <div class="i-stat">
+                    <div class="val">18</div>
+                    <div class="label">Days</div>
+                  </div>
+                  <div class="i-stat">
+                    <div class="val">70.4</div>
+                    <div class="label">Msgs/Day</div>
+                  </div>
+                  <div class="i-stat">
+                    <div class="val">124</div>
+                    <div class="label">Commits</div>
+                  </div>
+                </div>
+
+                <!-- Tool usage chart -->
+                <div class="i-tool-chart">
+                  <h3>Top Tools Used</h3>
+                  <div class="i-bar-row">
+                    <div class="i-bar-label">Bash</div>
+                    <div class="i-bar-track">
+                      <div class="i-bar-fill" style="width: 100%"></div>
+                    </div>
+                    <div class="i-bar-value">2,922</div>
+                  </div>
+                  <div class="i-bar-row">
+                    <div class="i-bar-label">Read</div>
+                    <div class="i-bar-track">
+                      <div class="i-bar-fill" style="width: 45%"></div>
+                    </div>
+                    <div class="i-bar-value">1,318</div>
+                  </div>
+                  <div class="i-bar-row">
+                    <div class="i-bar-label">Edit</div>
+                    <div class="i-bar-track">
+                      <div class="i-bar-fill" style="width: 24%"></div>
+                    </div>
+                    <div class="i-bar-value">714</div>
+                  </div>
+                  <div class="i-bar-row">
+                    <div class="i-bar-label">TaskUpdate</div>
+                    <div class="i-bar-track">
+                      <div class="i-bar-fill" style="width: 13%"></div>
+                    </div>
+                    <div class="i-bar-value">374</div>
+                  </div>
+                  <div class="i-bar-row">
+                    <div class="i-bar-label">Grep</div>
+                    <div class="i-bar-track">
+                      <div class="i-bar-fill" style="width: 13%"></div>
+                    </div>
+                    <div class="i-bar-value">374</div>
+                  </div>
+                  <div class="i-bar-row">
+                    <div class="i-bar-label">Agent</div>
+                    <div class="i-bar-track">
+                      <div class="i-bar-fill" style="width: 11%"></div>
+                    </div>
+                    <div class="i-bar-value">319</div>
+                  </div>
+                </div>
+
+                <!-- Skills badges -->
+                <div class="i-skills-row">
+                  <h3>Skills & Features Used</h3>
+                  <div class="i-skills">
+                    <span class="i-skill-badge agents">🔀 Parallel Agents</span>
+                    <span class="i-skill-badge skills">⚡ Custom Skills</span>
+                    <span class="i-skill-badge playwright">🎭 Playwright</span>
+                    <span class="i-skill-badge hooks">🪝 Hooks</span>
+                    <span class="i-skill-badge mcp">🔌 MCP Servers</span>
+                    <span class="i-skill-badge review">📝 Code Review</span>
+                    <span class="i-skill-badge plan">📋 Plan Mode</span>
+                  </div>
+                </div>
+
+                <!-- Key pattern -->
+                <div class="i-key-pattern">
+                  <p>
+                    "Operates as a high-trust project manager who delegates
+                    ambitious multi-phase tasks to Claude, lets it run
+                    autonomously, and iteratively course-corrects through rapid
+                    QA cycles until production-ready."
+                  </p>
+                </div>
+              </div>
+
+              <!-- ══ COLLAPSIBLE SECTIONS ══ -->
+
+              <!-- At a Glance — always open -->
+              <div class="i-section-card">
+                <div
+                  class="i-section-header"
+                  onclick="
+                    this.nextElementSibling.style.display =
+                      this.nextElementSibling.style.display === 'none'
+                        ? 'block'
+                        : 'none';
+                    this.querySelector('.i-section-chevron').classList.toggle(
+                      'open',
+                    );
+                  "
+                >
+                  <div class="i-section-icon glance">✨</div>
+                  <div class="i-section-title">
+                    <h3>At a Glance</h3>
+                  </div>
+                  <span class="i-section-chevron open">▾</span>
+                </div>
+                <div class="i-section-body">
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: 1fr 1fr;
+                      gap: 12px;
+                      margin-top: 16px;
+                    "
+                  >
+                    <div
+                      style="
+                        background: #f0fdf4;
+                        border: 1px solid #bbf7d0;
+                        border-radius: 10px;
+                        padding: 14px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-weight: 600;
+                          font-size: 13px;
+                          color: #166534;
+                          margin-bottom: 6px;
+                        "
+                      >
+                        What's Working
+                      </div>
+                      <div
+                        style="
+                          font-size: 14px;
+                          color: #15803d;
+                          line-height: 1.6;
+                        "
+                      >
+                        Developed a genuinely powerful workflow using Claude as
+                        a team coordinator — spinning up parallel agents for
+                        everything from course site generation to implementation
+                        plan reviews.
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        background: #fef2f2;
+                        border: 1px solid #fca5a5;
+                        border-radius: 10px;
+                        padding: 14px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-weight: 600;
+                          font-size: 13px;
+                          color: #991b1b;
+                          margin-bottom: 6px;
+                        "
+                      >
+                        What's Hindering
+                      </div>
+                      <div
+                        style="
+                          font-size: 14px;
+                          color: #7f1d1d;
+                          line-height: 1.6;
+                        "
+                      >
+                        Claude too often starts with the wrong approach —
+                        approximating instead of using real data, reading when
+                        it should generate, ignoring explicit instructions.
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        background: #eff6ff;
+                        border: 1px solid #93c5fd;
+                        border-radius: 10px;
+                        padding: 14px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-weight: 600;
+                          font-size: 13px;
+                          color: #1e40af;
+                          margin-bottom: 6px;
+                        "
+                      >
+                        Quick Wins
+                      </div>
+                      <div
+                        style="
+                          font-size: 14px;
+                          color: #1e3a8a;
+                          line-height: 1.6;
+                        "
+                      >
+                        Try using hooks to auto-run your test suite before
+                        commits. Consider running Claude in headless mode with
+                        pre-validated MCP connections.
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        background: #f5f3ff;
+                        border: 1px solid #c4b5fd;
+                        border-radius: 10px;
+                        padding: 14px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-weight: 600;
+                          font-size: 13px;
+                          color: #5b21b6;
+                          margin-bottom: 6px;
+                        "
+                      >
+                        On the Horizon
+                      </div>
+                      <div
+                        style="
+                          font-size: 14px;
+                          color: #6d28d9;
+                          line-height: 1.6;
+                        "
+                      >
+                        Autonomous test-fix loops where parallel agents each own
+                        a test suite and iterate until green without needing you
+                        to say 'continue.'
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Interaction Style — collapsed -->
+              <div class="i-section-card">
+                <div
+                  class="i-section-header"
+                  onclick="
+                    this.nextElementSibling.style.display =
+                      this.nextElementSibling.style.display === 'none'
+                        ? 'block'
+                        : 'none';
+                    this.querySelector('.i-section-chevron').classList.toggle(
+                      'open',
+                    );
+                  "
+                >
+                  <div class="i-section-icon style">🎯</div>
+                  <div class="i-section-title">
+                    <h3>How They Use Claude Code</h3>
+                    <p>
+                      High-velocity orchestrator who treats Claude Code as a
+                      full-stack engineering partner rather than a simple coding
+                      assistant.
+                    </p>
+                  </div>
+                  <span class="i-section-chevron">▾</span>
+                </div>
+                <div class="i-section-body" style="display: none">
+                  <p>
+                    Across 102 sessions in a single month, consistently
+                    delegates ambitious, multi-phase projects — redesigning
+                    entire UIs, running 82-step QA checklists, building course
+                    sites with 19 parallel agents, and executing 6-task launch
+                    hardening plans. The style is to set big goals and let
+                    Claude run, often kicking off parallel agent workflows and
+                    trusting Claude to handle multi-file changes.
+                  </p>
+                  <p style="margin-top: 12px">
+                    The interaction pattern is distinctly iterative and
+                    QA-driven. Rarely provides exhaustive upfront specs;
+                    instead, launches into implementation, reviews the output,
+                    and then runs multiple fix cycles. The heavy Bash usage
+                    (2,922 calls) confirms constant builds, tests, and
+                    deployments — treating each session as a real production
+                    push.
+                  </p>
+                  <div class="key-insight" style="margin-top: 16px">
+                    <strong>Key pattern:</strong> High-trust project manager who
+                    delegates ambitious multi-phase tasks, lets Claude run
+                    autonomously, and iteratively course-corrects through rapid
+                    QA cycles.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Project Areas — collapsed -->
+              <div class="i-section-card">
+                <div
+                  class="i-section-header"
+                  onclick="
+                    this.nextElementSibling.style.display =
+                      this.nextElementSibling.style.display === 'none'
+                        ? 'block'
+                        : 'none';
+                    this.querySelector('.i-section-chevron').classList.toggle(
+                      'open',
+                    );
+                  "
+                >
+                  <div class="i-section-icon projects">📁</div>
+                  <div class="i-section-title">
+                    <h3>Project Areas</h3>
+                    <p>5 project areas across ~55 sessions</p>
+                  </div>
+                  <span class="i-section-chevron">▾</span>
+                </div>
+                <div class="i-section-body" style="display: none">
+                  <div class="i-project-grid">
+                    <div class="i-project-card">
+                      <div class="name">Appeal Mailer SaaS</div>
+                      <div class="sessions">~18 sessions</div>
+                      <div class="desc">
+                        Building and launching a health insurance appeal letter
+                        SaaS app with full UI redesign, schema migrations,
+                        Stripe payments, and deployment.
+                      </div>
+                    </div>
+                    <div class="i-project-card">
+                      <div class="name">Whispergram Audio Platform</div>
+                      <div class="sessions">~12 sessions</div>
+                      <div class="desc">
+                        Collaborative audio gift compilation platform. UX
+                        polish, clip ordering, audio ducking, music playback via
+                        Supabase.
+                      </div>
+                    </div>
+                    <div class="i-project-card">
+                      <div class="name">CourseCapture Pipeline</div>
+                      <div class="sessions">~5 sessions</div>
+                      <div class="desc">
+                        Video scraping, transcription, slide extraction, and
+                        static site generation with 19 parallel blog post
+                        agents.
+                      </div>
+                    </div>
+                    <div class="i-project-card">
+                      <div class="name">LighterSky Sites</div>
+                      <div class="sessions">~8 sessions</div>
+                      <div class="desc">
+                        Business planning, website launches, booking site for
+                        wedding, research dashboards, and explainer sites.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Impressive Workflows — collapsed -->
+              <div class="i-section-card">
+                <div
+                  class="i-section-header"
+                  onclick="
+                    this.nextElementSibling.style.display =
+                      this.nextElementSibling.style.display === 'none'
+                        ? 'block'
+                        : 'none';
+                    this.querySelector('.i-section-chevron').classList.toggle(
+                      'open',
+                    );
+                  "
+                >
+                  <div class="i-section-icon workflows">🏆</div>
+                  <div class="i-section-title">
+                    <h3>Impressive Workflows</h3>
+                    <p>
+                      Developed a genuinely powerful workflow using Claude as a
+                      team coordinator — spinning up parallel agents...
+                    </p>
+                  </div>
+                  <span class="i-section-chevron">▾</span>
+                </div>
+                <div class="i-section-body" style="display: none">
+                  <p>
+                    Content expands here with the full impressive workflows
+                    details...
+                  </p>
+                </div>
+              </div>
+
+              <!-- Friction — collapsed -->
+              <div class="i-section-card">
+                <div
+                  class="i-section-header"
+                  onclick="
+                    this.nextElementSibling.style.display =
+                      this.nextElementSibling.style.display === 'none'
+                        ? 'block'
+                        : 'none';
+                    this.querySelector('.i-section-chevron').classList.toggle(
+                      'open',
+                    );
+                  "
+                >
+                  <div class="i-section-icon friction">⚡</div>
+                  <div class="i-section-title">
+                    <h3>Where Things Go Wrong</h3>
+                    <p>
+                      Claude too often starts with the wrong approach —
+                      approximating instead of using real data...
+                    </p>
+                  </div>
+                  <span class="i-section-chevron">▾</span>
+                </div>
+                <div class="i-section-body" style="display: none">
+                  <p>Content expands here...</p>
+                </div>
+              </div>
+
+              <!-- Suggestions — collapsed -->
+              <div class="i-section-card">
+                <div
+                  class="i-section-header"
+                  onclick="
+                    this.nextElementSibling.style.display =
+                      this.nextElementSibling.style.display === 'none'
+                        ? 'block'
+                        : 'none';
+                    this.querySelector('.i-section-chevron').classList.toggle(
+                      'open',
+                    );
+                  "
+                >
+                  <div class="i-section-icon suggestions">💡</div>
+                  <div class="i-section-title">
+                    <h3>Suggestions</h3>
+                    <p>
+                      Try using hooks to auto-run your test suite or lint checks
+                      before commits...
+                    </p>
+                  </div>
+                  <span class="i-section-chevron">▾</span>
+                </div>
+                <div class="i-section-body" style="display: none">
+                  <p>Content expands here...</p>
+                </div>
+              </div>
+
+              <!-- Horizon — collapsed -->
+              <div class="i-section-card">
+                <div
+                  class="i-section-header"
+                  onclick="
+                    this.nextElementSibling.style.display =
+                      this.nextElementSibling.style.display === 'none'
+                        ? 'block'
+                        : 'none';
+                    this.querySelector('.i-section-chevron').classList.toggle(
+                      'open',
+                    );
+                  "
+                >
+                  <div class="i-section-icon horizon">🔮</div>
+                  <div class="i-section-title">
+                    <h3>On the Horizon</h3>
+                    <p>
+                      Autonomous test-fix loops where parallel agents each own a
+                      test suite and iterate until green...
+                    </p>
+                  </div>
+                  <span class="i-section-chevron">▾</span>
+                </div>
+                <div class="i-section-body" style="display: none">
+                  <p>Content expands here...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ DETAIL V2 ═══ -->
+        <div class="version active" data-version="2">
+          <div class="design-note">
+            <strong>Change (v2):</strong> Replaced "Top Tools Used" chart with
+            "Skills & Features" as primary. Expanded section summaries to 2-3
+            lines. Tool chart moved below skills as secondary info.
+          </div>
+
+          <div class="i-page">
+            <div class="i-detail">
+              <div class="i-detail-author">
+                <img
+                  src="https://avatars.githubusercontent.com/u/124315902?v=4"
+                  alt=""
+                />
+                <div class="info">
+                  <div class="name">craigdossantos</div>
+                  <div class="date">
+                    Apr 3, 2026 · Mar 2 – Apr 2, 2026 · 18 days tracked
+                  </div>
+                </div>
+              </div>
+
+              <!-- ══ SNAPSHOT CARD v2 ══ -->
+              <div class="i-snapshot">
+                <div class="i-stats-bar">
+                  <div class="i-stat">
+                    <div class="val">126</div>
+                    <div class="label">Sessions</div>
+                  </div>
+                  <div class="i-stat">
+                    <div class="val">1,268</div>
+                    <div class="label">Messages</div>
+                  </div>
+                  <div class="i-stat">
+                    <div class="val">493</div>
+                    <div class="label">Msgs/Week</div>
+                  </div>
+                  <div class="i-stat">
+                    <div class="val green">+47,313</div>
+                    <div class="label">Lines Added</div>
+                  </div>
+                  <div class="i-stat">
+                    <div class="val red">-2,967</div>
+                    <div class="label">Removed</div>
+                  </div>
+                  <div class="i-stat">
+                    <div class="val">405</div>
+                    <div class="label">Files</div>
+                  </div>
+                  <div class="i-stat">
+                    <div class="val">124</div>
+                    <div class="label">Commits</div>
+                  </div>
+                </div>
+
+                <!-- Skills & features FIRST (more useful than tools) -->
+                <div class="i-skills-row">
+                  <h3>Skills & Features Used</h3>
+                  <div class="i-skills">
+                    <span class="i-skill-badge agents">🔀 Parallel Agents</span>
+                    <span class="i-skill-badge skills">⚡ Custom Skills</span>
+                    <span class="i-skill-badge playwright">🎭 Playwright</span>
+                    <span class="i-skill-badge hooks">🪝 Hooks</span>
+                    <span class="i-skill-badge mcp">🔌 MCP Servers</span>
+                    <span class="i-skill-badge review">📝 Code Review</span>
+                    <span class="i-skill-badge plan">📋 Plan Mode</span>
+                  </div>
+                </div>
+
+                <!-- Key pattern -->
+                <div class="i-key-pattern">
+                  <p>
+                    "Operates as a high-trust project manager who delegates
+                    ambitious multi-phase tasks to Claude, lets it run
+                    autonomously, and iteratively course-corrects through rapid
+                    QA cycles until production-ready."
+                  </p>
+                </div>
+
+                <!-- Tool chart SECONDARY (collapsed by default) -->
+                <div style="margin-top: 20px">
+                  <details>
+                    <summary
+                      style="
+                        font-size: 11px;
+                        font-weight: 600;
+                        color: #94a3b8;
+                        text-transform: uppercase;
+                        letter-spacing: 0.05em;
+                        cursor: pointer;
+                        padding: 4px 0;
+                      "
+                    >
+                      Top Tools Used ▸
+                    </summary>
+                    <div style="margin-top: 10px">
+                      <div class="i-bar-row">
+                        <div class="i-bar-label">Bash</div>
+                        <div class="i-bar-track">
+                          <div class="i-bar-fill" style="width: 100%"></div>
+                        </div>
+                        <div class="i-bar-value">2,922</div>
+                      </div>
+                      <div class="i-bar-row">
+                        <div class="i-bar-label">Read</div>
+                        <div class="i-bar-track">
+                          <div class="i-bar-fill" style="width: 45%"></div>
+                        </div>
+                        <div class="i-bar-value">1,318</div>
+                      </div>
+                      <div class="i-bar-row">
+                        <div class="i-bar-label">Edit</div>
+                        <div class="i-bar-track">
+                          <div class="i-bar-fill" style="width: 24%"></div>
+                        </div>
+                        <div class="i-bar-value">714</div>
+                      </div>
+                      <div class="i-bar-row">
+                        <div class="i-bar-label">TaskUpdate</div>
+                        <div class="i-bar-track">
+                          <div class="i-bar-fill" style="width: 13%"></div>
+                        </div>
+                        <div class="i-bar-value">374</div>
+                      </div>
+                      <div class="i-bar-row">
+                        <div class="i-bar-label">Grep</div>
+                        <div class="i-bar-track">
+                          <div class="i-bar-fill" style="width: 13%"></div>
+                        </div>
+                        <div class="i-bar-value">374</div>
+                      </div>
+                      <div class="i-bar-row">
+                        <div class="i-bar-label">Agent</div>
+                        <div class="i-bar-track">
+                          <div class="i-bar-fill" style="width: 11%"></div>
+                        </div>
+                        <div class="i-bar-value">319</div>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </div>
+
+              <!-- ══ COLLAPSIBLE SECTIONS v2 — expanded summaries ══ -->
+
+              <!-- At a Glance — always open -->
+              <div class="i-section-card">
+                <div
+                  class="i-section-header"
+                  onclick="
+                    this.nextElementSibling.style.display =
+                      this.nextElementSibling.style.display === 'none'
+                        ? 'block'
+                        : 'none';
+                    this.querySelector('.i-section-chevron').classList.toggle(
+                      'open',
+                    );
+                  "
+                >
+                  <div class="i-section-icon glance">✨</div>
+                  <div class="i-section-title"><h3>At a Glance</h3></div>
+                  <span class="i-section-chevron open">▾</span>
+                </div>
+                <div class="i-section-body">
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: 1fr 1fr;
+                      gap: 12px;
+                      margin-top: 16px;
+                    "
+                  >
+                    <div
+                      style="
+                        background: #f0fdf4;
+                        border: 1px solid #bbf7d0;
+                        border-radius: 10px;
+                        padding: 14px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-weight: 600;
+                          font-size: 13px;
+                          color: #166534;
+                          margin-bottom: 6px;
+                        "
+                      >
+                        What's Working
+                      </div>
+                      <div
+                        style="
+                          font-size: 14px;
+                          color: #15803d;
+                          line-height: 1.6;
+                        "
+                      >
+                        Developed a genuinely powerful workflow using Claude as
+                        a team coordinator — spinning up parallel agents for
+                        everything from course site generation to implementation
+                        plan reviews.
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        background: #fef2f2;
+                        border: 1px solid #fca5a5;
+                        border-radius: 10px;
+                        padding: 14px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-weight: 600;
+                          font-size: 13px;
+                          color: #991b1b;
+                          margin-bottom: 6px;
+                        "
+                      >
+                        What's Hindering
+                      </div>
+                      <div
+                        style="
+                          font-size: 14px;
+                          color: #7f1d1d;
+                          line-height: 1.6;
+                        "
+                      >
+                        Claude too often starts with the wrong approach —
+                        approximating instead of using real data, reading when
+                        it should generate, ignoring explicit instructions.
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        background: #eff6ff;
+                        border: 1px solid #93c5fd;
+                        border-radius: 10px;
+                        padding: 14px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-weight: 600;
+                          font-size: 13px;
+                          color: #1e40af;
+                          margin-bottom: 6px;
+                        "
+                      >
+                        Quick Wins
+                      </div>
+                      <div
+                        style="
+                          font-size: 14px;
+                          color: #1e3a8a;
+                          line-height: 1.6;
+                        "
+                      >
+                        Try using hooks to auto-run your test suite before
+                        commits. Consider running Claude in headless mode with
+                        pre-validated MCP connections.
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        background: #f5f3ff;
+                        border: 1px solid #c4b5fd;
+                        border-radius: 10px;
+                        padding: 14px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-weight: 600;
+                          font-size: 13px;
+                          color: #5b21b6;
+                          margin-bottom: 6px;
+                        "
+                      >
+                        On the Horizon
+                      </div>
+                      <div
+                        style="
+                          font-size: 14px;
+                          color: #6d28d9;
+                          line-height: 1.6;
+                        "
+                      >
+                        Autonomous test-fix loops where parallel agents each own
+                        a test suite and iterate until green without needing you
+                        to say 'continue.'
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Interaction Style — 2-3 line summary -->
+              <div class="i-section-card">
+                <div
+                  class="i-section-header"
+                  onclick="
+                    this.nextElementSibling.style.display =
+                      this.nextElementSibling.style.display === 'none'
+                        ? 'block'
+                        : 'none';
+                    this.querySelector('.i-section-chevron').classList.toggle(
+                      'open',
+                    );
+                  "
+                >
+                  <div class="i-section-icon style">🎯</div>
+                  <div class="i-section-title">
+                    <h3>How They Use Claude Code</h3>
+                    <p>
+                      A high-velocity orchestrator who treats Claude Code as a
+                      full-stack engineering partner. Across 102 sessions in a
+                      single month, consistently delegates ambitious,
+                      multi-phase projects — redesigning entire UIs, running
+                      82-step QA checklists, and building course sites with 19
+                      parallel agents.
+                    </p>
+                  </div>
+                  <span class="i-section-chevron">▾</span>
+                </div>
+                <div class="i-section-body" style="display: none">
+                  <p>
+                    The style is to set big goals and let Claude run, often
+                    kicking off parallel agent workflows and trusting Claude to
+                    handle multi-file changes. Doesn't micromanage; instead,
+                    course-corrects when things go wrong — 47 instances of wrong
+                    approach and 42 of buggy code — but handles friction
+                    pragmatically, redirecting rather than abandoning.
+                  </p>
+                  <p style="margin-top: 12px">
+                    The interaction pattern is distinctly iterative and
+                    QA-driven. Rarely provides exhaustive upfront specs;
+                    instead, launches into implementation, reviews the output,
+                    and then runs multiple fix cycles. The heavy Bash usage
+                    (2,922 calls) confirms constant builds, tests, and
+                    deployments — treating each session as a real production
+                    push.
+                  </p>
+                  <div class="key-insight" style="margin-top: 16px">
+                    <strong>Key pattern:</strong> High-trust project manager who
+                    delegates ambitious multi-phase tasks, lets Claude run
+                    autonomously, and iteratively course-corrects through rapid
+                    QA cycles.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Project Areas — 2-3 line summary -->
+              <div class="i-section-card">
+                <div
+                  class="i-section-header"
+                  onclick="
+                    this.nextElementSibling.style.display =
+                      this.nextElementSibling.style.display === 'none'
+                        ? 'block'
+                        : 'none';
+                    this.querySelector('.i-section-chevron').classList.toggle(
+                      'open',
+                    );
+                  "
+                >
+                  <div class="i-section-icon projects">📁</div>
+                  <div class="i-section-title">
+                    <h3>Project Areas</h3>
+                    <p>
+                      5 project areas across ~55 sessions. Major projects
+                      include a SaaS app (Appeal Mailer), an audio gift platform
+                      (Whispergram), a course content pipeline with parallel
+                      agents, and multiple business/marketing sites.
+                    </p>
+                  </div>
+                  <span class="i-section-chevron">▾</span>
+                </div>
+                <div class="i-section-body" style="display: none">
+                  <div class="i-project-grid">
+                    <div class="i-project-card">
+                      <div class="name">Appeal Mailer SaaS</div>
+                      <div class="sessions">~18 sessions</div>
+                      <div class="desc">
+                        Building and launching a health insurance appeal letter
+                        SaaS app with full UI redesign, schema migrations,
+                        Stripe payments, and deployment.
+                      </div>
+                    </div>
+                    <div class="i-project-card">
+                      <div class="name">Whispergram Audio Platform</div>
+                      <div class="sessions">~12 sessions</div>
+                      <div class="desc">
+                        Collaborative audio gift compilation platform. UX
+                        polish, clip ordering, audio ducking, music playback via
+                        Supabase.
+                      </div>
+                    </div>
+                    <div class="i-project-card">
+                      <div class="name">CourseCapture Pipeline</div>
+                      <div class="sessions">~5 sessions</div>
+                      <div class="desc">
+                        Video scraping, transcription, slide extraction, and
+                        static site generation with 19 parallel blog post
+                        agents.
+                      </div>
+                    </div>
+                    <div class="i-project-card">
+                      <div class="name">LighterSky Sites</div>
+                      <div class="sessions">~8 sessions</div>
+                      <div class="desc">
+                        Business planning, website launches, booking site for
+                        wedding, research dashboards, and explainer sites.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Impressive Workflows — 2-3 line summary -->
+              <div class="i-section-card">
+                <div
+                  class="i-section-header"
+                  onclick="
+                    this.nextElementSibling.style.display =
+                      this.nextElementSibling.style.display === 'none'
+                        ? 'block'
+                        : 'none';
+                    this.querySelector('.i-section-chevron').classList.toggle(
+                      'open',
+                    );
+                  "
+                >
+                  <div class="i-section-icon workflows">🏆</div>
+                  <div class="i-section-title">
+                    <h3>Impressive Workflows</h3>
+                    <p>
+                      Developed a genuinely powerful workflow using Claude as a
+                      team coordinator — spinning up parallel agents for
+                      everything from course site generation to implementation
+                      plan reviews. Most impressive sessions combine planning,
+                      multi-file implementation, and deployment into single
+                      flows.
+                    </p>
+                  </div>
+                  <span class="i-section-chevron">▾</span>
+                </div>
+                <div class="i-section-body" style="display: none">
+                  <p>
+                    Full impressive workflows content expands here with detailed
+                    examples of each standout workflow...
+                  </p>
+                </div>
+              </div>
+
+              <!-- Friction — 2-3 line summary -->
+              <div class="i-section-card">
+                <div
+                  class="i-section-header"
+                  onclick="
+                    this.nextElementSibling.style.display =
+                      this.nextElementSibling.style.display === 'none'
+                        ? 'block'
+                        : 'none';
+                    this.querySelector('.i-section-chevron').classList.toggle(
+                      'open',
+                    );
+                  "
+                >
+                  <div class="i-section-icon friction">⚡</div>
+                  <div class="i-section-title">
+                    <h3>Where Things Go Wrong</h3>
+                    <p>
+                      Claude too often starts with the wrong approach —
+                      approximating instead of using real data, reading when it
+                      should generate, ignoring explicit instructions like using
+                      Codex CLI. MCP and Playwright configuration issues
+                      derailed at least six sessions without a permanent fix.
+                    </p>
+                  </div>
+                  <span class="i-section-chevron">▾</span>
+                </div>
+                <div class="i-section-body" style="display: none">
+                  <p>
+                    Full friction analysis with categories and examples expands
+                    here...
+                  </p>
+                </div>
+              </div>
+
+              <!-- Suggestions — 2-3 line summary -->
+              <div class="i-section-card">
+                <div
+                  class="i-section-header"
+                  onclick="
+                    this.nextElementSibling.style.display =
+                      this.nextElementSibling.style.display === 'none'
+                        ? 'block'
+                        : 'none';
+                    this.querySelector('.i-section-chevron').classList.toggle(
+                      'open',
+                    );
+                  "
+                >
+                  <div class="i-section-icon suggestions">💡</div>
+                  <div class="i-section-title">
+                    <h3>Suggestions</h3>
+                    <p>
+                      Try using hooks to auto-run your test suite or lint checks
+                      before commits — this could catch many of the buggy code
+                      issues that currently require multiple fix rounds. Also
+                      consider running Claude in headless mode with
+                      pre-validated MCP connections.
+                    </p>
+                  </div>
+                  <span class="i-section-chevron">▾</span>
+                </div>
+                <div class="i-section-body" style="display: none">
+                  <p>
+                    Full suggestions with CLAUDE.md additions, features to try,
+                    and usage patterns expand here...
+                  </p>
+                </div>
+              </div>
+
+              <!-- Horizon — 2-3 line summary -->
+              <div class="i-section-card">
+                <div
+                  class="i-section-header"
+                  onclick="
+                    this.nextElementSibling.style.display =
+                      this.nextElementSibling.style.display === 'none'
+                        ? 'block'
+                        : 'none';
+                    this.querySelector('.i-section-chevron').classList.toggle(
+                      'open',
+                    );
+                  "
+                >
+                  <div class="i-section-icon horizon">🔮</div>
+                  <div class="i-section-title">
+                    <h3>On the Horizon</h3>
+                    <p>
+                      As models get more capable, autonomous test-fix loops
+                      where parallel agents each own a test suite and iterate
+                      until green. Even more powerful: a full PR pipeline where
+                      one agent implements, a second reviews, and a third runs
+                      CI — all in parallel.
+                    </p>
+                  </div>
+                  <span class="i-section-chevron">▾</span>
+                </div>
+                <div class="i-section-body" style="display: none">
+                  <p>
+                    Full horizon opportunities with copyable prompts expand
+                    here...
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="version-nav">
+        <button data-dir="prev" disabled>&larr; Prev</button
+        ><span class="version-label">v2 of 2</span
+        ><button data-dir="next" disabled>Next &rarr;</button>
+      </div>
+      <div class="feedback-area">
+        <label for="fb-detail">Feedback</label
+        ><textarea
+          id="fb-detail"
+          placeholder="Voice transcribe or type feedback for this section..."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div style="height: 80px"></div>
+
+    <script>
+      // Viewport toggle
+      document.querySelectorAll(".viewport-toggle button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document
+            .querySelectorAll(".viewport-toggle button")
+            .forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          document.body.classList.remove("viewport-mobile", "viewport-desktop");
+          document.body.classList.add("viewport-" + btn.dataset.viewport);
+        });
+      });
+
+      // Copy all feedback
+      function copyAllFeedback() {
+        const viewport = document.body.classList.contains("viewport-mobile")
+          ? "mobile"
+          : "desktop";
+        const sections = {};
+        document.querySelectorAll(".mockup-section").forEach((s) => {
+          const id = s.dataset.sectionId;
+          const ta = s.querySelector("textarea");
+          const activeVersion = s.querySelector(".version.active");
+          const allVersions = s.querySelectorAll(".version");
+          sections[id] = {
+            feedback: ta ? ta.value : "",
+            viewing_version: activeVersion
+              ? parseInt(activeVersion.dataset.version)
+              : 1,
+            total_versions: allVersions.length,
+            viewport,
+          };
+        });
+        const json = JSON.stringify(
+          {
+            mockup: document.title,
+            timestamp: new Date().toISOString(),
+            viewport,
+            sections,
+          },
+          null,
+          2,
+        );
+        navigator.clipboard.writeText(json).then(() => {
+          const btn = document.querySelector(".copy-all-btn");
+          btn.textContent = "Copied!";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = "Copy All Feedback";
+            btn.classList.remove("copied");
+          }, 2000);
+        });
+      }
+
+      // Version nav
+      document.querySelectorAll(".version-nav button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const container = btn
+            .closest(".mockup-section")
+            .querySelector(".version-container");
+          const versions = container.querySelectorAll(".version");
+          const active = container.querySelector(".version.active");
+          const idx = Array.from(versions).indexOf(active);
+          const dir = btn.dataset.dir === "prev" ? -1 : 1;
+          const next = idx + dir;
+          if (next >= 0 && next < versions.length) {
+            active.classList.remove("active");
+            versions[next].classList.add("active");
+            const nav = btn.closest(".version-nav");
+            nav.querySelector("[data-dir=prev]").disabled = next === 0;
+            nav.querySelector("[data-dir=next]").disabled =
+              next === versions.length - 1;
+            nav.querySelector(".version-label").textContent =
+              `v${next + 1} of ${versions.length}`;
+          }
+        });
+      });
+
+      // Show version nav when >1 version
+      document.querySelectorAll(".mockup-section").forEach((s) => {
+        if (s.querySelectorAll(".version").length > 1) {
+          s.querySelector(".version-nav").classList.add("visible");
+        }
+      });
+
+      // Char count
+      document.querySelectorAll(".feedback-area textarea").forEach((ta) => {
+        const counter = ta.parentElement.querySelector(".char-count");
+        ta.addEventListener("input", () => {
+          counter.textContent = ta.value.length
+            ? ta.value.length + " chars"
+            : "";
+        });
+      });
+    </script>
+  </body>
+</html>

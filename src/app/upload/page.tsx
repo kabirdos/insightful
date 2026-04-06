@@ -252,6 +252,8 @@ export default function UploadPage() {
           msgsPerDay: parsed.stats.msgsPerDay ?? null,
           ...sectionFields,
           projectLinks,
+          chartData: parsed.chartData,
+          detectedSkills: parsed.detectedSkills,
         }),
       });
 
@@ -552,6 +554,38 @@ export default function UploadPage() {
               ))}
             </div>
           )}
+
+          {/* Full content preview */}
+          <div className="mt-8 space-y-6">
+            <h3 className="text-sm font-semibold text-slate-700">
+              Preview: Full Content
+            </h3>
+            <p className="text-xs text-slate-500">
+              This is what others will see. Review carefully before publishing.
+            </p>
+            {SECTION_OPTIONS.map(({ dataKey, sectionType }) => {
+              if (disabledSections[dataKey]) return null;
+              const sectionData = parsed.data[dataKey];
+              if (!sectionData) return null;
+              return (
+                <div
+                  key={dataKey}
+                  className="rounded-lg border border-slate-200 bg-white p-4"
+                >
+                  <SectionRenderer
+                    slug="preview"
+                    sectionKey={dataKey}
+                    sectionType={sectionType}
+                    data={sectionData}
+                    reportId="preview"
+                    voteCount={0}
+                    voted={false}
+                    readOnly
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

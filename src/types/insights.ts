@@ -106,4 +106,127 @@ export interface ParsedInsightsReport {
   };
   data: InsightsData;
   detectedRedactions: RedactionItem[];
+  chartData?: ChartData;
+  detectedSkills?: SkillKey[];
+}
+
+// v2: Chart data parsed from HTML report
+export interface ChartDataPoint {
+  label: string;
+  value: number;
+}
+
+export interface ChartData {
+  toolUsage?: ChartDataPoint[];
+  requestTypes?: ChartDataPoint[];
+  languages?: ChartDataPoint[];
+  sessionTypes?: ChartDataPoint[];
+}
+
+// v2: Closed set of detectable Claude Code skills/features
+export const SKILL_KEYS = [
+  "parallel_agents",
+  "worktrees",
+  "custom_skills",
+  "hooks",
+  "mcp_servers",
+  "playwright",
+  "headless_mode",
+  "plan_mode",
+  "code_review",
+  "subagents",
+] as const;
+
+export type SkillKey = (typeof SKILL_KEYS)[number];
+
+export interface SkillMetadata {
+  key: SkillKey;
+  label: string;
+  icon: string;
+  colorClass: string;
+}
+
+export const SKILL_METADATA: Record<SkillKey, SkillMetadata> = {
+  parallel_agents: {
+    key: "parallel_agents",
+    label: "Parallel Agents",
+    icon: "🔀",
+    colorClass: "bg-violet-100 text-violet-700",
+  },
+  worktrees: {
+    key: "worktrees",
+    label: "Worktrees",
+    icon: "🌳",
+    colorClass: "bg-green-100 text-green-700",
+  },
+  custom_skills: {
+    key: "custom_skills",
+    label: "Custom Skills",
+    icon: "⚡",
+    colorClass: "bg-amber-100 text-amber-700",
+  },
+  hooks: {
+    key: "hooks",
+    label: "Hooks",
+    icon: "🪝",
+    colorClass: "bg-sky-100 text-sky-700",
+  },
+  mcp_servers: {
+    key: "mcp_servers",
+    label: "MCP Servers",
+    icon: "🔌",
+    colorClass: "bg-slate-100 text-slate-700",
+  },
+  playwright: {
+    key: "playwright",
+    label: "Playwright",
+    icon: "🎭",
+    colorClass: "bg-pink-100 text-pink-700",
+  },
+  headless_mode: {
+    key: "headless_mode",
+    label: "Headless Mode",
+    icon: "🤖",
+    colorClass: "bg-indigo-100 text-indigo-700",
+  },
+  plan_mode: {
+    key: "plan_mode",
+    label: "Plan Mode",
+    icon: "📋",
+    colorClass: "bg-emerald-100 text-emerald-700",
+  },
+  code_review: {
+    key: "code_review",
+    label: "Code Review",
+    icon: "📝",
+    colorClass: "bg-red-100 text-red-700",
+  },
+  subagents: {
+    key: "subagents",
+    label: "Subagents",
+    icon: "🧩",
+    colorClass: "bg-teal-100 text-teal-700",
+  },
+};
+
+/**
+ * Type guard: returns true if the given value is a known SkillKey.
+ * Use at any boundary where untrusted data (DB rows, API responses) enters
+ * a context that expects a typed SkillKey.
+ */
+export function isSkillKey(value: unknown): value is SkillKey {
+  return (
+    typeof value === "string" &&
+    (SKILL_KEYS as readonly string[]).includes(value)
+  );
+}
+
+/**
+ * Normalize an unknown input (e.g. `string[]` from Prisma) into a clean
+ * `SkillKey[]`, silently dropping any values that aren't recognized.
+ * Returns an empty array for null/undefined/non-array inputs.
+ */
+export function normalizeSkills(raw: unknown): SkillKey[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(isSkillKey);
 }

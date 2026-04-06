@@ -44,6 +44,10 @@ model InsightReport {
   dayCount      Int?
   msgsPerDay    Float?
 
+  // v2 additions
+  chartData       Json?
+  detectedSkills  String[]   @default([])
+
   // Content sections (stored as redacted JSON)
   atAGlance          Json?
   interactionStyle   Json?

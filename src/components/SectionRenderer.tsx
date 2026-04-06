@@ -36,6 +36,7 @@ interface SectionRendererProps {
   voteCount?: number;
   voted?: boolean;
   annotation?: string | null;
+  readOnly?: boolean;
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -571,6 +572,7 @@ export default function SectionRenderer({
   voteCount = 0,
   voted = false,
   annotation,
+  readOnly = false,
 }: SectionRendererProps) {
   const meta = sectionMeta[sectionType] || sectionMeta.at_a_glance;
 
@@ -659,19 +661,21 @@ export default function SectionRenderer({
       {annotation && <AnnotationCallout body={annotation} />}
 
       {/* Actions */}
-      <div className="mt-5 flex items-center gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
-        <VoteButton
-          slug={slug}
-          reportId={reportId}
-          sectionKey={sectionKey}
-          initialCount={voteCount}
-          initialVoted={voted}
-        />
-        <button className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:bg-amber-50 hover:text-amber-600 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-amber-950/30 dark:hover:text-amber-400">
-          <Star className="h-4 w-4" />
-          Highlight
-        </button>
-      </div>
+      {!readOnly && (
+        <div className="mt-5 flex items-center gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
+          <VoteButton
+            slug={slug}
+            reportId={reportId}
+            sectionKey={sectionKey}
+            initialCount={voteCount}
+            initialVoted={voted}
+          />
+          <button className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:bg-amber-50 hover:text-amber-600 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-amber-950/30 dark:hover:text-amber-400">
+            <Star className="h-4 w-4" />
+            Highlight
+          </button>
+        </div>
+      )}
     </section>
   );
 }

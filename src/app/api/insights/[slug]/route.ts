@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import type { InsightReportDetailContract } from "@/types/api-contracts";
 
 const SECTION_KEYS = [
   "atAGlance",
@@ -22,6 +23,12 @@ export async function GET(
     const session = await auth();
     const userId = session?.user?.id ?? null;
 
+    // v2 invariant: These routes use `include` (not `select`) so ALL scalar fields
+    // on InsightReport flow through to the response automatically. The homepage
+    // (src/app/page.tsx) and detail page (src/app/insights/[slug]/page.tsx) depend
+    // on the following v2 fields being present: chartData, detectedSkills, dayCount,
+    // linesAdded, linesRemoved, fileCount. If you change this to an explicit
+    // `select`, you MUST add those fields explicitly, or the UI will silently break.
     const report = await prisma.insightReport.findUnique({
       where: { slug },
       include: {
@@ -51,6 +58,11 @@ export async function GET(
     if (!report) {
       return NextResponse.json({ error: "Insight not found" }, { status: 404 });
     }
+
+    // v2 compile-time contract check: fails to compile if Prisma ever stops
+    // returning the v2 scalar fields the detail page depends on.
+    const _contractCheck: InsightReportDetailContract = report;
+    void _contractCheck;
 
     // Aggregate vote counts and user's own votes/highlights per section
     const voteCounts: Record<string, number> = {};
