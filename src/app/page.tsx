@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TrendingUp, Clock, Flame, Upload } from "lucide-react";
+import { TrendingUp, Clock, Flame, Upload, Copy, Check } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import clsx from "clsx";
@@ -88,6 +88,33 @@ function SkillBadge({ skill }: { skill: SkillKey }) {
       <span>{meta.icon}</span>
       <span>{meta.label}</span>
     </span>
+  );
+}
+
+function CopyBlock({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <div className="flex items-center gap-2 rounded-md bg-slate-800 px-3 py-2">
+      <code className="flex-1 truncate font-mono text-xs text-slate-200">
+        {text}
+      </code>
+      <button
+        onClick={handleCopy}
+        className="shrink-0 rounded p-1 text-slate-400 hover:text-white transition-colors"
+        title="Copy to clipboard"
+      >
+        {copied ? (
+          <Check className="h-3.5 w-3.5 text-green-400" />
+        ) : (
+          <Copy className="h-3.5 w-3.5" />
+        )}
+      </button>
+    </div>
   );
 }
 
@@ -371,77 +398,186 @@ export default function HomePage() {
 
       {/* Harness Profile Upgrade */}
       <section className="mx-auto max-w-5xl px-4 pb-12 sm:px-6">
-        <div className="flex flex-wrap items-center gap-8 rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-          {/* Mini heatmap preview */}
-          <div className="grid shrink-0 grid-cols-8 gap-[3px] opacity-70">
-            {[
-              0, 1, 2, 0, 3, 1, 2, 4, 1, 3, 0, 2, 1, 4, 3, 0, 2, 0, 4, 3, 0, 1,
-              4, 2, 3, 2, 1, 4, 2, 0, 1, 3,
-            ].map((level, i) => (
-              <div
-                key={i}
-                className={clsx(
-                  "h-5 w-5 rounded-[3px]",
-                  level === 0 && "bg-slate-100",
-                  level === 1 && "bg-blue-200",
-                  level === 2 && "bg-blue-400",
-                  level === 3 && "bg-blue-600",
-                  level === 4 && "bg-blue-800",
-                )}
-              />
-            ))}
-          </div>
-          <div className="flex-1 min-w-[240px]">
-            <h3 className="text-base font-bold text-slate-900">
-              Go deeper with{" "}
-              <code className="rounded bg-slate-100 px-1.5 py-0.5 text-sm text-slate-600">
-                /harness-profile
-              </code>
-            </h3>
-            <p className="mt-1 text-sm text-slate-500">
-              See where your tokens go — agent orchestration, code review,
-              planning, debugging, and more. Plus cost analysis and skill
-              proficiency scores.
-            </p>
-            <div className="mt-3 flex items-center gap-3 text-xs text-slate-400">
-              <span>
-                <span className="mr-1 inline-block h-3.5 w-3.5 rounded-sm bg-slate-100" />{" "}
-                10K
-              </span>
-              <span>
-                <span className="mr-1 inline-block h-3.5 w-3.5 rounded-sm bg-blue-200" />{" "}
-                50K
-              </span>
-              <span>
-                <span className="mr-1 inline-block h-3.5 w-3.5 rounded-sm bg-blue-400" />{" "}
-                100K
-              </span>
-              <span>
-                <span className="mr-1 inline-block h-3.5 w-3.5 rounded-sm bg-blue-800" />{" "}
-                250K+
-              </span>
+        <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="flex items-start gap-3 mb-5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-lg">
+              ⚡
             </div>
-            <div className="mt-4 rounded-lg bg-slate-50 border border-slate-200 p-4">
-              <div className="text-xs font-bold text-slate-600 mb-2">
-                Install in 30 seconds:
-              </div>
-              <div className="rounded-md bg-slate-800 p-3 font-mono text-xs text-slate-200 leading-relaxed">
-                <div className="text-slate-500"># Install the skill</div>
-                <div>
-                  $ <span className="text-blue-400">claude</span> install
-                  harness-profile
-                </div>
-                <div className="mt-1 text-slate-500"># Run it</div>
-                <div>
-                  $ <span className="text-blue-400">claude</span>{" "}
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">
+                Upgrade your profile with{" "}
+                <code className="rounded bg-slate-100 px-1.5 py-0.5 text-sm text-slate-600">
                   /harness-profile
-                </div>
-              </div>
-              <p className="mt-2 text-[11px] text-slate-400">
-                Your profile will show token breakdowns, cost tracking, and
-                deeper workflow analysis alongside your /insights data.
+                </code>
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                A superset of /insights — everything you get from /insights,
+                plus token usage, tool breakdowns, skill inventory, and more.
               </p>
             </div>
+          </div>
+
+          {/* Comparison table */}
+          <div className="mb-6 overflow-hidden rounded-lg border border-slate-200">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50">
+                  <th className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
+                    What you get
+                  </th>
+                  <th className="px-4 py-2.5 text-center text-xs font-bold uppercase tracking-wider text-slate-400">
+                    /insights
+                  </th>
+                  <th className="px-4 py-2.5 text-center text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50">
+                    /harness-profile
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr>
+                  <td className="px-4 py-2 text-slate-600">
+                    Sessions, messages, commits
+                  </td>
+                  <td className="px-4 py-2 text-center text-green-600">✓</td>
+                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30">
+                    ✓
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-2 text-slate-600">
+                    Workflow analysis & patterns
+                  </td>
+                  <td className="px-4 py-2 text-center text-green-600">✓</td>
+                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30">
+                    ✓
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-2 text-slate-600">
+                    Strengths, challenges, suggestions
+                  </td>
+                  <td className="px-4 py-2 text-center text-green-600">✓</td>
+                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30">
+                    ✓
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-2 text-slate-600">
+                    Features detected (worktrees, agents, etc.)
+                  </td>
+                  <td className="px-4 py-2 text-center text-green-600">✓</td>
+                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30">
+                    ✓
+                  </td>
+                </tr>
+                <tr className="bg-slate-50/50">
+                  <td className="px-4 py-2 text-slate-700 font-medium">
+                    Token usage (input/output/total)
+                  </td>
+                  <td className="px-4 py-2 text-center text-slate-300">—</td>
+                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30 font-semibold">
+                    ✓
+                  </td>
+                </tr>
+                <tr className="bg-slate-50/50">
+                  <td className="px-4 py-2 text-slate-700 font-medium">
+                    Tool usage breakdown (Read, Edit, Bash...)
+                  </td>
+                  <td className="px-4 py-2 text-center text-slate-300">—</td>
+                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30 font-semibold">
+                    ✓
+                  </td>
+                </tr>
+                <tr className="bg-slate-50/50">
+                  <td className="px-4 py-2 text-slate-700 font-medium">
+                    Skills & plugins inventory
+                  </td>
+                  <td className="px-4 py-2 text-center text-slate-300">—</td>
+                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30 font-semibold">
+                    ✓
+                  </td>
+                </tr>
+                <tr className="bg-slate-50/50">
+                  <td className="px-4 py-2 text-slate-700 font-medium">
+                    Hooks configuration & fire rate
+                  </td>
+                  <td className="px-4 py-2 text-center text-slate-300">—</td>
+                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30 font-semibold">
+                    ✓
+                  </td>
+                </tr>
+                <tr className="bg-slate-50/50">
+                  <td className="px-4 py-2 text-slate-700 font-medium">
+                    CLI commands & file operation style
+                  </td>
+                  <td className="px-4 py-2 text-center text-slate-300">—</td>
+                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30 font-semibold">
+                    ✓
+                  </td>
+                </tr>
+                <tr className="bg-slate-50/50">
+                  <td className="px-4 py-2 text-slate-700 font-medium">
+                    Agent dispatch patterns
+                  </td>
+                  <td className="px-4 py-2 text-center text-slate-300">—</td>
+                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30 font-semibold">
+                    ✓
+                  </td>
+                </tr>
+                <tr className="bg-slate-50/50">
+                  <td className="px-4 py-2 text-slate-700 font-medium">
+                    Models used & permission modes
+                  </td>
+                  <td className="px-4 py-2 text-center text-slate-300">—</td>
+                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30 font-semibold">
+                    ✓
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Install + copy */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-lg bg-slate-50 border border-slate-200 p-4">
+              <div className="text-xs font-bold text-slate-600 mb-2">
+                Option 1: Install the skill
+              </div>
+              <CopyBlock text="claude install craigdossantos/harness-profile" />
+              <p className="mt-2 text-[11px] text-slate-400">
+                Then run{" "}
+                <code className="bg-slate-200 px-1 rounded text-[10px]">
+                  /harness-profile
+                </code>{" "}
+                in any Claude Code session.
+              </p>
+            </div>
+            <div className="rounded-lg bg-slate-50 border border-slate-200 p-4">
+              <div className="text-xs font-bold text-slate-600 mb-2">
+                Option 2: One-shot prompt
+              </div>
+              <CopyBlock text="Run /harness-profile and generate my harness report" />
+              <p className="mt-2 text-[11px] text-slate-400">
+                Paste this into Claude Code if you already have the skill
+                installed.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-center gap-4 text-xs text-slate-400">
+            <a
+              href="https://github.com/craigdossantos/harness-profile"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-blue-600 transition-colors"
+            >
+              View on GitHub →
+            </a>
+            <span>•</span>
+            <span>
+              Privacy-first: only reads tool names, skill names, and stats —
+              never your code or messages
+            </span>
           </div>
         </div>
       </section>
