@@ -13,6 +13,8 @@ import {
   ArrowRight,
   FileText,
   AlertTriangle,
+  Copy,
+  ClipboardCheck,
   Link as LinkIcon,
   Plus,
   Trash2,
@@ -37,6 +39,85 @@ interface ProjectLinkInput {
   githubUrl: string;
   liveUrl: string;
   description: string;
+}
+
+const INSIGHTS_PATH = "~/.claude/usage-data/report.html";
+
+function DropZoneContent({
+  fileInputRef,
+  handleFileInput,
+}: {
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  handleFileInput: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const copyPath = async () => {
+    await navigator.clipboard.writeText(INSIGHTS_PATH);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <>
+      <FileText className="mb-4 h-12 w-12 text-slate-400" />
+      <h3 className="mb-2 text-lg font-semibold text-slate-700 dark:text-slate-200">
+        Drop your insights HTML file here
+      </h3>
+      <div className="mx-auto mb-4 max-w-sm rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/50">
+        <p className="mb-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+          File location (run{" "}
+          <code className="text-blue-600 dark:text-blue-400">/insights</code> in
+          Claude Code first)
+        </p>
+        <div className="flex items-center gap-2">
+          <code className="flex-1 truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+            {INSIGHTS_PATH}
+          </code>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              copyPath();
+            }}
+            className="shrink-0 rounded-md border border-slate-300 p-1.5 text-slate-500 transition-colors hover:bg-slate-100 dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-700"
+            title="Copy path"
+          >
+            {copied ? (
+              <ClipboardCheck className="h-3.5 w-3.5 text-green-600" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </div>
+        <p className="mt-1.5 text-[11px] text-slate-400 dark:text-slate-500">
+          Tip: In Finder, press{" "}
+          <kbd className="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">
+            ⌘
+          </kbd>
+          +
+          <kbd className="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">
+            ⇧
+          </kbd>
+          +
+          <kbd className="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">
+            G
+          </kbd>{" "}
+          and paste the path
+        </p>
+      </div>
+      <span className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+        Click or drop file to upload
+      </span>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".html"
+        onChange={handleFileInput}
+        className="hidden"
+      />
+    </>
+  );
 }
 
 export default function UploadPage() {
@@ -405,28 +486,10 @@ export default function UploadPage() {
               <p className="text-slate-600">Parsing your insights...</p>
             </div>
           ) : (
-            <>
-              <FileText className="mb-4 h-12 w-12 text-slate-400" />
-              <h3 className="mb-2 text-lg font-semibold text-slate-700">
-                Drop your insights HTML file here
-              </h3>
-              <p className="mb-4 text-sm text-slate-500">
-                Find it at{" "}
-                <code className="rounded bg-slate-200 px-1.5 py-0.5 text-xs">
-                  ~/.claude/usage-data/report.html
-                </code>
-              </p>
-              <span className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700">
-                Click or drop file to upload
-              </span>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".html"
-                onChange={handleFileInput}
-                className="hidden"
-              />
-            </>
+            <DropZoneContent
+              fileInputRef={fileInputRef}
+              handleFileInput={handleFileInput}
+            />
           )}
         </div>
       )}
