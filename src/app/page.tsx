@@ -10,6 +10,7 @@ import {
   SKILL_METADATA,
   type SkillKey,
 } from "@/types/insights";
+import { homepage as copy } from "@/content/homepage";
 
 type SortOption = "newest" | "most_voted" | "trending";
 
@@ -230,7 +231,9 @@ function ProfileCard({
       {featured && insight.atAGlance && (
         <div className="mt-3 pt-3 border-t border-slate-100">
           <p className="text-xs text-slate-500 line-clamp-2">
-            <strong className="text-slate-600">Strengths:</strong>{" "}
+            <strong className="text-slate-600">
+              {copy.profiles.strengthsLabel}
+            </strong>{" "}
             {(insight.atAGlance as Record<string, string>).whats_working}
           </p>
         </div>
@@ -284,26 +287,24 @@ export default function HomePage() {
       <section className="py-12 text-center">
         <div className="mx-auto max-w-2xl px-4">
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            See how other developers use Claude Code
+            {copy.hero.headline}
           </h1>
           <p className="mt-3 text-base text-slate-500 sm:text-lg">
-            Browse real developer workflows — the tools, skills, plugins, and
-            patterns they use across actual coding sessions. All personal data
-            removed.
+            {copy.hero.subtext}
           </p>
           <div className="mt-6 flex items-center justify-center gap-3">
             <a
               href="#profiles"
               className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
             >
-              Browse Profiles
+              {copy.hero.primaryCta}
             </a>
             <Link
               href="/upload"
               className="inline-flex items-center gap-2 rounded-lg border-2 border-blue-600 px-5 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
             >
               <Upload className="h-4 w-4" />
-              Upload Your Insights
+              {copy.hero.secondaryCta}
             </Link>
           </div>
         </div>
@@ -358,7 +359,7 @@ export default function HomePage() {
             {featured && (
               <div className="mb-6">
                 <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-400">
-                  Featured Profile
+                  {copy.profiles.featuredLabel}
                 </div>
                 <ProfileCard insight={featured} featured />
               </div>
@@ -368,7 +369,7 @@ export default function HomePage() {
             {grid.length > 0 && (
               <>
                 <h2 className="mb-4 text-lg font-bold text-slate-900">
-                  Recent Profiles
+                  {copy.profiles.recentHeading}
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {grid.map((insight) => (
@@ -381,16 +382,14 @@ export default function HomePage() {
         ) : (
           <div className="flex flex-col items-center justify-center py-20">
             <h2 className="text-xl font-semibold text-slate-900 mb-2">
-              No profiles shared yet
+              {copy.profiles.emptyTitle}
             </h2>
-            <p className="text-slate-500 mb-6">
-              Be the first to share your Claude Code insights!
-            </p>
+            <p className="text-slate-500 mb-6">{copy.profiles.emptySubtext}</p>
             <Link
               href="/upload"
               className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
             >
-              Upload Your Insights
+              {copy.profiles.emptyCta}
             </Link>
           </div>
         )}
@@ -405,14 +404,13 @@ export default function HomePage() {
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-900">
-                Upgrade your profile with{" "}
+                {copy.upgrade.heading}{" "}
                 <code className="rounded bg-slate-100 px-1.5 py-0.5 text-sm text-slate-600">
-                  /insight-harness
+                  {copy.upgrade.skillName}
                 </code>
               </h3>
               <p className="mt-1 text-sm text-slate-500">
-                A superset of /insights — everything you get from /insights,
-                plus token usage, tool breakdowns, skill inventory, and more.
+                {copy.upgrade.description}
               </p>
             </div>
           </div>
@@ -423,116 +421,37 @@ export default function HomePage() {
               <thead>
                 <tr className="bg-slate-50">
                   <th className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
-                    What you get
+                    {copy.upgrade.table.headers.feature}
                   </th>
                   <th className="px-4 py-2.5 text-center text-xs font-bold uppercase tracking-wider text-slate-400">
-                    /insights
+                    {copy.upgrade.table.headers.insights}
                   </th>
                   <th className="px-4 py-2.5 text-center text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50">
-                    /insight-harness
+                    {copy.upgrade.table.headers.harness}
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                <tr>
-                  <td className="px-4 py-2 text-slate-600">
-                    Sessions, messages, commits
-                  </td>
-                  <td className="px-4 py-2 text-center text-green-600">✓</td>
-                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30">
-                    ✓
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-4 py-2 text-slate-600">
-                    Workflow analysis & patterns
-                  </td>
-                  <td className="px-4 py-2 text-center text-green-600">✓</td>
-                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30">
-                    ✓
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-4 py-2 text-slate-600">
-                    Strengths, challenges, suggestions
-                  </td>
-                  <td className="px-4 py-2 text-center text-green-600">✓</td>
-                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30">
-                    ✓
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-4 py-2 text-slate-600">
-                    Features detected (worktrees, agents, etc.)
-                  </td>
-                  <td className="px-4 py-2 text-center text-green-600">✓</td>
-                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30">
-                    ✓
-                  </td>
-                </tr>
-                <tr className="bg-slate-50/50">
-                  <td className="px-4 py-2 text-slate-700 font-medium">
-                    Token usage (input/output/total)
-                  </td>
-                  <td className="px-4 py-2 text-center text-slate-300">—</td>
-                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30 font-semibold">
-                    ✓
-                  </td>
-                </tr>
-                <tr className="bg-slate-50/50">
-                  <td className="px-4 py-2 text-slate-700 font-medium">
-                    Tool usage breakdown (Read, Edit, Bash...)
-                  </td>
-                  <td className="px-4 py-2 text-center text-slate-300">—</td>
-                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30 font-semibold">
-                    ✓
-                  </td>
-                </tr>
-                <tr className="bg-slate-50/50">
-                  <td className="px-4 py-2 text-slate-700 font-medium">
-                    Skills & plugins inventory
-                  </td>
-                  <td className="px-4 py-2 text-center text-slate-300">—</td>
-                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30 font-semibold">
-                    ✓
-                  </td>
-                </tr>
-                <tr className="bg-slate-50/50">
-                  <td className="px-4 py-2 text-slate-700 font-medium">
-                    Hooks configuration & fire rate
-                  </td>
-                  <td className="px-4 py-2 text-center text-slate-300">—</td>
-                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30 font-semibold">
-                    ✓
-                  </td>
-                </tr>
-                <tr className="bg-slate-50/50">
-                  <td className="px-4 py-2 text-slate-700 font-medium">
-                    CLI commands & file operation style
-                  </td>
-                  <td className="px-4 py-2 text-center text-slate-300">—</td>
-                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30 font-semibold">
-                    ✓
-                  </td>
-                </tr>
-                <tr className="bg-slate-50/50">
-                  <td className="px-4 py-2 text-slate-700 font-medium">
-                    Agent dispatch patterns
-                  </td>
-                  <td className="px-4 py-2 text-center text-slate-300">—</td>
-                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30 font-semibold">
-                    ✓
-                  </td>
-                </tr>
-                <tr className="bg-slate-50/50">
-                  <td className="px-4 py-2 text-slate-700 font-medium">
-                    Models used & permission modes
-                  </td>
-                  <td className="px-4 py-2 text-center text-slate-300">—</td>
-                  <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30 font-semibold">
-                    ✓
-                  </td>
-                </tr>
+                {copy.upgrade.table.shared.map((feature) => (
+                  <tr key={feature}>
+                    <td className="px-4 py-2 text-slate-600">{feature}</td>
+                    <td className="px-4 py-2 text-center text-green-600">✓</td>
+                    <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30">
+                      ✓
+                    </td>
+                  </tr>
+                ))}
+                {copy.upgrade.table.harnessOnly.map((feature) => (
+                  <tr key={feature} className="bg-slate-50/50">
+                    <td className="px-4 py-2 text-slate-700 font-medium">
+                      {feature}
+                    </td>
+                    <td className="px-4 py-2 text-center text-slate-300">—</td>
+                    <td className="px-4 py-2 text-center text-green-600 bg-blue-50/30 font-semibold">
+                      ✓
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -541,43 +460,39 @@ export default function HomePage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg bg-slate-50 border border-slate-200 p-4">
               <div className="text-xs font-bold text-slate-600 mb-2">
-                Option 1: Install the skill
+                {copy.upgrade.installTitle}
               </div>
-              <CopyBlock text="mkdir -p ~/.claude/skills/insight-harness/scripts && curl -sL https://raw.githubusercontent.com/craigdossantos/claude-toolkit/main/skills/insight-harness/SKILL.md -o ~/.claude/skills/insight-harness/SKILL.md && curl -sL https://raw.githubusercontent.com/craigdossantos/claude-toolkit/main/skills/insight-harness/scripts/extract.py -o ~/.claude/skills/insight-harness/scripts/extract.py" />
+              <CopyBlock text={copy.upgrade.installCommand} />
               <p className="mt-2 text-[11px] text-slate-400">
-                Paste in terminal. Then run{" "}
+                {copy.upgrade.installHint}{" "}
                 <code className="bg-slate-200 px-1 rounded text-[10px]">
-                  /insight-harness
+                  {copy.upgrade.installSlashCommand}
                 </code>{" "}
-                in Claude Code.
+                {copy.upgrade.installSuffix}
               </p>
             </div>
             <div className="rounded-lg bg-slate-50 border border-slate-200 p-4">
               <div className="text-xs font-bold text-slate-600 mb-2">
-                Option 2: One-shot prompt
+                {copy.upgrade.promptTitle}
               </div>
-              <CopyBlock text="Run /insight-harness and generate my harness report" />
+              <CopyBlock text={copy.upgrade.promptCommand} />
               <p className="mt-2 text-[11px] text-slate-400">
-                Paste this into Claude Code if you already have the skill
-                installed.
+                {copy.upgrade.promptHint}
               </p>
             </div>
           </div>
 
           <div className="mt-4 flex items-center gap-4 text-xs text-slate-400">
             <a
-              href="https://github.com/craigdossantos/claude-toolkit/tree/main/skills/insight-harness"
+              href={copy.upgrade.githubUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-blue-600 transition-colors"
             >
-              View on GitHub →
+              {copy.upgrade.githubLabel}
             </a>
             <span>•</span>
-            <span>
-              Privacy-first: only reads tool names, skill names, and stats —
-              never your code or messages
-            </span>
+            <span>{copy.upgrade.privacyNote}</span>
           </div>
         </div>
       </section>
@@ -585,63 +500,38 @@ export default function HomePage() {
       {/* How It Works */}
       <section className="mx-auto max-w-5xl px-4 pb-16 sm:px-6">
         <h2 className="mb-6 text-center text-lg font-bold text-slate-900">
-          How It Works
+          {copy.howItWorks.heading}
         </h2>
         <div className="grid gap-5 sm:grid-cols-3">
-          <div className="rounded-xl bg-white border border-slate-200 p-6 text-center shadow-sm">
-            <div className="mb-3 text-3xl">📊</div>
-            <div className="mb-1 text-xs font-bold uppercase tracking-widest text-blue-600">
-              Step 1
+          {copy.howItWorks.steps.map((step, i) => (
+            <div
+              key={i}
+              className="rounded-xl bg-white border border-slate-200 p-6 text-center shadow-sm"
+            >
+              <div className="mb-3 text-3xl">{step.icon}</div>
+              <div className="mb-1 text-xs font-bold uppercase tracking-widest text-blue-600">
+                Step {i + 1}
+              </div>
+              <h4 className="mb-2 text-sm font-bold text-slate-900">
+                {step.title}
+              </h4>
+              <p className="text-xs text-slate-500">{step.description}</p>
             </div>
-            <h4 className="mb-2 text-sm font-bold text-slate-900">
-              Run /insights
-            </h4>
-            <p className="text-xs text-slate-500">
-              Generate your Claude Code usage report. Takes seconds.
-            </p>
-          </div>
-          <div className="rounded-xl bg-white border border-slate-200 p-6 text-center shadow-sm">
-            <div className="mb-3 text-3xl">📤</div>
-            <div className="mb-1 text-xs font-bold uppercase tracking-widest text-blue-600">
-              Step 2
-            </div>
-            <h4 className="mb-2 text-sm font-bold text-slate-900">
-              Upload your insights
-            </h4>
-            <p className="text-xs text-slate-500">
-              Drop the HTML file here. We remove personal data automatically,
-              and you can redact any information you&apos;d like before sharing.
-            </p>
-          </div>
-          <div className="rounded-xl bg-white border border-slate-200 p-6 text-center shadow-sm">
-            <div className="mb-3 text-3xl">🌐</div>
-            <div className="mb-1 text-xs font-bold uppercase tracking-widest text-blue-600">
-              Step 3
-            </div>
-            <h4 className="mb-2 text-sm font-bold text-slate-900">
-              Share your profile
-            </h4>
-            <p className="text-xs text-slate-500">
-              Get a public page others can browse and learn from.
-            </p>
-          </div>
+          ))}
         </div>
       </section>
 
       {/* Footer CTA */}
       <section className="bg-blue-50 py-12 text-center">
         <h2 className="text-xl font-extrabold text-slate-900">
-          Ready to share your harness?
+          {copy.footerCta.heading}
         </h2>
-        <p className="mt-2 text-sm text-slate-500">
-          Join developers who are learning from each other&apos;s Claude Code
-          workflows.
-        </p>
+        <p className="mt-2 text-sm text-slate-500">{copy.footerCta.subtext}</p>
         <Link
           href="/upload"
           className="mt-5 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-7 py-3 text-base font-semibold text-white hover:bg-blue-700 transition-colors"
         >
-          Upload Your Insights
+          {copy.footerCta.cta}
         </Link>
       </section>
     </div>
