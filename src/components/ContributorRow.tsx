@@ -10,6 +10,8 @@ interface ContributorRowProps {
   displayName: string | null;
   avatarUrl: string | null;
   publishedAt: string;
+  dateRangeStart: string | null;
+  dateRangeEnd: string | null;
   dayCount: number | null;
   messageCount: number | null;
   linesAdded: number | null;
@@ -19,8 +21,32 @@ interface ContributorRowProps {
   detectedSkills: SkillKey[];
 }
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-US", {
+function perWeek(value: number | null, dayCount: number | null): string | null {
+  if (value == null || dayCount == null || dayCount === 0) return null;
+  const weeks = dayCount / 7;
+  if (weeks === 0) return null;
+  return Math.round(value / weeks).toLocaleString();
+}
+
+function formatDateRange(
+  start: string | null,
+  end: string | null,
+  publishedAt: string,
+): string {
+  const fmt = (d: string) =>
+    new Date(d + "T00:00:00").toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  const fmtYear = (d: string) =>
+    new Date(d + "T00:00:00").toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  if (start && end) return `${fmt(start)} - ${fmtYear(end)}`;
+  if (end) return `Through ${fmtYear(end)}`;
+  return new Date(publishedAt).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -33,6 +59,8 @@ export default function ContributorRow({
   displayName,
   avatarUrl,
   publishedAt,
+  dateRangeStart,
+  dateRangeEnd,
   dayCount,
   messageCount,
   linesAdded,
@@ -41,17 +69,10 @@ export default function ContributorRow({
   commitCount,
   detectedSkills,
 }: ContributorRowProps) {
-  // Per-week normalization for comparability
-  const msgsPerWeek =
-    messageCount && dayCount && dayCount > 0
-      ? Math.round(messageCount / (dayCount / 7))
-      : null;
-
-  const totalLines = (linesAdded ?? 0) + (linesRemoved ?? 0);
-  const linesPerWeek =
-    totalLines && dayCount && dayCount > 0
-      ? Math.round(totalLines / (dayCount / 7))
-      : null;
+  const msgsPerWeek = perWeek(messageCount, dayCount);
+  const commitsPerWeek = perWeek(commitCount, dayCount);
+  const linesAddedPerWeek = perWeek(linesAdded, dayCount);
+  const linesRemovedPerWeek = perWeek(linesRemoved, dayCount);
 
   return (
     <Link
@@ -77,52 +98,37 @@ export default function ContributorRow({
           {displayName || username}
         </div>
         <div className="text-xs text-slate-400">
-          @{username} · {formatDate(publishedAt)}
-          {dayCount != null && ` · ${dayCount} days tracked`}
+          @{username} ·{" "}
+          {formatDateRange(dateRangeStart, dateRangeEnd, publishedAt)}
+          {dayCount != null && ` · ${dayCount} days`}
         </div>
 
-        {/* Stats row */}
+        {/* Per-week stats */}
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
           {msgsPerWeek != null && (
             <span>
               <strong className="text-slate-800 dark:text-slate-200">
-                {msgsPerWeek.toLocaleString()}
+                {msgsPerWeek}
               </strong>{" "}
               msgs/wk
             </span>
           )}
-          {linesPerWeek != null && (
+          {commitsPerWeek != null && (
             <span>
               <strong className="text-slate-800 dark:text-slate-200">
-                {linesPerWeek.toLocaleString()}
+                {commitsPerWeek}
               </strong>{" "}
-              lines/wk
+              commits/wk
             </span>
           )}
-          {linesAdded != null && (
+          {linesAddedPerWeek != null && (
             <span className="text-green-600 dark:text-green-400">
-              +{linesAdded.toLocaleString()} added
+              +{linesAddedPerWeek}/wk
             </span>
           )}
-          {linesRemoved != null && (
+          {linesRemovedPerWeek != null && (
             <span className="text-red-600 dark:text-red-400">
-              -{linesRemoved.toLocaleString()} removed
-            </span>
-          )}
-          {fileCount != null && (
-            <span>
-              <strong className="text-slate-800 dark:text-slate-200">
-                {fileCount}
-              </strong>{" "}
-              files
-            </span>
-          )}
-          {commitCount != null && (
-            <span>
-              <strong className="text-slate-800 dark:text-slate-200">
-                {commitCount}
-              </strong>{" "}
-              commits
+              -{linesRemovedPerWeek}/wk
             </span>
           )}
         </div>
@@ -130,9 +136,6 @@ export default function ContributorRow({
         {/* Skills badges */}
         {detectedSkills.length > 0 && (
           <div className="mt-2">
-            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-              Skills Used
-            </div>
             <SkillBadges skills={detectedSkills} size="sm" />
           </div>
         )}
