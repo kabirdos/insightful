@@ -12,6 +12,8 @@ interface InsightSummary {
   slug: string;
   title: string;
   publishedAt: string;
+  dateRangeStart: string | null;
+  dateRangeEnd: string | null;
   dayCount?: number | null;
   messageCount?: number | null;
   linesAdded?: number | null;
@@ -52,6 +54,8 @@ export default function HomePage() {
             slug: r.slug as string,
             title: r.title as string,
             publishedAt: r.publishedAt as string,
+            dateRangeStart: (r.dateRangeStart as string) ?? null,
+            dateRangeEnd: (r.dateRangeEnd as string) ?? null,
             dayCount: r.dayCount as number | null,
             messageCount: r.messageCount as number | null,
             linesAdded: r.linesAdded as number | null,
@@ -138,6 +142,8 @@ export default function HomePage() {
               displayName={insight.author.displayName ?? null}
               avatarUrl={insight.author.avatarUrl ?? null}
               publishedAt={insight.publishedAt}
+              dateRangeStart={insight.dateRangeStart}
+              dateRangeEnd={insight.dateRangeEnd}
               dayCount={insight.dayCount ?? null}
               messageCount={insight.messageCount ?? null}
               linesAdded={insight.linesAdded ?? null}

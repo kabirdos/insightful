@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
@@ -23,8 +23,12 @@ import type {
   RedactionItem,
   InsightsData,
 } from "@/types/insights";
+import { normalizeSkills } from "@/types/insights";
+import { normalizeChartData } from "@/lib/chart-parser";
 import { applyRedactions } from "@/lib/redaction";
 import SectionRenderer from "@/components/SectionRenderer";
+import SnapshotCard from "@/components/SnapshotCard";
+import CollapsibleSection from "@/components/CollapsibleSection";
 
 type Step = "upload" | "redact" | "projects" | "preview";
 
@@ -56,6 +60,7 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Maps InsightsData keys to SectionRenderer sectionType and display label
   const SECTION_OPTIONS: {
@@ -340,6 +345,36 @@ export default function UploadPage() {
         ))}
       </div>
 
+      {/* Sticky navigation — visible on all steps except upload */}
+      {step !== "upload" && (
+        <div className="sticky top-16 z-40 -mx-4 mb-6 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-sm">
+          <button
+            onClick={() => setStep(steps[stepIndex - 1]?.key || "upload")}
+            className="flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
+          {step === "preview" ? (
+            <button
+              onClick={handlePublish}
+              disabled={publishing}
+              className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:bg-slate-300"
+            >
+              {publishing ? "Publishing..." : "Publish Insights"}
+            </button>
+          ) : (
+            <button
+              onClick={() => setStep(steps[stepIndex + 1]?.key || "preview")}
+              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Next
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      )}
+
       {error && (
         <div className="mb-6 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <AlertTriangle className="h-4 w-4 shrink-0" />
@@ -350,6 +385,7 @@ export default function UploadPage() {
       {/* Step 1: Upload */}
       {step === "upload" && (
         <div
+          onClick={() => !loading && fileInputRef.current?.click()}
           onDragOver={(e) => {
             e.preventDefault();
             setDragOver(true);
@@ -357,7 +393,7 @@ export default function UploadPage() {
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           className={clsx(
-            "flex min-h-[300px] flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-colors",
+            "flex min-h-[300px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-colors",
             dragOver
               ? "border-blue-400 bg-blue-50"
               : "border-slate-300 bg-slate-50 hover:border-slate-400",
@@ -380,15 +416,16 @@ export default function UploadPage() {
                   ~/.claude/usage-data/report.html
                 </code>
               </p>
-              <label className="cursor-pointer rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700">
-                Browse Files
-                <input
-                  type="file"
-                  accept=".html"
-                  onChange={handleFileInput}
-                  className="hidden"
-                />
-              </label>
+              <span className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+                Click or drop file to upload
+              </span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".html"
+                onChange={handleFileInput}
+                className="hidden"
+              />
             </>
           )}
         </div>
@@ -555,36 +592,58 @@ export default function UploadPage() {
             </div>
           )}
 
-          {/* Full content preview */}
-          <div className="mt-8 space-y-6">
-            <h3 className="text-sm font-semibold text-slate-700">
-              Preview: Full Content
+          {/* Styled preview — matches how it will look when published */}
+          <div className="mt-8">
+            <h3 className="mb-2 text-sm font-semibold text-slate-700">
+              Preview: How your report will appear
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="mb-4 text-xs text-slate-500">
               This is what others will see. Review carefully before publishing.
             </p>
-            {SECTION_OPTIONS.map(({ dataKey, sectionType }) => {
-              if (disabledSections[dataKey]) return null;
-              const sectionData = parsed.data[dataKey];
-              if (!sectionData) return null;
-              return (
-                <div
-                  key={dataKey}
-                  className="rounded-lg border border-slate-200 bg-white p-4"
-                >
-                  <SectionRenderer
-                    slug="preview"
-                    sectionKey={dataKey}
-                    sectionType={sectionType}
-                    data={sectionData}
-                    reportId="preview"
-                    voteCount={0}
-                    voted={false}
-                    readOnly
-                  />
-                </div>
-              );
-            })}
+            <SnapshotCard
+              sessionCount={parsed.stats.sessionCount ?? null}
+              messageCount={parsed.stats.messageCount ?? null}
+              linesAdded={parsed.stats.linesAdded ?? null}
+              linesRemoved={parsed.stats.linesRemoved ?? null}
+              fileCount={parsed.stats.fileCount ?? null}
+              dayCount={parsed.stats.dayCount ?? null}
+              commitCount={parsed.stats.commitCount ?? null}
+              chartData={normalizeChartData(parsed.chartData)}
+              detectedSkills={normalizeSkills(parsed.detectedSkills)}
+              keyPattern={parsed.data.interaction_style?.key_pattern ?? null}
+              projectAreas={
+                disabledSections["project_areas"]
+                  ? null
+                  : parsed.data.project_areas
+              }
+            />
+            <div className="mt-4 space-y-3">
+              {SECTION_OPTIONS.map(({ dataKey, sectionType, label }) => {
+                if (disabledSections[dataKey]) return null;
+                if (dataKey === "project_areas") return null;
+                const sectionData = parsed.data[dataKey];
+                if (!sectionData) return null;
+                return (
+                  <CollapsibleSection
+                    key={dataKey}
+                    icon=""
+                    title={label}
+                    defaultOpen={dataKey === "at_a_glance"}
+                  >
+                    <SectionRenderer
+                      slug="preview"
+                      sectionKey={dataKey}
+                      sectionType={sectionType}
+                      data={sectionData}
+                      reportId="preview"
+                      voteCount={0}
+                      voted={false}
+                      readOnly
+                    />
+                  </CollapsibleSection>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -667,61 +726,48 @@ export default function UploadPage() {
         </div>
       )}
 
-      {/* Step 4: Preview */}
+      {/* Step 4: Preview — shows exactly how the published page will look */}
       {step === "preview" && parsed && (
         <div>
           <h2 className="mb-2 text-lg font-semibold text-slate-900">
-            Preview Your Insights
+            Final Preview
           </h2>
           <p className="mb-6 text-sm text-slate-500">
-            This is how your insights will appear to others. Review and publish
-            when ready.
+            This is exactly how your report will appear. Hit Publish when ready.
           </p>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-6">
-            {/* Stats banner */}
-            <div className="mb-6 flex flex-wrap gap-6 border-b border-slate-100 pb-4">
-              {parsed.stats.sessionCount && (
-                <div className="text-center">
-                  <div className="text-lg font-bold text-slate-900">
-                    {parsed.stats.sessionCount}
-                  </div>
-                  <div className="text-xs uppercase text-slate-500">
-                    Sessions
-                  </div>
-                </div>
-              )}
-              {parsed.stats.messageCount && (
-                <div className="text-center">
-                  <div className="text-lg font-bold text-slate-900">
-                    {parsed.stats.messageCount.toLocaleString()}
-                  </div>
-                  <div className="text-xs uppercase text-slate-500">
-                    Messages
-                  </div>
-                </div>
-              )}
-              {parsed.stats.commitCount && (
-                <div className="text-center">
-                  <div className="text-lg font-bold text-slate-900">
-                    {parsed.stats.commitCount}
-                  </div>
-                  <div className="text-xs uppercase text-slate-500">
-                    Commits
-                  </div>
-                </div>
-              )}
-            </div>
+          <SnapshotCard
+            sessionCount={parsed.stats.sessionCount ?? null}
+            messageCount={parsed.stats.messageCount ?? null}
+            linesAdded={parsed.stats.linesAdded ?? null}
+            linesRemoved={parsed.stats.linesRemoved ?? null}
+            fileCount={parsed.stats.fileCount ?? null}
+            dayCount={parsed.stats.dayCount ?? null}
+            commitCount={parsed.stats.commitCount ?? null}
+            chartData={normalizeChartData(parsed.chartData)}
+            detectedSkills={normalizeSkills(parsed.detectedSkills)}
+            keyPattern={parsed.data.interaction_style?.key_pattern ?? null}
+            projectAreas={
+              disabledSections["project_areas"]
+                ? null
+                : parsed.data.project_areas
+            }
+          />
 
-            {/* Section previews — render all enabled sections */}
-            <div className="space-y-8">
-              {SECTION_OPTIONS.map(({ dataKey, sectionType }) => {
-                if (disabledSections[dataKey]) return null;
-                const sectionData = parsed.data[dataKey];
-                if (!sectionData) return null;
-                return (
+          <div className="mt-4 space-y-3">
+            {SECTION_OPTIONS.map(({ dataKey, sectionType, label }) => {
+              if (disabledSections[dataKey]) return null;
+              if (dataKey === "project_areas") return null;
+              const sectionData = parsed.data[dataKey];
+              if (!sectionData) return null;
+              return (
+                <CollapsibleSection
+                  key={dataKey}
+                  icon=""
+                  title={label}
+                  defaultOpen={dataKey === "at_a_glance"}
+                >
                   <SectionRenderer
-                    key={dataKey}
                     slug="preview"
                     sectionKey={dataKey}
                     sectionType={sectionType}
@@ -729,13 +775,14 @@ export default function UploadPage() {
                     reportId="preview"
                     voteCount={0}
                     voted={false}
+                    readOnly
                   />
-                );
-              })}
-            </div>
+                </CollapsibleSection>
+              );
+            })}
           </div>
 
-          <div className="mt-6 flex justify-end">
+          <div className="mt-8 flex justify-end">
             <button
               onClick={handlePublish}
               disabled={publishing}
@@ -744,28 +791,6 @@ export default function UploadPage() {
               {publishing ? "Publishing..." : "Publish Insights"}
             </button>
           </div>
-        </div>
-      )}
-
-      {/* Navigation */}
-      {step !== "upload" && (
-        <div className="mt-8 flex justify-between">
-          <button
-            onClick={() => setStep(steps[stepIndex - 1]?.key || "upload")}
-            className="flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </button>
-          {step !== "preview" && (
-            <button
-              onClick={() => setStep(steps[stepIndex + 1]?.key || "preview")}
-              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              Next
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          )}
         </div>
       )}
     </div>

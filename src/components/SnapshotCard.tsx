@@ -1,6 +1,5 @@
-import type { ChartData, SkillKey } from "@/types/insights";
+import type { ChartData, SkillKey, InsightsData } from "@/types/insights";
 import SkillBadges from "./SkillBadges";
-import ToolUsageChart from "./ToolUsageChart";
 
 interface SnapshotCardProps {
   sessionCount: number | null;
@@ -13,6 +12,14 @@ interface SnapshotCardProps {
   chartData: ChartData | null;
   detectedSkills: SkillKey[];
   keyPattern: string | null;
+  projectAreas: InsightsData["project_areas"] | null;
+}
+
+function perWeek(value: number | null, dayCount: number | null): string | null {
+  if (value == null || dayCount == null || dayCount === 0) return null;
+  const weeks = dayCount / 7;
+  if (weeks === 0) return null;
+  return Math.round(value / weeks).toLocaleString();
 }
 
 function StatCell({
@@ -42,51 +49,99 @@ export default function SnapshotCard({
   fileCount,
   dayCount,
   commitCount,
-  chartData,
   detectedSkills,
   keyPattern,
+  projectAreas,
 }: SnapshotCardProps) {
-  const msgsPerWeek =
-    messageCount && dayCount ? Math.round(messageCount / (dayCount / 7)) : null;
+  const sessionsPerWeek = perWeek(sessionCount, dayCount);
+  const msgsPerWeek = perWeek(messageCount, dayCount);
+  const filesPerWeek = perWeek(fileCount, dayCount);
+  const commitsPerWeek = perWeek(commitCount, dayCount);
+  const linesAddedPerWeek = perWeek(linesAdded, dayCount);
+  const linesRemovedPerWeek = perWeek(linesRemoved, dayCount);
+
+  // Filter out known plugins/tools from project areas
+  const KNOWN_TOOLS = new Set([
+    "superpowers",
+    "claude-code-plugins",
+    "claude-code",
+    "plugins",
+    "mcp-servers",
+    "mcp",
+    ".claude",
+  ]);
+  const areas = (projectAreas?.areas ?? []).filter(
+    (a) => !KNOWN_TOOLS.has(a.name.toLowerCase()),
+  );
 
   return (
-    <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900/50">
-      {/* Stats bar */}
-      <div className="flex flex-wrap gap-6 pb-5">
-        {sessionCount != null && (
-          <StatCell value={sessionCount} label="Sessions" />
-        )}
-        {messageCount != null && (
-          <StatCell value={messageCount.toLocaleString()} label="Messages" />
-        )}
-        {msgsPerWeek != null && (
-          <StatCell value={msgsPerWeek.toLocaleString()} label="Msgs/Week" />
-        )}
-        {linesAdded != null && (
-          <StatCell
-            value={`+${linesAdded.toLocaleString()}`}
-            label="Lines Added"
-            className="text-green-600 dark:text-green-400"
-          />
-        )}
-        {linesRemoved != null && (
-          <StatCell
-            value={`-${linesRemoved.toLocaleString()}`}
-            label="Removed"
-            className="text-red-600 dark:text-red-400"
-          />
-        )}
-        {fileCount != null && <StatCell value={fileCount} label="Files" />}
-        {commitCount != null && (
-          <StatCell value={commitCount} label="Commits" />
-        )}
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900/50">
+      {/* Per-week stats */}
+      <div className="pb-5">
+        <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+          Weekly Averages
+        </div>
+        <div className="flex flex-wrap gap-6">
+          {sessionsPerWeek != null && (
+            <StatCell value={sessionsPerWeek} label="Sessions" />
+          )}
+          {msgsPerWeek != null && (
+            <StatCell value={msgsPerWeek} label="Messages" />
+          )}
+          {commitsPerWeek != null && (
+            <StatCell value={commitsPerWeek} label="Commits" />
+          )}
+          {filesPerWeek != null && (
+            <StatCell value={filesPerWeek} label="Files" />
+          )}
+          {linesAddedPerWeek != null && (
+            <StatCell
+              value={`+${linesAddedPerWeek}`}
+              label="Added"
+              className="text-green-600 dark:text-green-400"
+            />
+          )}
+          {linesRemovedPerWeek != null && (
+            <StatCell
+              value={`-${linesRemovedPerWeek}`}
+              label="Removed"
+              className="text-red-600 dark:text-red-400"
+            />
+          )}
+        </div>
       </div>
 
-      {/* Skills badges */}
-      {detectedSkills.length > 0 && (
+      {/* Projects */}
+      {areas.length > 0 && (
         <div className="border-t border-slate-100 pt-5 dark:border-slate-800">
           <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Skills & Features Used
+            Project Areas
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {areas.map((area) => (
+              <div
+                key={area.name}
+                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
+              >
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  {area.name}
+                </span>
+                {area.session_count != null && (
+                  <span className="ml-1.5 text-xs text-slate-400">
+                    {area.session_count} sessions
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Features Used */}
+      {detectedSkills.length > 0 && (
+        <div className="mt-5 border-t border-slate-100 pt-5 dark:border-slate-800">
+          <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            Features Used
           </h3>
           <SkillBadges skills={detectedSkills} />
         </div>
@@ -99,18 +154,6 @@ export default function SnapshotCard({
             &ldquo;{keyPattern}&rdquo;
           </p>
         </div>
-      )}
-
-      {/* Tool usage chart — collapsed by default */}
-      {chartData?.toolUsage && chartData.toolUsage.length > 0 && (
-        <details className="mt-5 border-t border-slate-100 pt-4 dark:border-slate-800">
-          <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-600">
-            Top Tools Used ▸
-          </summary>
-          <div className="mt-3">
-            <ToolUsageChart data={chartData.toolUsage} />
-          </div>
-        </details>
       )}
     </div>
   );
