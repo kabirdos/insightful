@@ -6,12 +6,12 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-8 text-center">
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-            Insightful
+            Insight Harness
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Turn your AI coding sessions into shareable insight reports.
+            See how other developers use Claude Code.
             <br />
-            See how you collaborate with AI — and share it with the world.
+            Upload your /insights report and share your profile.
           </p>
         </div>
 

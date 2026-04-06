@@ -53,7 +53,9 @@ export default function Header() {
           className="flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white"
         >
           <Sparkles className="h-6 w-6 text-blue-600" />
-          <span>Insightful</span>
+          <span>
+            Insight <span className="text-blue-600">Harness</span>
+          </span>
         </Link>
 
         {/* Desktop Nav */}

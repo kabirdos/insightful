@@ -15,9 +15,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Insightful — Share Your Claude Code Insights",
+  title: "Insight Harness — See How Developers Use Claude Code",
   description:
-    "A community platform for sharing Claude Code /insights reports. Discover tips, workflows, and learn from how others use Claude Code.",
+    "Browse real developer workflows — the tools, skills, plugins, and patterns they use across actual coding sessions. Upload your /insights report and share your profile.",
 };
 
 export default function RootLayout({
@@ -38,7 +38,7 @@ export default function RootLayout({
           <footer className="border-t border-slate-200 dark:border-slate-800">
             <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-6 sm:px-6">
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Insightful — Share your Claude Code insights with the community
+                Insight Harness — See how developers use Claude Code
               </p>
               <p className="text-xs text-slate-400 dark:text-slate-500">
                 Built with Claude Code
