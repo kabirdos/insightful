@@ -42,7 +42,7 @@ interface ProjectLinkInput {
 }
 
 const INSIGHTS_PATH = "~/.claude/usage-data/report.html";
-const HARNESS_PATH = "~/.claude/usage-data/harness-profile.html";
+const HARNESS_PATH = "~/.claude/usage-data/insight-harness.html";
 
 function CopyablePathBlock({
   label,
@@ -110,7 +110,7 @@ function DropZoneContent({
       </h3>
       <p className="mb-4 text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
         Drop either your <strong>/insights</strong> report or your upgraded{" "}
-        <strong>/harness-profile</strong> report. Both work.
+        <strong>/insight-harness</strong> report. Both work.
       </p>
 
       <div
@@ -123,7 +123,7 @@ function DropZoneContent({
           description="Run /insights in Claude Code to generate this file."
         />
         <CopyablePathBlock
-          label="/harness-profile (upgraded)"
+          label="/insight-harness (upgraded)"
           path={HARNESS_PATH}
           description="Includes everything from /insights plus token usage, tool breakdowns, skill inventory, and more."
           accent

@@ -407,7 +407,7 @@ export default function HomePage() {
               <h3 className="text-lg font-bold text-slate-900">
                 Upgrade your profile with{" "}
                 <code className="rounded bg-slate-100 px-1.5 py-0.5 text-sm text-slate-600">
-                  /harness-profile
+                  /insight-harness
                 </code>
               </h3>
               <p className="mt-1 text-sm text-slate-500">
@@ -429,7 +429,7 @@ export default function HomePage() {
                     /insights
                   </th>
                   <th className="px-4 py-2.5 text-center text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50">
-                    /harness-profile
+                    /insight-harness
                   </th>
                 </tr>
               </thead>
@@ -543,11 +543,11 @@ export default function HomePage() {
               <div className="text-xs font-bold text-slate-600 mb-2">
                 Option 1: Install the skill
               </div>
-              <CopyBlock text="claude install craigdossantos/harness-profile" />
+              <CopyBlock text="claude install craigdossantos/insight-harness" />
               <p className="mt-2 text-[11px] text-slate-400">
                 Then run{" "}
                 <code className="bg-slate-200 px-1 rounded text-[10px]">
-                  /harness-profile
+                  /insight-harness
                 </code>{" "}
                 in any Claude Code session.
               </p>
@@ -556,7 +556,7 @@ export default function HomePage() {
               <div className="text-xs font-bold text-slate-600 mb-2">
                 Option 2: One-shot prompt
               </div>
-              <CopyBlock text="Run /harness-profile and generate my harness report" />
+              <CopyBlock text="Run /insight-harness and generate my harness report" />
               <p className="mt-2 text-[11px] text-slate-400">
                 Paste this into Claude Code if you already have the skill
                 installed.
@@ -566,7 +566,7 @@ export default function HomePage() {
 
           <div className="mt-4 flex items-center gap-4 text-xs text-slate-400">
             <a
-              href="https://github.com/craigdossantos/harness-profile"
+              href="https://github.com/craigdossantos/insight-harness"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-blue-600 transition-colors"
