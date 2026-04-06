@@ -303,8 +303,6 @@ export default function InsightDetailPage() {
           chartData={report.chartData}
           detectedSkills={report.detectedSkills}
           keyPattern={report.interactionStyle?.key_pattern ?? null}
-          dateRangeStart={report.dateRangeStart}
-          dateRangeEnd={report.dateRangeEnd}
           projectAreas={report.projectAreas}
         />
       </div>

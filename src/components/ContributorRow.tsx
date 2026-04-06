@@ -105,12 +105,15 @@ export default function ContributorRow({
 
         {/* Per-week stats */}
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
+          <span className="font-medium text-slate-400 dark:text-slate-500">
+            per week:
+          </span>
           {msgsPerWeek != null && (
             <span>
               <strong className="text-slate-800 dark:text-slate-200">
                 {msgsPerWeek}
               </strong>{" "}
-              msgs/wk
+              msgs
             </span>
           )}
           {commitsPerWeek != null && (
@@ -118,17 +121,17 @@ export default function ContributorRow({
               <strong className="text-slate-800 dark:text-slate-200">
                 {commitsPerWeek}
               </strong>{" "}
-              commits/wk
+              commits
             </span>
           )}
           {linesAddedPerWeek != null && (
             <span className="text-green-600 dark:text-green-400">
-              +{linesAddedPerWeek}/wk
+              +{linesAddedPerWeek}
             </span>
           )}
           {linesRemovedPerWeek != null && (
             <span className="text-red-600 dark:text-red-400">
-              -{linesRemovedPerWeek}/wk
+              -{linesRemovedPerWeek}
             </span>
           )}
         </div>

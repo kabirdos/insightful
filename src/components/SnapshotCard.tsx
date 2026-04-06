@@ -12,8 +12,6 @@ interface SnapshotCardProps {
   chartData: ChartData | null;
   detectedSkills: SkillKey[];
   keyPattern: string | null;
-  dateRangeStart: string | null;
-  dateRangeEnd: string | null;
   projectAreas: InsightsData["project_areas"] | null;
 }
 
@@ -22,22 +20,6 @@ function perWeek(value: number | null, dayCount: number | null): string | null {
   const weeks = dayCount / 7;
   if (weeks === 0) return null;
   return Math.round(value / weeks).toLocaleString();
-}
-
-function formatDateRange(
-  start: string | null,
-  end: string | null,
-): string | null {
-  if (!start && !end) return null;
-  const fmt = (d: string) =>
-    new Date(d + "T00:00:00").toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  if (start && end) return `${fmt(start)} - ${fmt(end)}`;
-  if (end) return `Through ${fmt(end)}`;
-  return `From ${fmt(start!)}`;
 }
 
 function StatCell({
@@ -69,12 +51,8 @@ export default function SnapshotCard({
   commitCount,
   detectedSkills,
   keyPattern,
-  dateRangeStart,
-  dateRangeEnd,
   projectAreas,
 }: SnapshotCardProps) {
-  const dateRange = formatDateRange(dateRangeStart, dateRangeEnd);
-
   const sessionsPerWeek = perWeek(sessionCount, dayCount);
   const msgsPerWeek = perWeek(messageCount, dayCount);
   const filesPerWeek = perWeek(fileCount, dayCount);
@@ -82,53 +60,62 @@ export default function SnapshotCard({
   const linesAddedPerWeek = perWeek(linesAdded, dayCount);
   const linesRemovedPerWeek = perWeek(linesRemoved, dayCount);
 
-  const areas = projectAreas?.areas ?? [];
+  // Filter out known plugins/tools from project areas
+  const KNOWN_TOOLS = new Set([
+    "superpowers",
+    "claude-code-plugins",
+    "claude-code",
+    "plugins",
+    "mcp-servers",
+    "mcp",
+    ".claude",
+  ]);
+  const areas = (projectAreas?.areas ?? []).filter(
+    (a) => !KNOWN_TOOLS.has(a.name.toLowerCase()),
+  );
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900/50">
-      {/* Date range */}
-      {dateRange && (
-        <div className="mb-4 text-xs font-medium text-slate-500 dark:text-slate-400">
-          {dateRange}
-          {dayCount != null && ` (${dayCount} days)`}
-        </div>
-      )}
-
       {/* Per-week stats */}
-      <div className="flex flex-wrap gap-6 pb-5">
-        {sessionsPerWeek != null && (
-          <StatCell value={sessionsPerWeek} label="Sessions/wk" />
-        )}
-        {msgsPerWeek != null && (
-          <StatCell value={msgsPerWeek} label="Msgs/wk" />
-        )}
-        {commitsPerWeek != null && (
-          <StatCell value={commitsPerWeek} label="Commits/wk" />
-        )}
-        {filesPerWeek != null && (
-          <StatCell value={filesPerWeek} label="Files/wk" />
-        )}
-        {linesAddedPerWeek != null && (
-          <StatCell
-            value={`+${linesAddedPerWeek}`}
-            label="Added/wk"
-            className="text-green-600 dark:text-green-400"
-          />
-        )}
-        {linesRemovedPerWeek != null && (
-          <StatCell
-            value={`-${linesRemovedPerWeek}`}
-            label="Removed/wk"
-            className="text-red-600 dark:text-red-400"
-          />
-        )}
+      <div className="pb-5">
+        <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+          Weekly Averages
+        </div>
+        <div className="flex flex-wrap gap-6">
+          {sessionsPerWeek != null && (
+            <StatCell value={sessionsPerWeek} label="Sessions" />
+          )}
+          {msgsPerWeek != null && (
+            <StatCell value={msgsPerWeek} label="Messages" />
+          )}
+          {commitsPerWeek != null && (
+            <StatCell value={commitsPerWeek} label="Commits" />
+          )}
+          {filesPerWeek != null && (
+            <StatCell value={filesPerWeek} label="Files" />
+          )}
+          {linesAddedPerWeek != null && (
+            <StatCell
+              value={`+${linesAddedPerWeek}`}
+              label="Added"
+              className="text-green-600 dark:text-green-400"
+            />
+          )}
+          {linesRemovedPerWeek != null && (
+            <StatCell
+              value={`-${linesRemovedPerWeek}`}
+              label="Removed"
+              className="text-red-600 dark:text-red-400"
+            />
+          )}
+        </div>
       </div>
 
       {/* Projects */}
       {areas.length > 0 && (
         <div className="border-t border-slate-100 pt-5 dark:border-slate-800">
           <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Projects
+            Project Areas
           </h3>
           <div className="flex flex-wrap gap-2">
             {areas.map((area) => (
@@ -150,11 +137,11 @@ export default function SnapshotCard({
         </div>
       )}
 
-      {/* Skills & Plugins */}
+      {/* Features Used */}
       {detectedSkills.length > 0 && (
         <div className="mt-5 border-t border-slate-100 pt-5 dark:border-slate-800">
           <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Skills & Plugins
+            Features Used
           </h3>
           <SkillBadges skills={detectedSkills} />
         </div>

@@ -124,28 +124,28 @@ function AtAGlanceSection({
 }) {
   const items = [
     {
-      label: "What's Working",
+      label: "Strengths",
       text: data.whats_working,
       color:
         "border-l-green-500 bg-green-50/50 dark:bg-green-950/20 dark:border-l-green-600",
       iconColor: "text-green-600 dark:text-green-400",
     },
     {
-      label: "What's Hindering",
+      label: "Challenges",
       text: data.whats_hindering,
       color:
         "border-l-red-500 bg-red-50/50 dark:bg-red-950/20 dark:border-l-red-600",
       iconColor: "text-red-600 dark:text-red-400",
     },
     {
-      label: "Quick Wins",
+      label: "Opportunities",
       text: data.quick_wins,
       color:
         "border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 dark:border-l-amber-600",
       iconColor: "text-amber-600 dark:text-amber-400",
     },
     {
-      label: "Ambitious Workflows",
+      label: "Next Frontiers",
       text: data.ambitious_workflows,
       color:
         "border-l-purple-500 bg-purple-50/50 dark:bg-purple-950/20 dark:border-l-purple-600",

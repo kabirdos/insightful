@@ -611,8 +611,6 @@ export default function UploadPage() {
               chartData={normalizeChartData(parsed.chartData)}
               detectedSkills={normalizeSkills(parsed.detectedSkills)}
               keyPattern={parsed.data.interaction_style?.key_pattern ?? null}
-              dateRangeStart={parsed.stats.dateRangeStart ?? null}
-              dateRangeEnd={parsed.stats.dateRangeEnd ?? null}
               projectAreas={
                 disabledSections["project_areas"]
                   ? null
@@ -749,8 +747,6 @@ export default function UploadPage() {
             chartData={normalizeChartData(parsed.chartData)}
             detectedSkills={normalizeSkills(parsed.detectedSkills)}
             keyPattern={parsed.data.interaction_style?.key_pattern ?? null}
-            dateRangeStart={parsed.stats.dateRangeStart ?? null}
-            dateRangeEnd={parsed.stats.dateRangeEnd ?? null}
             projectAreas={
               disabledSections["project_areas"]
                 ? null
