@@ -543,13 +543,13 @@ export default function HomePage() {
               <div className="text-xs font-bold text-slate-600 mb-2">
                 Option 1: Install the skill
               </div>
-              <CopyBlock text="claude install craigdossantos/insight-harness" />
+              <CopyBlock text="mkdir -p ~/.claude/skills/insight-harness/scripts && curl -sL https://raw.githubusercontent.com/craigdossantos/claude-toolkit/main/skills/insight-harness/SKILL.md -o ~/.claude/skills/insight-harness/SKILL.md && curl -sL https://raw.githubusercontent.com/craigdossantos/claude-toolkit/main/skills/insight-harness/scripts/extract.py -o ~/.claude/skills/insight-harness/scripts/extract.py" />
               <p className="mt-2 text-[11px] text-slate-400">
-                Then run{" "}
+                Paste in terminal. Then run{" "}
                 <code className="bg-slate-200 px-1 rounded text-[10px]">
                   /insight-harness
                 </code>{" "}
-                in any Claude Code session.
+                in Claude Code.
               </p>
             </div>
             <div className="rounded-lg bg-slate-50 border border-slate-200 p-4">
@@ -566,7 +566,7 @@ export default function HomePage() {
 
           <div className="mt-4 flex items-center gap-4 text-xs text-slate-400">
             <a
-              href="https://github.com/craigdossantos/insight-harness"
+              href="https://github.com/craigdossantos/claude-toolkit/tree/main/skills/insight-harness"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-blue-600 transition-colors"
