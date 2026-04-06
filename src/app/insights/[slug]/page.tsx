@@ -89,14 +89,6 @@ const SECTIONS: Array<{
     iconBgClass: "bg-indigo-100 dark:bg-indigo-900/30",
   },
   {
-    key: "project_areas",
-    label: "Project Areas",
-    dataKey: "projectAreas",
-    sectionType: "project_areas",
-    icon: "📁",
-    iconBgClass: "bg-slate-100 dark:bg-slate-800",
-  },
-  {
     key: "impressive_workflows",
     label: "Impressive Workflows",
     dataKey: "impressiveWorkflows",
@@ -280,11 +272,13 @@ export default function InsightDetailPage() {
           </Link>
           <div className="flex items-center gap-2 text-sm text-slate-500">
             <Calendar className="h-3.5 w-3.5" />
-            {new Date(report.publishedAt).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
+            {report.dateRangeStart && report.dateRangeEnd
+              ? `${new Date(report.dateRangeStart + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${new Date(report.dateRangeEnd + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+              : new Date(report.publishedAt).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
           </div>
         </div>
         <button
@@ -309,8 +303,18 @@ export default function InsightDetailPage() {
           chartData={report.chartData}
           detectedSkills={report.detectedSkills}
           keyPattern={report.interactionStyle?.key_pattern ?? null}
+          dateRangeStart={report.dateRangeStart}
+          dateRangeEnd={report.dateRangeEnd}
+          projectAreas={report.projectAreas}
         />
       </div>
+
+      {/* Project Links */}
+      {report.projectLinks.length > 0 && (
+        <div className="mb-6">
+          <ProjectLinks links={report.projectLinks} />
+        </div>
+      )}
 
       {/* Sections */}
       <div className="space-y-4">
@@ -344,13 +348,6 @@ export default function InsightDetailPage() {
           );
         })}
       </div>
-
-      {/* Project Links */}
-      {report.projectLinks.length > 0 && (
-        <div className="mt-8">
-          <ProjectLinks links={report.projectLinks} />
-        </div>
-      )}
 
       {/* Comments */}
       <div className="mt-12">
