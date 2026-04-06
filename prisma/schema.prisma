@@ -16,6 +16,10 @@ model User {
   displayName String?
   avatarUrl   String?
   bio         String?
+  githubUrl   String?
+  twitterUrl  String?
+  linkedinUrl String?
+  websiteUrl  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
