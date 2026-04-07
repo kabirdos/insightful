@@ -108,6 +108,106 @@ export interface ParsedInsightsReport {
   detectedRedactions: RedactionItem[];
   chartData?: ChartData;
   detectedSkills?: SkillKey[];
+  reportType?: "insights" | "insight-harness";
+  harnessData?: HarnessData;
+}
+
+// ── Harness Data (insight-harness reports) ──────────────────────────────
+
+export interface HarnessStats {
+  totalTokens: number;
+  durationHours: number;
+  avgSessionMinutes: number;
+  skillsUsedCount: number;
+  hooksCount: number;
+  prCount: number;
+}
+
+export interface HarnessAutonomy {
+  label: string;
+  description: string;
+  userMessages: number;
+  assistantMessages: number;
+  turnCount: number;
+  errorRate: string;
+}
+
+export interface HarnessFeaturePill {
+  name: string;
+  active: boolean;
+  value: string;
+}
+
+export interface HarnessSkillEntry {
+  name: string;
+  calls: number;
+  source: string;
+  description: string;
+}
+
+export interface HarnessHookDef {
+  event: string;
+  matcher: string;
+  script: string;
+}
+
+export interface HarnessPlugin {
+  name: string;
+  version: string;
+  marketplace: string;
+  active: boolean;
+}
+
+export interface HarnessFileOpStyle {
+  readPct: number;
+  editPct: number;
+  writePct: number;
+  grepCount: number;
+  globCount: number;
+  style: string;
+}
+
+export interface HarnessAgentDispatch {
+  totalAgents: number;
+  types: Record<string, number>;
+  models: Record<string, number>;
+  backgroundPct: number;
+  customAgents: string[];
+}
+
+export interface HarnessGitPatterns {
+  prCount: number;
+  commitCount: number;
+  linesAdded: string;
+  branchPrefixes: Record<string, number>;
+}
+
+export interface HarnessWriteupSection {
+  title: string;
+  contentHtml: string;
+}
+
+export interface HarnessData {
+  stats: HarnessStats;
+  autonomy: HarnessAutonomy;
+  featurePills: HarnessFeaturePill[];
+  toolUsage: Record<string, number>;
+  skillInventory: HarnessSkillEntry[];
+  hookDefinitions: HarnessHookDef[];
+  hookFrequency: Record<string, number>;
+  plugins: HarnessPlugin[];
+  harnessFiles: string[];
+  fileOpStyle: HarnessFileOpStyle;
+  agentDispatch: HarnessAgentDispatch | null;
+  cliTools: Record<string, number>;
+  languages: Record<string, number>;
+  models: Record<string, number>;
+  permissionModes: Record<string, number>;
+  mcpServers: Record<string, number>;
+  gitPatterns: HarnessGitPatterns;
+  versions: string[];
+  writeupSections: HarnessWriteupSection[];
+  integrityHash: string;
 }
 
 // v2: Chart data parsed from HTML report

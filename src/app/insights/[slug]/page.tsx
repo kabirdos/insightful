@@ -15,8 +15,11 @@ import {
   type InsightsData,
   type ChartData,
   type SkillKey,
+  type HarnessData,
 } from "@/types/insights";
 import { normalizeChartData } from "@/lib/chart-parser";
+import HarnessOverview from "@/components/HarnessOverview";
+import HarnessSections from "@/components/HarnessSections";
 
 interface ReportData {
   id: string;
@@ -43,6 +46,14 @@ interface ReportData {
   suggestions: InsightsData["suggestions"] | null;
   onTheHorizon: InsightsData["on_the_horizon"] | null;
   funEnding: InsightsData["fun_ending"] | null;
+  // v3: Harness fields
+  reportType: string;
+  totalTokens: number | null;
+  durationHours: number | null;
+  avgSessionMinutes: number | null;
+  prCount: number | null;
+  autonomyLabel: string | null;
+  harnessData: HarnessData | null;
   author: {
     username: string;
     displayName: string | null;
@@ -307,10 +318,27 @@ export default function InsightDetailPage() {
         />
       </div>
 
+      {/* Harness Overview (tokens, autonomy, feature pills) */}
+      {report.harnessData && (
+        <div className="mb-8">
+          <HarnessOverview harnessData={report.harnessData} />
+        </div>
+      )}
+
       {/* Project Links */}
       {report.projectLinks.length > 0 && (
         <div className="mb-6">
           <ProjectLinks links={report.projectLinks} />
+        </div>
+      )}
+
+      {/* Harness Dashboard Sections */}
+      {report.harnessData && (
+        <div className="mb-8">
+          <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-slate-100">
+            Harness Profile
+          </h2>
+          <HarnessSections harnessData={report.harnessData} />
         </div>
       )}
 

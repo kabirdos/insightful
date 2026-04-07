@@ -13,8 +13,17 @@ export interface InsightReportListItemContract {
   linesAdded: number | null;
   linesRemoved: number | null;
   fileCount: number | null;
+  // v3: Harness fields
+  reportType: string;
+  totalTokens: number | null;
+  autonomyLabel: string | null;
 }
 
 export interface InsightReportDetailContract extends InsightReportListItemContract {
   chartData: ChartData | null | unknown; // unknown because Prisma Json? is `any`/`JsonValue`
+  // v3: Harness detail fields
+  durationHours: number | null;
+  avgSessionMinutes: number | null;
+  prCount: number | null;
+  harnessData: unknown; // Prisma Json?
 }

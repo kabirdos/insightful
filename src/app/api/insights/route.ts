@@ -205,6 +205,14 @@ export async function POST(request: Request) {
       projectLinks,
       chartData,
       detectedSkills,
+      // v3: Harness fields
+      reportType,
+      totalTokens,
+      durationHours,
+      avgSessionMinutes,
+      prCount,
+      autonomyLabel,
+      harnessData,
     } = body;
 
     // Auto-generate title if not provided
@@ -239,6 +247,13 @@ export async function POST(request: Request) {
         funEnding: funEnding ?? undefined,
         chartData: chartData ?? undefined,
         detectedSkills: detectedSkills ?? [],
+        reportType: reportType ?? "insights",
+        totalTokens: totalTokens ?? null,
+        durationHours: durationHours ?? null,
+        avgSessionMinutes: avgSessionMinutes ?? null,
+        prCount: prCount ?? null,
+        autonomyLabel: autonomyLabel ?? null,
+        harnessData: harnessData ?? undefined,
         ...(Array.isArray(projectLinks) && projectLinks.length > 0
           ? {
               projectLinks: {
