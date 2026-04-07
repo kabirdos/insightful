@@ -18,12 +18,14 @@ import {
   Link as LinkIcon,
   Plus,
   Trash2,
+  Sparkles,
 } from "lucide-react";
 import clsx from "clsx";
 import type {
   ParsedInsightsReport,
   RedactionItem,
   InsightsData,
+  HarnessData,
 } from "@/types/insights";
 import { normalizeSkills } from "@/types/insights";
 import { normalizeChartData } from "@/lib/chart-parser";
@@ -95,6 +97,27 @@ function CopyablePathBlock({
       </div>
     </div>
   );
+}
+
+function stripDisabledHarnessSections(
+  data: HarnessData,
+  disabled: Record<string, boolean>,
+): HarnessData {
+  const copy = { ...data };
+  for (const key of Object.keys(disabled)) {
+    if (disabled[key] && key in copy) {
+      const k = key as keyof HarnessData;
+      const val = copy[k];
+      if (Array.isArray(val)) {
+        (copy as Record<string, unknown>)[key] = [];
+      } else if (typeof val === "object" && val !== null) {
+        (copy as Record<string, unknown>)[key] = {};
+      } else if (typeof val === "string") {
+        (copy as Record<string, unknown>)[key] = "";
+      }
+    }
+  }
+  return copy;
 }
 
 function DropZoneContent({
@@ -229,6 +252,22 @@ export default function UploadPage() {
     { dataKey: "fun_ending", sectionType: "fun_ending", label: "Fun Ending" },
   ];
 
+  // Harness-specific sections that can be toggled off.
+  // Keys match HarnessData fields that get nulled when disabled.
+  const HARNESS_SECTION_OPTIONS: { key: keyof HarnessData; label: string }[] = [
+    { key: "skillInventory", label: "Skills & Commands" },
+    { key: "toolUsage", label: "Tool Usage" },
+    { key: "hookDefinitions", label: "Hooks & Safety" },
+    { key: "plugins", label: "Plugins" },
+    { key: "fileOpStyle", label: "File Operation Style" },
+    { key: "agentDispatch", label: "Agent Dispatch" },
+    { key: "cliTools", label: "CLI Tools" },
+    { key: "languages", label: "Languages" },
+    { key: "models", label: "Models" },
+    { key: "mcpServers", label: "MCP Servers" },
+    { key: "writeupSections", label: "Writeup Analysis" },
+  ];
+
   const toggleSection = (key: string) => {
     setDisabledSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
@@ -340,7 +379,10 @@ export default function UploadPage() {
           year: "numeric",
         });
       }
-      const title = `${firstName}'s Claude Code Insights - ${titleDate}`;
+      const isHarness = parsed.reportType === "insight-harness";
+      const title = isHarness
+        ? `${firstName}'s Insight Harness - ${titleDate}`
+        : `${firstName}'s Claude Code Insights - ${titleDate}`;
 
       // Map InsightsData snake_case keys to Prisma camelCase fields
       // and remove disabled sections
@@ -390,7 +432,9 @@ export default function UploadPage() {
             parsed.harnessData?.stats.avgSessionMinutes ?? null,
           prCount: parsed.harnessData?.stats.prCount ?? null,
           autonomyLabel: parsed.harnessData?.autonomy.label ?? null,
-          harnessData: parsed.harnessData ?? null,
+          harnessData: parsed.harnessData
+            ? stripDisabledHarnessSections(parsed.harnessData, disabledSections)
+            : null,
         }),
       });
 
@@ -548,6 +592,18 @@ export default function UploadPage() {
       {/* Step 2: Redaction Review */}
       {step === "redact" && parsed && (
         <div>
+          {/* Report type indicator */}
+          {parsed.reportType === "insight-harness" && (
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400">
+              <Sparkles className="h-4 w-4 shrink-0" />
+              <span>
+                <strong>Insight Harness report detected</strong> — includes
+                token usage, tool breakdowns, skills, hooks, and more alongside
+                your /insights narrative.
+              </span>
+            </div>
+          )}
+
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
@@ -608,6 +664,39 @@ export default function UploadPage() {
                 );
               })}
             </div>
+
+            {/* Harness section toggles */}
+            {parsed?.harnessData && (
+              <>
+                <h4 className="mb-2 mt-4 text-xs font-semibold text-slate-500">
+                  Harness Sections
+                </h4>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {HARNESS_SECTION_OPTIONS.map(({ key, label }) => {
+                    const disabled = !!disabledSections[key];
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => toggleSection(key)}
+                        className={clsx(
+                          "flex items-center justify-between rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+                          disabled
+                            ? "border-slate-200 bg-slate-50 text-slate-400"
+                            : "border-blue-200 bg-blue-50 text-blue-700",
+                        )}
+                      >
+                        <span>{label}</span>
+                        {disabled ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
 
           {redactions.length === 0 ? (
@@ -770,7 +859,12 @@ export default function UploadPage() {
                 <h3 className="mb-3 text-sm font-semibold text-slate-700">
                   Harness Profile
                 </h3>
-                <HarnessSections harnessData={parsed.harnessData} />
+                <HarnessSections
+                  harnessData={stripDisabledHarnessSections(
+                    parsed.harnessData,
+                    disabledSections,
+                  )}
+                />
               </div>
             )}
           </div>
@@ -924,7 +1018,12 @@ export default function UploadPage() {
               <h3 className="mb-3 text-lg font-semibold text-slate-900">
                 Harness Profile
               </h3>
-              <HarnessSections harnessData={parsed.harnessData} />
+              <HarnessSections
+                harnessData={stripDisabledHarnessSections(
+                  parsed.harnessData,
+                  disabledSections,
+                )}
+              />
             </div>
           )}
 

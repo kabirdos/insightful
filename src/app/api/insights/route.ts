@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import type { InsightReportListItemContract } from "@/types/api-contracts";
+import { normalizeHarnessData } from "@/types/insights";
+import type { Prisma } from "@prisma/client";
 const SECTION_KEYS = [
   "atAGlance",
   "interactionStyle",
@@ -253,7 +255,10 @@ export async function POST(request: Request) {
         avgSessionMinutes: avgSessionMinutes ?? null,
         prCount: prCount ?? null,
         autonomyLabel: autonomyLabel ?? null,
-        harnessData: harnessData ?? undefined,
+        harnessData:
+          (normalizeHarnessData(
+            harnessData,
+          ) as unknown as Prisma.InputJsonValue) ?? undefined,
         ...(Array.isArray(projectLinks) && projectLinks.length > 0
           ? {
               projectLinks: {

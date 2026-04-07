@@ -13,6 +13,7 @@ import {
   X,
   Check,
   Globe,
+  Trash2,
 } from "lucide-react";
 import InsightCard from "@/components/InsightCard";
 
@@ -284,7 +285,31 @@ export default function UserProfilePage() {
   const [error, setError] = useState(false);
   const [editing, setEditing] = useState(false);
 
+  const [deleting, setDeleting] = useState<string | null>(null);
+
   const isOwnProfile = session?.user?.username === username;
+
+  const handleDelete = async (slug: string) => {
+    if (!confirm("Delete this report? This cannot be undone.")) return;
+    setDeleting(slug);
+    try {
+      const res = await fetch(`/api/insights/${slug}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              reports: prev.reports.filter((r) => r.slug !== slug),
+              totalReports: prev.totalReports - 1,
+            }
+          : prev,
+      );
+    } catch {
+      alert("Failed to delete report. Please try again.");
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   useEffect(() => {
     fetch(`/api/users/${username}`)
@@ -455,24 +480,39 @@ export default function UserProfilePage() {
       {profile.reports.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2">
           {profile.reports.map((report) => (
-            <InsightCard
-              key={report.slug}
-              slug={report.slug}
-              title={report.title}
-              authorUsername={profile.username}
-              authorAvatar={profile.avatarUrl}
-              authorDisplayName={profile.displayName}
-              publishedAt={report.publishedAt}
-              dateRangeStart={report.dateRangeStart}
-              dateRangeEnd={report.dateRangeEnd}
-              sessionCount={report.sessionCount}
-              messageCount={report.messageCount}
-              commitCount={report.commitCount}
-              whatsWorkingPreview={report.whatsWorkingPreview}
-              voteCount={report.voteCount}
-              commentCount={report.commentCount}
-              sectionTags={report.sectionTags}
-            />
+            <div key={report.slug} className="relative">
+              <InsightCard
+                slug={report.slug}
+                title={report.title}
+                authorUsername={profile.username}
+                authorAvatar={profile.avatarUrl}
+                authorDisplayName={profile.displayName}
+                publishedAt={report.publishedAt}
+                dateRangeStart={report.dateRangeStart}
+                dateRangeEnd={report.dateRangeEnd}
+                sessionCount={report.sessionCount}
+                messageCount={report.messageCount}
+                commitCount={report.commitCount}
+                whatsWorkingPreview={report.whatsWorkingPreview}
+                voteCount={report.voteCount}
+                commentCount={report.commentCount}
+                sectionTags={report.sectionTags}
+              />
+              {isOwnProfile && (
+                <button
+                  onClick={() => handleDelete(report.slug)}
+                  disabled={deleting === report.slug}
+                  className="absolute right-3 top-3 rounded-lg border border-slate-200 bg-white/90 p-1.5 text-slate-400 opacity-0 transition-all hover:border-red-300 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 [div:hover>&]:opacity-100 dark:border-slate-700 dark:bg-slate-900/90"
+                  title="Delete report"
+                >
+                  {deleting === report.slug ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-400 border-t-transparent" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                </button>
+              )}
+            </div>
           ))}
         </div>
       ) : (
