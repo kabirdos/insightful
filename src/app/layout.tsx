@@ -18,6 +18,9 @@ export const metadata: Metadata = {
   title: "Insight Harness — See How Developers Use Claude Code",
   description:
     "Browse real developer workflows — the tools, skills, plugins, and patterns they use across actual coding sessions. Upload your /insights report and share your profile.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

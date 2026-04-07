@@ -13,7 +13,6 @@ import {
   User,
   TrendingUp,
   Home,
-  Sparkles,
   ChevronDown,
   GitFork,
 } from "lucide-react";
@@ -47,14 +46,15 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-lg dark:border-slate-800 dark:bg-slate-950/80">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        {/* Logo */}
+        {/* Logo — terminal invocation style */}
         <Link
           href="/"
-          className="flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white"
+          className="flex items-baseline gap-0 font-mono text-lg font-semibold tracking-tight"
         >
-          <Sparkles className="h-6 w-6 text-blue-600" />
-          <span>
-            Insight <span className="text-blue-600">Harness</span>
+          <span className="text-indigo-500">&gt;</span>
+          <span className="text-slate-400 dark:text-slate-500">/</span>
+          <span className="text-slate-900 dark:text-white">
+            insight-harness
           </span>
         </Link>
 
