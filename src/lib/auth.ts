@@ -18,7 +18,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const user = await prisma.user.upsert({
           where: { githubId },
           create: { githubId, username, displayName, avatarUrl },
-          update: { displayName, avatarUrl },
+          update: { username, displayName, avatarUrl },
         });
 
         token.sub = user.id;
