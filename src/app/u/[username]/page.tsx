@@ -502,7 +502,7 @@ export default function UserProfilePage() {
                 <button
                   onClick={() => handleDelete(report.slug)}
                   disabled={deleting === report.slug}
-                  className="absolute right-3 top-3 rounded-lg border border-slate-200 bg-white/90 p-1.5 text-slate-400 opacity-0 transition-all hover:border-red-300 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 [div:hover>&]:opacity-100 dark:border-slate-700 dark:bg-slate-900/90"
+                  className="absolute right-3 top-3 rounded-lg border border-slate-200 bg-white/90 p-1.5 text-slate-400 opacity-0 transition-all hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-700 dark:hover:bg-red-950/50 dark:hover:text-red-400 group-hover:opacity-100 [div:hover>&]:opacity-100 dark:border-slate-700 dark:bg-slate-900/90"
                   title="Delete report"
                 >
                   {deleting === report.slug ? (
