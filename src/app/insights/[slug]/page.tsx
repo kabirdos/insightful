@@ -12,6 +12,7 @@ import SnapshotCard from "@/components/SnapshotCard";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import {
   normalizeSkills,
+  normalizeHarnessData,
   type InsightsData,
   type ChartData,
   type SkillKey,
@@ -204,6 +205,7 @@ export default function InsightDetailPage() {
         if (raw) {
           raw.detectedSkills = normalizeSkills(raw.detectedSkills);
           raw.chartData = normalizeChartData(raw.chartData);
+          raw.harnessData = normalizeHarnessData(raw.harnessData);
         }
         setReport(raw);
       })

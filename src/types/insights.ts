@@ -330,3 +330,56 @@ export function normalizeSkills(raw: unknown): SkillKey[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter(isSkillKey);
 }
+
+/**
+ * Validate that an unknown value from the DB (Prisma Json?) looks like
+ * HarnessData. Returns the typed value if it passes, or null if malformed.
+ * Checks for the required top-level keys with correct types.
+ */
+export function normalizeHarnessData(raw: unknown): HarnessData | null {
+  if (!raw || typeof raw !== "object") return null;
+  const obj = raw as Record<string, unknown>;
+
+  // Check a few required structural keys to confirm it's HarnessData
+  if (typeof obj.stats !== "object" || obj.stats === null) return null;
+  if (typeof obj.autonomy !== "object" || obj.autonomy === null) return null;
+  if (!Array.isArray(obj.featurePills)) return null;
+
+  // Fill in defaults for optional/array fields that may be missing
+  return {
+    stats: obj.stats as HarnessData["stats"],
+    autonomy: obj.autonomy as HarnessData["autonomy"],
+    featurePills: obj.featurePills as HarnessData["featurePills"],
+    toolUsage: (obj.toolUsage as Record<string, number>) ?? {},
+    skillInventory: (obj.skillInventory as HarnessData["skillInventory"]) ?? [],
+    hookDefinitions:
+      (obj.hookDefinitions as HarnessData["hookDefinitions"]) ?? [],
+    hookFrequency: (obj.hookFrequency as Record<string, number>) ?? {},
+    plugins: (obj.plugins as HarnessData["plugins"]) ?? [],
+    harnessFiles: (obj.harnessFiles as string[]) ?? [],
+    fileOpStyle: (obj.fileOpStyle as HarnessData["fileOpStyle"]) ?? {
+      readPct: 0,
+      editPct: 0,
+      writePct: 0,
+      grepCount: 0,
+      globCount: 0,
+      style: "",
+    },
+    agentDispatch: (obj.agentDispatch as HarnessData["agentDispatch"]) ?? null,
+    cliTools: (obj.cliTools as Record<string, number>) ?? {},
+    languages: (obj.languages as Record<string, number>) ?? {},
+    models: (obj.models as Record<string, number>) ?? {},
+    permissionModes: (obj.permissionModes as Record<string, number>) ?? {},
+    mcpServers: (obj.mcpServers as Record<string, number>) ?? {},
+    gitPatterns: (obj.gitPatterns as HarnessData["gitPatterns"]) ?? {
+      prCount: 0,
+      commitCount: 0,
+      linesAdded: "0",
+      branchPrefixes: {},
+    },
+    versions: (obj.versions as string[]) ?? [],
+    writeupSections:
+      (obj.writeupSections as HarnessData["writeupSections"]) ?? [],
+    integrityHash: (obj.integrityHash as string) ?? "",
+  };
+}

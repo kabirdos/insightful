@@ -144,6 +144,13 @@ export async function PUT(
       "suggestions",
       "onTheHorizon",
       "funEnding",
+      // v3: Harness fields
+      "totalTokens",
+      "durationHours",
+      "avgSessionMinutes",
+      "prCount",
+      "autonomyLabel",
+      "harnessData",
     ];
 
     for (const field of allowedFields) {
