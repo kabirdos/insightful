@@ -30,14 +30,16 @@ export default function CollapsibleSection({
         className="flex w-full items-start gap-4 p-5 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
         type="button"
       >
-        <div
-          className={clsx(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl",
-            iconBgClass,
-          )}
-        >
-          {icon}
-        </div>
+        {icon ? (
+          <div
+            className={clsx(
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl",
+              iconBgClass,
+            )}
+          >
+            {icon}
+          </div>
+        ) : null}
         <div className="min-w-0 flex-1">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             {title}

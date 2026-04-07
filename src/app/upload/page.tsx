@@ -31,6 +31,8 @@ import { applyRedactions } from "@/lib/redaction";
 import SectionRenderer from "@/components/SectionRenderer";
 import SnapshotCard from "@/components/SnapshotCard";
 import CollapsibleSection from "@/components/CollapsibleSection";
+import HarnessOverview from "@/components/HarnessOverview";
+import HarnessSections from "@/components/HarnessSections";
 
 type Step = "upload" | "redact" | "projects" | "preview";
 
@@ -729,6 +731,12 @@ export default function UploadPage() {
                   : parsed.data.project_areas
               }
             />
+            {/* Harness preview (only for insight-harness reports) */}
+            {parsed.harnessData && (
+              <div className="mt-4">
+                <HarnessOverview harnessData={parsed.harnessData} />
+              </div>
+            )}
             <div className="mt-4 space-y-3">
               {SECTION_OPTIONS.map(({ dataKey, sectionType, label }) => {
                 if (disabledSections[dataKey]) return null;
@@ -756,6 +764,15 @@ export default function UploadPage() {
                 );
               })}
             </div>
+            {/* Harness sections preview */}
+            {parsed.harnessData && (
+              <div className="mt-4">
+                <h3 className="mb-3 text-sm font-semibold text-slate-700">
+                  Harness Profile
+                </h3>
+                <HarnessSections harnessData={parsed.harnessData} />
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -866,6 +883,13 @@ export default function UploadPage() {
             }
           />
 
+          {/* Harness preview */}
+          {parsed.harnessData && (
+            <div className="mt-4">
+              <HarnessOverview harnessData={parsed.harnessData} />
+            </div>
+          )}
+
           <div className="mt-4 space-y-3">
             {SECTION_OPTIONS.map(({ dataKey, sectionType, label }) => {
               if (disabledSections[dataKey]) return null;
@@ -893,6 +917,16 @@ export default function UploadPage() {
               );
             })}
           </div>
+
+          {/* Harness sections preview */}
+          {parsed.harnessData && (
+            <div className="mt-4">
+              <h3 className="mb-3 text-lg font-semibold text-slate-900">
+                Harness Profile
+              </h3>
+              <HarnessSections harnessData={parsed.harnessData} />
+            </div>
+          )}
 
           <div className="mt-8 flex justify-end">
             <button
