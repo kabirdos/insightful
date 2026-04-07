@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { parseInsightsHtml } from "@/lib/parser";
+import { isHarnessReport, parseHarnessHtml } from "@/lib/harness-parser";
 import { detectRedactions } from "@/lib/redaction";
 import { parseChartData } from "@/lib/chart-parser";
 import { detectSkills } from "@/lib/skill-detector";
@@ -83,28 +84,63 @@ export async function POST(request: Request) {
 
     const html = await file.text();
 
-    // Parse using the cheerio-based parser
-    const parsed = parseInsightsHtml(html);
+    // Detect report type
+    const isHarness = isHarnessReport(html);
 
-    // Extract chart data and detect skills
-    const chartData = parseChartData(html);
+    // For harness reports, extract the embedded /insights tab content
+    // and parse that — the top-level HTML has harness-specific selectors
+    // that would confuse the insights parser (wrong .stat/.subtitle elements).
+    let insightsHtml = html;
+    if (isHarness) {
+      const $doc = cheerio.load(html);
+      const insightsTab = $doc("#tab-insights");
+      if (insightsTab.length) {
+        // Wrap in minimal HTML so the parser can find selectors
+        insightsHtml = `<html><body>${insightsTab.html()}</body></html>`;
+      }
+    }
+
+    // Parse the /insights data from the appropriate HTML source
+    const parsed = parseInsightsHtml(insightsHtml);
+
+    // Extract chart data and detect skills from the insights HTML
+    const chartData = parseChartData(insightsHtml);
     const detectedSkills = detectSkills(parsed.data, chartData);
 
     // Detect sensitive data using the redaction engine
     const detectedRedactions = detectRedactions(parsed.data);
 
-    // Extract enhanced stats from the stats row
-    const enhancedStats = extractEnhancedStats(html);
+    // Extract enhanced stats — for harness reports, use harness stats grid;
+    // for plain insights, use the insights stats row
+    const enhancedStats = extractEnhancedStats(isHarness ? html : insightsHtml);
+
+    // Parse harness-specific data if applicable
+    const harnessData = isHarness ? parseHarnessHtml(html) : undefined;
+
+    // For harness reports, override stats with harness-level data
+    // since the embedded insights tab may have stale/different stats
+    const stats = {
+      ...parsed.stats,
+      ...enhancedStats,
+      ...(harnessData
+        ? {
+            sessionCount:
+              parsed.stats.sessionCount || harnessData.stats.totalTokens > 0
+                ? parsed.stats.sessionCount
+                : 0,
+            dayCount: enhancedStats.dayCount ?? 30,
+          }
+        : {}),
+    };
 
     return NextResponse.json({
-      stats: {
-        ...parsed.stats,
-        ...enhancedStats,
-      },
+      stats,
       data: parsed.data,
       detectedRedactions,
       chartData,
       detectedSkills,
+      reportType: isHarness ? "insight-harness" : "insights",
+      harnessData,
     });
   } catch (error) {
     console.error("POST /api/upload error:", error);

@@ -380,6 +380,15 @@ export default function UploadPage() {
           projectLinks,
           chartData: parsed.chartData,
           detectedSkills: parsed.detectedSkills,
+          // v3: Harness fields
+          reportType: parsed.reportType ?? "insights",
+          totalTokens: parsed.harnessData?.stats.totalTokens ?? null,
+          durationHours: parsed.harnessData?.stats.durationHours ?? null,
+          avgSessionMinutes:
+            parsed.harnessData?.stats.avgSessionMinutes ?? null,
+          prCount: parsed.harnessData?.stats.prCount ?? null,
+          autonomyLabel: parsed.harnessData?.autonomy.label ?? null,
+          harnessData: parsed.harnessData ?? null,
         }),
       });
 

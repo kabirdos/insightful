@@ -52,6 +52,15 @@ model InsightReport {
   chartData       Json?
   detectedSkills  String[]   @default([])
 
+  // v3: Harness report fields
+  reportType        String   @default("insights")
+  totalTokens       Int?
+  durationHours     Int?
+  avgSessionMinutes Float?
+  prCount           Int?
+  autonomyLabel     String?
+  harnessData       Json?
+
   // Content sections (stored as redacted JSON)
   atAGlance          Json?
   interactionStyle   Json?
