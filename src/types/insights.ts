@@ -251,61 +251,69 @@ export const SKILL_METADATA: Record<SkillKey, SkillMetadata> = {
     key: "parallel_agents",
     label: "Parallel Agents",
     icon: "🔀",
-    colorClass: "bg-violet-100 text-violet-700",
+    colorClass:
+      "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
   },
   worktrees: {
     key: "worktrees",
     label: "Worktrees",
     icon: "🌳",
-    colorClass: "bg-green-100 text-green-700",
+    colorClass:
+      "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
   },
   custom_skills: {
     key: "custom_skills",
     label: "Custom Skills",
     icon: "⚡",
-    colorClass: "bg-amber-100 text-amber-700",
+    colorClass:
+      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
   },
   hooks: {
     key: "hooks",
     label: "Hooks",
     icon: "🪝",
-    colorClass: "bg-sky-100 text-sky-700",
+    colorClass: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
   },
   mcp_servers: {
     key: "mcp_servers",
     label: "MCP Servers",
     icon: "🔌",
-    colorClass: "bg-slate-100 text-slate-700",
+    colorClass:
+      "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
   },
   playwright: {
     key: "playwright",
     label: "Playwright",
     icon: "🎭",
-    colorClass: "bg-pink-100 text-pink-700",
+    colorClass:
+      "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
   },
   headless_mode: {
     key: "headless_mode",
     label: "Headless Mode",
     icon: "🤖",
-    colorClass: "bg-indigo-100 text-indigo-700",
+    colorClass:
+      "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
   },
   plan_mode: {
     key: "plan_mode",
     label: "Plan Mode",
     icon: "📋",
-    colorClass: "bg-emerald-100 text-emerald-700",
+    colorClass:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
   },
   code_review: {
     key: "code_review",
     label: "Code Review",
     icon: "📝",
-    colorClass: "bg-red-100 text-red-700",
+    colorClass: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
   },
   subagents: {
     key: "subagents",
     label: "Subagents",
     icon: "🧩",
-    colorClass: "bg-teal-100 text-teal-700",
+    colorClass:
+      "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
   },
 };
 

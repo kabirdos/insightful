@@ -223,8 +223,8 @@ export default function InsightDetailPage() {
     return (
       <div className="mx-auto max-w-4xl px-4 py-16">
         <div className="space-y-4">
-          <div className="h-8 w-64 animate-pulse rounded bg-slate-200" />
-          <div className="h-4 w-96 animate-pulse rounded bg-slate-200" />
+          <div className="h-8 w-64 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+          <div className="h-4 w-96 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
           <div className="h-64 animate-pulse rounded-xl bg-slate-200" />
         </div>
       </div>
@@ -235,10 +235,10 @@ export default function InsightDetailPage() {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
-          <h2 className="mb-2 text-xl font-semibold text-slate-900">
+          <h2 className="mb-2 text-xl font-semibold text-slate-900 dark:text-white">
             Report not found
           </h2>
-          <p className="text-slate-500">
+          <p className="text-slate-500 dark:text-slate-400">
             {error || "This insight report doesn't exist."}
           </p>
           <Link
@@ -270,7 +270,7 @@ export default function InsightDetailPage() {
               className="rounded-full"
             />
           ) : (
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-600">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-600 dark:bg-blue-900 dark:text-blue-400">
               {(report.author.displayName ||
                 report.author.username)[0].toUpperCase()}
             </div>
@@ -279,7 +279,7 @@ export default function InsightDetailPage() {
         <div className="flex-1">
           <Link
             href={`/u/${report.author.username}`}
-            className="font-semibold text-slate-900 hover:text-blue-600"
+            className="font-semibold text-slate-900 hover:text-blue-600 dark:text-white"
           >
             {report.author.displayName || report.author.username}
           </Link>
@@ -296,7 +296,7 @@ export default function InsightDetailPage() {
         </div>
         <button
           onClick={handleShare}
-          className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+          className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
         >
           <Share2 className="h-4 w-4" />
           {copied ? "Copied!" : "Share"}
