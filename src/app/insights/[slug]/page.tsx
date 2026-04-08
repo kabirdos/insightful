@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Calendar, Share2, Sparkles } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { Calendar, Pencil, Share2, Sparkles } from "lucide-react";
 import SectionRenderer from "@/components/SectionRenderer";
 import CommentSection from "@/components/CommentSection";
 import ProjectLinks from "@/components/ProjectLinks";
@@ -34,6 +35,7 @@ interface ReportData {
   id: string;
   slug: string;
   title: string;
+  authorId: string;
   publishedAt: string;
   sessionCount: number | null;
   messageCount: number | null;
@@ -238,6 +240,7 @@ function MiniBarChart({
 export default function InsightDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
+  const { data: session } = useSession();
   const [report, setReport] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -352,13 +355,24 @@ export default function InsightDetailPage() {
             {report.dayCount != null && ` · ${report.dayCount} days`}
           </div>
         </div>
-        <button
-          onClick={handleShare}
-          className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-        >
-          <Share2 className="h-4 w-4" />
-          {copied ? "Copied!" : "Share"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            <Share2 className="h-4 w-4" />
+            {copied ? "Copied!" : "Share"}
+          </button>
+          {session?.user?.id === report.authorId && (
+            <Link
+              href={`/insights/${slug}/edit`}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Edit
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* ── Harness Report Layout ── */}

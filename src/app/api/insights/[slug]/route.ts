@@ -151,6 +151,15 @@ export async function PUT(
       "prCount",
       "autonomyLabel",
       "harnessData",
+      // Stats fields for visibility editing
+      "sessionCount",
+      "messageCount",
+      "commitCount",
+      "linesAdded",
+      "linesRemoved",
+      "fileCount",
+      "chartData",
+      "detectedSkills",
     ];
 
     for (const field of allowedFields) {
