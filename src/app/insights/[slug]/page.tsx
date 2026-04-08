@@ -19,8 +19,16 @@ import {
   type HarnessData,
 } from "@/types/insights";
 import { normalizeChartData } from "@/lib/chart-parser";
-import HarnessOverview from "@/components/HarnessOverview";
-import HarnessSections from "@/components/HarnessSections";
+
+// New redesigned components for harness reports
+import HeroStats from "@/components/HeroStats";
+import HowIWorkCluster from "@/components/HowIWorkCluster";
+import ToolUsageTreemap from "@/components/ToolUsageTreemap";
+import SkillCardGrid from "@/components/SkillCardGrid";
+import CliToolsDonut from "@/components/CliToolsDonut";
+import GitPatternsDisplay from "@/components/GitPatternsDisplay";
+import PermissionModeDisplay from "@/components/PermissionModeDisplay";
+import HooksSafetyTable from "@/components/HooksSafetyTable";
 
 interface ReportData {
   id: string;
@@ -186,6 +194,47 @@ function getSectionSummary(
   }
 }
 
+/* ── Small bar chart for standard report chartData ── */
+function MiniBarChart({
+  data,
+  color = "bg-blue-500",
+  title,
+}: {
+  data: Array<{ label: string; value: number }>;
+  color?: string;
+  title: string;
+}) {
+  if (!data || data.length === 0) return null;
+  const max = Math.max(...data.map((d) => d.value), 1);
+  return (
+    <div>
+      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        {title}
+      </h4>
+      <div className="space-y-1">
+        {data.slice(0, 8).map((item) => (
+          <div key={item.label} className="flex items-center gap-2">
+            <span className="w-20 truncate text-xs text-slate-600 dark:text-slate-400">
+              {item.label}
+            </span>
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+              <div
+                className={`h-full rounded-full ${color}`}
+                style={{
+                  width: `${Math.max(3, (item.value / max) * 100)}%`,
+                }}
+              />
+            </div>
+            <span className="w-10 text-right text-xs text-slate-400">
+              {item.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function InsightDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
@@ -243,7 +292,7 @@ export default function InsightDetailPage() {
           </p>
           <Link
             href="/"
-            className="mt-4 inline-block text-blue-600 hover:underline"
+            className="mt-4 inline-block text-blue-600 hover:underline dark:text-blue-400"
           >
             Back to home
           </Link>
@@ -256,17 +305,19 @@ export default function InsightDetailPage() {
     (report.annotations || []).map((a) => [a.sectionKey, a.body]),
   );
 
+  const isHarness = report.reportType === "insight-harness";
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       {/* Author bar */}
-      <div className="mb-6 flex items-center gap-4">
+      <div className="mb-6 flex items-center gap-4 border-b border-slate-200 pb-6 dark:border-slate-700">
         <Link href={`/u/${report.author.username}`}>
           {report.author.avatarUrl ? (
             <Image
               src={report.author.avatarUrl}
               alt={report.author.displayName || report.author.username}
-              width={48}
-              height={48}
+              width={52}
+              height={52}
               className="rounded-full"
             />
           ) : (
@@ -292,6 +343,7 @@ export default function InsightDetailPage() {
                   month: "long",
                   day: "numeric",
                 })}
+            {report.dayCount != null && ` · ${report.dayCount} days`}
           </div>
         </div>
         <button
@@ -303,79 +355,492 @@ export default function InsightDetailPage() {
         </button>
       </div>
 
-      {/* Snapshot */}
-      <div className="mb-8">
-        <SnapshotCard
-          sessionCount={report.sessionCount}
-          messageCount={report.messageCount}
-          linesAdded={report.linesAdded ?? null}
-          linesRemoved={report.linesRemoved ?? null}
-          fileCount={report.fileCount ?? null}
-          dayCount={report.dayCount ?? null}
-          commitCount={report.commitCount}
-          chartData={report.chartData}
-          detectedSkills={report.detectedSkills}
-          keyPattern={report.interactionStyle?.key_pattern ?? null}
-          projectAreas={report.projectAreas}
-        />
-      </div>
+      {/* ── Harness Report Layout ── */}
+      {isHarness && report.harnessData ? (
+        <>
+          {/* Hero Stats */}
+          <HeroStats
+            stats={report.harnessData.stats}
+            dayCount={report.dayCount}
+            sessionCount={report.sessionCount}
+          />
 
-      {/* Harness Overview (tokens, autonomy, feature pills) */}
-      {report.harnessData && (
-        <div className="mb-8">
-          <HarnessOverview harnessData={report.harnessData} />
-        </div>
-      )}
+          {/* Activity Heatmap — removed until daily data is available */}
 
-      {/* Project Links */}
-      {report.projectLinks.length > 0 && (
-        <div className="mb-6">
-          <ProjectLinks links={report.projectLinks} />
-        </div>
-      )}
+          {/* How I Work cluster: Autonomy + Model Donut + File Ops */}
+          <HowIWorkCluster harnessData={report.harnessData} />
 
-      {/* Harness Dashboard Sections */}
-      {report.harnessData && (
-        <div className="mb-8">
-          <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-slate-100">
-            Harness Profile
-          </h2>
-          <HarnessSections harnessData={report.harnessData} />
-        </div>
-      )}
+          {/* Tool Usage Treemap */}
+          {Object.keys(report.harnessData.toolUsage).length > 0 && (
+            <ToolUsageTreemap toolUsage={report.harnessData.toolUsage} />
+          )}
 
-      {/* Sections */}
-      <div className="space-y-4">
-        {SECTIONS.map((section) => {
-          const data = (report as unknown as Record<string, unknown>)[
-            section.dataKey
-          ];
-          if (!data) return null;
-          const summary = getSectionSummary(section.key, report);
-          const isAtAGlance = section.key === "at_a_glance";
-          return (
+          {/* Skills Card Grid */}
+          {report.harnessData.skillInventory.length > 0 && (
+            <SkillCardGrid skillInventory={report.harnessData.skillInventory} />
+          )}
+
+          {/* CLI Tools Donut */}
+          {Object.keys(report.harnessData.cliTools).length > 0 && (
+            <CliToolsDonut cliTools={report.harnessData.cliTools} />
+          )}
+
+          {/* Git Patterns */}
+          <GitPatternsDisplay gitPatterns={report.harnessData.gitPatterns} />
+
+          {/* Permission Mode & Safety */}
+          <PermissionModeDisplay
+            permissionModes={report.harnessData.permissionModes}
+            featurePills={report.harnessData.featurePills}
+          />
+
+          {/* Hooks & Safety */}
+          <HooksSafetyTable
+            hookDefinitions={report.harnessData.hookDefinitions}
+          />
+
+          {/* Agent Dispatch */}
+          {report.harnessData.agentDispatch &&
+            report.harnessData.agentDispatch.totalAgents > 0 && (
+              <CollapsibleSection
+                icon="🤖"
+                iconBgClass="bg-indigo-100 dark:bg-indigo-900/30"
+                title={`Agent Dispatch (${report.harnessData.agentDispatch.totalAgents} agents)`}
+                defaultOpen={false}
+              >
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {Object.keys(report.harnessData.agentDispatch.types).length >
+                    0 && (
+                    <div>
+                      <h4 className="mb-2 text-xs font-semibold text-slate-500">
+                        Agent Types
+                      </h4>
+                      <MiniBarChart
+                        data={Object.entries(
+                          report.harnessData.agentDispatch.types,
+                        ).map(([label, value]) => ({ label, value }))}
+                        title=""
+                        color="bg-indigo-500"
+                      />
+                    </div>
+                  )}
+                  {Object.keys(report.harnessData.agentDispatch.models).length >
+                    0 && (
+                    <div>
+                      <h4 className="mb-2 text-xs font-semibold text-slate-500">
+                        Model Tiering
+                      </h4>
+                      <MiniBarChart
+                        data={Object.entries(
+                          report.harnessData.agentDispatch.models,
+                        ).map(([label, value]) => ({ label, value }))}
+                        title=""
+                        color="bg-purple-500"
+                      />
+                      {report.harnessData.agentDispatch.backgroundPct > 0 && (
+                        <p className="mt-1 text-xs text-slate-400">
+                          {report.harnessData.agentDispatch.backgroundPct}% run
+                          in background
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {report.harnessData.agentDispatch.customAgents.length > 0 && (
+                  <div className="mt-3">
+                    <h4 className="mb-1 text-xs font-semibold text-slate-500">
+                      Custom Agents
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {report.harnessData.agentDispatch.customAgents.map(
+                        (a) => (
+                          <span
+                            key={a}
+                            className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
+                          >
+                            {a}
+                          </span>
+                        ),
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CollapsibleSection>
+            )}
+
+          {/* Plugins */}
+          {report.harnessData.plugins.length > 0 && (
             <CollapsibleSection
-              key={section.key}
-              icon={section.icon}
-              iconBgClass={section.iconBgClass}
-              title={section.label}
-              summary={isAtAGlance ? null : summary}
-              defaultOpen={isAtAGlance}
+              icon="🔌"
+              iconBgClass="bg-teal-100 dark:bg-teal-900/30"
+              title="Plugins"
+              defaultOpen={false}
             >
-              <SectionRenderer
-                slug={slug}
-                sectionKey={section.key}
-                sectionType={section.sectionType}
-                data={data}
-                reportId={report.id}
-                voteCount={report.voteCounts[section.key] ?? 0}
-                voted={report.userVotes[section.key] ?? false}
-                annotation={annotations[section.key]}
+              <div className="grid gap-2 sm:grid-cols-2">
+                {report.harnessData.plugins.map((p) => (
+                  <div
+                    key={p.name}
+                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {p.name}
+                      </span>
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
+                          p.active
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                            : "bg-slate-100 text-slate-400 dark:bg-slate-800"
+                        }`}
+                      >
+                        {p.active ? "on" : "off"}
+                      </span>
+                    </div>
+                    {(p.version || p.marketplace) && (
+                      <div className="mt-0.5 text-[11px] text-slate-400">
+                        {p.version && `v${p.version}`}
+                        {p.version && p.marketplace && " · "}
+                        {p.marketplace}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {/* Languages */}
+          {Object.keys(report.harnessData.languages).length > 0 && (
+            <CollapsibleSection
+              icon="💻"
+              iconBgClass="bg-green-100 dark:bg-green-900/30"
+              title="Languages"
+              defaultOpen={false}
+            >
+              <MiniBarChart
+                data={Object.entries(report.harnessData.languages)
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 12)
+                  .map(([label, value]) => ({ label, value }))}
+                title=""
+                color="bg-green-500"
               />
             </CollapsibleSection>
-          );
-        })}
-      </div>
+          )}
+
+          {/* MCP Servers */}
+          {Object.keys(report.harnessData.mcpServers).length > 0 && (
+            <CollapsibleSection
+              icon="🔗"
+              iconBgClass="bg-cyan-100 dark:bg-cyan-900/30"
+              title="MCP Servers"
+              defaultOpen={false}
+            >
+              <div className="space-y-1">
+                {Object.entries(report.harnessData.mcpServers)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([server, calls]) => (
+                    <div
+                      key={server}
+                      className="flex justify-between border-b border-slate-100 py-1 dark:border-slate-800"
+                    >
+                      <span className="font-mono text-xs text-slate-600 dark:text-slate-400">
+                        {server}
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        {calls.toLocaleString()} calls
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {/* Versions */}
+          {report.harnessData.versions.length > 0 && (
+            <CollapsibleSection
+              icon="📦"
+              iconBgClass="bg-slate-100 dark:bg-slate-900/30"
+              title="Claude Code Versions"
+              defaultOpen={false}
+            >
+              <div className="flex flex-wrap gap-1.5">
+                {report.harnessData.versions.map((v) => (
+                  <span
+                    key={v}
+                    className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
+                  >
+                    {v}
+                  </span>
+                ))}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {/* Writeup Sections */}
+          {report.harnessData.writeupSections.length > 0 && (
+            <CollapsibleSection
+              icon="📝"
+              iconBgClass="bg-blue-100 dark:bg-blue-900/30"
+              title="Writeup Analysis"
+              defaultOpen={false}
+            >
+              <div className="space-y-6">
+                {report.harnessData.writeupSections.map((section) => (
+                  <div key={section.title}>
+                    <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      {section.title}
+                    </h4>
+                    <div
+                      className="prose prose-sm max-w-none text-slate-600 dark:text-slate-400 [&_p]:mb-2 [&_li]:mb-1"
+                      dangerouslySetInnerHTML={{
+                        __html: section.contentHtml,
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {/* Harness Files */}
+          {report.harnessData.harnessFiles.length > 0 && (
+            <CollapsibleSection
+              icon="📁"
+              iconBgClass="bg-orange-100 dark:bg-orange-900/30"
+              title="Harness File Ecosystem"
+              defaultOpen={false}
+            >
+              <div className="space-y-1">
+                {report.harnessData.harnessFiles.map((f) => (
+                  <div
+                    key={f}
+                    className="border-b border-slate-100 py-1 font-mono text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400"
+                  >
+                    {f}
+                  </div>
+                ))}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {/* Project Links */}
+          {report.projectLinks.length > 0 && (
+            <div className="mb-6">
+              <ProjectLinks links={report.projectLinks} />
+            </div>
+          )}
+
+          {/* Narrative Sections */}
+          <div className="space-y-4">
+            {SECTIONS.map((section) => {
+              const data = (report as unknown as Record<string, unknown>)[
+                section.dataKey
+              ];
+              if (!data) return null;
+              const summary = getSectionSummary(section.key, report);
+              const isAtAGlance = section.key === "at_a_glance";
+              return (
+                <CollapsibleSection
+                  key={section.key}
+                  icon={section.icon}
+                  iconBgClass={section.iconBgClass}
+                  title={section.label}
+                  summary={isAtAGlance ? null : summary}
+                  defaultOpen={isAtAGlance}
+                >
+                  <SectionRenderer
+                    slug={slug}
+                    sectionKey={section.key}
+                    sectionType={section.sectionType}
+                    data={data}
+                    reportId={report.id}
+                    voteCount={report.voteCounts[section.key] ?? 0}
+                    voted={report.userVotes[section.key] ?? false}
+                    annotation={annotations[section.key]}
+                  />
+                </CollapsibleSection>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        /* ── Standard /insights Report Layout ── */
+        <>
+          {/* Snapshot Card */}
+          <div className="mb-8">
+            <SnapshotCard
+              sessionCount={report.sessionCount}
+              messageCount={report.messageCount}
+              linesAdded={report.linesAdded ?? null}
+              linesRemoved={report.linesRemoved ?? null}
+              fileCount={report.fileCount ?? null}
+              dayCount={report.dayCount ?? null}
+              commitCount={report.commitCount}
+              chartData={report.chartData}
+              detectedSkills={report.detectedSkills}
+              keyPattern={report.interactionStyle?.key_pattern ?? null}
+              projectAreas={report.projectAreas}
+            />
+          </div>
+
+          {/* Chart Data Visualizations (wire up orphaned chartData) */}
+          {report.chartData && (
+            <div className="mb-8 grid gap-4 sm:grid-cols-2">
+              {report.chartData.toolUsage &&
+                report.chartData.toolUsage.length > 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                    <MiniBarChart
+                      data={report.chartData.toolUsage}
+                      title="Tool Usage"
+                      color="bg-blue-500"
+                    />
+                  </div>
+                )}
+              {report.chartData.languages &&
+                report.chartData.languages.length > 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                    <MiniBarChart
+                      data={report.chartData.languages}
+                      title="Languages"
+                      color="bg-green-500"
+                    />
+                  </div>
+                )}
+              {report.chartData.requestTypes &&
+                report.chartData.requestTypes.length > 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                    <MiniBarChart
+                      data={report.chartData.requestTypes}
+                      title="Request Types"
+                      color="bg-violet-500"
+                    />
+                  </div>
+                )}
+              {report.chartData.sessionTypes &&
+                report.chartData.sessionTypes.length > 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                    <MiniBarChart
+                      data={report.chartData.sessionTypes}
+                      title="Session Types"
+                      color="bg-amber-500"
+                    />
+                  </div>
+                )}
+              {report.chartData.responseTimeDistribution &&
+                report.chartData.responseTimeDistribution.length > 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                    <MiniBarChart
+                      data={report.chartData.responseTimeDistribution}
+                      title="Response Time Distribution"
+                      color="bg-cyan-500"
+                    />
+                  </div>
+                )}
+              {report.chartData.toolErrors &&
+                report.chartData.toolErrors.length > 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                    <MiniBarChart
+                      data={report.chartData.toolErrors}
+                      title="Tool Errors"
+                      color="bg-red-500"
+                    />
+                  </div>
+                )}
+              {report.chartData.whatHelpedMost &&
+                report.chartData.whatHelpedMost.length > 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                    <MiniBarChart
+                      data={report.chartData.whatHelpedMost}
+                      title="What Helped Most"
+                      color="bg-emerald-500"
+                    />
+                  </div>
+                )}
+              {report.chartData.outcomes &&
+                report.chartData.outcomes.length > 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                    <MiniBarChart
+                      data={report.chartData.outcomes}
+                      title="Outcomes"
+                      color="bg-teal-500"
+                    />
+                  </div>
+                )}
+              {report.chartData.frictionTypes &&
+                report.chartData.frictionTypes.length > 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                    <MiniBarChart
+                      data={report.chartData.frictionTypes}
+                      title="Friction Types"
+                      color="bg-orange-500"
+                    />
+                  </div>
+                )}
+              {report.chartData.satisfaction &&
+                report.chartData.satisfaction.length > 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                    <MiniBarChart
+                      data={report.chartData.satisfaction}
+                      title="Satisfaction"
+                      color="bg-pink-500"
+                    />
+                  </div>
+                )}
+              {report.chartData.timeOfDay &&
+                report.chartData.timeOfDay.length > 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                    <MiniBarChart
+                      data={report.chartData.timeOfDay}
+                      title="Time of Day"
+                      color="bg-indigo-500"
+                    />
+                  </div>
+                )}
+            </div>
+          )}
+
+          {/* Project Links */}
+          {report.projectLinks.length > 0 && (
+            <div className="mb-6">
+              <ProjectLinks links={report.projectLinks} />
+            </div>
+          )}
+
+          {/* Sections */}
+          <div className="space-y-4">
+            {SECTIONS.map((section) => {
+              const data = (report as unknown as Record<string, unknown>)[
+                section.dataKey
+              ];
+              if (!data) return null;
+              const summary = getSectionSummary(section.key, report);
+              const isAtAGlance = section.key === "at_a_glance";
+              return (
+                <CollapsibleSection
+                  key={section.key}
+                  icon={section.icon}
+                  iconBgClass={section.iconBgClass}
+                  title={section.label}
+                  summary={isAtAGlance ? null : summary}
+                  defaultOpen={isAtAGlance}
+                >
+                  <SectionRenderer
+                    slug={slug}
+                    sectionKey={section.key}
+                    sectionType={section.sectionType}
+                    data={data}
+                    reportId={report.id}
+                    voteCount={report.voteCounts[section.key] ?? 0}
+                    voted={report.userVotes[section.key] ?? false}
+                    annotation={annotations[section.key]}
+                  />
+                </CollapsibleSection>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {/* Comments */}
       <div className="mt-12">

@@ -58,6 +58,22 @@ function parseStats($: cheerio.CheerioAPI): ParsedInsightsReport["stats"] {
   // Extract hours from stat values or compute from days
   const daysValue = statValues["days"] ?? "0";
 
+  // Parse lines added/removed from "+69,951/-3,476" format
+  const linesRaw = statValues["lines"] ?? "";
+  const linesMatch = linesRaw.match(/\+?([\d,]+)\s*\/\s*-?([\d,]+)/);
+  const linesAdded = linesMatch ? parseNumeric(linesMatch[1]) : null;
+  const linesRemoved = linesMatch ? parseNumeric(linesMatch[2]) : null;
+
+  // Parse file count, day count, msgs/day
+  const fileCount = statValues["files"]
+    ? parseNumeric(statValues["files"])
+    : null;
+  const dayCount = statValues["days"] ? parseNumeric(statValues["days"]) : null;
+  const msgsPerDayRaw = statValues["msgs/day"] ?? "";
+  const msgsPerDay = msgsPerDayRaw
+    ? parseFloat(msgsPerDayRaw.replace(/,/g, "")) || null
+    : null;
+
   return {
     sessionCount: parseNumeric(
       totalSessionMatch?.[1] ?? sessionMatch?.[1] ?? "0",
@@ -68,6 +84,11 @@ function parseStats($: cheerio.CheerioAPI): ParsedInsightsReport["stats"] {
     commitCount: parseNumeric(commitMatch?.[1] ?? "0"),
     dateRangeStart: dateRangeMatch?.[1] ?? "",
     dateRangeEnd: dateRangeMatch?.[2] ?? "",
+    linesAdded,
+    linesRemoved,
+    fileCount,
+    dayCount,
+    msgsPerDay,
   };
 }
 

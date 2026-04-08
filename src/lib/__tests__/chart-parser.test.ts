@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { parseChartData, normalizeChartData } from "../chart-parser";
+import {
+  parseChartData,
+  normalizeChartData,
+  parseRawHourCounts,
+  parseMultiClauding,
+} from "../chart-parser";
 
 const SAMPLE_HTML = `
 <html><body>
@@ -45,6 +50,92 @@ const SAMPLE_HTML = `
       <div class="bar-value">40</div>
     </div>
   </div>
+  <div class="chart-card">
+    <div class="chart-title">User Response Time Distribution</div>
+    <div class="bar-row">
+      <div class="bar-label">2-10s</div>
+      <div class="bar-track"><div class="bar-fill"></div></div>
+      <div class="bar-value">47</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">10-30s</div>
+      <div class="bar-track"><div class="bar-fill"></div></div>
+      <div class="bar-value">141</div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Tool Errors Encountered</div>
+    <div class="bar-row">
+      <div class="bar-label">Permission Denied</div>
+      <div class="bar-track"><div class="bar-fill"></div></div>
+      <div class="bar-value">12</div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">What Helped Most (Claude's Capabilities)</div>
+    <div class="bar-row">
+      <div class="bar-label">Code Generation</div>
+      <div class="bar-track"><div class="bar-fill"></div></div>
+      <div class="bar-value">85</div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Outcomes</div>
+    <div class="bar-row">
+      <div class="bar-label">Successful</div>
+      <div class="bar-track"><div class="bar-fill"></div></div>
+      <div class="bar-value">90</div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Primary Friction Types</div>
+    <div class="bar-row">
+      <div class="bar-label">Context Loss</div>
+      <div class="bar-track"><div class="bar-fill"></div></div>
+      <div class="bar-value">15</div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Inferred Satisfaction (model-estimated)</div>
+    <div class="bar-row">
+      <div class="bar-label">High</div>
+      <div class="bar-track"><div class="bar-fill"></div></div>
+      <div class="bar-value">70</div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">User Messages by Time of Day</div>
+    <div class="bar-row">
+      <div class="bar-label">Morning (6-12)</div>
+      <div class="bar-track"><div class="bar-fill"></div></div>
+      <div class="bar-value">340</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Afternoon (12-18)</div>
+      <div class="bar-track"><div class="bar-fill"></div></div>
+      <div class="bar-value">774</div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Multi-Clauding (Parallel Sessions)</div>
+    <div style="display: flex; gap: 24px; margin: 12px 0;">
+      <div style="text-align: center;">
+        <div style="font-size: 24px; font-weight: 700; color: #7c3aed;">60</div>
+        <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Overlap Events</div>
+      </div>
+      <div style="text-align: center;">
+        <div style="font-size: 24px; font-weight: 700; color: #7c3aed;">62</div>
+        <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Sessions Involved</div>
+      </div>
+      <div style="text-align: center;">
+        <div style="font-size: 24px; font-weight: 700; color: #7c3aed;">26%</div>
+        <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Of Messages</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const rawHourCounts = {"0":13,"7":4,"8":20,"9":10,"10":107};
+  </script>
 </body></html>
 `;
 
@@ -109,6 +200,53 @@ describe("parseChartData", () => {
     expect(result.requestTypes).toBeUndefined();
     expect(result.languages).toBeUndefined();
     expect(result.sessionTypes).toBeUndefined();
+  });
+
+  it("extracts response time distribution", () => {
+    const result = parseChartData(SAMPLE_HTML);
+    expect(result.responseTimeDistribution).toEqual([
+      { label: "2-10s", value: 47 },
+      { label: "10-30s", value: 141 },
+    ]);
+  });
+
+  it("extracts tool errors", () => {
+    const result = parseChartData(SAMPLE_HTML);
+    expect(result.toolErrors).toEqual([
+      { label: "Permission Denied", value: 12 },
+    ]);
+  });
+
+  it("extracts what helped most", () => {
+    const result = parseChartData(SAMPLE_HTML);
+    expect(result.whatHelpedMost).toEqual([
+      { label: "Code Generation", value: 85 },
+    ]);
+  });
+
+  it("extracts outcomes", () => {
+    const result = parseChartData(SAMPLE_HTML);
+    expect(result.outcomes).toEqual([{ label: "Successful", value: 90 }]);
+  });
+
+  it("extracts friction types", () => {
+    const result = parseChartData(SAMPLE_HTML);
+    expect(result.frictionTypes).toEqual([
+      { label: "Context Loss", value: 15 },
+    ]);
+  });
+
+  it("extracts satisfaction", () => {
+    const result = parseChartData(SAMPLE_HTML);
+    expect(result.satisfaction).toEqual([{ label: "High", value: 70 }]);
+  });
+
+  it("extracts time of day", () => {
+    const result = parseChartData(SAMPLE_HTML);
+    expect(result.timeOfDay).toEqual([
+      { label: "Morning (6-12)", value: 340 },
+      { label: "Afternoon (12-18)", value: 774 },
+    ]);
   });
 });
 
@@ -193,5 +331,61 @@ describe("normalizeChartData", () => {
     expect(normalizeChartData(input)).toEqual({
       toolUsage: [{ label: "C", value: 42 }],
     });
+  });
+
+  it("normalizes new chart fields", () => {
+    const input = {
+      responseTimeDistribution: [{ label: "2-10s", value: 47 }],
+      toolErrors: [{ label: "Permission", value: 5 }],
+      whatHelpedMost: [{ label: "Code Gen", value: 80 }],
+      outcomes: [{ label: "Success", value: 90 }],
+      frictionTypes: [{ label: "Context", value: 10 }],
+      satisfaction: [{ label: "High", value: 70 }],
+      timeOfDay: [{ label: "Morning", value: 300 }],
+    };
+    const result = normalizeChartData(input);
+    expect(result?.responseTimeDistribution).toEqual([
+      { label: "2-10s", value: 47 },
+    ]);
+    expect(result?.toolErrors).toEqual([{ label: "Permission", value: 5 }]);
+    expect(result?.whatHelpedMost).toEqual([{ label: "Code Gen", value: 80 }]);
+    expect(result?.outcomes).toEqual([{ label: "Success", value: 90 }]);
+    expect(result?.frictionTypes).toEqual([{ label: "Context", value: 10 }]);
+    expect(result?.satisfaction).toEqual([{ label: "High", value: 70 }]);
+    expect(result?.timeOfDay).toEqual([{ label: "Morning", value: 300 }]);
+  });
+});
+
+describe("parseRawHourCounts", () => {
+  it("extracts rawHourCounts from script tag", () => {
+    const result = parseRawHourCounts(SAMPLE_HTML);
+    expect(result).toEqual({ "0": 13, "7": 4, "8": 20, "9": 10, "10": 107 });
+  });
+
+  it("returns undefined when no rawHourCounts present", () => {
+    const result = parseRawHourCounts("<html><body></body></html>");
+    expect(result).toBeUndefined();
+  });
+
+  it("returns undefined for malformed JSON", () => {
+    const html = "<script>const rawHourCounts = {bad json};</script>";
+    const result = parseRawHourCounts(html);
+    expect(result).toBeUndefined();
+  });
+});
+
+describe("parseMultiClauding", () => {
+  it("extracts multi-clauding stats", () => {
+    const result = parseMultiClauding(SAMPLE_HTML);
+    expect(result).toEqual({
+      overlapEvents: 60,
+      sessionsInvolved: 62,
+      ofMessages: "26%",
+    });
+  });
+
+  it("returns undefined when no multi-clauding section", () => {
+    const result = parseMultiClauding("<html><body></body></html>");
+    expect(result).toBeUndefined();
   });
 });

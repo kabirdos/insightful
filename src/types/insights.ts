@@ -107,6 +107,8 @@ export interface ParsedInsightsReport {
   data: InsightsData;
   detectedRedactions: RedactionItem[];
   chartData?: ChartData;
+  rawHourCounts?: Record<string, number>;
+  multiClauding?: MultiClaudingStats;
   detectedSkills?: SkillKey[];
   reportType?: "insights" | "insight-harness";
   harnessData?: HarnessData;
@@ -221,6 +223,19 @@ export interface ChartData {
   requestTypes?: ChartDataPoint[];
   languages?: ChartDataPoint[];
   sessionTypes?: ChartDataPoint[];
+  responseTimeDistribution?: ChartDataPoint[];
+  toolErrors?: ChartDataPoint[];
+  whatHelpedMost?: ChartDataPoint[];
+  outcomes?: ChartDataPoint[];
+  frictionTypes?: ChartDataPoint[];
+  satisfaction?: ChartDataPoint[];
+  timeOfDay?: ChartDataPoint[];
+}
+
+export interface MultiClaudingStats {
+  overlapEvents: number;
+  sessionsInvolved: number;
+  ofMessages: string;
 }
 
 // v2: Closed set of detectable Claude Code skills/features
