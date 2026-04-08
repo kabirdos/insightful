@@ -30,6 +30,7 @@ import CliToolsDonut from "@/components/CliToolsDonut";
 import GitPatternsDisplay from "@/components/GitPatternsDisplay";
 import PermissionModeDisplay from "@/components/PermissionModeDisplay";
 import HooksSafetyTable from "@/components/HooksSafetyTable";
+import ActivityHeatmap from "@/components/ActivityHeatmap";
 
 interface ReportData {
   id: string;
@@ -389,7 +390,19 @@ export default function InsightDetailPage() {
             }
           />
 
-          {/* Activity Heatmap — removed until daily data is available */}
+          {/* Activity Heatmap — generated from aggregate stats */}
+          <ActivityHeatmap
+            totalSessions={
+              report.sessionCount ??
+              report.harnessData?.stats?.sessionCount ??
+              undefined
+            }
+            totalTokens={report.totalTokens ?? undefined}
+            dayCount={report.dayCount ?? undefined}
+            dateRangeStart={report.dateRangeStart ?? undefined}
+            dateRangeEnd={report.dateRangeEnd ?? undefined}
+            slug={slug}
+          />
 
           {/* How I Work cluster: Autonomy + Model Donut + File Ops */}
           <HowIWorkCluster harnessData={report.harnessData} />
