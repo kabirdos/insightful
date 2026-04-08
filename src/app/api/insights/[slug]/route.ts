@@ -150,7 +150,8 @@ export async function PUT(
       "avgSessionMinutes",
       "prCount",
       "autonomyLabel",
-      "harnessData",
+      // Note: harnessData intentionally excluded — contains contentHtml
+      // rendered with dangerouslySetInnerHTML, so it must not be editable via API
       // Stats fields for visibility editing
       "sessionCount",
       "messageCount",
