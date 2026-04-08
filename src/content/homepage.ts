@@ -79,19 +79,21 @@ export const homepage = {
     steps: [
       {
         icon: "📊",
-        title: "Run /insights",
-        description: "Generate your Claude Code usage report. Takes seconds.",
+        title: "Run /insights in Claude Code",
+        description:
+          "Generate a usage report covering your sessions, messages, commits, and workflow patterns. Takes just a few seconds.",
       },
       {
-        icon: "📤",
-        title: "Upload your insights",
+        icon: "⚡",
+        title: "Run /insight-harness for a complete profile",
         description:
-          "Drop the HTML file here. We remove personal data automatically, and you can redact any information you'd like before sharing.",
+          "Get the full data dashboard — token usage, tool breakdowns, skills, hooks, plugins, and more on top of everything in /insights.",
       },
       {
         icon: "🌐",
         title: "Share your profile",
-        description: "Get a public page others can browse and learn from.",
+        description:
+          "Show your current usage and harness details. Upload the HTML report and get a public profile others can browse and learn from.",
       },
     ],
   },

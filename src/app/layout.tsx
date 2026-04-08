@@ -43,9 +43,6 @@ export default function RootLayout({
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 Insight Harness — See how developers use Claude Code
               </p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">
-                Built with Claude Code
-              </p>
             </div>
           </footer>
         </Providers>
