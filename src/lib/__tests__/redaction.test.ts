@@ -1,54 +1,67 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "fs";
-import { resolve } from "path";
-import { parseInsightsHtml } from "../parser";
 import { detectRedactions, applyRedactions } from "../redaction";
 import type { InsightsData, RedactionItem } from "@/types/insights";
 
-// Parse the real report for integration-style tests
-const REPORT_PATH = resolve(
-  process.env.HOME ?? "~",
-  ".claude/usage-data/report.html",
-);
-
-let realData: InsightsData;
-try {
-  const html = readFileSync(REPORT_PATH, "utf-8");
-  realData = parseInsightsHtml(html).data;
-} catch {
-  realData = null as unknown as InsightsData;
-}
-
 describe("detectRedactions", () => {
   it("should detect project area names", () => {
-    const items = detectRedactions(realData);
+    const data: InsightsData = makeMinimalData({
+      project_areas: {
+        areas: [
+          { name: "Secret SaaS App", session_count: 10, description: "desc" },
+          {
+            name: "Internal Dashboard",
+            session_count: 5,
+            description: "desc",
+          },
+        ],
+      },
+    });
+    const items = detectRedactions(data);
     const projectNames = items.filter((i) => i.type === "project_name");
 
-    expect(projectNames.length).toBeGreaterThanOrEqual(5);
-    expect(projectNames.map((p) => p.text)).toContain(
-      "Appeal Mailer SaaS Application",
-    );
-    expect(projectNames.map((p) => p.text)).toContain(
-      "Whispergram Audio Gift Platform",
-    );
+    expect(projectNames).toHaveLength(2);
+    expect(projectNames.map((p) => p.text)).toContain("Secret SaaS App");
+    expect(projectNames.map((p) => p.text)).toContain("Internal Dashboard");
   });
 
   it("should set default action to redact", () => {
-    const items = detectRedactions(realData);
+    const data: InsightsData = makeMinimalData({
+      project_areas: {
+        areas: [{ name: "TestProject", session_count: 1, description: "desc" }],
+      },
+    });
+    const items = detectRedactions(data);
     for (const item of items) {
       expect(item.action).toBe("redact");
     }
   });
 
   it("should generate unique IDs for each item", () => {
-    const items = detectRedactions(realData);
+    const data: InsightsData = makeMinimalData({
+      project_areas: {
+        areas: [
+          { name: "Project A", session_count: 1, description: "desc" },
+          { name: "Project B", session_count: 2, description: "desc" },
+        ],
+      },
+      interaction_style: {
+        narrative: "Contact admin@test.com at /Users/dev/code",
+        key_pattern: "",
+      },
+    });
+    const items = detectRedactions(data);
     const ids = items.map((i) => i.id);
     const uniqueIds = new Set(ids);
     expect(uniqueIds.size).toBe(ids.length);
   });
 
   it("should provide context for each detection", () => {
-    const items = detectRedactions(realData);
+    const data: InsightsData = makeMinimalData({
+      project_areas: {
+        areas: [{ name: "MyProject", session_count: 1, description: "desc" }],
+      },
+    });
+    const items = detectRedactions(data);
     for (const item of items) {
       expect(item.context).toBeTruthy();
       expect(item.context.length).toBeLessThanOrEqual(50);

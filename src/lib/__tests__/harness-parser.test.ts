@@ -1,225 +1,499 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync, existsSync } from "fs";
-import { resolve } from "path";
 import { isHarnessReport, parseHarnessHtml } from "../harness-parser";
-import { parseInsightsHtml } from "../parser";
 
-// Read the real HTML files for testing — these live on the developer's machine
-// and won't exist in CI. Tests that need them use `it.skipIf` to degrade
-// gracefully rather than fail.
-const HARNESS_REPORT_PATH = resolve(
-  process.env.HOME ?? "~",
-  ".claude/usage-data/insight-harness.html",
-);
-const INSIGHTS_REPORT_PATH = resolve(
-  process.env.HOME ?? "~",
-  ".claude/usage-data/report.html",
-);
+// ---------------------------------------------------------------------------
+// Minimal HTML fixtures that mirror the real harness report structure
+// ---------------------------------------------------------------------------
 
-const hasHarnessFile = existsSync(HARNESS_REPORT_PATH);
-const hasInsightsFile = existsSync(INSIGHTS_REPORT_PATH);
+const MINIMAL_HARNESS_HTML = `
+<html><body>
+  <div class="container">
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-value">42</div>
+        <div class="stat-label">Sessions</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">1.2M</div>
+        <div class="stat-label">Tokens</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">18h</div>
+        <div class="stat-label">Duration</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">5</div>
+        <div class="stat-label">Skills Used</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">3</div>
+        <div class="stat-label">Hooks</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">7</div>
+        <div class="stat-label">PRs</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">23</div>
+        <div class="stat-label">Commits</div>
+      </div>
+    </div>
 
-let harnessHtml = "";
-let insightsHtml = "";
-if (hasHarnessFile) harnessHtml = readFileSync(HARNESS_REPORT_PATH, "utf-8");
-if (hasInsightsFile) insightsHtml = readFileSync(INSIGHTS_REPORT_PATH, "utf-8");
+    <!-- Autonomy Box -->
+    <div class="autonomy-box">
+      <div class="autonomy-label">Fire-and-Forget</div>
+      <div class="autonomy-desc">You launch tasks and let Claude run</div>
+      <div class="autonomy-stat"><strong>150</strong> user msgs</div>
+      <div class="autonomy-stat"><strong>800</strong> assistant msgs</div>
+      <div class="autonomy-stat"><strong>950</strong> turns measured</div>
+    </div>
 
-// Shorthand for tests requiring the real harness file
-const ith = it.skipIf(!hasHarnessFile);
+    <!-- Feature Pills -->
+    <div class="pills">
+      <span class="pill on">Task Agents (12%)</span>
+      <span class="pill">MCP Servers</span>
+      <span class="pill on">Custom Skills (45%)</span>
+    </div>
+
+    <!-- Tool Usage -->
+    <section>
+      <div class="section-header"><h2>Tool Usage</h2></div>
+      <div class="bar-row">
+        <div class="bar-label">Read</div>
+        <div class="bar-value">1,500</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Edit</div>
+        <div class="bar-value">800</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Bash</div>
+        <div class="bar-value">2,200</div>
+      </div>
+    </section>
+
+    <!-- Skills Inventory -->
+    <section>
+      <div class="section-header"><h2>Skills</h2></div>
+      <table>
+        <tbody>
+          <tr>
+            <td>
+              <span class="mono accent">commit</span>
+              <span class="badge custom">custom</span>
+              <span class="meta">Auto-commit helper</span>
+            </td>
+            <td>12</td>
+          </tr>
+          <tr>
+            <td>
+              <span class="mono accent">review-pr</span>
+              <span class="badge plugin">plugin</span>
+              <span class="meta">PR reviewer</span>
+            </td>
+            <td>5</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Hooks -->
+    <section>
+      <div class="section-header"><h2>Hooks</h2></div>
+      <table>
+        <tbody>
+          <tr>
+            <td>PreToolUse</td>
+            <td>Bash</td>
+            <td>validate-bash.sh</td>
+          </tr>
+          <tr>
+            <td>PostToolUse</td>
+            <td>Edit</td>
+            <td>format-on-save.sh</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Plugins -->
+    <div class="plugin-card">
+      <div class="plugin-name">superpowers</div>
+      <span class="badge active">active</span>
+      <div class="meta">v2.1.0 · compound-engineering</div>
+    </div>
+
+    <!-- File Operation Style -->
+    <section>
+      <div class="section-header"><h2>File Operation Style</h2></div>
+      <div class="donut-item">
+        <div class="ratio">45:40:15</div>
+        <div class="label">Read : Edit : Write</div>
+      </div>
+      <div class="donut-item">
+        <div class="ratio">120:80</div>
+        <div class="label">Grep : Glob</div>
+      </div>
+      <div class="donut-item">
+        <div class="ratio">Surgical Editor</div>
+        <div class="label">Style</div>
+      </div>
+    </section>
+
+    <!-- Git Patterns -->
+    <section>
+      <div class="section-header"><h2>Git Patterns</h2></div>
+      <div class="meta">7 PRs · 23 commits · 1.2K lines added</div>
+      <div class="tags">
+        <span class="tag">feat/ (8)</span>
+        <span class="tag">fix/ (12)</span>
+      </div>
+    </section>
+
+    <!-- Writeup Sections (inside tab-writeup) -->
+    <div id="tab-writeup">
+      <div class="writeup-section">
+        <h2>Workflow Analysis</h2>
+        <p>You use Claude Code heavily for refactoring.</p>
+      </div>
+      <div class="writeup-section">
+        <h2>Tool Preferences</h2>
+        <p>Strong preference for Edit over Write.</p>
+      </div>
+    </div>
+
+    <!-- Integrity Hash -->
+    <script type="application/json" id="insight-harness-integrity">
+      {"hash": "abc123def456"}
+    </script>
+
+    <!-- Versions -->
+    <section>
+      <div class="section-header"><h2>Claude Code Versions</h2></div>
+      <div class="tags">
+        <span class="tag">1.0.33</span>
+        <span class="tag">1.0.34</span>
+      </div>
+    </section>
+  </div>
+</body></html>
+`;
+
+// ---------------------------------------------------------------------------
+// isHarnessReport
+// ---------------------------------------------------------------------------
 
 describe("isHarnessReport", () => {
-  ith("should detect insight-harness HTML as harness report", () => {
-    expect(isHarnessReport(harnessHtml)).toBe(true);
+  it("detects harness report by integrity script tag", () => {
+    expect(isHarnessReport(MINIMAL_HARNESS_HTML)).toBe(true);
   });
 
-  it.skipIf(!hasInsightsFile)(
-    "should detect plain insights HTML as NOT harness report",
-    () => {
-      expect(isHarnessReport(insightsHtml)).toBe(false);
-    },
-  );
+  it("returns false for plain insights HTML", () => {
+    const insightsHtml =
+      '<html><body><div class="subtitle">100 messages across 10 sessions</div></body></html>';
+    expect(isHarnessReport(insightsHtml)).toBe(false);
+  });
 
-  it("should return false for empty/minimal HTML", () => {
+  it("returns false for empty/minimal HTML", () => {
     expect(isHarnessReport("")).toBe(false);
     expect(isHarnessReport("<html><body></body></html>")).toBe(false);
   });
 });
 
+// ---------------------------------------------------------------------------
+// parseHarnessHtml — stats
+// ---------------------------------------------------------------------------
+
 describe("parseHarnessHtml", () => {
-  ith("should parse the real harness report without throwing", () => {
-    expect(() => parseHarnessHtml(harnessHtml)).not.toThrow();
+  it("parses without throwing", () => {
+    expect(() => parseHarnessHtml(MINIMAL_HARNESS_HTML)).not.toThrow();
   });
 
   describe("stats", () => {
-    ith("should extract harness stats from the stats grid", () => {
-      const result = parseHarnessHtml(harnessHtml);
-      expect(result.stats.totalTokens).toBeGreaterThan(0);
-      expect(result.stats.durationHours).toBeGreaterThanOrEqual(0);
-      expect(result.stats.skillsUsedCount).toBeGreaterThanOrEqual(0);
-      expect(result.stats.hooksCount).toBeGreaterThanOrEqual(0);
+    it("extracts sessionCount", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.stats.sessionCount).toBe(42);
+    });
+
+    it("extracts totalTokens with M suffix", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.stats.totalTokens).toBe(1_200_000);
+    });
+
+    it("extracts durationHours", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.stats.durationHours).toBe(18);
+    });
+
+    it("extracts skillsUsedCount", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.stats.skillsUsedCount).toBe(5);
+    });
+
+    it("extracts hooksCount", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.stats.hooksCount).toBe(3);
+    });
+
+    it("extracts prCount", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.stats.prCount).toBe(7);
+    });
+
+    it("extracts commitCount", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.stats.commitCount).toBe(23);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Autonomy
+  // ---------------------------------------------------------------------------
 
   describe("autonomy", () => {
-    ith("should extract autonomy data", () => {
-      const result = parseHarnessHtml(harnessHtml);
-      expect(result.autonomy.label).toBeTruthy();
-      expect(
-        ["Fire-and-Forget", "Directive", "Collaborative"].includes(
-          result.autonomy.label,
-        ),
-      ).toBe(true);
-      expect(result.autonomy.description).toBeTruthy();
+    it("extracts autonomy label", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.autonomy.label).toBe("Fire-and-Forget");
     });
 
-    ith("should extract autonomy message counts", () => {
-      const result = parseHarnessHtml(harnessHtml);
-      expect(result.autonomy.userMessages).toBeGreaterThanOrEqual(0);
-      expect(result.autonomy.assistantMessages).toBeGreaterThanOrEqual(0);
+    it("extracts autonomy description", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.autonomy.description).toBe(
+        "You launch tasks and let Claude run",
+      );
+    });
+
+    it("extracts user message count", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.autonomy.userMessages).toBe(150);
+    });
+
+    it("extracts assistant message count", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.autonomy.assistantMessages).toBe(800);
+    });
+
+    it("extracts turn count", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.autonomy.turnCount).toBe(950);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Feature Pills
+  // ---------------------------------------------------------------------------
 
   describe("feature pills", () => {
-    ith("should extract feature pills", () => {
-      const result = parseHarnessHtml(harnessHtml);
-      expect(result.featurePills.length).toBeGreaterThan(0);
-      for (const pill of result.featurePills) {
-        expect(pill.name).toBeTruthy();
-        expect(typeof pill.active).toBe("boolean");
-      }
+    it("extracts pill names and active state", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.featurePills).toHaveLength(3);
+
+      expect(result.featurePills[0]).toEqual({
+        name: "Task Agents",
+        active: true,
+        value: "12%",
+      });
+      expect(result.featurePills[1]).toEqual({
+        name: "MCP Servers",
+        active: false,
+        value: "",
+      });
+      expect(result.featurePills[2]).toEqual({
+        name: "Custom Skills",
+        active: true,
+        value: "45%",
+      });
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Tool Usage
+  // ---------------------------------------------------------------------------
 
   describe("tool usage", () => {
-    ith("should extract tool usage bar chart data", () => {
-      const result = parseHarnessHtml(harnessHtml);
-      expect(Object.keys(result.toolUsage).length).toBeGreaterThan(0);
-      const tools = Object.keys(result.toolUsage);
-      const hasCommonTool = tools.some((t) =>
-        ["Read", "Edit", "Bash", "Grep", "Glob", "Write"].includes(t),
-      );
-      expect(hasCommonTool).toBe(true);
+    it("extracts tool usage as record", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.toolUsage).toEqual({
+        Read: 1500,
+        Edit: 800,
+        Bash: 2200,
+      });
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Skill Inventory
+  // ---------------------------------------------------------------------------
 
   describe("skill inventory", () => {
-    ith("should extract skill entries", () => {
-      const result = parseHarnessHtml(harnessHtml);
-      expect(result.skillInventory.length).toBeGreaterThanOrEqual(0);
-      if (result.skillInventory.length > 0) {
-        const first = result.skillInventory[0];
-        expect(first.name).toBeTruthy();
-        expect(first.calls).toBeGreaterThanOrEqual(0);
-        expect(["custom", "plugin", "unknown"]).toContain(first.source);
-      }
+    it("extracts skill entries with source badges", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.skillInventory).toHaveLength(2);
+
+      expect(result.skillInventory[0]).toEqual({
+        name: "commit",
+        calls: 12,
+        source: "custom",
+        description: "Auto-commit helper",
+      });
+      expect(result.skillInventory[1]).toEqual({
+        name: "review-pr",
+        calls: 5,
+        source: "plugin",
+        description: "PR reviewer",
+      });
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Hook Definitions
+  // ---------------------------------------------------------------------------
 
   describe("hook definitions", () => {
-    ith("should extract hook definitions", () => {
-      const result = parseHarnessHtml(harnessHtml);
-      expect(result.hookDefinitions.length).toBeGreaterThanOrEqual(0);
-      if (result.hookDefinitions.length > 0) {
-        const first = result.hookDefinitions[0];
-        expect(first.event).toBeTruthy();
-        expect(first.script).toBeTruthy();
-      }
+    it("extracts hook event, matcher, and script", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.hookDefinitions).toHaveLength(2);
+
+      expect(result.hookDefinitions[0]).toEqual({
+        event: "PreToolUse",
+        matcher: "Bash",
+        script: "validate-bash.sh",
+      });
+      expect(result.hookDefinitions[1]).toEqual({
+        event: "PostToolUse",
+        matcher: "Edit",
+        script: "format-on-save.sh",
+      });
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Plugins
+  // ---------------------------------------------------------------------------
 
   describe("plugins", () => {
-    ith("should extract plugin data", () => {
-      const result = parseHarnessHtml(harnessHtml);
-      expect(result.plugins.length).toBeGreaterThanOrEqual(0);
-      if (result.plugins.length > 0) {
-        expect(result.plugins[0].name).toBeTruthy();
-        expect(typeof result.plugins[0].active).toBe("boolean");
-      }
+    it("extracts plugin name, version, and active state", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.plugins).toHaveLength(1);
+      expect(result.plugins[0].name).toBe("superpowers");
+      expect(result.plugins[0].active).toBe(true);
+      expect(result.plugins[0].version).toBe("2.1.0");
+      expect(result.plugins[0].marketplace).toBe("compound-engineering");
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // File Operation Style
+  // ---------------------------------------------------------------------------
 
   describe("file operation style", () => {
-    ith("should extract file operation ratios", () => {
-      const result = parseHarnessHtml(harnessHtml);
-      expect(result.fileOpStyle).toBeDefined();
-      expect(result.fileOpStyle.readPct).toBeGreaterThanOrEqual(0);
-      expect(result.fileOpStyle.editPct).toBeGreaterThanOrEqual(0);
-      expect(result.fileOpStyle.writePct).toBeGreaterThanOrEqual(0);
+    it("extracts read/edit/write percentages", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.fileOpStyle.readPct).toBe(45);
+      expect(result.fileOpStyle.editPct).toBe(40);
+      expect(result.fileOpStyle.writePct).toBe(15);
+    });
+
+    it("extracts grep/glob counts", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.fileOpStyle.grepCount).toBe(120);
+      expect(result.fileOpStyle.globCount).toBe(80);
+    });
+
+    it("extracts style label", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.fileOpStyle.style).toBe("Surgical Editor");
     });
   });
 
-  describe("CLI tools", () => {
-    ith("should extract CLI tool usage", () => {
-      const result = parseHarnessHtml(harnessHtml);
-      expect(Object.keys(result.cliTools).length).toBeGreaterThanOrEqual(0);
-    });
-  });
-
-  describe("languages and models", () => {
-    ith("should extract language data", () => {
-      const result = parseHarnessHtml(harnessHtml);
-      expect(Object.keys(result.languages).length).toBeGreaterThanOrEqual(0);
-    });
-
-    ith("should extract model data", () => {
-      const result = parseHarnessHtml(harnessHtml);
-      expect(Object.keys(result.models).length).toBeGreaterThanOrEqual(0);
-    });
-  });
+  // ---------------------------------------------------------------------------
+  // Git Patterns
+  // ---------------------------------------------------------------------------
 
   describe("git patterns", () => {
-    ith("should extract git pattern data", () => {
-      const result = parseHarnessHtml(harnessHtml);
-      expect(result.gitPatterns).toBeDefined();
-      expect(result.gitPatterns.prCount).toBeGreaterThanOrEqual(0);
-      expect(result.gitPatterns.commitCount).toBeGreaterThanOrEqual(0);
+    it("extracts PR and commit counts from meta", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.gitPatterns.prCount).toBe(7);
+      expect(result.gitPatterns.commitCount).toBe(23);
+    });
+
+    it("extracts lines added", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.gitPatterns.linesAdded).toBe("1.2K");
+    });
+
+    it("extracts branch prefixes", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.gitPatterns.branchPrefixes).toEqual({
+        "feat/": 8,
+        "fix/": 12,
+      });
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Writeup Sections
+  // ---------------------------------------------------------------------------
 
   describe("writeup sections", () => {
-    ith("should extract writeup sections", () => {
-      const result = parseHarnessHtml(harnessHtml);
-      expect(result.writeupSections.length).toBeGreaterThan(0);
-      const first = result.writeupSections[0];
-      expect(first.title).toBeTruthy();
-      expect(first.contentHtml).toBeTruthy();
+    it("extracts writeup section titles and content", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.writeupSections).toHaveLength(2);
+      expect(result.writeupSections[0].title).toBe("Workflow Analysis");
+      expect(result.writeupSections[0].contentHtml).toContain(
+        "use Claude Code heavily",
+      );
+      expect(result.writeupSections[1].title).toBe("Tool Preferences");
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Integrity Hash
+  // ---------------------------------------------------------------------------
 
   describe("integrity hash", () => {
-    ith("should extract the integrity hash", () => {
-      const result = parseHarnessHtml(harnessHtml);
-      expect(result.integrityHash).toBeTruthy();
+    it("extracts hash from integrity script tag", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.integrityHash).toBe("abc123def456");
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Versions
+  // ---------------------------------------------------------------------------
 
   describe("versions", () => {
-    ith("should extract version tags", () => {
-      const result = parseHarnessHtml(harnessHtml);
-      expect(result.versions.length).toBeGreaterThanOrEqual(0);
+    it("extracts version tags", () => {
+      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      expect(result.versions).toEqual(["1.0.33", "1.0.34"]);
     });
   });
 
-  it("should handle minimal HTML gracefully", () => {
-    const minimal = "<html><body><div class='container'></div></body></html>";
-    const result = parseHarnessHtml(minimal);
-    expect(result.stats.totalTokens).toBe(0);
-    expect(result.autonomy.label).toBe("");
-    expect(result.featurePills).toEqual([]);
-    expect(result.skillInventory).toEqual([]);
-    expect(result.hookDefinitions).toEqual([]);
-    expect(result.plugins).toEqual([]);
-    expect(result.writeupSections).toEqual([]);
-    expect(result.integrityHash).toBe("");
-  });
-});
+  // ---------------------------------------------------------------------------
+  // Graceful degradation
+  // ---------------------------------------------------------------------------
 
-describe("insights parser with harness HTML", () => {
-  ith(
-    "should still extract /insights data from the embedded insights tab",
-    () => {
-      const result = parseInsightsHtml(harnessHtml);
-      expect(result.stats.sessionCount).toBeGreaterThanOrEqual(0);
-    },
-  );
+  describe("graceful degradation", () => {
+    it("handles minimal HTML without crashing", () => {
+      const minimal = "<html><body><div class='container'></div></body></html>";
+      const result = parseHarnessHtml(minimal);
+      expect(result.stats.totalTokens).toBe(0);
+      expect(result.stats.sessionCount).toBe(0);
+      expect(result.autonomy.label).toBe("");
+      expect(result.featurePills).toEqual([]);
+      expect(result.skillInventory).toEqual([]);
+      expect(result.hookDefinitions).toEqual([]);
+      expect(result.plugins).toEqual([]);
+      expect(result.writeupSections).toEqual([]);
+      expect(result.integrityHash).toBe("");
+      expect(result.versions).toEqual([]);
+    });
+
+    it("handles empty string", () => {
+      const result = parseHarnessHtml("");
+      expect(result.stats.totalTokens).toBe(0);
+      expect(result.featurePills).toEqual([]);
+    });
+  });
 });

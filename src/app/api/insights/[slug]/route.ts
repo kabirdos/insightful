@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import type { InsightReportDetailContract } from "@/types/api-contracts";
+import { ALLOWED_PUT_FIELDS } from "@/app/api/insights/allowed-fields";
 
 const SECTION_KEYS = [
   "atAGlance",
@@ -134,34 +135,7 @@ export async function PUT(
     const body = await request.json();
 
     const updateData: Record<string, unknown> = {};
-    const allowedFields = [
-      "title",
-      "atAGlance",
-      "interactionStyle",
-      "projectAreas",
-      "impressiveWorkflows",
-      "frictionAnalysis",
-      "suggestions",
-      "onTheHorizon",
-      "funEnding",
-      // v3: Harness fields
-      "totalTokens",
-      "durationHours",
-      "avgSessionMinutes",
-      "prCount",
-      "autonomyLabel",
-      // Note: harnessData intentionally excluded — contains contentHtml
-      // rendered with dangerouslySetInnerHTML, so it must not be editable via API
-      // Stats fields for visibility editing
-      "sessionCount",
-      "messageCount",
-      "commitCount",
-      "linesAdded",
-      "linesRemoved",
-      "fileCount",
-      "chartData",
-      "detectedSkills",
-    ];
+    const allowedFields = ALLOWED_PUT_FIELDS;
 
     for (const field of allowedFields) {
       if (body[field] !== undefined) {

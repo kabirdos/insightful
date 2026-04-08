@@ -1,88 +1,115 @@
 import { describe, it, expect } from "vitest";
+import {
+  buildWhereClause,
+  resolveOrderBy,
+  SORT_MAP,
+} from "@/app/api/top/route";
 
-describe("Top page filter logic", () => {
-  it("should build Prisma where clause from filter params", () => {
-    const params = new URLSearchParams({
-      sort: "tokens",
-      reportType: "insight-harness",
-      minTokens: "100000",
-      skill: "custom_skills",
-    });
-
-    const where: Record<string, unknown> = {};
-
-    const reportType = params.get("reportType");
-    if (reportType) where.reportType = reportType;
-
-    const minTokens = params.get("minTokens");
-    if (minTokens) where.totalTokens = { gte: parseInt(minTokens, 10) };
-
-    const skill = params.get("skill");
-    if (skill) where.detectedSkills = { has: skill };
-
-    expect(where).toEqual({
-      reportType: "insight-harness",
-      totalTokens: { gte: 100000 },
-      detectedSkills: { has: "custom_skills" },
-    });
-  });
-
-  it("should map sort param to Prisma orderBy", () => {
-    const sortMap: Record<string, Record<string, string>> = {
-      tokens: { totalTokens: "desc" },
-      sessions: { sessionCount: "desc" },
-      commits: { commitCount: "desc" },
-      newest: { publishedAt: "desc" },
-      duration: { durationHours: "desc" },
-    };
-
-    expect(sortMap["tokens"]).toEqual({ totalTokens: "desc" });
-    expect(sortMap["sessions"]).toEqual({ sessionCount: "desc" });
-    expect(sortMap["newest"]).toEqual({ publishedAt: "desc" });
-  });
-
-  it("should handle empty params gracefully", () => {
-    const params = new URLSearchParams();
-    const where: Record<string, unknown> = {};
-    const reportType = params.get("reportType");
-    if (reportType) where.reportType = reportType;
+describe("buildWhereClause", () => {
+  it("returns empty where for empty params", () => {
+    const where = buildWhereClause(new URLSearchParams());
     expect(where).toEqual({});
   });
 
-  it("should handle multiple filters together", () => {
-    const params = new URLSearchParams({
-      reportType: "insight-harness",
-      skill: "hooks",
-      sort: "tokens",
-      q: "elena",
-    });
-
-    const where: Record<string, unknown> = {};
-    const reportType = params.get("reportType");
-    if (reportType) where.reportType = reportType;
-    const skill = params.get("skill");
-    if (skill) where.detectedSkills = { has: skill };
-    const q = params.get("q");
-    if (q) {
-      where.OR = [
-        { title: { contains: q, mode: "insensitive" } },
-        { author: { username: { contains: q, mode: "insensitive" } } },
-      ];
-    }
-
+  it("filters by reportType", () => {
+    const where = buildWhereClause(
+      new URLSearchParams({ reportType: "insight-harness" }),
+    );
     expect(where.reportType).toBe("insight-harness");
-    expect(where.detectedSkills).toEqual({ has: "hooks" });
-    expect(where.OR).toHaveLength(2);
   });
 
-  it("should default sort to newest", () => {
-    const sortMap: Record<string, Record<string, string>> = {
-      tokens: { totalTokens: "desc" },
-      sessions: { sessionCount: "desc" },
-      newest: { publishedAt: "desc" },
-    };
-    const sortKey = "";
-    const orderBy = sortMap[sortKey] || sortMap.newest;
-    expect(orderBy).toEqual({ publishedAt: "desc" });
+  it("filters by minTokens with gte", () => {
+    const where = buildWhereClause(
+      new URLSearchParams({ minTokens: "100000" }),
+    );
+    expect(where.totalTokens).toEqual({ gte: 100000 });
+  });
+
+  it("filters by skill using has", () => {
+    const where = buildWhereClause(
+      new URLSearchParams({ skill: "custom_skills" }),
+    );
+    expect(where.detectedSkills).toEqual({ has: "custom_skills" });
+  });
+
+  it("filters by autonomy with case-insensitive contains", () => {
+    const where = buildWhereClause(
+      new URLSearchParams({ autonomy: "Fire-and-Forget" }),
+    );
+    expect(where.autonomyLabel).toEqual({
+      contains: "Fire-and-Forget",
+      mode: "insensitive",
+    });
+  });
+
+  it("builds OR clause for text search q", () => {
+    const where = buildWhereClause(new URLSearchParams({ q: "elena" }));
+    expect(where.OR).toHaveLength(3);
+    expect(where.OR).toEqual([
+      { title: { contains: "elena", mode: "insensitive" } },
+      { author: { username: { contains: "elena", mode: "insensitive" } } },
+      { author: { displayName: { contains: "elena", mode: "insensitive" } } },
+    ]);
+  });
+
+  it("combines multiple filters", () => {
+    const where = buildWhereClause(
+      new URLSearchParams({
+        reportType: "insight-harness",
+        skill: "hooks",
+        minTokens: "50000",
+        q: "test",
+      }),
+    );
+    expect(where.reportType).toBe("insight-harness");
+    expect(where.detectedSkills).toEqual({ has: "hooks" });
+    expect(where.totalTokens).toEqual({ gte: 50000 });
+    expect(where.OR).toHaveLength(3);
+  });
+
+  it("ignores unknown params", () => {
+    const where = buildWhereClause(
+      new URLSearchParams({ bogus: "value", sort: "tokens" }),
+    );
+    // sort is handled separately, bogus is ignored — where should be empty
+    expect(where).toEqual({});
+  });
+});
+
+describe("resolveOrderBy", () => {
+  it("defaults to newest when null", () => {
+    expect(resolveOrderBy(null)).toEqual({ publishedAt: "desc" });
+  });
+
+  it("defaults to newest for unknown sort key", () => {
+    expect(resolveOrderBy("nonexistent")).toEqual({ publishedAt: "desc" });
+  });
+
+  it("resolves tokens sort", () => {
+    expect(resolveOrderBy("tokens")).toEqual({ totalTokens: "desc" });
+  });
+
+  it("resolves sessions sort", () => {
+    expect(resolveOrderBy("sessions")).toEqual({ sessionCount: "desc" });
+  });
+
+  it("resolves commits sort", () => {
+    expect(resolveOrderBy("commits")).toEqual({ commitCount: "desc" });
+  });
+
+  it("resolves duration sort", () => {
+    expect(resolveOrderBy("duration")).toEqual({ durationHours: "desc" });
+  });
+
+  it("resolves prs sort", () => {
+    expect(resolveOrderBy("prs")).toEqual({ prCount: "desc" });
+  });
+});
+
+describe("SORT_MAP", () => {
+  it("contains all expected sort keys", () => {
+    expect(Object.keys(SORT_MAP).sort()).toEqual(
+      ["commits", "duration", "newest", "prs", "sessions", "tokens"].sort(),
+    );
   });
 });

@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
 
-const SORT_MAP: Record<string, Prisma.InsightReportOrderByWithRelationInput> = {
+export const SORT_MAP: Record<
+  string,
+  Prisma.InsightReportOrderByWithRelationInput
+> = {
   tokens: { totalTokens: "desc" },
   sessions: { sessionCount: "desc" },
   commits: { commitCount: "desc" },
@@ -11,10 +14,13 @@ const SORT_MAP: Record<string, Prisma.InsightReportOrderByWithRelationInput> = {
   prs: { prCount: "desc" },
 };
 
-export async function GET(req: NextRequest) {
-  const params = req.nextUrl.searchParams;
-
-  // Build where clause
+/**
+ * Build the Prisma `where` clause from URL search params.
+ * Extracted as a pure function for testability.
+ */
+export function buildWhereClause(
+  params: URLSearchParams,
+): Prisma.InsightReportWhereInput {
   const where: Prisma.InsightReportWhereInput = {};
 
   const reportType = params.get("reportType");
@@ -39,9 +45,26 @@ export async function GET(req: NextRequest) {
     ];
   }
 
+  return where;
+}
+
+/**
+ * Resolve the orderBy clause from a sort key string.
+ */
+export function resolveOrderBy(
+  sortKey: string | null,
+): Prisma.InsightReportOrderByWithRelationInput {
+  return SORT_MAP[sortKey || "newest"] || SORT_MAP.newest;
+}
+
+export async function GET(req: NextRequest) {
+  const params = req.nextUrl.searchParams;
+
+  const where = buildWhereClause(params);
+
   // Sort
   const sortKey = params.get("sort") || "newest";
-  const orderBy = SORT_MAP[sortKey] || SORT_MAP.newest;
+  const orderBy = resolveOrderBy(sortKey);
 
   // Limit
   const limit = Math.min(parseInt(params.get("limit") || "50", 10), 100);
