@@ -165,7 +165,9 @@ function CommandBlock({
       )}
     >
       <span className="text-slate-500">&gt; </span>
-      <code className="flex-1 truncate text-slate-200">{command}</code>
+      <code className="min-w-0 flex-1 overflow-x-auto text-slate-200">
+        {command}
+      </code>
       <CopyButton text={command} />
     </div>
   );
@@ -1127,7 +1129,7 @@ export default function UploadPage() {
                     1
                   </span>
                   <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
-                    Install the Insight Harness skill{" "}
+                    Install the skill (one-time setup){" "}
                     <span className="text-[11px] font-normal text-green-600 dark:text-green-400">
                       (free)
                     </span>
@@ -1138,7 +1140,7 @@ export default function UploadPage() {
                   skill inventory, hooks, agent patterns, and more.
                 </p>
                 <CommandBlock
-                  command="claude install-skill https://github.com/craigdossantos/claude-toolkit/tree/main/skills/insight-harness"
+                  command="curl -sL https://github.com/craigdossantos/claude-toolkit/archive/main.tar.gz | tar xz -C /tmp && cp -r /tmp/claude-toolkit-main/skills/insight-harness ~/.claude/skills/ && rm -rf /tmp/claude-toolkit-main"
                   small
                 />
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
