@@ -28,10 +28,17 @@ export default function AutonomyGauge({ autonomy }: AutonomyGaugeProps) {
   const arcLength = Math.PI * 65; // ~204
   const dashOffset = arcLength * (1 - fillPct);
 
-  const ratio =
-    autonomy.userMessages > 0 && autonomy.assistantMessages > 0
-      ? `1:${Math.round(autonomy.assistantMessages / autonomy.userMessages)}`
-      : null;
+  const hasMessages =
+    autonomy.userMessages > 0 && autonomy.assistantMessages > 0;
+  const perUserMsg = hasMessages
+    ? Math.round(autonomy.assistantMessages / autonomy.userMessages)
+    : null;
+
+  // Proportion bar widths
+  const total = hasMessages
+    ? autonomy.userMessages + autonomy.assistantMessages
+    : 0;
+  const userPct = total > 0 ? (autonomy.userMessages / total) * 100 : 0;
 
   return (
     <div className="text-center">
@@ -65,18 +72,34 @@ export default function AutonomyGauge({ autonomy }: AutonomyGaugeProps) {
       <div className="mt-2 text-2xl font-extrabold text-slate-900 dark:text-slate-100">
         {autonomy.label}
       </div>
-      <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-        {autonomy.description}
-      </div>
-      <div className="mt-2 text-[11px] text-slate-400 dark:text-slate-500">
-        {ratio && <span>{ratio} human-to-Claude ratio</span>}
-        {ratio && autonomy.errorRate && autonomy.errorRate !== "0%" && (
-          <span> · </span>
-        )}
-        {autonomy.errorRate && autonomy.errorRate !== "0%" && (
-          <span>{autonomy.errorRate} error rate</span>
-        )}
-      </div>
+      {perUserMsg && perUserMsg > 1 && (
+        <div className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+          For every message you send, Claude sends ~{perUserMsg} back
+        </div>
+      )}
+      {hasMessages && (
+        <div className="mx-auto mt-2 max-w-[140px]">
+          <div className="flex h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+            <div
+              className="rounded-l-full bg-slate-400 dark:bg-slate-500"
+              style={{ width: `${userPct}%` }}
+            />
+            <div
+              className="rounded-r-full bg-blue-500"
+              style={{ width: `${100 - userPct}%` }}
+            />
+          </div>
+          <div className="mt-1 flex justify-between text-[10px] text-slate-400 dark:text-slate-500">
+            <span>You {autonomy.userMessages.toLocaleString()}</span>
+            <span>Claude {autonomy.assistantMessages.toLocaleString()}</span>
+          </div>
+        </div>
+      )}
+      {autonomy.errorRate && autonomy.errorRate !== "0%" && (
+        <div className="mt-1.5 text-[11px] text-slate-400 dark:text-slate-500">
+          {autonomy.errorRate} error rate
+        </div>
+      )}
     </div>
   );
 }

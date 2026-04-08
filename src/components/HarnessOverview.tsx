@@ -65,13 +65,20 @@ export default function HarnessOverview({ harnessData }: HarnessOverviewProps) {
           <div className="mt-1 text-sm text-slate-300">
             {autonomy.description}
           </div>
+          {autonomy.userMessages > 0 && autonomy.assistantMessages > 0 && (
+            <div className="mt-2 text-sm text-slate-300">
+              For every message you send, Claude sends ~
+              {Math.round(autonomy.assistantMessages / autonomy.userMessages)}{" "}
+              back
+            </div>
+          )}
           <div className="mt-3 flex flex-wrap gap-4 border-t border-white/10 pt-3">
             {autonomy.userMessages > 0 && (
               <div className="text-xs text-slate-400">
                 <span className="font-semibold text-white">
                   {autonomy.userMessages.toLocaleString()}
                 </span>{" "}
-                user msgs
+                you sent
               </div>
             )}
             {autonomy.assistantMessages > 0 && (
@@ -79,7 +86,7 @@ export default function HarnessOverview({ harnessData }: HarnessOverviewProps) {
                 <span className="font-semibold text-white">
                   {autonomy.assistantMessages.toLocaleString()}
                 </span>{" "}
-                assistant msgs
+                Claude sent
               </div>
             )}
             {autonomy.turnCount > 0 && (

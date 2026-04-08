@@ -386,6 +386,47 @@ export default function InsightDetailPage() {
             <SkillCardGrid skillInventory={report.harnessData.skillInventory} />
           )}
 
+          {/* Plugins */}
+          {report.harnessData.plugins.length > 0 && (
+            <CollapsibleSection
+              icon="🔌"
+              iconBgClass="bg-teal-100 dark:bg-teal-900/30"
+              title="Plugins"
+              defaultOpen={false}
+            >
+              <div className="grid gap-2 sm:grid-cols-2">
+                {report.harnessData.plugins.map((p) => (
+                  <div
+                    key={p.name}
+                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {p.name}
+                      </span>
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
+                          p.active
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                            : "bg-slate-100 text-slate-400 dark:bg-slate-800"
+                        }`}
+                      >
+                        {p.active ? "on" : "off"}
+                      </span>
+                    </div>
+                    {(p.version || p.marketplace) && (
+                      <div className="mt-0.5 text-[11px] text-slate-400">
+                        {p.version && `v${p.version}`}
+                        {p.version && p.marketplace && " · "}
+                        {p.marketplace}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CollapsibleSection>
+          )}
+
           {/* CLI Tools Donut */}
           {Object.keys(report.harnessData.cliTools).length > 0 && (
             <CliToolsDonut cliTools={report.harnessData.cliTools} />
@@ -473,47 +514,6 @@ export default function InsightDetailPage() {
                 )}
               </CollapsibleSection>
             )}
-
-          {/* Plugins */}
-          {report.harnessData.plugins.length > 0 && (
-            <CollapsibleSection
-              icon="🔌"
-              iconBgClass="bg-teal-100 dark:bg-teal-900/30"
-              title="Plugins"
-              defaultOpen={false}
-            >
-              <div className="grid gap-2 sm:grid-cols-2">
-                {report.harnessData.plugins.map((p) => (
-                  <div
-                    key={p.name}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        {p.name}
-                      </span>
-                      <span
-                        className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
-                          p.active
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                            : "bg-slate-100 text-slate-400 dark:bg-slate-800"
-                        }`}
-                      >
-                        {p.active ? "on" : "off"}
-                      </span>
-                    </div>
-                    {(p.version || p.marketplace) && (
-                      <div className="mt-0.5 text-[11px] text-slate-400">
-                        {p.version && `v${p.version}`}
-                        {p.version && p.marketplace && " · "}
-                        {p.marketplace}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CollapsibleSection>
-          )}
 
           {/* Languages */}
           {Object.keys(report.harnessData.languages).length > 0 && (
