@@ -471,25 +471,25 @@ export default function HomePage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4">
               <div className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-2">
-                {copy.upgrade.installTitle}
+                {copy.upgrade.option1Title}
               </div>
-              <CopyBlock text={copy.upgrade.installCommand} />
+              <CopyBlock text={copy.upgrade.option1Command} />
               <p className="mt-2 text-[11px] text-slate-400">
-                {copy.upgrade.installHint}{" "}
-                <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded text-[10px]">
-                  {copy.upgrade.installSlashCommand}
-                </code>{" "}
-                {copy.upgrade.installSuffix}
+                {copy.upgrade.option1Hint}
               </p>
             </div>
             <div className="rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4">
               <div className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-2">
-                {copy.upgrade.promptTitle}
+                {copy.upgrade.option2Title}
               </div>
-              <CopyBlock text={copy.upgrade.promptCommand} />
-              <p className="mt-2 text-[11px] text-slate-400">
-                {copy.upgrade.promptHint}
+              <p className="mb-1 text-[11px] text-slate-400">
+                {copy.upgrade.option2InstallHint}
               </p>
+              <CopyBlock text={copy.upgrade.option2InstallCommand} />
+              <p className="mt-3 mb-1 text-[11px] text-slate-400">
+                {copy.upgrade.option2RunHint}
+              </p>
+              <CopyBlock text={copy.upgrade.option2RunCommand} />
             </div>
           </div>
 

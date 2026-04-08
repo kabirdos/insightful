@@ -62,11 +62,8 @@ export default function HarnessOverview({ harnessData }: HarnessOverviewProps) {
       {autonomy.label && (
         <div className="rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 p-5 text-white dark:from-slate-700 dark:to-slate-800">
           <div className="text-xl font-bold">{autonomy.label}</div>
-          <div className="mt-1 text-sm text-slate-300">
-            {autonomy.description}
-          </div>
           {autonomy.userMessages > 0 && autonomy.assistantMessages > 0 && (
-            <div className="mt-2 text-sm text-slate-300">
+            <div className="mt-1 text-sm text-slate-300">
               For every message you send, Claude sends ~
               {Math.round(autonomy.assistantMessages / autonomy.userMessages)}{" "}
               back

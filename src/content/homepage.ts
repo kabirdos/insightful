@@ -59,18 +59,18 @@ export const homepage = {
       ],
     },
 
-    // Install options
-    installTitle: "Option 1: Install the skill",
-    installCommand:
-      "mkdir -p ~/.claude/skills/insight-harness/scripts && curl -sL https://raw.githubusercontent.com/craigdossantos/claude-toolkit/main/skills/insight-harness/SKILL.md -o ~/.claude/skills/insight-harness/SKILL.md && curl -sL https://raw.githubusercontent.com/craigdossantos/claude-toolkit/main/skills/insight-harness/scripts/extract.py -o ~/.claude/skills/insight-harness/scripts/extract.py",
-    installHint: "Paste in terminal. Then run",
-    installSlashCommand: "/insight-harness",
-    installSuffix: "in Claude Code.",
+    // Option 1: Built-in /insights
+    option1Title: "Option 1: Run /insights",
+    option1Command: "/insights",
+    option1Hint: "Built into Claude Code. Just type this and hit enter.",
 
-    promptTitle: "Option 2: One-shot prompt",
-    promptCommand: "Run /insight-harness and generate my harness report",
-    promptHint:
-      "Paste this into Claude Code if you already have the skill installed.",
+    // Option 2: Enhanced /insight-harness (requires install)
+    option2Title: "Option 2: Run /insight-harness",
+    option2InstallCommand:
+      "mkdir -p ~/.claude/skills/insight-harness/scripts && curl -sL https://raw.githubusercontent.com/craigdossantos/claude-toolkit/main/skills/insight-harness/SKILL.md -o ~/.claude/skills/insight-harness/SKILL.md && curl -sL https://raw.githubusercontent.com/craigdossantos/claude-toolkit/main/skills/insight-harness/scripts/extract.py -o ~/.claude/skills/insight-harness/scripts/extract.py",
+    option2InstallHint: "Install the skill first — paste in your terminal:",
+    option2RunCommand: "/insight-harness",
+    option2RunHint: "Then run this in Claude Code:",
   },
 
   // ── How It Works ──────────────────────────────────────────
