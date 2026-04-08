@@ -278,71 +278,7 @@ function MiniDropZone({
   );
 }
 
-function DropZoneContent({
-  fileInputRef,
-  handleFileInput,
-}: {
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
-  handleFileInput: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}) {
-  return (
-    <>
-      <FileText className="mb-4 h-12 w-12 text-slate-400" />
-      <h3 className="mb-2 text-lg font-semibold text-slate-700 dark:text-slate-200">
-        Upload your report
-      </h3>
-      <p className="mx-auto mb-4 max-w-md text-sm text-slate-500 dark:text-slate-400">
-        Drop either your <strong>/insights</strong> report or your upgraded{" "}
-        <strong>/insight-harness</strong> report. Both work.
-      </p>
-
-      <div
-        className="mx-auto mb-5 grid max-w-lg gap-3 text-left"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div>
-          <p className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-            /insights (standard)
-          </p>
-          <CommandBlock command={INSIGHTS_PATH} small />
-        </div>
-        <div>
-          <p className="mb-1 text-xs font-medium text-blue-600 dark:text-blue-400">
-            /insight-harness (upgraded)
-          </p>
-          <CommandBlock command={HARNESS_PATH} small />
-        </div>
-      </div>
-
-      <p className="mb-4 text-[11px] text-slate-400 dark:text-slate-500">
-        Tip: In Finder, press{" "}
-        <kbd className="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">
-          ⌘
-        </kbd>
-        +
-        <kbd className="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">
-          ⇧
-        </kbd>
-        +
-        <kbd className="rounded border border-slate-300 px-1 py-0.5 text-[10px] dark:border-slate-600">
-          G
-        </kbd>{" "}
-        and paste the path to find the file
-      </p>
-
-      <span className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700">
-        Click or drop file to upload
-      </span>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".html"
-        onChange={handleFileInput}
-        className="hidden"
-      />
-    </>
-  );
-}
+/* DropZoneContent removed — upload step now uses inline two-column layout */
 
 /* ── Eye toggle button ── */
 function EyeToggle({
@@ -1106,36 +1042,300 @@ export default function UploadPage() {
         </div>
       )}
 
-      {/* Step 1: Upload */}
+      {/* Step 1: Upload — two-column layout */}
       {step === "upload" && (
-        <div
-          onClick={() => !loading && fileInputRef.current?.click()}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-          className={clsx(
-            "flex min-h-[300px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-colors",
-            dragOver
-              ? "border-blue-400 bg-blue-50 dark:bg-blue-950/30"
-              : "border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 hover:border-slate-400 dark:hover:border-slate-500",
-          )}
-        >
-          {loading ? (
-            <div className="text-center">
-              <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-              <p className="text-slate-600 dark:text-slate-300">
-                Parsing your insights...
+        <div>
+          {/* Header */}
+          <div className="mb-7 text-center">
+            <h1 className="text-xl font-extrabold text-slate-900 dark:text-slate-100">
+              Upload Your Report
+            </h1>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Choose your report type, generate it in Claude Code, then upload
+              the file.
+            </p>
+          </div>
+
+          {/* Two-column grid */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {/* ── LEFT: /insights (Standard) ── */}
+            <div className="flex flex-col gap-5 rounded-xl border-[1.5px] border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800/60">
+              {/* Column header */}
+              <div className="flex items-center gap-2">
+                <FileText className="h-[18px] w-[18px] text-slate-500 dark:text-slate-400" />
+                <span className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  /insights (Standard)
+                </span>
+              </div>
+
+              {/* Step 1 */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                    1
+                  </span>
+                  <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+                    Run /insights
+                  </span>
+                </div>
+                <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                  Built into Claude Code. Generates a narrative report about
+                  your usage patterns.
+                </p>
+                <CommandBlock command="/insights" />
+              </div>
+
+              {/* Step 2 */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                    2
+                  </span>
+                  <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+                    Upload the report
+                  </span>
+                </div>
+                <MiniDropZone
+                  fileInputRef={fileInputRef}
+                  handleFileInput={handleFileInput}
+                  handleDrop={handleDrop}
+                  dragOver={dragOver}
+                  setDragOver={setDragOver}
+                  path={INSIGHTS_PATH}
+                  loading={loading}
+                />
+              </div>
+            </div>
+
+            {/* ── RIGHT: /insight-harness (Enhanced) ── */}
+            <div className="flex flex-col gap-5 rounded-xl border-[1.5px] border-blue-300 bg-white p-6 shadow-[0_0_0_1px_rgba(37,99,235,0.08),0_4px_16px_rgba(37,99,235,0.06)] dark:border-blue-700 dark:bg-slate-800/60 dark:shadow-[0_0_0_1px_rgba(37,99,235,0.15),0_4px_16px_rgba(37,99,235,0.1)]">
+              {/* Column header */}
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-[18px] w-[18px] text-blue-600 dark:text-blue-400" />
+                <span className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  /insight-harness (Enhanced)
+                </span>
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                  Recommended
+                </span>
+              </div>
+
+              {/* Step 1 */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+                    1
+                  </span>
+                  <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+                    Install the Insight Harness skill{" "}
+                    <span className="text-[11px] font-normal text-green-600 dark:text-green-400">
+                      (free)
+                    </span>
+                  </span>
+                </div>
+                <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                  Everything from /insights PLUS token usage, tool breakdowns,
+                  skill inventory, hooks, agent patterns, and more.
+                </p>
+                <CommandBlock
+                  command="claude install-skill https://github.com/craigdossantos/claude-toolkit/tree/main/skills/insight-harness"
+                  small
+                />
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Then run:
+                </p>
+                <CommandBlock command="/insight-harness" />
+              </div>
+
+              {/* Step 2 */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+                    2
+                  </span>
+                  <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+                    Upload the report
+                  </span>
+                </div>
+                <MiniDropZone
+                  fileInputRef={harnessFileInputRef}
+                  handleFileInput={handleFileInput}
+                  handleDrop={handleDrop}
+                  dragOver={dragOverHarness}
+                  setDragOver={setDragOverHarness}
+                  path={HARNESS_PATH}
+                  loading={loading}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Step 3: Reassurance banner */}
+          <div className="mt-7 flex items-start gap-3.5 rounded-xl border-[1.5px] border-green-200 bg-green-50 px-6 py-5 dark:border-green-800 dark:bg-green-950/30">
+            <ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-green-600 dark:text-green-400" />
+            <div>
+              <div className="mb-1.5 flex items-center gap-2">
+                <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-green-100 text-[11px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                  3
+                </span>
+                <span className="text-sm font-bold text-green-800 dark:text-green-300">
+                  Review &amp; Redact
+                </span>
+              </div>
+              <p className="text-[13px] leading-relaxed text-green-700 dark:text-green-400">
+                We automatically detect non-public information (project names,
+                file paths, emails) and let you review before sharing. Nothing
+                is published without your approval.
               </p>
             </div>
-          ) : (
-            <DropZoneContent
-              fileInputRef={fileInputRef}
-              handleFileInput={handleFileInput}
-            />
-          )}
+          </div>
+
+          {/* Bottom note */}
+          <p className="mt-6 text-center text-[13px] leading-relaxed text-slate-500 dark:text-slate-400">
+            Both report types work. The Enhanced report includes everything from
+            /insights plus detailed harness data.
+          </p>
+
+          {/* Comparison table */}
+          <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800/60">
+            <h3 className="mb-1 text-sm font-bold text-slate-900 dark:text-slate-100">
+              What&apos;s included in each report?
+            </h3>
+
+            {/* Preview rows (always visible) */}
+            <div className="relative">
+              <table className="mt-2 w-full border-collapse text-[13px]">
+                <thead>
+                  <tr>
+                    <th className="border-b-2 border-slate-200 px-3 py-2 text-left text-xs font-semibold text-slate-600 dark:border-slate-600 dark:text-slate-300">
+                      Feature
+                    </th>
+                    <th className="border-b-2 border-slate-200 px-3 py-2 text-center text-xs font-semibold text-slate-600 dark:border-slate-600 dark:text-slate-300">
+                      /insights
+                    </th>
+                    <th className="border-b-2 border-slate-200 bg-blue-50/50 px-3 py-2 text-center text-xs font-semibold text-slate-600 dark:border-slate-600 dark:bg-blue-950/20 dark:text-slate-300">
+                      /insight-harness
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    {
+                      feature: "Usage narrative",
+                      insights: true,
+                      harness: true,
+                    },
+                    {
+                      feature: "Conversation count",
+                      insights: true,
+                      harness: true,
+                    },
+                    {
+                      feature: "Active days & streaks",
+                      insights: true,
+                      harness: true,
+                    },
+                    {
+                      feature: "Model usage breakdown",
+                      insights: true,
+                      harness: true,
+                    },
+                    ...(showAllFeatures
+                      ? [
+                          {
+                            feature: "Token consumption stats",
+                            insights: false,
+                            harness: true,
+                          },
+                          {
+                            feature: "Tool usage breakdown",
+                            insights: false,
+                            harness: true,
+                          },
+                          {
+                            feature: "Skill inventory",
+                            insights: false,
+                            harness: true,
+                          },
+                          {
+                            feature: "Hooks & MCP servers",
+                            insights: false,
+                            harness: true,
+                          },
+                          {
+                            feature: "Agent patterns",
+                            insights: false,
+                            harness: true,
+                          },
+                          {
+                            feature: "Cost estimation",
+                            insights: false,
+                            harness: true,
+                          },
+                        ]
+                      : []),
+                  ].map((row, i, arr) => (
+                    <tr key={row.feature}>
+                      <td
+                        className={clsx(
+                          "px-3 py-[7px] text-slate-700 dark:text-slate-200",
+                          i < arr.length - 1 &&
+                            "border-b border-slate-100 dark:border-slate-700/50",
+                        )}
+                      >
+                        {row.feature}
+                      </td>
+                      <td
+                        className={clsx(
+                          "px-3 py-[7px] text-center",
+                          i < arr.length - 1 &&
+                            "border-b border-slate-100 dark:border-slate-700/50",
+                          row.insights
+                            ? "font-bold text-green-600 dark:text-green-400"
+                            : "text-slate-300 dark:text-slate-600",
+                        )}
+                      >
+                        {row.insights ? "\u2713" : "\u2014"}
+                      </td>
+                      <td
+                        className={clsx(
+                          "bg-blue-50/50 px-3 py-[7px] text-center dark:bg-blue-950/20",
+                          i < arr.length - 1 &&
+                            "border-b border-slate-100 dark:border-slate-700/50",
+                          row.harness
+                            ? "font-bold text-green-600 dark:text-green-400"
+                            : "text-slate-300 dark:text-slate-600",
+                        )}
+                      >
+                        {row.harness ? "\u2713" : "\u2014"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Gradient fade on 4th row when collapsed */}
+              {!showAllFeatures && (
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white dark:from-slate-800/60" />
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowAllFeatures((v) => !v)}
+              className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg py-2 text-xs font-semibold text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700/40 dark:hover:text-slate-200"
+            >
+              {showAllFeatures ? (
+                <>
+                  Show less <ChevronUp className="h-3.5 w-3.5" />
+                </>
+              ) : (
+                <>
+                  See all features <ChevronDown className="h-3.5 w-3.5" />
+                </>
+              )}
+            </button>
+          </div>
         </div>
       )}
 

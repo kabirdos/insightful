@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Calendar, Share2 } from "lucide-react";
+import { Calendar, Share2, Sparkles } from "lucide-react";
 import SectionRenderer from "@/components/SectionRenderer";
 import CommentSection from "@/components/CommentSection";
 import ProjectLinks from "@/components/ProjectLinks";
@@ -321,7 +321,7 @@ export default function InsightDetailPage() {
               className="rounded-full"
             />
           ) : (
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-600 dark:bg-blue-900 dark:text-blue-400">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-violet-500 text-lg font-bold text-white">
               {(report.author.displayName ||
                 report.author.username)[0].toUpperCase()}
             </div>
@@ -334,6 +334,12 @@ export default function InsightDetailPage() {
           >
             {report.author.displayName || report.author.username}
           </Link>
+          {isHarness && (
+            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-violet-100 to-blue-100 border border-violet-200 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-violet-700 dark:from-violet-900/30 dark:to-blue-900/30 dark:border-violet-700 dark:text-violet-300">
+              <Sparkles className="h-3 w-3" />
+              Insight Harness
+            </span>
+          )}
           <div className="flex items-center gap-2 text-sm text-slate-500">
             <Calendar className="h-3.5 w-3.5" />
             {report.dateRangeStart && report.dateRangeEnd
