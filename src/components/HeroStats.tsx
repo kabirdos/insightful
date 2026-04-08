@@ -99,11 +99,13 @@ function StatCard({
 }) {
   const sparkData = seededSparkline(numericSeed);
   const color = STAT_COLORS[label] || "#6366f1";
+  const primaryDisplay = rate ? `${rate}/wk` : value;
+  const subtitle = rate ? `(${value} total)` : null;
   return (
     <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 text-center dark:border-slate-700 dark:bg-slate-900/50">
       <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-blue-500 to-violet-500" />
       <div className="text-[32px] font-extrabold leading-none tracking-tight text-slate-900 dark:text-slate-100">
-        {value}
+        {primaryDisplay}
       </div>
       <div className="mt-2">
         <Sparkline data={sparkData} color={color} />
@@ -111,9 +113,9 @@ function StatCard({
       <div className="mt-1 text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
         {label}
       </div>
-      {rate && (
+      {subtitle && (
         <div className="mt-1.5 text-[11px] text-slate-400 dark:text-slate-500">
-          {rate}/wk
+          {subtitle}
         </div>
       )}
     </div>
@@ -125,7 +127,7 @@ export default function HeroStats({
   dayCount,
   sessionCount,
 }: HeroStatsProps) {
-  const sessions = sessionCount ?? 0;
+  const sessions = sessionCount || stats.sessionCount || 0;
 
   return (
     <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">

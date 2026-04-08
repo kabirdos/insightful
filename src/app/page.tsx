@@ -27,9 +27,9 @@ interface InsightSummary {
   linesRemoved?: number | null;
   fileCount?: number | null;
   commitCount?: number | null;
+  totalTokens?: number | null;
   detectedSkills: SkillKey[];
-  interactionStyle?: { key_pattern?: string } | null;
-  atAGlance?: { whats_working?: string } | null;
+  harnessData?: { stats?: { sessionCount?: number } } | null;
   author: {
     username: string;
     displayName?: string | null;
@@ -44,7 +44,10 @@ function perWeek(
   if (value == null || dayCount == null || dayCount === 0) return null;
   const weeks = dayCount / 7;
   if (weeks === 0) return null;
-  return Math.round(value / weeks).toLocaleString();
+  const rate = value / weeks;
+  if (rate >= 1_000_000) return `${(rate / 1_000_000).toFixed(1)}M`;
+  if (rate >= 1_000) return `${(rate / 1_000).toFixed(1)}K`;
+  return Math.round(rate).toLocaleString();
 }
 
 function formatDateRange(
@@ -130,11 +133,12 @@ function ProfileCard({
     insight.dateRangeStart,
     insight.dateRangeEnd,
   );
-  const sessionsWk = perWeek(insight.sessionCount, insight.dayCount);
+  const tokensWk = perWeek(insight.totalTokens, insight.dayCount);
+  const effectiveSessionCount =
+    insight.sessionCount || insight.harnessData?.stats?.sessionCount || null;
+  const sessionsWk = perWeek(effectiveSessionCount, insight.dayCount);
   const msgsWk = perWeek(insight.messageCount, insight.dayCount);
   const commitsWk = perWeek(insight.commitCount, insight.dayCount);
-  const keyPattern = (insight.interactionStyle as Record<string, string> | null)
-    ?.key_pattern;
 
   return (
     <Link
@@ -185,6 +189,14 @@ function ProfileCard({
 
       {/* Stats */}
       <div className="flex flex-wrap gap-x-5 gap-y-1 mb-3">
+        {tokensWk && (
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            <span className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
+              {tokensWk}
+            </span>{" "}
+            tokens/wk
+          </div>
+        )}
         {sessionsWk && (
           <div className="text-xs text-slate-500 dark:text-slate-400">
             <span className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
@@ -219,25 +231,6 @@ function ProfileCard({
           ))}
         </div>
       )}
-
-      {/* Key pattern */}
-      {keyPattern && (
-        <p className="text-xs italic text-slate-500 dark:text-slate-400 truncate">
-          &ldquo;{keyPattern}&rdquo;
-        </p>
-      )}
-
-      {/* Strengths (featured only) */}
-      {featured && insight.atAGlance && (
-        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-          <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
-            <strong className="text-slate-600 dark:text-slate-300">
-              {copy.profiles.strengthsLabel}
-            </strong>{" "}
-            {(insight.atAGlance as Record<string, string>).whats_working}
-          </p>
-        </div>
-      )}
     </Link>
   );
 }
@@ -266,10 +259,9 @@ export default function HomePage() {
           linesRemoved: r.linesRemoved as number | null,
           fileCount: r.fileCount as number | null,
           commitCount: r.commitCount as number | null,
+          totalTokens: r.totalTokens as number | null,
           detectedSkills: normalizeSkills(r.detectedSkills),
-          interactionStyle:
-            r.interactionStyle as InsightSummary["interactionStyle"],
-          atAGlance: r.atAGlance as InsightSummary["atAGlance"],
+          harnessData: r.harnessData as InsightSummary["harnessData"],
           author: r.author as InsightSummary["author"],
         }));
         setInsights(mapped);
