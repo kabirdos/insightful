@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, AlertTriangle } from "lucide-react";
 import type { HarnessData } from "@/types/insights";
 import { normalizeHarnessData } from "@/types/insights";
 import HeroStats from "@/components/HeroStats";
@@ -95,6 +95,11 @@ export default function EditReportPage() {
     {},
   );
   const [hiddenStats, setHiddenStats] = useState<Record<string, boolean>>({});
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingSave, setPendingSave] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
 
   useEffect(() => {
     fetch(`/api/insights/${slug}`)
@@ -125,27 +130,30 @@ export default function EditReportPage() {
     setHiddenStats((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleSave = async () => {
-    if (!report) return;
+  const buildSaveBody = () => {
+    const body: Record<string, unknown> = {};
+
+    // Null out hidden narrative sections
+    for (const section of SECTIONS) {
+      if (hiddenSections[section.key]) {
+        body[section.key] = null;
+      }
+    }
+
+    // Null out hidden stats
+    if (hiddenStats["sessions"]) body.sessionCount = null;
+    if (hiddenStats["messages"]) body.messageCount = null;
+    if (hiddenStats["commits"]) body.commitCount = null;
+    if (hiddenStats["tokens"]) body.totalTokens = null;
+
+    return body;
+  };
+
+  const executeSave = async (body: Record<string, unknown>) => {
     setSaving(true);
     setError(null);
 
     try {
-      const body: Record<string, unknown> = {};
-
-      // Null out hidden narrative sections
-      for (const section of SECTIONS) {
-        if (hiddenSections[section.key]) {
-          body[section.key] = null;
-        }
-      }
-
-      // Null out hidden stats
-      if (hiddenStats["sessions"]) body.sessionCount = null;
-      if (hiddenStats["messages"]) body.messageCount = null;
-      if (hiddenStats["commits"]) body.commitCount = null;
-      if (hiddenStats["tokens"]) body.totalTokens = null;
-
       const res = await fetch(`/api/insights/${slug}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -163,6 +171,37 @@ export default function EditReportPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSave = async () => {
+    if (!report) return;
+
+    const body = buildSaveBody();
+
+    // Check if any sections are being removed
+    const removedSections = SECTIONS.filter((s) => hiddenSections[s.key]).map(
+      (s) => s.label,
+    );
+
+    if (removedSections.length > 0) {
+      setPendingSave(body);
+      setShowConfirmModal(true);
+      return;
+    }
+
+    await executeSave(body);
+  };
+
+  const handleConfirmSave = async () => {
+    if (!pendingSave) return;
+    setShowConfirmModal(false);
+    await executeSave(pendingSave);
+    setPendingSave(null);
+  };
+
+  const handleCancelSave = () => {
+    setShowConfirmModal(false);
+    setPendingSave(null);
   };
 
   if (loading) {
@@ -336,6 +375,54 @@ export default function EditReportPage() {
           {saving ? "Saving..." : "Save Changes"}
         </button>
       </div>
+
+      {/* Confirmation modal for destructive saves */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="mx-4 max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-slate-900">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                Confirm Removal
+              </h2>
+            </div>
+            <p className="mb-3 text-sm text-slate-600 dark:text-slate-400">
+              This will permanently remove the following sections from your
+              published report:
+            </p>
+            <ul className="mb-4 space-y-1">
+              {SECTIONS.filter((s) => hiddenSections[s.key]).map((s) => (
+                <li
+                  key={s.key}
+                  className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300"
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                  {s.label}
+                </li>
+              ))}
+            </ul>
+            <p className="mb-6 text-sm font-medium text-red-600 dark:text-red-400">
+              This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleCancelSave}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmSave}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
+              >
+                Remove &amp; Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
