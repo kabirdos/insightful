@@ -125,9 +125,9 @@ export async function POST(request: Request) {
       ...(harnessData
         ? {
             sessionCount:
-              parsed.stats.sessionCount || harnessData.stats.totalTokens > 0
-                ? parsed.stats.sessionCount
-                : 0,
+              parsed.stats.sessionCount || harnessData.stats.sessionCount || 0,
+            commitCount:
+              parsed.stats.commitCount || harnessData.stats.commitCount || 0,
             dayCount: enhancedStats.dayCount ?? 30,
           }
         : {}),

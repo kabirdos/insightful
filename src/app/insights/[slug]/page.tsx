@@ -368,7 +368,11 @@ export default function InsightDetailPage() {
           <HeroStats
             stats={report.harnessData.stats}
             dayCount={report.dayCount}
-            sessionCount={report.sessionCount}
+            sessionCount={
+              report.sessionCount ||
+              report.harnessData?.stats?.sessionCount ||
+              0
+            }
           />
 
           {/* Activity Heatmap — removed until daily data is available */}

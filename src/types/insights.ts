@@ -123,6 +123,8 @@ export interface HarnessStats {
   skillsUsedCount: number;
   hooksCount: number;
   prCount: number;
+  sessionCount?: number;
+  commitCount?: number;
 }
 
 export interface HarnessAutonomy {

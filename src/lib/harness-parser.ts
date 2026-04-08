@@ -72,6 +72,8 @@ function parseHarnessStats($: cheerio.CheerioAPI): HarnessStats {
     skillsUsedCount: parseInt(statValues["skills used"] ?? "0", 10) || 0,
     hooksCount: parseInt(statValues["hooks"] ?? "0", 10) || 0,
     prCount: parseInt(statValues["prs"] ?? "0", 10) || 0,
+    sessionCount: parseInt(statValues["sessions"] ?? "0", 10) || 0,
+    commitCount: parseInt(statValues["commits"] ?? "0", 10) || 0,
   };
 }
 
