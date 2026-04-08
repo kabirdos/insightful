@@ -400,7 +400,6 @@ export default function InsightDetailPage() {
             totalTokens={report.totalTokens ?? undefined}
             dayCount={report.dayCount ?? undefined}
             dateRangeStart={report.dateRangeStart ?? undefined}
-            dateRangeEnd={report.dateRangeEnd ?? undefined}
             slug={slug}
           />
 

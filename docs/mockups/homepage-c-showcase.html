@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insight Harness — The Showcase</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+          sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ── Floating Nav ── */
+      nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 40px;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .nav-brand {
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        color: #f1f5f9;
+      }
+      .nav-signin {
+        font-size: 14px;
+        color: #94a3b8;
+        text-decoration: none;
+        padding: 6px 16px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        border-radius: 6px;
+        transition: all 0.2s;
+        cursor: pointer;
+      }
+      .nav-signin:hover {
+        color: #e2e8f0;
+        border-color: rgba(148, 163, 184, 0.5);
+      }
+
+      /* ── Hero / Featured Report ── */
+      .hero {
+        position: relative;
+        padding: 100px 40px 0;
+        max-width: 960px;
+        margin: 0 auto;
+      }
+      .report-card {
+        background: #1e293b;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        overflow: hidden;
+      }
+      .report-card-inner {
+        padding: 40px 48px 48px;
+      }
+
+      /* Author bar */
+      .author-bar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 36px;
+      }
+      .avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 16px;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .author-meta {
+        display: flex;
+        flex-direction: column;
+      }
+      .author-name {
+        font-weight: 600;
+        font-size: 16px;
+        color: #f1f5f9;
+      }
+      .author-date {
+        font-size: 13px;
+        color: #64748b;
+      }
+
+      /* Stat row */
+      .stat-section-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #64748b;
+        margin-bottom: 14px;
+      }
+      .stat-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 36px;
+      }
+      .stat-pill {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 10px;
+        padding: 14px 20px;
+        min-width: 110px;
+        flex: 1;
+      }
+      .stat-value {
+        font-size: 26px;
+        font-weight: 700;
+        color: #f1f5f9;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+      }
+      .stat-value.green {
+        color: #4ade80;
+      }
+      .stat-value.red {
+        color: #f87171;
+      }
+      .stat-label {
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 4px;
+      }
+
+      /* Tags / badges */
+      .section-group {
+        margin-bottom: 32px;
+      }
+      .badge-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .badge {
+        display: inline-block;
+        padding: 5px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        background: rgba(96, 165, 250, 0.1);
+        color: #93c5fd;
+        border: 1px solid rgba(96, 165, 250, 0.15);
+      }
+      .badge.project {
+        background: rgba(139, 92, 246, 0.1);
+        color: #c4b5fd;
+        border-color: rgba(139, 92, 246, 0.15);
+      }
+
+      /* Key pattern callout */
+      .callout {
+        border-left: 3px solid #60a5fa;
+        background: rgba(96, 165, 250, 0.06);
+        border-radius: 0 10px 10px 0;
+        padding: 20px 24px;
+        margin-top: 8px;
+      }
+      .callout-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #60a5fa;
+        margin-bottom: 8px;
+      }
+      .callout-text {
+        font-size: 15px;
+        color: #cbd5e1;
+        line-height: 1.65;
+        font-style: italic;
+      }
+
+      /* Hero overlay / gradient fade */
+      .hero-overlay {
+        position: relative;
+        margin-top: -120px;
+        padding-top: 80px;
+        background: linear-gradient(to bottom, transparent, #0f172a 90%);
+        text-align: center;
+        padding-bottom: 64px;
+        z-index: 2;
+      }
+      .hero-overlay p {
+        font-size: 14px;
+        color: #64748b;
+        margin-bottom: 16px;
+        letter-spacing: 0.01em;
+      }
+      .cta-btn {
+        display: inline-block;
+        padding: 10px 28px;
+        background: #60a5fa;
+        color: #0f172a;
+        font-weight: 600;
+        font-size: 15px;
+        border-radius: 8px;
+        text-decoration: none;
+        cursor: pointer;
+        border: none;
+        transition: background 0.2s;
+      }
+      .cta-btn:hover {
+        background: #93c5fd;
+      }
+
+      /* ── More Reports ── */
+      .reports-section {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 0 40px 80px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+      .mini-card {
+        background: #1e293b;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 32px 40px;
+      }
+      .mini-card .author-bar {
+        margin-bottom: 24px;
+      }
+      .mini-stat-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+      }
+      .mini-stat {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        padding: 10px 16px;
+        flex: 1;
+        min-width: 90px;
+      }
+      .mini-stat .stat-value {
+        font-size: 20px;
+      }
+      .mini-stat .stat-label {
+        font-size: 11px;
+      }
+
+      /* ── What is this? ── */
+      .what-section {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 0 40px 80px;
+      }
+      .what-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 500;
+        background: none;
+        border: none;
+        padding: 8px 0;
+        user-select: none;
+      }
+      .what-toggle:hover {
+        color: #94a3b8;
+      }
+      .what-arrow {
+        display: inline-block;
+        transition: transform 0.2s;
+        font-size: 11px;
+      }
+      .what-content {
+        display: none;
+        margin-top: 16px;
+        padding: 24px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .what-content.open {
+        display: block;
+      }
+      .what-content p {
+        font-size: 14px;
+        color: #94a3b8;
+        margin-bottom: 16px;
+        line-height: 1.6;
+      }
+      .terminal-block {
+        background: #020617;
+        border-radius: 8px;
+        padding: 20px 24px;
+        font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+        font-size: 13px;
+        line-height: 1.7;
+        color: #94a3b8;
+        overflow-x: auto;
+      }
+      .terminal-block .prompt {
+        color: #60a5fa;
+      }
+      .terminal-block .cmd {
+        color: #e2e8f0;
+      }
+      .terminal-block .dim {
+        color: #475569;
+      }
+
+      /* ── Bottom CTA ── */
+      .bottom-cta {
+        background: #020617;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 56px 40px;
+        text-align: center;
+      }
+      .bottom-cta p {
+        font-size: 18px;
+        color: #94a3b8;
+        margin-bottom: 24px;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+      }
+      .bottom-cta code {
+        color: #e2e8f0;
+        background: rgba(255, 255, 255, 0.06);
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-family: "SF Mono", "Fira Code", monospace;
+        font-size: 16px;
+      }
+
+      /* ── Responsive ── */
+      @media (max-width: 700px) {
+        nav {
+          padding: 14px 20px;
+        }
+        .hero {
+          padding: 80px 16px 0;
+        }
+        .report-card-inner {
+          padding: 24px 20px 32px;
+        }
+        .stat-pill {
+          min-width: 80px;
+          padding: 10px 14px;
+        }
+        .stat-value {
+          font-size: 20px;
+        }
+        .reports-section {
+          padding: 0 16px 60px;
+        }
+        .mini-card {
+          padding: 20px 24px;
+        }
+        .what-section {
+          padding: 0 16px 60px;
+        }
+        .bottom-cta {
+          padding: 40px 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ── Nav ── -->
+    <nav>
+      <span class="nav-brand">Insight Harness</span>
+      <a class="nav-signin" href="#">Sign In</a>
+    </nav>
+
+    <!-- ── Featured Report (Hero) ── -->
+    <section class="hero">
+      <div class="report-card">
+        <div class="report-card-inner">
+          <!-- Author -->
+          <div class="author-bar">
+            <div class="avatar">SM</div>
+            <div class="author-meta">
+              <span class="author-name">Sarah Mitchell</span>
+              <span class="author-date">Mar 1 &ndash; Mar 31, 2026</span>
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div class="stat-section-label">Weekly Averages</div>
+          <div class="stat-row">
+            <div class="stat-pill">
+              <div class="stat-value">42</div>
+              <div class="stat-label">Sessions</div>
+            </div>
+            <div class="stat-pill">
+              <div class="stat-value">620</div>
+              <div class="stat-label">Messages</div>
+            </div>
+            <div class="stat-pill">
+              <div class="stat-value">18</div>
+              <div class="stat-label">Commits</div>
+            </div>
+            <div class="stat-pill">
+              <div class="stat-value">95</div>
+              <div class="stat-label">Files Touched</div>
+            </div>
+            <div class="stat-pill">
+              <div class="stat-value green">+1,240</div>
+              <div class="stat-label">Lines Added</div>
+            </div>
+            <div class="stat-pill">
+              <div class="stat-value red">&minus;380</div>
+              <div class="stat-label">Lines Removed</div>
+            </div>
+          </div>
+
+          <!-- Projects -->
+          <div class="section-group">
+            <div class="stat-section-label">Project Areas</div>
+            <div class="badge-row">
+              <span class="badge project">fintech-api</span>
+              <span class="badge project">mobile-app</span>
+              <span class="badge project">internal-tools</span>
+            </div>
+          </div>
+
+          <!-- Features -->
+          <div class="section-group">
+            <div class="stat-section-label">Features Used</div>
+            <div class="badge-row">
+              <span class="badge">Parallel Agents</span>
+              <span class="badge">Worktrees</span>
+              <span class="badge">Plan Mode</span>
+              <span class="badge">Code Review</span>
+            </div>
+          </div>
+
+          <!-- Key Pattern -->
+          <div class="section-group">
+            <div class="callout">
+              <div class="callout-label">Key Pattern</div>
+              <div class="callout-text">
+                "Uses plan mode to decompose features into sub-tasks, then
+                dispatches parallel agents in worktrees for independent
+                implementation. Reviews each branch before merging. A highly
+                structured, trust-but-verify workflow."
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Overlay CTA on hero -->
+    <div class="hero-overlay">
+      <p>This is a real Insight Harness profile.</p>
+      <a class="cta-btn" href="#">Create yours &rarr;</a>
+    </div>
+
+    <!-- ── More Reports ── -->
+    <section class="reports-section">
+      <!-- Card 2 -->
+      <div class="mini-card">
+        <div class="author-bar">
+          <div
+            class="avatar"
+            style="background: linear-gradient(135deg, #f59e0b, #ef4444)"
+          >
+            JK
+          </div>
+          <div class="author-meta">
+            <span class="author-name">James Kim</span>
+            <span class="author-date">Mar 1 &ndash; Mar 31, 2026</span>
+          </div>
+        </div>
+        <div class="stat-section-label">Weekly Averages</div>
+        <div class="mini-stat-row">
+          <div class="mini-stat">
+            <div class="stat-value">28</div>
+            <div class="stat-label">Sessions</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value">410</div>
+            <div class="stat-label">Messages</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value">24</div>
+            <div class="stat-label">Commits</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value">130</div>
+            <div class="stat-label">Files</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value green">+2,080</div>
+            <div class="stat-label">Added</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value red">&minus;910</div>
+            <div class="stat-label">Removed</div>
+          </div>
+        </div>
+        <div class="badge-row">
+          <span class="badge project">e-commerce-v2</span>
+          <span class="badge project">design-system</span>
+          <span class="badge">TDD</span>
+          <span class="badge">Bash Automation</span>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="mini-card">
+        <div class="author-bar">
+          <div
+            class="avatar"
+            style="background: linear-gradient(135deg, #10b981, #06b6d4)"
+          >
+            AP
+          </div>
+          <div class="author-meta">
+            <span class="author-name">Ava Patel</span>
+            <span class="author-date">Feb 17 &ndash; Mar 16, 2026</span>
+          </div>
+        </div>
+        <div class="stat-section-label">Weekly Averages</div>
+        <div class="mini-stat-row">
+          <div class="mini-stat">
+            <div class="stat-value">56</div>
+            <div class="stat-label">Sessions</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value">890</div>
+            <div class="stat-label">Messages</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value">31</div>
+            <div class="stat-label">Commits</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value">210</div>
+            <div class="stat-label">Files</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value green">+3,400</div>
+            <div class="stat-label">Added</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value red">&minus;1,200</div>
+            <div class="stat-label">Removed</div>
+          </div>
+        </div>
+        <div class="badge-row">
+          <span class="badge project">ml-pipeline</span>
+          <span class="badge project">data-warehouse</span>
+          <span class="badge project">api-gateway</span>
+          <span class="badge">Parallel Agents</span>
+          <span class="badge">Custom Skills</span>
+          <span class="badge">MCP Servers</span>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="mini-card">
+        <div class="author-bar">
+          <div
+            class="avatar"
+            style="background: linear-gradient(135deg, #ec4899, #a855f7)"
+          >
+            RW
+          </div>
+          <div class="author-meta">
+            <span class="author-name">Ryan Walker</span>
+            <span class="author-date">Mar 1 &ndash; Mar 31, 2026</span>
+          </div>
+        </div>
+        <div class="stat-section-label">Weekly Averages</div>
+        <div class="mini-stat-row">
+          <div class="mini-stat">
+            <div class="stat-value">15</div>
+            <div class="stat-label">Sessions</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value">240</div>
+            <div class="stat-label">Messages</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value">9</div>
+            <div class="stat-label">Commits</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value">48</div>
+            <div class="stat-label">Files</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value green">+580</div>
+            <div class="stat-label">Added</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value red">&minus;120</div>
+            <div class="stat-label">Removed</div>
+          </div>
+        </div>
+        <div class="badge-row">
+          <span class="badge project">docs-site</span>
+          <span class="badge">Plan Mode</span>
+          <span class="badge">Code Review</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── What is this? ── -->
+    <section class="what-section">
+      <button class="what-toggle" onclick="toggleWhat()">
+        <span class="what-arrow" id="whatArrow">&#9654;</span>
+        What is this?
+      </button>
+      <div class="what-content" id="whatContent">
+        <p>
+          Insight Harness turns your Claude Code session logs into a shareable
+          developer profile. Run one command, upload, and get a visual breakdown
+          of how you work with AI.
+        </p>
+        <div class="terminal-block">
+          <span class="prompt">$</span> <span class="cmd">claude</span><br />
+          <span class="dim"># in any conversation:</span><br />
+          <span class="prompt">&gt;</span> <span class="cmd">/insights</span
+          ><br />
+          <span class="dim"
+            >Analyzing 847 sessions from the last 30 days...</span
+          ><br />
+          <span class="dim"
+            >Report generated: ~/.claude/insights/2026-03.html</span
+          >
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Bottom CTA ── -->
+    <section class="bottom-cta">
+      <p>Run <code>/insights</code> in Claude Code. Upload. Share.</p>
+      <a class="cta-btn" href="#">Get Started</a>
+    </section>
+
+    <script>
+      function toggleWhat() {
+        const content = document.getElementById("whatContent");
+        const arrow = document.getElementById("whatArrow");
+        content.classList.toggle("open");
+        arrow.style.transform = content.classList.contains("open")
+          ? "rotate(90deg)"
+          : "";
+      }
+    </script>
+  </body>
+</html>

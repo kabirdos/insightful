@@ -1,0 +1,1571 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insight Harness — Homepage Redesign</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #f5f5f0;
+        color: #333;
+      }
+
+      /* ── Sticky Nav ── */
+      .mockup-nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: #1e1e1e;
+        color: #fff;
+        padding: 10px 16px;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+      .mockup-nav .title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-right: 12px;
+        white-space: nowrap;
+      }
+      .mockup-nav a {
+        color: #a8c8ff;
+        text-decoration: none;
+        font-size: 12px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        transition: background 0.15s;
+      }
+      .mockup-nav a:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .viewport-toggle {
+        display: flex;
+        gap: 2px;
+        margin-left: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        padding: 2px;
+      }
+      .viewport-toggle button {
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.5);
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s;
+      }
+      .viewport-toggle button:hover {
+        color: rgba(255, 255, 255, 0.8);
+      }
+      .viewport-toggle button.active {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+      }
+      .mockup-nav .copy-all-btn {
+        margin-left: auto;
+        background: #2563eb;
+        color: #fff;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: background 0.15s;
+      }
+      .mockup-nav .copy-all-btn:hover {
+        background: #1d4ed8;
+      }
+      .mockup-nav .copy-all-btn.copied {
+        background: #16a34a;
+      }
+
+      /* ── Section layout ── */
+      .mockup-section {
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+      .mockup-section.wide {
+        max-width: 800px;
+      }
+      body.viewport-mobile .mockup-section,
+      body.viewport-mobile .mockup-section.wide {
+        max-width: 600px;
+      }
+      body.viewport-desktop .mockup-section {
+        max-width: 1000px;
+      }
+      body.viewport-desktop .mockup-section.wide {
+        max-width: 1200px;
+      }
+      .section-label {
+        background: #1e1e1e;
+        color: #fff;
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 12px;
+      }
+      .section-desc {
+        font-size: 13px;
+        color: #888;
+        margin-bottom: 16px;
+        line-height: 1.5;
+      }
+      .section-divider {
+        height: 1px;
+        background: #ddd;
+        margin: 48px 0;
+      }
+      .version-container {
+        position: relative;
+      }
+      .version {
+        display: none;
+      }
+      .version.active {
+        display: block;
+      }
+      .version-nav {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 12px;
+        padding: 8px;
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+      }
+      .version-nav.visible {
+        display: flex;
+      }
+      .version-nav button {
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-size: 12px;
+        font-family: inherit;
+        cursor: pointer;
+        color: #374151;
+        transition: all 0.15s;
+      }
+      .version-nav button:hover:not(:disabled) {
+        background: #e5e7eb;
+      }
+      .version-nav button:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+      .version-nav .version-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        min-width: 80px;
+        text-align: center;
+      }
+      .feedback-area {
+        margin-top: 16px;
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        padding: 12px;
+      }
+      .feedback-area label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #888;
+        margin-bottom: 6px;
+      }
+      .feedback-area textarea {
+        width: 100%;
+        min-height: 80px;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        padding: 10px;
+        font-family: inherit;
+        font-size: 14px;
+        line-height: 1.5;
+        resize: vertical;
+        color: #333;
+      }
+      .feedback-area textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .feedback-area .char-count {
+        font-size: 11px;
+        color: #aaa;
+        text-align: right;
+        margin-top: 4px;
+      }
+      .design-note {
+        background: #fffbeb;
+        border: 1px solid #fcd34d;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin: 12px 0;
+        font-size: 12px;
+        color: #92400e;
+        line-height: 1.5;
+      }
+      .design-note.info {
+        background: #f0fdf4;
+        border-color: #86efac;
+        color: #166534;
+      }
+      .design-note.future {
+        background: #eff6ff;
+        border-color: #93c5fd;
+        color: #1e40af;
+      }
+
+      /* ── Mockup design content styles ── */
+      .ih-nav {
+        background: #fff;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 0 32px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .ih-nav-logo {
+        font-weight: 700;
+        font-size: 18px;
+        color: #0f172a;
+      }
+      .ih-nav-logo span {
+        color: #2563eb;
+      }
+      .ih-nav-links {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+      .ih-nav-links a {
+        color: #475569;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+      }
+      .ih-btn-primary {
+        background: #2563eb;
+        color: #fff !important;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        display: inline-block;
+        text-decoration: none;
+      }
+      .ih-btn-outline {
+        border: 1.5px solid #2563eb;
+        color: #2563eb !important;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        background: transparent;
+        cursor: pointer;
+        display: inline-block;
+        text-decoration: none;
+      }
+      .ih-hero {
+        text-align: center;
+        padding: 48px 32px 40px;
+        max-width: 680px;
+        margin: 0 auto;
+      }
+      .ih-hero h1 {
+        font-size: 32px;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 10px;
+        letter-spacing: -0.5px;
+      }
+      .ih-hero p {
+        font-size: 15px;
+        color: #64748b;
+        margin-bottom: 20px;
+        max-width: 520px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .ih-hero-ctas {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+      }
+
+      .ih-featured {
+        max-width: 960px;
+        margin: 0 auto 40px;
+        padding: 0 32px;
+      }
+      .ih-featured-label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #94a3b8;
+        margin-bottom: 10px;
+      }
+      .ih-featured-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow:
+          0 1px 3px rgba(0, 0, 0, 0.06),
+          0 4px 12px rgba(0, 0, 0, 0.04);
+        padding: 28px 32px;
+        border-left: 4px solid #2563eb;
+      }
+      .ih-featured-top {
+        display: flex;
+        gap: 32px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+      .ih-author {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 200px;
+      }
+      .ih-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 18px;
+        color: #fff;
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+      }
+      .ih-author-info h3 {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .ih-author-info .handle {
+        font-size: 13px;
+        color: #94a3b8;
+      }
+      .ih-author-info .date-range {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-top: 2px;
+      }
+      .ih-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px 16px;
+        flex: 1;
+        min-width: 280px;
+      }
+      .ih-stat strong {
+        font-size: 16px;
+        font-weight: 800;
+        color: #0f172a;
+      }
+      .ih-stat .label {
+        color: #94a3b8;
+        font-size: 12px;
+      }
+      .ih-stat.green strong {
+        color: #16a34a;
+      }
+      .ih-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-width: 200px;
+      }
+      .ih-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .b-violet {
+        background: #ede9fe;
+        color: #6d28d9;
+      }
+      .b-green {
+        background: #dcfce7;
+        color: #15803d;
+      }
+      .b-amber {
+        background: #fef3c7;
+        color: #b45309;
+      }
+      .b-sky {
+        background: #e0f2fe;
+        color: #0369a1;
+      }
+      .b-slate {
+        background: #f1f5f9;
+        color: #475569;
+      }
+      .b-pink {
+        background: #fce7f3;
+        color: #be185d;
+      }
+      .b-indigo {
+        background: #e0e7ff;
+        color: #4338ca;
+      }
+      .b-emerald {
+        background: #d1fae5;
+        color: #047857;
+      }
+      .b-red {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+      .b-teal {
+        background: #ccfbf1;
+        color: #0f766e;
+      }
+      .ih-callout {
+        margin-top: 16px;
+        padding: 12px 16px;
+        border-left: 3px solid #2563eb;
+        background: #f8fafc;
+        border-radius: 0 8px 8px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .ih-callout .pattern {
+        font-style: italic;
+        color: #475569;
+        font-size: 14px;
+        flex: 1;
+        min-width: 240px;
+      }
+      .ih-callout .pattern::before {
+        content: "\201C";
+        font-size: 20px;
+        color: #2563eb;
+        margin-right: 2px;
+      }
+      .ih-callout .pattern::after {
+        content: "\201D";
+        font-size: 20px;
+        color: #2563eb;
+        margin-left: 2px;
+      }
+      .ih-strengths {
+        font-size: 12px;
+        color: #64748b;
+        max-width: 260px;
+      }
+      .ih-strengths strong {
+        color: #475569;
+      }
+
+      .ih-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      .ih-card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        border-left: 3px solid transparent;
+        transition:
+          transform 0.15s,
+          box-shadow 0.15s,
+          border-color 0.15s;
+        cursor: pointer;
+      }
+      .ih-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      }
+      .ih-card:nth-child(1):hover {
+        border-left-color: #8b5cf6;
+      }
+      .ih-card:nth-child(2):hover {
+        border-left-color: #f59e0b;
+      }
+      .ih-card:nth-child(3):hover {
+        border-left-color: #ec4899;
+      }
+      .ih-card:nth-child(4):hover {
+        border-left-color: #06b6d4;
+      }
+      .ih-card:nth-child(5):hover {
+        border-left-color: #10b981;
+      }
+      .ih-card:nth-child(6):hover {
+        border-left-color: #ef4444;
+      }
+      .ih-card-hdr {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .ih-av-sm {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .ih-card-hdr .name {
+        font-weight: 700;
+        font-size: 14px;
+        color: #0f172a;
+      }
+      .ih-card-hdr .date {
+        font-size: 11px;
+        color: #94a3b8;
+      }
+      .ih-card-stats {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 10px;
+      }
+      .ih-cs {
+        font-size: 12px;
+        color: #94a3b8;
+      }
+      .ih-cs strong {
+        font-size: 15px;
+        color: #0f172a;
+        display: block;
+        font-weight: 800;
+      }
+      .ih-card-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-bottom: 10px;
+      }
+      .ih-card-pattern {
+        font-size: 12px;
+        font-style: italic;
+        color: #64748b;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .ih-upgrade {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        padding: 28px 32px;
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        flex-wrap: wrap;
+        border: 1px solid #e2e8f0;
+      }
+      .ih-hm-grid {
+        display: grid;
+        grid-template-columns: repeat(8, 20px);
+        grid-template-rows: repeat(4, 20px);
+        gap: 3px;
+        opacity: 0.7;
+      }
+      .hm-cell {
+        border-radius: 3px;
+      }
+      .hm0 {
+        background: #f1f5f9;
+      }
+      .hm1 {
+        background: #bfdbfe;
+      }
+      .hm2 {
+        background: #60a5fa;
+      }
+      .hm3 {
+        background: #2563eb;
+      }
+      .hm4 {
+        background: #1e40af;
+      }
+      .ih-upgrade-text {
+        flex: 1;
+        min-width: 240px;
+      }
+      .ih-upgrade-text h3 {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 4px;
+      }
+      .ih-upgrade-text h3 code {
+        background: #f1f5f9;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 14px;
+        color: #475569;
+      }
+      .ih-upgrade-text p {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 8px;
+      }
+      .ih-hm-legend {
+        display: flex;
+        gap: 12px;
+        font-size: 11px;
+        color: #94a3b8;
+        margin-bottom: 14px;
+      }
+      .ih-legend-sw {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 3px;
+      }
+      .ih-install {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 14px 16px;
+        border: 1px solid #e2e8f0;
+      }
+      .ih-install-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 8px;
+      }
+      .ih-terminal {
+        background: #1e293b;
+        color: #e2e8f0;
+        border-radius: 6px;
+        padding: 12px 14px;
+        font-family: "JetBrains Mono", "SF Mono", monospace;
+        font-size: 12px;
+        line-height: 1.7;
+      }
+      .ih-terminal .comment {
+        color: #94a3b8;
+      }
+      .ih-terminal .cmd {
+        color: #60a5fa;
+      }
+
+      .ih-steps {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+      .ih-step {
+        text-align: center;
+        padding: 24px 20px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+      .ih-step-icon {
+        font-size: 28px;
+        margin-bottom: 10px;
+      }
+      .ih-step-num {
+        font-size: 11px;
+        font-weight: 700;
+        color: #2563eb;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 4px;
+      }
+      .ih-step h4 {
+        font-size: 15px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 6px;
+      }
+      .ih-step p {
+        font-size: 13px;
+        color: #64748b;
+      }
+      .ih-footer-cta {
+        background: #eff6ff;
+        padding: 48px 32px;
+        text-align: center;
+      }
+      .ih-footer-cta h2 {
+        font-size: 22px;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 14px;
+      }
+      .ih-footer-cta p {
+        font-size: 14px;
+        color: #64748b;
+        margin-bottom: 20px;
+      }
+
+      @media (max-width: 768px) {
+        .ih-grid,
+        .ih-steps {
+          grid-template-columns: 1fr;
+        }
+        .ih-featured-top {
+          flex-direction: column;
+        }
+        .ih-stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .ih-upgrade {
+          flex-direction: column;
+          text-align: center;
+        }
+      }
+      @media (min-width: 769px) and (max-width: 960px) {
+        .ih-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body class="viewport-desktop">
+    <nav class="mockup-nav">
+      <span class="title">Insight Harness — Homepage Redesign</span>
+      <a href="#hero">Hero</a>
+      <a href="#featured">Featured</a>
+      <a href="#grid">Grid</a>
+      <a href="#upgrade">Upgrade</a>
+      <a href="#how-it-works">How It Works</a>
+      <a href="#footer-cta">Footer</a>
+      <div class="viewport-toggle">
+        <button data-viewport="mobile">Mobile</button>
+        <button data-viewport="desktop" class="active">Desktop</button>
+      </div>
+      <button class="copy-all-btn" onclick="copyAllFeedback()">
+        Copy All Feedback
+      </button>
+    </nav>
+
+    <!-- ═══ SECTION: Nav + Hero ═══ -->
+    <div class="mockup-section wide" data-section-id="hero" id="hero">
+      <span class="section-label">Nav + Hero</span>
+      <p class="section-desc">
+        Sticky nav with brand, links, and upload CTA. Compact centered hero with
+        headline, subtext, and two CTAs.
+      </p>
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div
+            style="
+              background: #f8fafc;
+              border-radius: 12px;
+              overflow: hidden;
+              box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            "
+          >
+            <nav class="ih-nav">
+              <div class="ih-nav-logo">Insight <span>Harness</span></div>
+              <div class="ih-nav-links">
+                <a href="#">Browse</a>
+                <a href="#">Top Profiles</a>
+                <a href="#" class="ih-btn-primary">Upload Your Insights</a>
+              </div>
+            </nav>
+            <section class="ih-hero">
+              <h1>Your Claude Code harness, visualized</h1>
+              <p>
+                See how other developers use tools, skills, plugins, and
+                workflows across real coding sessions. All personal data
+                removed.
+              </p>
+              <div class="ih-hero-ctas">
+                <a href="#" class="ih-btn-primary">Browse Profiles</a>
+                <a href="#" class="ih-btn-outline">Upload Your Insights</a>
+              </div>
+            </section>
+          </div>
+        </div>
+        <div class="version active" data-version="2">
+          <div class="design-note">
+            <strong>Change:</strong> Updated headline to focus on discovering
+            how other developers use Claude Code, not visualizing your own
+            harness.
+          </div>
+          <div
+            style="
+              background: #f8fafc;
+              border-radius: 12px;
+              overflow: hidden;
+              box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            "
+          >
+            <nav class="ih-nav">
+              <div class="ih-nav-logo">Insight <span>Harness</span></div>
+              <div class="ih-nav-links">
+                <a href="#">Browse</a>
+                <a href="#">Top Profiles</a>
+                <a href="#" class="ih-btn-primary">Upload Your Insights</a>
+              </div>
+            </nav>
+            <section class="ih-hero">
+              <h1>See how other developers use Claude Code</h1>
+              <p>
+                Browse real developer workflows — the tools, skills, plugins,
+                and patterns they use across actual coding sessions. All
+                personal data removed.
+              </p>
+              <div class="ih-hero-ctas">
+                <a href="#" class="ih-btn-primary">Browse Profiles</a>
+                <a href="#" class="ih-btn-outline">Upload Your Insights</a>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+      <div class="version-nav">
+        <button data-dir="prev" disabled>&larr; Prev</button
+        ><span class="version-label">v1 of 1</span
+        ><button data-dir="next" disabled>Next &rarr;</button>
+      </div>
+      <div class="feedback-area">
+        <label for="fb-hero">Feedback</label
+        ><textarea
+          id="fb-hero"
+          placeholder="Voice transcribe or type feedback for this section..."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+    <div class="section-divider"></div>
+
+    <!-- ═══ SECTION: Featured Profile ═══ -->
+    <div class="mockup-section wide" data-section-id="featured" id="featured">
+      <span class="section-label">Featured Profile</span>
+      <p class="section-desc">
+        Prominent card showing a real developer profile with stats, feature
+        badges, key pattern, and strengths.
+      </p>
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div
+            style="
+              background: #f8fafc;
+              border-radius: 12px;
+              padding: 32px;
+              box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            "
+          >
+            <div
+              class="ih-featured-label"
+              style="
+                font-size: 12px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                color: #94a3b8;
+                margin-bottom: 10px;
+              "
+            >
+              Featured Profile
+            </div>
+            <div class="ih-featured-card">
+              <div class="ih-featured-top">
+                <div class="ih-author">
+                  <div class="ih-avatar">SC</div>
+                  <div class="ih-author-info">
+                    <h3>Sarah Chen</h3>
+                    <div class="handle">@sarahchen</div>
+                    <div class="date-range">
+                      Mar 1 &ndash; Mar 31, 2026 &middot; 31 days
+                    </div>
+                  </div>
+                </div>
+                <div class="ih-stats-grid">
+                  <div class="ih-stat">
+                    <strong>42</strong> <span class="label">sessions/wk</span>
+                  </div>
+                  <div class="ih-stat">
+                    <strong>620</strong> <span class="label">messages/wk</span>
+                  </div>
+                  <div class="ih-stat">
+                    <strong>18</strong> <span class="label">commits/wk</span>
+                  </div>
+                  <div class="ih-stat green">
+                    <strong>1,240</strong>
+                    <span class="label">lines added/wk</span>
+                  </div>
+                  <div class="ih-stat">
+                    <strong>95</strong> <span class="label">files/wk</span>
+                  </div>
+                  <div class="ih-stat">
+                    <strong>~4.2</strong> <span class="label">hrs/day</span>
+                  </div>
+                </div>
+                <div class="ih-badges">
+                  <span class="ih-badge b-violet">🔀 Parallel Agents</span>
+                  <span class="ih-badge b-green">🌳 Worktrees</span>
+                  <span class="ih-badge b-emerald">📋 Plan Mode</span>
+                  <span class="ih-badge b-red">📝 Code Review</span>
+                </div>
+              </div>
+              <div class="ih-callout">
+                <div class="pattern">
+                  Heavy multi-agent orchestration with plan-first discipline
+                </div>
+                <div class="ih-strengths">
+                  <strong>Strengths:</strong> Exceptional at breaking complex
+                  features into parallel workstreams. Consistently uses plan
+                  mode before implementation.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="version-nav">
+        <button data-dir="prev" disabled>&larr; Prev</button
+        ><span class="version-label">v1 of 1</span
+        ><button data-dir="next" disabled>Next &rarr;</button>
+      </div>
+      <div class="feedback-area">
+        <label for="fb-featured">Feedback</label
+        ><textarea
+          id="fb-featured"
+          placeholder="Voice transcribe or type feedback for this section..."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+    <div class="section-divider"></div>
+
+    <!-- ═══ SECTION: Profile Grid ═══ -->
+    <div class="mockup-section wide" data-section-id="grid" id="grid">
+      <span class="section-label">Profile Grid</span>
+      <p class="section-desc">
+        3x2 bento grid of developer cards with stats, colorful feature badges,
+        and key patterns.
+      </p>
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div
+            style="
+              background: #f8fafc;
+              border-radius: 12px;
+              padding: 32px;
+              box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            "
+          >
+            <h2
+              style="
+                font-size: 18px;
+                font-weight: 700;
+                margin-bottom: 16px;
+                color: #0f172a;
+              "
+            >
+              Recent Profiles
+            </h2>
+            <div class="ih-grid">
+              <div class="ih-card">
+                <div class="ih-card-hdr">
+                  <div
+                    class="ih-av-sm"
+                    style="
+                      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+                    "
+                  >
+                    MR
+                  </div>
+                  <div>
+                    <div class="name">Marcus Rivera</div>
+                    <div class="date">Feb 15 &ndash; Mar 15, 2026</div>
+                  </div>
+                </div>
+                <div class="ih-card-stats">
+                  <div class="ih-cs"><strong>28</strong>sessions/wk</div>
+                  <div class="ih-cs"><strong>410</strong>messages/wk</div>
+                  <div class="ih-cs"><strong>12</strong>commits/wk</div>
+                </div>
+                <div class="ih-card-badges">
+                  <span class="ih-badge b-amber">⚙️ Custom Skills</span
+                  ><span class="ih-badge b-sky">🔗 Hooks</span
+                  ><span class="ih-badge b-teal">🧩 Subagents</span>
+                </div>
+                <div class="ih-card-pattern">
+                  "Skill-heavy automation with tight hook integration"
+                </div>
+              </div>
+              <div class="ih-card">
+                <div class="ih-card-hdr">
+                  <div
+                    class="ih-av-sm"
+                    style="
+                      background: linear-gradient(135deg, #f59e0b, #d97706);
+                    "
+                  >
+                    AK
+                  </div>
+                  <div>
+                    <div class="name">Aisha Koroma</div>
+                    <div class="date">Mar 1 &ndash; Mar 28, 2026</div>
+                  </div>
+                </div>
+                <div class="ih-card-stats">
+                  <div class="ih-cs"><strong>35</strong>sessions/wk</div>
+                  <div class="ih-cs"><strong>530</strong>messages/wk</div>
+                  <div class="ih-cs"><strong>22</strong>commits/wk</div>
+                </div>
+                <div class="ih-card-badges">
+                  <span class="ih-badge b-pink">🎭 Playwright</span
+                  ><span class="ih-badge b-slate">🖥️ MCP Servers</span
+                  ><span class="ih-badge b-red">📝 Code Review</span>
+                </div>
+                <div class="ih-card-pattern">
+                  "Test-driven with Playwright MCP and automated review gates"
+                </div>
+              </div>
+              <div class="ih-card">
+                <div class="ih-card-hdr">
+                  <div
+                    class="ih-av-sm"
+                    style="
+                      background: linear-gradient(135deg, #ec4899, #db2777);
+                    "
+                  >
+                    JL
+                  </div>
+                  <div>
+                    <div class="name">Jake Lindqvist</div>
+                    <div class="date">Feb 20 &ndash; Mar 20, 2026</div>
+                  </div>
+                </div>
+                <div class="ih-card-stats">
+                  <div class="ih-cs"><strong>18</strong>sessions/wk</div>
+                  <div class="ih-cs"><strong>290</strong>messages/wk</div>
+                  <div class="ih-cs"><strong>8</strong>commits/wk</div>
+                </div>
+                <div class="ih-card-badges">
+                  <span class="ih-badge b-indigo">🕶️ Headless Mode</span
+                  ><span class="ih-badge b-emerald">📋 Plan Mode</span>
+                </div>
+                <div class="ih-card-pattern">
+                  "Headless background jobs with plan-mode orchestration"
+                </div>
+              </div>
+              <div class="ih-card">
+                <div class="ih-card-hdr">
+                  <div
+                    class="ih-av-sm"
+                    style="
+                      background: linear-gradient(135deg, #06b6d4, #0891b2);
+                    "
+                  >
+                    PT
+                  </div>
+                  <div>
+                    <div class="name">Priya Thakur</div>
+                    <div class="date">Mar 3 &ndash; Mar 31, 2026</div>
+                  </div>
+                </div>
+                <div class="ih-card-stats">
+                  <div class="ih-cs"><strong>52</strong>sessions/wk</div>
+                  <div class="ih-cs"><strong>780</strong>messages/wk</div>
+                  <div class="ih-cs"><strong>25</strong>commits/wk</div>
+                </div>
+                <div class="ih-card-badges">
+                  <span class="ih-badge b-violet">🔀 Parallel Agents</span
+                  ><span class="ih-badge b-green">🌳 Worktrees</span
+                  ><span class="ih-badge b-amber">⚙️ Custom Skills</span
+                  ><span class="ih-badge b-sky">🔗 Hooks</span>
+                </div>
+                <div class="ih-card-pattern">
+                  "Power user: parallel worktrees with custom skill pipelines"
+                </div>
+              </div>
+              <div class="ih-card">
+                <div class="ih-card-hdr">
+                  <div
+                    class="ih-av-sm"
+                    style="
+                      background: linear-gradient(135deg, #10b981, #059669);
+                    "
+                  >
+                    DO
+                  </div>
+                  <div>
+                    <div class="name">Daniel Okafor</div>
+                    <div class="date">Feb 25 &ndash; Mar 25, 2026</div>
+                  </div>
+                </div>
+                <div class="ih-card-stats">
+                  <div class="ih-cs"><strong>22</strong>sessions/wk</div>
+                  <div class="ih-cs"><strong>340</strong>messages/wk</div>
+                  <div class="ih-cs"><strong>15</strong>commits/wk</div>
+                </div>
+                <div class="ih-card-badges">
+                  <span class="ih-badge b-teal">🧩 Subagents</span
+                  ><span class="ih-badge b-slate">🖥️ MCP Servers</span
+                  ><span class="ih-badge b-red">📝 Code Review</span>
+                </div>
+                <div class="ih-card-pattern">
+                  "Subagent delegation with MCP-powered review workflows"
+                </div>
+              </div>
+              <div class="ih-card">
+                <div class="ih-card-hdr">
+                  <div
+                    class="ih-av-sm"
+                    style="
+                      background: linear-gradient(135deg, #ef4444, #dc2626);
+                    "
+                  >
+                    LW
+                  </div>
+                  <div>
+                    <div class="name">Lisa Wang</div>
+                    <div class="date">Mar 5 &ndash; Mar 31, 2026</div>
+                  </div>
+                </div>
+                <div class="ih-card-stats">
+                  <div class="ih-cs"><strong>30</strong>sessions/wk</div>
+                  <div class="ih-cs"><strong>450</strong>messages/wk</div>
+                  <div class="ih-cs"><strong>20</strong>commits/wk</div>
+                </div>
+                <div class="ih-card-badges">
+                  <span class="ih-badge b-pink">🎭 Playwright</span
+                  ><span class="ih-badge b-indigo">🕶️ Headless Mode</span
+                  ><span class="ih-badge b-emerald">📋 Plan Mode</span>
+                </div>
+                <div class="ih-card-pattern">
+                  "End-to-end testing pipeline with headless CI integration"
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="version-nav">
+        <button data-dir="prev" disabled>&larr; Prev</button
+        ><span class="version-label">v1 of 1</span
+        ><button data-dir="next" disabled>Next &rarr;</button>
+      </div>
+      <div class="feedback-area">
+        <label for="fb-grid">Feedback</label
+        ><textarea
+          id="fb-grid"
+          placeholder="Voice transcribe or type feedback for this section..."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+    <div class="section-divider"></div>
+
+    <!-- ═══ SECTION: Harness Profile Upgrade ═══ -->
+    <div class="mockup-section wide" data-section-id="upgrade" id="upgrade">
+      <span class="section-label">Harness Profile Upgrade</span>
+      <p class="section-desc">
+        Secondary section promoting /harness-profile for deeper data (token
+        usage, cost analysis). Includes install instructions.
+      </p>
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div
+            style="
+              background: #f8fafc;
+              border-radius: 12px;
+              padding: 32px;
+              box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            "
+          >
+            <div class="ih-upgrade">
+              <div style="flex-shrink: 0">
+                <div class="ih-hm-grid">
+                  <div class="hm-cell hm0"></div>
+                  <div class="hm-cell hm1"></div>
+                  <div class="hm-cell hm2"></div>
+                  <div class="hm-cell hm0"></div>
+                  <div class="hm-cell hm3"></div>
+                  <div class="hm-cell hm1"></div>
+                  <div class="hm-cell hm2"></div>
+                  <div class="hm-cell hm4"></div>
+                  <div class="hm-cell hm1"></div>
+                  <div class="hm-cell hm3"></div>
+                  <div class="hm-cell hm0"></div>
+                  <div class="hm-cell hm2"></div>
+                  <div class="hm-cell hm1"></div>
+                  <div class="hm-cell hm4"></div>
+                  <div class="hm-cell hm3"></div>
+                  <div class="hm-cell hm0"></div>
+                  <div class="hm-cell hm2"></div>
+                  <div class="hm-cell hm0"></div>
+                  <div class="hm-cell hm4"></div>
+                  <div class="hm-cell hm3"></div>
+                  <div class="hm-cell hm0"></div>
+                  <div class="hm-cell hm1"></div>
+                  <div class="hm-cell hm4"></div>
+                  <div class="hm-cell hm2"></div>
+                  <div class="hm-cell hm3"></div>
+                  <div class="hm-cell hm2"></div>
+                  <div class="hm-cell hm1"></div>
+                  <div class="hm-cell hm4"></div>
+                  <div class="hm-cell hm2"></div>
+                  <div class="hm-cell hm0"></div>
+                  <div class="hm-cell hm1"></div>
+                  <div class="hm-cell hm3"></div>
+                </div>
+              </div>
+              <div class="ih-upgrade-text">
+                <h3>Go deeper with <code>/harness-profile</code></h3>
+                <p>
+                  See where your tokens go — agent orchestration, code review,
+                  planning, debugging, and more. Plus cost analysis and skill
+                  proficiency scores.
+                </p>
+                <div class="ih-hm-legend">
+                  <span
+                    ><span
+                      class="ih-legend-sw hm0"
+                      style="display: inline-block"
+                    ></span
+                    >10K</span
+                  >
+                  <span
+                    ><span
+                      class="ih-legend-sw hm1"
+                      style="display: inline-block"
+                    ></span
+                    >50K</span
+                  >
+                  <span
+                    ><span
+                      class="ih-legend-sw hm2"
+                      style="display: inline-block"
+                    ></span
+                    >100K</span
+                  >
+                  <span
+                    ><span
+                      class="ih-legend-sw hm4"
+                      style="display: inline-block"
+                    ></span
+                    >250K+</span
+                  >
+                </div>
+                <div class="ih-install">
+                  <div class="ih-install-title">Install in 30 seconds:</div>
+                  <div class="ih-terminal">
+                    <div class="comment"># Install the skill</div>
+                    <div>
+                      $ <span class="cmd">claude</span> install harness-profile
+                    </div>
+                    <div style="margin-top: 6px" class="comment">
+                      # Run it (generates an augmented report)
+                    </div>
+                    <div>
+                      $ <span class="cmd">claude</span> /harness-profile
+                    </div>
+                    <div style="margin-top: 6px" class="comment">
+                      # Then upload the result here
+                    </div>
+                  </div>
+                  <p style="font-size: 11px; color: #94a3b8; margin-top: 8px">
+                    Your profile will show token breakdowns, cost tracking, and
+                    deeper workflow analysis alongside your /insights data.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="version-nav">
+        <button data-dir="prev" disabled>&larr; Prev</button
+        ><span class="version-label">v1 of 1</span
+        ><button data-dir="next" disabled>Next &rarr;</button>
+      </div>
+      <div class="feedback-area">
+        <label for="fb-upgrade">Feedback</label
+        ><textarea
+          id="fb-upgrade"
+          placeholder="Voice transcribe or type feedback for this section..."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+    <div class="section-divider"></div>
+
+    <!-- ═══ SECTION: How It Works ═══ -->
+    <div
+      class="mockup-section wide"
+      data-section-id="how-it-works"
+      id="how-it-works"
+    >
+      <span class="section-label">How It Works</span>
+      <p class="section-desc">
+        Three-step explanation: Run /insights → Upload → Share. Mentions privacy
+        and redaction control.
+      </p>
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div
+            style="
+              background: #f8fafc;
+              border-radius: 12px;
+              padding: 32px;
+              box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            "
+          >
+            <h2
+              style="
+                font-size: 18px;
+                font-weight: 700;
+                margin-bottom: 16px;
+                color: #0f172a;
+                text-align: center;
+              "
+            >
+              How It Works
+            </h2>
+            <div class="ih-steps">
+              <div class="ih-step">
+                <div class="ih-step-icon">📊</div>
+                <div class="ih-step-num">Step 1</div>
+                <h4>Run /insights</h4>
+                <p>Generate your Claude Code usage report. Takes seconds.</p>
+              </div>
+              <div class="ih-step">
+                <div class="ih-step-icon">📤</div>
+                <div class="ih-step-num">Step 2</div>
+                <h4>Upload your insights</h4>
+                <p>
+                  Drop the HTML file here. We remove personal data
+                  automatically, and you can redact any information you'd like
+                  before sharing.
+                </p>
+              </div>
+              <div class="ih-step">
+                <div class="ih-step-icon">🌐</div>
+                <div class="ih-step-num">Step 3</div>
+                <h4>Share your profile</h4>
+                <p>Get a public page others can browse and learn from.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="version-nav">
+        <button data-dir="prev" disabled>&larr; Prev</button
+        ><span class="version-label">v1 of 1</span
+        ><button data-dir="next" disabled>Next &rarr;</button>
+      </div>
+      <div class="feedback-area">
+        <label for="fb-how">Feedback</label
+        ><textarea
+          id="fb-how"
+          placeholder="Voice transcribe or type feedback for this section..."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+    <div class="section-divider"></div>
+
+    <!-- ═══ SECTION: Footer CTA ═══ -->
+    <div
+      class="mockup-section wide"
+      data-section-id="footer-cta"
+      id="footer-cta"
+    >
+      <span class="section-label">Footer CTA</span>
+      <p class="section-desc">
+        Final call to action with soft blue background.
+      </p>
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div
+            style="
+              border-radius: 12px;
+              overflow: hidden;
+              box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            "
+          >
+            <section class="ih-footer-cta">
+              <h2>Ready to share your harness?</h2>
+              <p>
+                Join developers who are learning from each other's Claude Code
+                workflows.
+              </p>
+              <a
+                href="#"
+                class="ih-btn-primary"
+                style="padding: 12px 28px; font-size: 16px"
+                >Upload Your Insights</a
+              >
+            </section>
+          </div>
+        </div>
+      </div>
+      <div class="version-nav">
+        <button data-dir="prev" disabled>&larr; Prev</button
+        ><span class="version-label">v1 of 1</span
+        ><button data-dir="next" disabled>Next &rarr;</button>
+      </div>
+      <div class="feedback-area">
+        <label for="fb-footer">Feedback</label
+        ><textarea
+          id="fb-footer"
+          placeholder="Voice transcribe or type feedback for this section..."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div style="height: 80px"></div>
+
+    <script>
+      // Viewport Toggle
+      document.querySelectorAll(".viewport-toggle button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const vp = btn.dataset.viewport;
+          document
+            .querySelectorAll(".viewport-toggle button")
+            .forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          document.body.classList.remove("viewport-mobile", "viewport-desktop");
+          document.body.classList.add("viewport-" + vp);
+        });
+      });
+
+      // Version Nav
+      document.querySelectorAll(".mockup-section").forEach((section) => {
+        const versions = section.querySelectorAll(".version");
+        const nav = section.querySelector(".version-nav");
+        if (!nav || versions.length <= 1) return;
+        nav.classList.add("visible");
+        const label = nav.querySelector(".version-label");
+        const prevBtn = nav.querySelector('[data-dir="prev"]');
+        const nextBtn = nav.querySelector('[data-dir="next"]');
+        let current = 1;
+        function show(idx) {
+          versions.forEach((v) => v.classList.remove("active"));
+          versions[idx - 1].classList.add("active");
+          current = idx;
+          label.textContent = "v" + idx + " of " + versions.length;
+          prevBtn.disabled = idx <= 1;
+          nextBtn.disabled = idx >= versions.length;
+        }
+        prevBtn.addEventListener("click", () => {
+          if (current > 1) show(current - 1);
+        });
+        nextBtn.addEventListener("click", () => {
+          if (current < versions.length) show(current + 1);
+        });
+        show(1);
+      });
+      document.querySelectorAll(".mockup-section").forEach((s) => {
+        const v = s.querySelectorAll(".version");
+        if (v.length === 1) v[0].classList.add("active");
+      });
+
+      // Copy All Feedback
+      function copyAllFeedback() {
+        const feedback = {};
+        const vp = document.body.classList.contains("viewport-mobile")
+          ? "mobile"
+          : "desktop";
+        document.querySelectorAll(".mockup-section").forEach((section) => {
+          const id = section.dataset.sectionId;
+          const ta = section.querySelector("textarea");
+          if (ta && ta.value.trim()) {
+            const versions = section.querySelectorAll(".version");
+            const active = section.querySelector(".version.active");
+            feedback[id] = {
+              feedback: ta.value.trim(),
+              viewing_version: parseInt(active ? active.dataset.version : "1"),
+              total_versions: versions.length,
+              viewport: vp,
+            };
+          }
+        });
+        if (Object.keys(feedback).length === 0) {
+          alert("No feedback entered yet.");
+          return;
+        }
+        const json = JSON.stringify(
+          {
+            mockup: document.title,
+            timestamp: new Date().toISOString(),
+            viewport: vp,
+            sections: feedback,
+          },
+          null,
+          2,
+        );
+        navigator.clipboard.writeText(json).then(() => {
+          const btn = document.querySelector(".copy-all-btn");
+          btn.textContent = "Copied!";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = "Copy All Feedback";
+            btn.classList.remove("copied");
+          }, 2000);
+        });
+      }
+
+      // Char counts
+      document.querySelectorAll(".feedback-area textarea").forEach((ta) => {
+        const counter = ta.parentElement.querySelector(".char-count");
+        if (!counter) return;
+        ta.addEventListener("input", () => {
+          counter.textContent = ta.value.length
+            ? ta.value.length + " chars"
+            : "";
+        });
+      });
+    </script>
+  </body>
+</html>

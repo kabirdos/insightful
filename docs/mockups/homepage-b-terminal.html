@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insight Harness — The Terminal</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap");
+
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --bg: #0a0a0f;
+        --card-bg: #111827;
+        --card-border: #1f2937;
+        --green: #4ade80;
+        --amber: #fbbf24;
+        --cyan: #22d3ee;
+        --text: #e5e7eb;
+        --muted: #6b7280;
+        --mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+        --sans: "Inter", -apple-system, sans-serif;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        line-height: 1.6;
+        min-height: 100vh;
+        position: relative;
+      }
+
+      /* Scanline overlay */
+      body::after {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0, 0, 0, 0.03) 2px,
+          rgba(0, 0, 0, 0.03) 4px
+        );
+        pointer-events: none;
+        z-index: 9999;
+      }
+
+      /* Grid texture */
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+          linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.015) 1px,
+            transparent 1px
+          );
+        background-size: 40px 40px;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .container {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 24px;
+        position: relative;
+        z-index: 1;
+      }
+
+      /* ── NAV ── */
+      nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 0;
+        border-bottom: 1px solid var(--card-border);
+      }
+      .nav-brand {
+        font-family: var(--mono);
+        font-weight: 600;
+        font-size: 16px;
+        color: var(--green);
+        letter-spacing: -0.5px;
+      }
+      .nav-brand span {
+        color: var(--muted);
+      }
+      .nav-links {
+        display: flex;
+        gap: 28px;
+      }
+      .nav-links a {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--muted);
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+      .nav-links a:hover {
+        color: var(--text);
+      }
+
+      /* ── LIVE FEED (HERO) ── */
+      .feed-section {
+        padding: 40px 0 0;
+      }
+      .feed-header {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .feed-header .dot {
+        width: 6px;
+        height: 6px;
+        background: var(--green);
+        border-radius: 50%;
+        animation: pulse 2s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      .feed {
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid var(--card-border);
+        overflow: hidden;
+      }
+      .feed-line {
+        display: flex;
+        align-items: baseline;
+        gap: 0;
+        padding: 10px 16px;
+        font-family: var(--mono);
+        font-size: 13px;
+        border-bottom: 1px solid rgba(31, 41, 55, 0.5);
+        cursor: pointer;
+        transition: background 0.15s;
+        text-decoration: none;
+        color: inherit;
+      }
+      .feed-line:last-child {
+        border-bottom: none;
+      }
+      .feed-line:hover {
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .feed-ts {
+        color: var(--muted);
+        white-space: nowrap;
+        margin-right: 12px;
+        font-size: 12px;
+      }
+      .feed-user {
+        color: var(--cyan);
+        margin-right: 6px;
+        white-space: nowrap;
+      }
+      .feed-action {
+        color: var(--muted);
+        margin-right: 6px;
+        white-space: nowrap;
+      }
+      .feed-stats {
+        color: var(--text);
+        margin-right: 12px;
+        white-space: nowrap;
+      }
+      .feed-stats strong {
+        color: var(--amber);
+        font-weight: 500;
+      }
+      .feed-tags {
+        color: var(--green);
+        font-size: 12px;
+        opacity: 0.7;
+      }
+
+      /* Stagger animation */
+      .feed-line {
+        opacity: 0;
+        animation: fadeSlide 0.4s ease forwards;
+      }
+      .feed-line:nth-child(1) {
+        animation-delay: 0.1s;
+      }
+      .feed-line:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .feed-line:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+      .feed-line:nth-child(4) {
+        animation-delay: 0.4s;
+      }
+      .feed-line:nth-child(5) {
+        animation-delay: 0.5s;
+      }
+      .feed-line:nth-child(6) {
+        animation-delay: 0.6s;
+      }
+      .feed-line:nth-child(7) {
+        animation-delay: 0.7s;
+      }
+      .feed-line:nth-child(8) {
+        animation-delay: 0.8s;
+      }
+
+      @keyframes fadeSlide {
+        from {
+          opacity: 0;
+          transform: translateY(-4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* ── STATS BAR ── */
+      .stats-bar {
+        padding: 20px 0;
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--muted);
+        border-bottom: 1px solid var(--card-border);
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .stats-bar .stat-val {
+        color: var(--text);
+      }
+      .stats-bar .sep {
+        color: #374151;
+      }
+
+      /* ── FEATURED REPORT ── */
+      .featured-section {
+        padding: 48px 0;
+      }
+      .featured-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 16px;
+      }
+      .featured-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .featured-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--card-border);
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .featured-author {
+        font-family: var(--mono);
+        font-size: 15px;
+        color: var(--cyan);
+      }
+      .featured-date {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .featured-body {
+        padding: 24px;
+      }
+      .featured-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+      }
+      @media (max-width: 640px) {
+        .featured-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .data-block {
+      }
+      .data-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 10px;
+      }
+      .data-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 5px 0;
+        border-bottom: 1px solid rgba(31, 41, 55, 0.4);
+        font-size: 14px;
+      }
+      .data-row:last-child {
+        border-bottom: none;
+      }
+      .data-key {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .data-val {
+        color: var(--text);
+        font-family: var(--mono);
+        font-weight: 500;
+      }
+      .data-val.green {
+        color: var(--green);
+      }
+      .data-val.amber {
+        color: var(--amber);
+      }
+      .data-val.cyan {
+        color: var(--cyan);
+      }
+
+      .tag-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 4px;
+      }
+      .tag {
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 3px 8px;
+        background: rgba(74, 222, 128, 0.08);
+        border: 1px solid rgba(74, 222, 128, 0.2);
+        color: var(--green);
+        border-radius: 3px;
+      }
+
+      .pattern-quote {
+        margin-top: 8px;
+        padding: 14px 16px;
+        background: rgba(0, 0, 0, 0.3);
+        border-left: 2px solid var(--amber);
+        font-size: 14px;
+        color: var(--text);
+        line-height: 1.6;
+      }
+      .pattern-quote .label {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--amber);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      /* ── HOW IT WORKS ── */
+      .how-section {
+        padding: 48px 0;
+        border-top: 1px solid var(--card-border);
+      }
+      .how-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 20px;
+      }
+      .terminal-block {
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        padding: 24px 28px;
+        font-family: var(--mono);
+        font-size: 14px;
+        line-height: 2;
+      }
+      .terminal-block .prompt {
+        color: var(--green);
+      }
+      .terminal-block .cmd {
+        color: var(--text);
+      }
+      .terminal-block .comment {
+        color: #4b5563;
+      }
+      .terminal-block .output {
+        color: var(--muted);
+        font-style: italic;
+      }
+      .terminal-block .blank {
+        display: block;
+        height: 8px;
+      }
+
+      /* ── BROWSE GRID ── */
+      .browse-section {
+        padding: 48px 0;
+        border-top: 1px solid var(--card-border);
+      }
+      .browse-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .browse-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+      .browse-link {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--cyan);
+        text-decoration: none;
+      }
+      .browse-link:hover {
+        text-decoration: underline;
+      }
+
+      .browse-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      @media (max-width: 800px) {
+        .browse-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 520px) {
+        .browse-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .browse-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        padding: 20px;
+        transition:
+          border-color 0.2s,
+          transform 0.15s;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+      }
+      .browse-card:hover {
+        border-color: #374151;
+        transform: translateY(-2px);
+      }
+      .browse-card-user {
+        font-family: var(--mono);
+        font-size: 14px;
+        color: var(--cyan);
+        margin-bottom: 12px;
+      }
+      .browse-card-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 16px;
+        margin-bottom: 12px;
+      }
+      .browse-stat-item {
+      }
+      .browse-stat-label {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .browse-stat-val {
+        font-family: var(--mono);
+        font-size: 15px;
+        color: var(--text);
+        font-weight: 500;
+      }
+      .browse-card-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 4px;
+      }
+      .browse-tag {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--green);
+        opacity: 0.6;
+      }
+
+      /* ── FOOTER ── */
+      footer {
+        padding: 32px 0;
+        border-top: 1px solid var(--card-border);
+        margin-top: 24px;
+      }
+      .footer-inner {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: #374151;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .footer-inner a {
+        color: #4b5563;
+        text-decoration: none;
+      }
+      .footer-inner a:hover {
+        color: var(--muted);
+      }
+
+      /* ── CURSOR BLINK ── */
+      .cursor {
+        display: inline-block;
+        width: 8px;
+        height: 16px;
+        background: var(--green);
+        vertical-align: text-bottom;
+        animation: blink 1s step-end infinite;
+        margin-left: 2px;
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- NAV -->
+      <nav>
+        <div class="nav-brand">insight<span>/</span>harness</div>
+        <div class="nav-links">
+          <a href="#">browse</a>
+          <a href="#">upload</a>
+          <a href="#">about</a>
+          <a href="#">github</a>
+        </div>
+      </nav>
+
+      <!-- LIVE FEED -->
+      <section class="feed-section">
+        <div class="feed-header">
+          <span class="dot"></span>
+          recent uploads
+        </div>
+        <div class="feed">
+          <a class="feed-line" href="#">
+            <span class="feed-ts">[2026-04-05 14:23]</span>
+            <span class="feed-user">@sarahchen</span>
+            <span class="feed-action">uploaded</span>
+            <span class="feed-stats"
+              ><strong>847</strong> sessions &middot;
+              <strong>12.4k</strong> msgs</span
+            >
+            <span class="feed-tags">parallel_agents, worktrees</span>
+          </a>
+          <a class="feed-line" href="#">
+            <span class="feed-ts">[2026-04-05 13:01]</span>
+            <span class="feed-user">@marcusj</span>
+            <span class="feed-action">uploaded</span>
+            <span class="feed-stats"
+              ><strong>234</strong> sessions &middot;
+              <strong>5.1k</strong> msgs</span
+            >
+            <span class="feed-tags">plan_mode, custom_skills</span>
+          </a>
+          <a class="feed-line" href="#">
+            <span class="feed-ts">[2026-04-04 22:45]</span>
+            <span class="feed-user">@priya_dev</span>
+            <span class="feed-action">uploaded</span>
+            <span class="feed-stats"
+              ><strong>1,203</strong> sessions &middot;
+              <strong>28k</strong> msgs</span
+            >
+            <span class="feed-tags">code_review, mcp_servers</span>
+          </a>
+          <a class="feed-line" href="#">
+            <span class="feed-ts">[2026-04-04 19:12]</span>
+            <span class="feed-user">@devops_kai</span>
+            <span class="feed-action">uploaded</span>
+            <span class="feed-stats"
+              ><strong>512</strong> sessions &middot;
+              <strong>9.7k</strong> msgs</span
+            >
+            <span class="feed-tags">hooks, bash_heavy</span>
+          </a>
+          <a class="feed-line" href="#">
+            <span class="feed-ts">[2026-04-04 16:33]</span>
+            <span class="feed-user">@rlin</span>
+            <span class="feed-action">uploaded</span>
+            <span class="feed-stats"
+              ><strong>98</strong> sessions &middot;
+              <strong>2.3k</strong> msgs</span
+            >
+            <span class="feed-tags">test_driven, vim_mode</span>
+          </a>
+          <a class="feed-line" href="#">
+            <span class="feed-ts">[2026-04-04 11:08]</span>
+            <span class="feed-user">@jessicawu</span>
+            <span class="feed-action">uploaded</span>
+            <span class="feed-stats"
+              ><strong>671</strong> sessions &middot;
+              <strong>15.8k</strong> msgs</span
+            >
+            <span class="feed-tags">multi_repo, subagents</span>
+          </a>
+          <a class="feed-line" href="#">
+            <span class="feed-ts">[2026-04-03 23:55]</span>
+            <span class="feed-user">@tomek_pl</span>
+            <span class="feed-action">uploaded</span>
+            <span class="feed-stats"
+              ><strong>445</strong> sessions &middot;
+              <strong>7.2k</strong> msgs</span
+            >
+            <span class="feed-tags">rust, memory_files</span>
+          </a>
+          <a class="feed-line" href="#">
+            <span class="feed-ts">[2026-04-03 20:14]</span>
+            <span class="feed-user">@amir_n</span>
+            <span class="feed-action">uploaded</span>
+            <span class="feed-stats"
+              ><strong>1,089</strong> sessions &middot;
+              <strong>22k</strong> msgs</span
+            >
+            <span class="feed-tags"
+              >monorepo, plan_review<span class="cursor"></span
+            ></span>
+          </a>
+        </div>
+      </section>
+
+      <!-- STATS BAR -->
+      <div class="stats-bar">
+        <span class="stat-val">142</span> harnesses shared
+        <span class="sep">&middot;</span>
+        <span class="stat-val">24,891</span> sessions analyzed
+        <span class="sep">&middot;</span>
+        <span class="stat-val">847</span> projects tracked
+        <span class="sep">&middot;</span>
+        <span class="stat-val">3.2M</span> messages indexed
+      </div>
+
+      <!-- FEATURED REPORT -->
+      <section class="featured-section">
+        <div class="featured-label">featured report</div>
+        <div class="featured-card">
+          <div class="featured-meta">
+            <div class="featured-author">@sarahchen</div>
+            <div class="featured-date">
+              Mar 30 &ndash; Apr 5, 2026 &middot; 847 sessions
+            </div>
+          </div>
+          <div class="featured-body">
+            <div class="featured-grid">
+              <div class="data-block">
+                <div class="data-label">Weekly Averages</div>
+                <div class="data-row">
+                  <span class="data-key">sessions</span>
+                  <span class="data-val green">121/wk</span>
+                </div>
+                <div class="data-row">
+                  <span class="data-key">messages</span>
+                  <span class="data-val">1,771</span>
+                </div>
+                <div class="data-row">
+                  <span class="data-key">tokens in</span>
+                  <span class="data-val">2.4M</span>
+                </div>
+                <div class="data-row">
+                  <span class="data-key">tokens out</span>
+                  <span class="data-val">890k</span>
+                </div>
+                <div class="data-row">
+                  <span class="data-key">cost</span>
+                  <span class="data-val amber">$47.20</span>
+                </div>
+              </div>
+
+              <div class="data-block">
+                <div class="data-label">Features Used</div>
+                <div class="tag-list">
+                  <span class="tag">parallel_agents</span>
+                  <span class="tag">worktrees</span>
+                  <span class="tag">plan_mode</span>
+                  <span class="tag">custom_skills</span>
+                  <span class="tag">mcp_servers</span>
+                  <span class="tag">hooks</span>
+                  <span class="tag">memory_files</span>
+                  <span class="tag">subagents</span>
+                </div>
+
+                <div class="data-label" style="margin-top: 20px">
+                  Project Areas
+                </div>
+                <div class="data-row">
+                  <span class="data-key">backend API</span>
+                  <span class="data-val cyan">38%</span>
+                </div>
+                <div class="data-row">
+                  <span class="data-key">frontend</span>
+                  <span class="data-val cyan">29%</span>
+                </div>
+                <div class="data-row">
+                  <span class="data-key">infrastructure</span>
+                  <span class="data-val cyan">21%</span>
+                </div>
+                <div class="data-row">
+                  <span class="data-key">documentation</span>
+                  <span class="data-val cyan">12%</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="pattern-quote" style="margin-top: 24px">
+              <span class="label">Key Pattern</span>
+              Uses parallel agents for test suites and code review, then
+              consolidates via plan_mode. Heavy worktree usage suggests
+              multi-feature development across 4+ branches simultaneously.
+              Custom skills automate PR creation and deployment checks.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HOW IT WORKS -->
+      <section class="how-section">
+        <div class="how-label">how it works</div>
+        <div class="terminal-block">
+          <span class="prompt">$</span>
+          <span class="cmd">claude /insights</span>
+          <span class="comment"># generate your report locally</span><br />
+          <span class="output"
+            >analyzing 847 sessions across 12 projects...</span
+          ><br />
+          <span class="output"
+            >report saved to .claude/insights/report.html</span
+          ><br />
+          <span class="blank"></span>
+          <span class="prompt">$</span>
+          <span class="cmd">open .claude/insights/report.html</span>
+          <span class="comment"># review it — your data stays local</span><br />
+          <span class="blank"></span>
+          <span class="prompt">$</span>
+          <span class="comment"
+            ># happy with it? upload at insightharness.com</span
+          ><br />
+          <span class="prompt">$</span>
+          <span class="comment"># share your workflow. learn from others.</span
+          ><br />
+          <span class="prompt">$</span> <span class="cursor"></span>
+        </div>
+      </section>
+
+      <!-- BROWSE -->
+      <section class="browse-section">
+        <div class="browse-header">
+          <div class="browse-label">browse harnesses</div>
+          <a class="browse-link" href="#">view all &rarr;</a>
+        </div>
+        <div class="browse-grid">
+          <a class="browse-card" href="#">
+            <div class="browse-card-user">@marcusj</div>
+            <div class="browse-card-stats">
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Sessions</div>
+                <div class="browse-stat-val">234</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Messages</div>
+                <div class="browse-stat-val">5.1k</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Projects</div>
+                <div class="browse-stat-val">3</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Cost/wk</div>
+                <div class="browse-stat-val">$18</div>
+              </div>
+            </div>
+            <div class="browse-card-tags">
+              <span class="browse-tag">plan_mode</span>
+              <span class="browse-tag">custom_skills</span>
+              <span class="browse-tag">vim</span>
+            </div>
+          </a>
+
+          <a class="browse-card" href="#">
+            <div class="browse-card-user">@priya_dev</div>
+            <div class="browse-card-stats">
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Sessions</div>
+                <div class="browse-stat-val">1,203</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Messages</div>
+                <div class="browse-stat-val">28k</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Projects</div>
+                <div class="browse-stat-val">8</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Cost/wk</div>
+                <div class="browse-stat-val">$92</div>
+              </div>
+            </div>
+            <div class="browse-card-tags">
+              <span class="browse-tag">code_review</span>
+              <span class="browse-tag">mcp_servers</span>
+              <span class="browse-tag">monorepo</span>
+            </div>
+          </a>
+
+          <a class="browse-card" href="#">
+            <div class="browse-card-user">@devops_kai</div>
+            <div class="browse-card-stats">
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Sessions</div>
+                <div class="browse-stat-val">512</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Messages</div>
+                <div class="browse-stat-val">9.7k</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Projects</div>
+                <div class="browse-stat-val">5</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Cost/wk</div>
+                <div class="browse-stat-val">$34</div>
+              </div>
+            </div>
+            <div class="browse-card-tags">
+              <span class="browse-tag">hooks</span>
+              <span class="browse-tag">bash_heavy</span>
+              <span class="browse-tag">ci_cd</span>
+            </div>
+          </a>
+
+          <a class="browse-card" href="#">
+            <div class="browse-card-user">@jessicawu</div>
+            <div class="browse-card-stats">
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Sessions</div>
+                <div class="browse-stat-val">671</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Messages</div>
+                <div class="browse-stat-val">15.8k</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Projects</div>
+                <div class="browse-stat-val">6</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Cost/wk</div>
+                <div class="browse-stat-val">$56</div>
+              </div>
+            </div>
+            <div class="browse-card-tags">
+              <span class="browse-tag">multi_repo</span>
+              <span class="browse-tag">subagents</span>
+              <span class="browse-tag">react</span>
+            </div>
+          </a>
+
+          <a class="browse-card" href="#">
+            <div class="browse-card-user">@tomek_pl</div>
+            <div class="browse-card-stats">
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Sessions</div>
+                <div class="browse-stat-val">445</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Messages</div>
+                <div class="browse-stat-val">7.2k</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Projects</div>
+                <div class="browse-stat-val">2</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Cost/wk</div>
+                <div class="browse-stat-val">$28</div>
+              </div>
+            </div>
+            <div class="browse-card-tags">
+              <span class="browse-tag">rust</span>
+              <span class="browse-tag">memory_files</span>
+              <span class="browse-tag">tdd</span>
+            </div>
+          </a>
+
+          <a class="browse-card" href="#">
+            <div class="browse-card-user">@amir_n</div>
+            <div class="browse-card-stats">
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Sessions</div>
+                <div class="browse-stat-val">1,089</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Messages</div>
+                <div class="browse-stat-val">22k</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Projects</div>
+                <div class="browse-stat-val">11</div>
+              </div>
+              <div class="browse-stat-item">
+                <div class="browse-stat-label">Cost/wk</div>
+                <div class="browse-stat-val">$78</div>
+              </div>
+            </div>
+            <div class="browse-card-tags">
+              <span class="browse-tag">monorepo</span>
+              <span class="browse-tag">plan_review</span>
+              <span class="browse-tag">typescript</span>
+            </div>
+          </a>
+        </div>
+      </section>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="container">
+        <div class="footer-inner">
+          <span>insight/harness &mdash; see how others use Claude Code</span>
+          <span
+            ><a href="#">github</a> &middot; <a href="#">about</a> &middot;
+            <a href="#">privacy</a></span
+          >
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

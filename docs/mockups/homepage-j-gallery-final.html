@@ -1,0 +1,1100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insight Harness — Your Claude Code harness, visualized</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #f8fafc;
+        color: #1e293b;
+        line-height: 1.5;
+      }
+      a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+
+      /* Nav */
+      .nav {
+        background: #fff;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 0 32px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .nav-logo {
+        font-weight: 700;
+        font-size: 18px;
+        color: #0f172a;
+      }
+      .nav-logo span {
+        color: #2563eb;
+      }
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+      .nav-links a {
+        color: #475569;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .nav-links a:hover {
+        color: #2563eb;
+      }
+      .btn-primary {
+        background: #2563eb;
+        color: #fff !important;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        display: inline-block;
+      }
+      .btn-primary:hover {
+        background: #1d4ed8;
+      }
+      .btn-outline {
+        border: 1.5px solid #2563eb;
+        color: #2563eb !important;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        background: transparent;
+        cursor: pointer;
+        display: inline-block;
+      }
+      .btn-outline:hover {
+        background: #eff6ff;
+      }
+
+      /* Hero */
+      .hero {
+        text-align: center;
+        padding: 48px 32px 40px;
+        max-width: 680px;
+        margin: 0 auto;
+      }
+      .hero h1 {
+        font-size: 32px;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 10px;
+        letter-spacing: -0.5px;
+      }
+      .hero p {
+        font-size: 15px;
+        color: #64748b;
+        margin-bottom: 20px;
+        max-width: 520px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .hero-ctas {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+      }
+
+      /* Featured Card */
+      .featured-section {
+        max-width: 960px;
+        margin: 0 auto 40px;
+        padding: 0 32px;
+      }
+      .featured-label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #94a3b8;
+        margin-bottom: 10px;
+      }
+      .featured-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow:
+          0 1px 3px rgba(0, 0, 0, 0.06),
+          0 4px 12px rgba(0, 0, 0, 0.04);
+        padding: 28px 32px;
+        border-left: 4px solid #2563eb;
+      }
+      .featured-top {
+        display: flex;
+        gap: 32px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+      .featured-author {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 200px;
+      }
+      .avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 18px;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .avatar-blue {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+      }
+      .author-info h3 {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .author-info .handle {
+        font-size: 13px;
+        color: #94a3b8;
+      }
+      .author-info .date-range {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-top: 2px;
+      }
+      .featured-stats {
+        flex: 1;
+        min-width: 280px;
+      }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px 16px;
+      }
+      .stat-item {
+        font-size: 13px;
+      }
+      .stat-item strong {
+        font-size: 16px;
+        font-weight: 800;
+        color: #0f172a;
+      }
+      .stat-item .stat-label {
+        color: #94a3b8;
+        font-size: 12px;
+      }
+      .stat-green strong {
+        color: #16a34a;
+      }
+      .featured-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-width: 200px;
+      }
+
+      /* Badges */
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .badge-violet {
+        background: #ede9fe;
+        color: #6d28d9;
+      }
+      .badge-green {
+        background: #dcfce7;
+        color: #15803d;
+      }
+      .badge-amber {
+        background: #fef3c7;
+        color: #b45309;
+      }
+      .badge-sky {
+        background: #e0f2fe;
+        color: #0369a1;
+      }
+      .badge-slate {
+        background: #f1f5f9;
+        color: #475569;
+      }
+      .badge-pink {
+        background: #fce7f3;
+        color: #be185d;
+      }
+      .badge-indigo {
+        background: #e0e7ff;
+        color: #4338ca;
+      }
+      .badge-emerald {
+        background: #d1fae5;
+        color: #047857;
+      }
+      .badge-red {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+      .badge-teal {
+        background: #ccfbf1;
+        color: #0f766e;
+      }
+
+      .featured-callout {
+        margin-top: 16px;
+        padding: 12px 16px;
+        border-left: 3px solid #2563eb;
+        background: #f8fafc;
+        border-radius: 0 8px 8px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .featured-callout .pattern {
+        font-style: italic;
+        color: #475569;
+        font-size: 14px;
+        flex: 1;
+        min-width: 240px;
+      }
+      .featured-callout .pattern::before {
+        content: "\201C";
+        font-size: 20px;
+        color: #2563eb;
+        margin-right: 2px;
+      }
+      .featured-callout .pattern::after {
+        content: "\201D";
+        font-size: 20px;
+        color: #2563eb;
+        margin-left: 2px;
+      }
+      .strengths {
+        font-size: 12px;
+        color: #64748b;
+        max-width: 260px;
+      }
+      .strengths strong {
+        color: #475569;
+        font-size: 12px;
+      }
+
+      /* Grid */
+      .grid-section {
+        max-width: 960px;
+        margin: 0 auto 48px;
+        padding: 0 32px;
+      }
+      .grid-section h2 {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 16px;
+        color: #0f172a;
+      }
+      .card-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      .profile-card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        border-left: 3px solid transparent;
+        transition:
+          transform 0.15s,
+          box-shadow 0.15s,
+          border-color 0.15s;
+        cursor: pointer;
+      }
+      .profile-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      }
+      .profile-card:nth-child(1):hover {
+        border-left-color: #8b5cf6;
+      }
+      .profile-card:nth-child(2):hover {
+        border-left-color: #f59e0b;
+      }
+      .profile-card:nth-child(3):hover {
+        border-left-color: #ec4899;
+      }
+      .profile-card:nth-child(4):hover {
+        border-left-color: #06b6d4;
+      }
+      .profile-card:nth-child(5):hover {
+        border-left-color: #10b981;
+      }
+      .profile-card:nth-child(6):hover {
+        border-left-color: #ef4444;
+      }
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .avatar-sm {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .card-header .name {
+        font-weight: 700;
+        font-size: 14px;
+        color: #0f172a;
+      }
+      .card-header .date {
+        font-size: 11px;
+        color: #94a3b8;
+      }
+      .card-stats {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 10px;
+      }
+      .card-stats .cs {
+        font-size: 12px;
+        color: #94a3b8;
+      }
+      .card-stats .cs strong {
+        font-size: 15px;
+        color: #0f172a;
+        display: block;
+        font-weight: 800;
+      }
+      .card-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-bottom: 10px;
+      }
+      .card-pattern {
+        font-size: 12px;
+        font-style: italic;
+        color: #64748b;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* Token Upgrade Section */
+      .upgrade-section {
+        max-width: 960px;
+        margin: 0 auto 48px;
+        padding: 0 32px;
+      }
+      .upgrade-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        padding: 28px 32px;
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        flex-wrap: wrap;
+        border: 1px solid #e2e8f0;
+      }
+      .heatmap-preview {
+        flex-shrink: 0;
+        opacity: 0.7;
+        filter: blur(0.5px);
+      }
+      .heatmap-grid {
+        display: grid;
+        grid-template-columns: repeat(8, 20px);
+        grid-template-rows: repeat(4, 20px);
+        gap: 3px;
+      }
+      .heatmap-cell {
+        border-radius: 3px;
+      }
+      .hm-0 {
+        background: #f1f5f9;
+      }
+      .hm-1 {
+        background: #bfdbfe;
+      }
+      .hm-2 {
+        background: #60a5fa;
+      }
+      .hm-3 {
+        background: #2563eb;
+      }
+      .hm-4 {
+        background: #1e40af;
+      }
+      .upgrade-text {
+        flex: 1;
+        min-width: 240px;
+      }
+      .upgrade-text h3 {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 4px;
+      }
+      .upgrade-text h3 code {
+        background: #f1f5f9;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 14px;
+        color: #475569;
+      }
+      .upgrade-text p {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 8px;
+      }
+      .heatmap-legend {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        font-size: 11px;
+        color: #94a3b8;
+      }
+      .legend-swatch {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 3px;
+      }
+
+      /* Token distribution bars */
+      .token-breakdown {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #e2e8f0;
+      }
+      .token-breakdown h4 {
+        font-size: 13px;
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 12px;
+      }
+      .stacked-bar {
+        display: flex;
+        height: 28px;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-bottom: 10px;
+      }
+      .stacked-bar > div {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: white;
+        white-space: nowrap;
+        overflow: hidden;
+        transition: flex-basis 0.3s;
+      }
+      .bar-agents {
+        background: #8b5cf6;
+      }
+      .bar-review {
+        background: #ef4444;
+      }
+      .bar-plan {
+        background: #10b981;
+      }
+      .bar-debug {
+        background: #f59e0b;
+      }
+      .bar-explore {
+        background: #0ea5e9;
+      }
+      .bar-other {
+        background: #94a3b8;
+      }
+      .breakdown-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 12px;
+        color: #64748b;
+      }
+      .breakdown-legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .breakdown-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        display: inline-block;
+      }
+
+      /* How It Works */
+      .how-section {
+        max-width: 960px;
+        margin: 0 auto 48px;
+        padding: 0 32px;
+      }
+      .how-section h2 {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 16px;
+        color: #0f172a;
+        text-align: center;
+      }
+      .steps-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+      .step-card {
+        text-align: center;
+        padding: 24px 20px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+      .step-icon {
+        font-size: 28px;
+        margin-bottom: 10px;
+      }
+      .step-num {
+        font-size: 11px;
+        font-weight: 700;
+        color: #2563eb;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 4px;
+      }
+      .step-card h4 {
+        font-size: 15px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 6px;
+      }
+      .step-card p {
+        font-size: 13px;
+        color: #64748b;
+      }
+
+      /* Footer CTA */
+      .footer-cta {
+        background: #eff6ff;
+        padding: 48px 32px;
+        text-align: center;
+      }
+      .footer-cta h2 {
+        font-size: 22px;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 14px;
+      }
+      .footer-cta p {
+        font-size: 14px;
+        color: #64748b;
+        margin-bottom: 20px;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .card-grid {
+          grid-template-columns: 1fr;
+        }
+        .steps-row {
+          grid-template-columns: 1fr;
+        }
+        .featured-top {
+          flex-direction: column;
+        }
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .upgrade-card {
+          flex-direction: column;
+          text-align: center;
+        }
+      }
+      @media (min-width: 769px) and (max-width: 960px) {
+        .card-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Nav -->
+    <nav class="nav">
+      <div class="nav-logo">Insight <span>Harness</span></div>
+      <div class="nav-links">
+        <a href="#">Browse</a>
+        <a href="#">Top Profiles</a>
+        <a href="#" class="btn-primary">Upload Your Insights</a>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+      <h1>Your Claude Code harness, visualized</h1>
+      <p>
+        See how other developers use tools, skills, plugins, and workflows
+        across real coding sessions. All personal data removed.
+      </p>
+      <div class="hero-ctas">
+        <a href="#" class="btn-primary">Browse Profiles</a>
+        <a href="#" class="btn-outline">Upload Your Insights</a>
+      </div>
+    </section>
+
+    <!-- Featured Profile -->
+    <section class="featured-section">
+      <div class="featured-label">Featured Profile</div>
+      <div class="featured-card">
+        <div class="featured-top">
+          <div class="featured-author">
+            <div class="avatar avatar-blue">SC</div>
+            <div class="author-info">
+              <h3>Sarah Chen</h3>
+              <div class="handle">@sarahchen</div>
+              <div class="date-range">
+                Mar 1 &ndash; Mar 31, 2026 &middot; 31 days
+              </div>
+            </div>
+          </div>
+          <div class="featured-stats">
+            <div class="stats-grid">
+              <div class="stat-item">
+                <strong>42</strong> <span class="stat-label">sessions/wk</span>
+              </div>
+              <div class="stat-item">
+                <strong>620</strong> <span class="stat-label">messages/wk</span>
+              </div>
+              <div class="stat-item">
+                <strong>18</strong> <span class="stat-label">commits/wk</span>
+              </div>
+              <div class="stat-item stat-green">
+                <strong>1,240</strong>
+                <span class="stat-label">lines added/wk</span>
+              </div>
+              <div class="stat-item">
+                <strong>95</strong> <span class="stat-label">files/wk</span>
+              </div>
+              <div class="stat-item">
+                <strong>~4.2</strong> <span class="stat-label">hrs/day</span>
+              </div>
+            </div>
+          </div>
+          <div class="featured-badges">
+            <span class="badge badge-violet">&#x1F500; Parallel Agents</span>
+            <span class="badge badge-green">&#x1F333; Worktrees</span>
+            <span class="badge badge-emerald">&#x1F4CB; Plan Mode</span>
+            <span class="badge badge-red">&#x1F4DD; Code Review</span>
+          </div>
+        </div>
+        <div class="featured-callout">
+          <div class="pattern">
+            Heavy multi-agent orchestration with plan-first discipline
+          </div>
+          <div class="strengths">
+            <strong>Strengths:</strong> Exceptional at breaking complex features
+            into parallel workstreams. Consistently uses plan mode before
+            implementation.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Report Grid -->
+    <section class="grid-section">
+      <h2>Recent Profiles</h2>
+      <div class="card-grid">
+        <!-- Card 1 -->
+        <div class="profile-card">
+          <div class="card-header">
+            <div
+              class="avatar-sm"
+              style="background: linear-gradient(135deg, #8b5cf6, #7c3aed)"
+            >
+              MR
+            </div>
+            <div>
+              <div class="name">Marcus Rivera</div>
+              <div class="date">Feb 15 &ndash; Mar 15, 2026</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="cs"><strong>28</strong>sessions/wk</div>
+            <div class="cs"><strong>410</strong>messages/wk</div>
+            <div class="cs"><strong>12</strong>commits/wk</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-amber"
+              >&#x2699;&#xFE0F; Custom Skills</span
+            >
+            <span class="badge badge-sky">&#x1F517; Hooks</span>
+            <span class="badge badge-teal">&#x1F916; Subagents</span>
+          </div>
+          <div class="card-pattern">
+            "Skill-heavy automation with tight hook integration"
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="profile-card">
+          <div class="card-header">
+            <div
+              class="avatar-sm"
+              style="background: linear-gradient(135deg, #f59e0b, #d97706)"
+            >
+              AK
+            </div>
+            <div>
+              <div class="name">Aisha Koroma</div>
+              <div class="date">Mar 1 &ndash; Mar 28, 2026</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="cs"><strong>35</strong>sessions/wk</div>
+            <div class="cs"><strong>530</strong>messages/wk</div>
+            <div class="cs"><strong>22</strong>commits/wk</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-pink">&#x1F3AD; Playwright</span>
+            <span class="badge badge-slate">&#x1F5A5;&#xFE0F; MCP Servers</span>
+            <span class="badge badge-red">&#x1F4DD; Code Review</span>
+          </div>
+          <div class="card-pattern">
+            "Test-driven with Playwright MCP and automated review gates"
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="profile-card">
+          <div class="card-header">
+            <div
+              class="avatar-sm"
+              style="background: linear-gradient(135deg, #ec4899, #db2777)"
+            >
+              JL
+            </div>
+            <div>
+              <div class="name">Jake Lindqvist</div>
+              <div class="date">Feb 20 &ndash; Mar 20, 2026</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="cs"><strong>18</strong>sessions/wk</div>
+            <div class="cs"><strong>290</strong>messages/wk</div>
+            <div class="cs"><strong>8</strong>commits/wk</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-indigo"
+              >&#x1F576;&#xFE0F; Headless Mode</span
+            >
+            <span class="badge badge-emerald">&#x1F4CB; Plan Mode</span>
+          </div>
+          <div class="card-pattern">
+            "Headless background jobs with plan-mode orchestration"
+          </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="profile-card">
+          <div class="card-header">
+            <div
+              class="avatar-sm"
+              style="background: linear-gradient(135deg, #06b6d4, #0891b2)"
+            >
+              PT
+            </div>
+            <div>
+              <div class="name">Priya Thakur</div>
+              <div class="date">Mar 3 &ndash; Mar 31, 2026</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="cs"><strong>52</strong>sessions/wk</div>
+            <div class="cs"><strong>780</strong>messages/wk</div>
+            <div class="cs"><strong>25</strong>commits/wk</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-violet">&#x1F500; Parallel Agents</span>
+            <span class="badge badge-green">&#x1F333; Worktrees</span>
+            <span class="badge badge-amber"
+              >&#x2699;&#xFE0F; Custom Skills</span
+            >
+            <span class="badge badge-sky">&#x1F517; Hooks</span>
+          </div>
+          <div class="card-pattern">
+            "Power user: parallel worktrees with custom skill pipelines"
+          </div>
+        </div>
+
+        <!-- Card 5 -->
+        <div class="profile-card">
+          <div class="card-header">
+            <div
+              class="avatar-sm"
+              style="background: linear-gradient(135deg, #10b981, #059669)"
+            >
+              DO
+            </div>
+            <div>
+              <div class="name">Daniel Okafor</div>
+              <div class="date">Feb 25 &ndash; Mar 25, 2026</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="cs"><strong>22</strong>sessions/wk</div>
+            <div class="cs"><strong>340</strong>messages/wk</div>
+            <div class="cs"><strong>15</strong>commits/wk</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-teal">&#x1F916; Subagents</span>
+            <span class="badge badge-slate">&#x1F5A5;&#xFE0F; MCP Servers</span>
+            <span class="badge badge-red">&#x1F4DD; Code Review</span>
+          </div>
+          <div class="card-pattern">
+            "Subagent delegation with MCP-powered review workflows"
+          </div>
+        </div>
+
+        <!-- Card 6 -->
+        <div class="profile-card">
+          <div class="card-header">
+            <div
+              class="avatar-sm"
+              style="background: linear-gradient(135deg, #ef4444, #dc2626)"
+            >
+              LW
+            </div>
+            <div>
+              <div class="name">Lisa Wang</div>
+              <div class="date">Mar 5 &ndash; Mar 31, 2026</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="cs"><strong>30</strong>sessions/wk</div>
+            <div class="cs"><strong>450</strong>messages/wk</div>
+            <div class="cs"><strong>20</strong>commits/wk</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-pink">&#x1F3AD; Playwright</span>
+            <span class="badge badge-indigo"
+              >&#x1F576;&#xFE0F; Headless Mode</span
+            >
+            <span class="badge badge-emerald">&#x1F4CB; Plan Mode</span>
+          </div>
+          <div class="card-pattern">
+            "End-to-end testing pipeline with headless CI integration"
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Token Usage Upgrade Teaser -->
+    <section class="upgrade-section">
+      <div class="upgrade-card">
+        <div class="heatmap-preview">
+          <div class="heatmap-grid">
+            <div class="heatmap-cell hm-0"></div>
+            <div class="heatmap-cell hm-1"></div>
+            <div class="heatmap-cell hm-2"></div>
+            <div class="heatmap-cell hm-0"></div>
+            <div class="heatmap-cell hm-3"></div>
+            <div class="heatmap-cell hm-1"></div>
+            <div class="heatmap-cell hm-2"></div>
+            <div class="heatmap-cell hm-4"></div>
+            <div class="heatmap-cell hm-1"></div>
+            <div class="heatmap-cell hm-3"></div>
+            <div class="heatmap-cell hm-0"></div>
+            <div class="heatmap-cell hm-2"></div>
+            <div class="heatmap-cell hm-1"></div>
+            <div class="heatmap-cell hm-4"></div>
+            <div class="heatmap-cell hm-3"></div>
+            <div class="heatmap-cell hm-0"></div>
+            <div class="heatmap-cell hm-2"></div>
+            <div class="heatmap-cell hm-0"></div>
+            <div class="heatmap-cell hm-4"></div>
+            <div class="heatmap-cell hm-3"></div>
+            <div class="heatmap-cell hm-0"></div>
+            <div class="heatmap-cell hm-1"></div>
+            <div class="heatmap-cell hm-4"></div>
+            <div class="heatmap-cell hm-2"></div>
+            <div class="heatmap-cell hm-3"></div>
+            <div class="heatmap-cell hm-2"></div>
+            <div class="heatmap-cell hm-1"></div>
+            <div class="heatmap-cell hm-4"></div>
+            <div class="heatmap-cell hm-2"></div>
+            <div class="heatmap-cell hm-0"></div>
+            <div class="heatmap-cell hm-1"></div>
+            <div class="heatmap-cell hm-3"></div>
+          </div>
+        </div>
+        <div class="upgrade-text">
+          <h3>Go deeper with <code>/harness-profile</code></h3>
+          <p>
+            See where your tokens go — agent orchestration, code review,
+            planning, debugging, and more. Plus cost analysis and skill
+            proficiency scores.
+          </p>
+          <div class="heatmap-legend" style="margin-bottom: 14px">
+            <span
+              ><span
+                class="legend-swatch hm-0"
+                style="display: inline-block"
+              ></span
+              >10K</span
+            >
+            <span
+              ><span
+                class="legend-swatch hm-1"
+                style="display: inline-block"
+              ></span
+              >50K</span
+            >
+            <span
+              ><span
+                class="legend-swatch hm-2"
+                style="display: inline-block"
+              ></span
+              >100K</span
+            >
+            <span
+              ><span
+                class="legend-swatch hm-4"
+                style="display: inline-block"
+              ></span
+              >250K+</span
+            >
+          </div>
+          <div
+            style="
+              background: #f8fafc;
+              border-radius: 8px;
+              padding: 14px 16px;
+              border: 1px solid #e2e8f0;
+            "
+          >
+            <div
+              style="
+                font-size: 12px;
+                font-weight: 700;
+                color: #334155;
+                margin-bottom: 8px;
+              "
+            >
+              Install in 30 seconds:
+            </div>
+            <div
+              style="
+                background: #1e293b;
+                color: #e2e8f0;
+                border-radius: 6px;
+                padding: 12px 14px;
+                font-family:
+                  &quot;JetBrains Mono&quot;, &quot;SF Mono&quot;, monospace;
+                font-size: 12px;
+                line-height: 1.7;
+              "
+            >
+              <div style="color: #94a3b8"># Install the skill</div>
+              <div>
+                $ <span style="color: #60a5fa">claude</span> install
+                harness-profile
+              </div>
+              <div style="margin-top: 6px; color: #94a3b8">
+                # Run it (generates an augmented report)
+              </div>
+              <div>
+                $ <span style="color: #60a5fa">claude</span> /harness-profile
+              </div>
+              <div style="margin-top: 6px; color: #94a3b8">
+                # Then upload the result here
+              </div>
+            </div>
+            <p style="font-size: 11px; color: #94a3b8; margin-top: 8px">
+              Your profile will show token breakdowns, cost tracking, and deeper
+              workflow analysis alongside your /insights data.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Token distribution bars removed — belongs in individual profile pages, not homepage -->
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-section">
+      <h2>How It Works</h2>
+      <div class="steps-row">
+        <div class="step-card">
+          <div class="step-icon">&#x1F4CA;</div>
+          <div class="step-num">Step 1</div>
+          <h4>Run /insights</h4>
+          <p>Generate your Claude Code usage report. Takes seconds.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-icon">&#x1F4E4;</div>
+          <div class="step-num">Step 2</div>
+          <h4>Upload your insights</h4>
+          <p>
+            Drop the HTML file here. We remove personal data automatically, and
+            you can redact any information you'd like before sharing.
+          </p>
+        </div>
+        <div class="step-card">
+          <div class="step-icon">&#x1F310;</div>
+          <div class="step-num">Step 3</div>
+          <h4>Share your profile</h4>
+          <p>Get a public page others can browse and learn from.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer CTA -->
+    <section class="footer-cta">
+      <h2>Ready to share your harness?</h2>
+      <p>
+        Join developers who are learning from each other's Claude Code
+        workflows.
+      </p>
+      <a
+        href="#"
+        class="btn-primary"
+        style="padding: 12px 28px; font-size: 16px"
+        >Upload Your Insights</a
+      >
+    </section>
+  </body>
+</html>

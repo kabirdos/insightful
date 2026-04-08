@@ -1,0 +1,1360 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insightful UX Fixes Review</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        background: #f5f5f0;
+        color: #333;
+      }
+
+      /* Mockup shell styles */
+      .mockup-nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: #1e1e1e;
+        color: #fff;
+        padding: 10px 16px;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+      .mockup-nav .title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-right: 12px;
+        white-space: nowrap;
+      }
+      .mockup-nav a {
+        color: #a8c8ff;
+        text-decoration: none;
+        font-size: 12px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        transition: background 0.15s;
+      }
+      .mockup-nav a:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .viewport-toggle {
+        display: flex;
+        gap: 2px;
+        margin-left: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        padding: 2px;
+      }
+      .viewport-toggle button {
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.5);
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s;
+      }
+      .viewport-toggle button:hover {
+        color: rgba(255, 255, 255, 0.8);
+      }
+      .viewport-toggle button.active {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+      }
+      .mockup-nav .copy-all-btn {
+        margin-left: auto;
+        background: #2563eb;
+        color: #fff;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .mockup-nav .copy-all-btn:hover {
+        background: #1d4ed8;
+      }
+      .mockup-nav .copy-all-btn.copied {
+        background: #16a34a;
+      }
+      .mockup-section {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+      .mockup-section.wide {
+        max-width: 1200px;
+      }
+      body.viewport-mobile .mockup-section,
+      body.viewport-mobile .mockup-section.wide {
+        max-width: 600px;
+      }
+      body.viewport-desktop .mockup-section {
+        max-width: 900px;
+      }
+      body.viewport-desktop .mockup-section.wide {
+        max-width: 1200px;
+      }
+      .section-label {
+        background: #1e1e1e;
+        color: #fff;
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 12px;
+      }
+      .section-desc {
+        font-size: 13px;
+        color: #888;
+        margin-bottom: 16px;
+        line-height: 1.5;
+      }
+      .section-divider {
+        height: 1px;
+        background: #ddd;
+        margin: 48px 0;
+      }
+      .version-container {
+        position: relative;
+      }
+      .version {
+        display: none;
+      }
+      .version.active {
+        display: block;
+      }
+      .version-nav {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 12px;
+        padding: 8px;
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+      }
+      .version-nav.visible {
+        display: flex;
+      }
+      .version-nav button {
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-size: 12px;
+        font-family: inherit;
+        cursor: pointer;
+        color: #374151;
+      }
+      .version-nav button:hover:not(:disabled) {
+        background: #e5e7eb;
+      }
+      .version-nav button:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+      .version-nav .version-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        min-width: 80px;
+        text-align: center;
+      }
+      .feedback-area {
+        margin-top: 16px;
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        padding: 12px;
+      }
+      .feedback-area label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #888;
+        margin-bottom: 6px;
+      }
+      .feedback-area textarea {
+        width: 100%;
+        min-height: 80px;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        padding: 10px;
+        font-family: inherit;
+        font-size: 14px;
+        line-height: 1.5;
+        resize: vertical;
+        color: #333;
+      }
+      .feedback-area textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .feedback-area .char-count {
+        font-size: 11px;
+        color: #aaa;
+        text-align: right;
+        margin-top: 4px;
+      }
+      .design-note {
+        background: #fffbeb;
+        border: 1px solid #fcd34d;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin: 12px 0;
+        font-size: 12px;
+        color: #92400e;
+        line-height: 1.5;
+      }
+      .design-note strong {
+        font-weight: 600;
+      }
+      .design-note.info {
+        background: #f0fdf4;
+        border-color: #86efac;
+        color: #166534;
+      }
+      .design-note.future {
+        background: #eff6ff;
+        border-color: #93c5fd;
+        color: #1e40af;
+      }
+    </style>
+  </head>
+  <body class="viewport-desktop">
+    <nav class="mockup-nav">
+      <span class="title">Insightful UX Fixes Review</span>
+      <a href="#detail">Detail Page</a>
+      <a href="#homepage">Homepage</a>
+      <a href="#upload">Upload Flow</a>
+      <div class="viewport-toggle">
+        <button data-viewport="mobile">Mobile</button>
+        <button data-viewport="desktop" class="active">Desktop</button>
+      </div>
+      <button class="copy-all-btn" onclick="copyAllFeedback()">
+        Copy All Feedback
+      </button>
+    </nav>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SECTION 1: DETAIL PAGE -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="mockup-section wide" data-section-id="detail" id="detail">
+      <span class="section-label">Detail Page — Report View</span>
+      <p class="section-desc">
+        The main report detail page with overhauled SnapshotCard: per-week
+        stats, date range, projects promoted to top, "Skills & Plugins" label,
+        and collapsible sections.
+      </p>
+
+      <div class="design-note info">
+        <strong>Key changes:</strong> All stats are per-week averages. Date
+        range shown (not upload date). Projects moved into the snapshot card.
+        "Top Tools Used" replaced with "Skills & Plugins". Project Links moved
+        above sections.
+      </div>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <!-- Simulated detail page -->
+          <div
+            class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+          >
+            <!-- Header bar -->
+            <div
+              class="border-b border-slate-100 bg-slate-50 px-6 py-3 flex items-center gap-2"
+            >
+              <div class="flex gap-1.5">
+                <div class="w-3 h-3 rounded-full bg-red-400"></div>
+                <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                <div class="w-3 h-3 rounded-full bg-green-400"></div>
+              </div>
+              <span class="text-xs text-slate-400 ml-2"
+                >insightharness.com/insights/craig-apr-2026</span
+              >
+            </div>
+
+            <div class="p-6 max-w-4xl mx-auto">
+              <!-- Author bar -->
+              <div class="flex items-center gap-4 mb-6">
+                <div
+                  class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-lg font-bold text-blue-600"
+                >
+                  C
+                </div>
+                <div class="flex-1">
+                  <div class="font-semibold text-slate-900">
+                    Craig Dos Santos
+                  </div>
+                  <div class="flex items-center gap-2 text-sm text-slate-500">
+                    <svg
+                      class="w-3.5 h-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span>Mar 1 - Mar 31, 2026</span>
+                  </div>
+                </div>
+                <button
+                  class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                    />
+                  </svg>
+                  Share
+                </button>
+              </div>
+
+              <!-- ═══ SNAPSHOT CARD ═══ -->
+              <div
+                class="rounded-2xl border border-slate-200 bg-white p-6 mb-8"
+              >
+                <!-- Date range -->
+                <div class="mb-4 text-xs font-medium text-slate-500">
+                  Mar 1, 2026 - Mar 31, 2026 (30 days)
+                </div>
+
+                <!-- Per-week stats -->
+                <div class="flex flex-wrap gap-6 pb-5">
+                  <div class="text-center">
+                    <div class="text-2xl font-bold">12</div>
+                    <div
+                      class="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400"
+                    >
+                      Sessions/wk
+                    </div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-2xl font-bold">847</div>
+                    <div
+                      class="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400"
+                    >
+                      Msgs/wk
+                    </div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-2xl font-bold">23</div>
+                    <div
+                      class="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400"
+                    >
+                      Commits/wk
+                    </div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-2xl font-bold">89</div>
+                    <div
+                      class="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400"
+                    >
+                      Files/wk
+                    </div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-2xl font-bold text-green-600">+4,210</div>
+                    <div
+                      class="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400"
+                    >
+                      Added/wk
+                    </div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-2xl font-bold text-red-600">-1,830</div>
+                    <div
+                      class="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400"
+                    >
+                      Removed/wk
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Projects -->
+                <div class="border-t border-slate-100 pt-5">
+                  <h3
+                    class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400"
+                  >
+                    Projects
+                  </h3>
+                  <div class="flex flex-wrap gap-2">
+                    <div
+                      class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                    >
+                      <span class="text-sm font-medium text-slate-700"
+                        >insightful</span
+                      >
+                      <span class="ml-1.5 text-xs text-slate-400"
+                        >24 sessions</span
+                      >
+                    </div>
+                    <div
+                      class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                    >
+                      <span class="text-sm font-medium text-slate-700"
+                        >superpowers</span
+                      >
+                      <span class="ml-1.5 text-xs text-slate-400"
+                        >18 sessions</span
+                      >
+                    </div>
+                    <div
+                      class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                    >
+                      <span class="text-sm font-medium text-slate-700"
+                        >claude-code-plugins</span
+                      >
+                      <span class="ml-1.5 text-xs text-slate-400"
+                        >7 sessions</span
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Skills & Plugins -->
+                <div class="mt-5 border-t border-slate-100 pt-5">
+                  <h3
+                    class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400"
+                  >
+                    Skills & Plugins
+                  </h3>
+                  <div class="flex flex-wrap gap-1.5">
+                    <span
+                      class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide bg-violet-100 text-violet-700"
+                      >🔀 Parallel Agents</span
+                    >
+                    <span
+                      class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide bg-green-100 text-green-700"
+                      >🌳 Worktrees</span
+                    >
+                    <span
+                      class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide bg-amber-100 text-amber-700"
+                      >⚡ Custom Skills</span
+                    >
+                    <span
+                      class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide bg-pink-100 text-pink-700"
+                      >🎭 Playwright</span
+                    >
+                    <span
+                      class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700"
+                      >📋 Plan Mode</span
+                    >
+                    <span
+                      class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide bg-red-100 text-red-700"
+                      >📝 Code Review</span
+                    >
+                  </div>
+                </div>
+
+                <!-- Key pattern -->
+                <div
+                  class="mt-5 rounded-lg border-l-4 border-blue-500 bg-blue-50 px-4 py-3"
+                >
+                  <p class="text-sm italic leading-relaxed text-slate-700">
+                    &ldquo;Heavy parallel-agent workflows with worktree
+                    isolation — a power user who builds tools for other
+                    developers.&rdquo;
+                  </p>
+                </div>
+              </div>
+
+              <!-- Collapsible sections -->
+              <div class="space-y-4">
+                <!-- At a Glance — open -->
+                <div
+                  class="overflow-hidden rounded-xl border border-slate-200 bg-white"
+                >
+                  <button
+                    class="flex w-full items-start gap-4 p-5 text-left hover:bg-slate-50"
+                  >
+                    <div
+                      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-xl"
+                    >
+                      ✨
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <h3 class="text-lg font-semibold text-slate-900">
+                        At a Glance
+                      </h3>
+                    </div>
+                    <svg
+                      class="mt-1 h-5 w-5 shrink-0 text-slate-400 rotate-180"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                  <div class="border-t border-slate-100 px-5 pb-6 pt-4">
+                    <div class="space-y-3 text-sm text-slate-600">
+                      <p>
+                        <strong class="text-slate-800">What's working:</strong>
+                        Your parallel agent workflows are impressively efficient
+                        — you regularly dispatch 3-5 subagents simultaneously
+                        for independent tasks.
+                      </p>
+                      <p>
+                        <strong class="text-slate-800"
+                          >What's hindering:</strong
+                        >
+                        Occasional context window exhaustion on long sessions
+                        with many file reads.
+                      </p>
+                      <p>
+                        <strong class="text-slate-800">Quick wins:</strong>
+                        Consider breaking long sessions into focused sub-tasks
+                        with handoff files.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- How They Use Claude Code — collapsed -->
+                <div
+                  class="overflow-hidden rounded-xl border border-slate-200 bg-white"
+                >
+                  <button
+                    class="flex w-full items-start gap-4 p-5 text-left hover:bg-slate-50"
+                  >
+                    <div
+                      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-xl"
+                    >
+                      🎯
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <h3 class="text-lg font-semibold text-slate-900">
+                        How They Use Claude Code
+                      </h3>
+                      <p
+                        class="mt-1 line-clamp-3 text-sm leading-relaxed text-slate-600"
+                      >
+                        Heavy parallel-agent workflows with worktree isolation.
+                        You frequently dispatch multiple subagents for
+                        independent research tasks.
+                      </p>
+                    </div>
+                    <svg
+                      class="mt-1 h-5 w-5 shrink-0 text-slate-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Impressive Workflows — collapsed -->
+                <div
+                  class="overflow-hidden rounded-xl border border-slate-200 bg-white"
+                >
+                  <button
+                    class="flex w-full items-start gap-4 p-5 text-left hover:bg-slate-50"
+                  >
+                    <div
+                      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-100 text-xl"
+                    >
+                      🏆
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <h3 class="text-lg font-semibold text-slate-900">
+                        Impressive Workflows
+                      </h3>
+                      <p
+                        class="mt-1 line-clamp-3 text-sm leading-relaxed text-slate-600"
+                      >
+                        Your parallel agent workflows are impressively efficient
+                        — you regularly dispatch 3-5 subagents simultaneously.
+                      </p>
+                    </div>
+                    <svg
+                      class="mt-1 h-5 w-5 shrink-0 text-slate-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Where Things Go Wrong — collapsed -->
+                <div
+                  class="overflow-hidden rounded-xl border border-slate-200 bg-white"
+                >
+                  <button
+                    class="flex w-full items-start gap-4 p-5 text-left hover:bg-slate-50"
+                  >
+                    <div
+                      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-xl"
+                    >
+                      ⚡
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <h3 class="text-lg font-semibold text-slate-900">
+                        Where Things Go Wrong
+                      </h3>
+                      <p
+                        class="mt-1 line-clamp-3 text-sm leading-relaxed text-slate-600"
+                      >
+                        Occasional context window exhaustion on long sessions
+                        with many file reads.
+                      </p>
+                    </div>
+                    <svg
+                      class="mt-1 h-5 w-5 shrink-0 text-slate-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Suggestions — collapsed -->
+                <div
+                  class="overflow-hidden rounded-xl border border-slate-200 bg-white"
+                >
+                  <button
+                    class="flex w-full items-start gap-4 p-5 text-left hover:bg-slate-50"
+                  >
+                    <div
+                      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-100 text-xl"
+                    >
+                      💡
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <h3 class="text-lg font-semibold text-slate-900">
+                        Suggestions
+                      </h3>
+                      <p
+                        class="mt-1 line-clamp-3 text-sm leading-relaxed text-slate-600"
+                      >
+                        Consider breaking long sessions into focused sub-tasks
+                        with handoff files.
+                      </p>
+                    </div>
+                    <svg
+                      class="mt-1 h-5 w-5 shrink-0 text-slate-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="version-nav">
+        <button data-dir="prev" disabled>&larr; Prev</button>
+        <span class="version-label">v1 of 1</span>
+        <button data-dir="next" disabled>Next &rarr;</button>
+      </div>
+      <div class="feedback-area">
+        <label for="fb-detail">Feedback</label>
+        <textarea
+          id="fb-detail"
+          placeholder="Feedback on the detail page layout..."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SECTION 2: HOMEPAGE -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="mockup-section wide" data-section-id="homepage" id="homepage">
+      <span class="section-label">Homepage — Contributor List</span>
+      <p class="section-desc">
+        Homepage with ContributorRow showing date ranges and per-week stats
+        consistently.
+      </p>
+
+      <div class="design-note info">
+        <strong>Key changes:</strong> Date range replaces upload date. All stats
+        are per-week. Removed absolute totals (files, commits) in favor of
+        per-week rates. "Skills Used" label removed (badges speak for
+        themselves).
+      </div>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div
+            class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+          >
+            <div
+              class="border-b border-slate-100 bg-slate-50 px-6 py-3 flex items-center gap-2"
+            >
+              <div class="flex gap-1.5">
+                <div class="w-3 h-3 rounded-full bg-red-400"></div>
+                <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                <div class="w-3 h-3 rounded-full bg-green-400"></div>
+              </div>
+              <span class="text-xs text-slate-400 ml-2"
+                >insightharness.com</span
+              >
+            </div>
+            <div class="p-6">
+              <!-- Hero -->
+              <div class="mb-8 text-center">
+                <div class="flex items-center justify-center gap-2 mb-3">
+                  <svg
+                    class="w-8 h-8 text-blue-600"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M5 12l-2.5-3L5 6l2.5 3L10 6l2 3 2-3 2.5 3L19 6l2.5 3L19 12l2.5 3L19 18l-2.5-3L14 18l-2-3-2 3-2.5-3L5 18l-2.5-3z"
+                    />
+                  </svg>
+                  <h1 class="text-3xl font-bold text-slate-900">Insightful</h1>
+                </div>
+                <p class="text-sm text-slate-600">
+                  Discover how developers use Claude Code. Browse shared
+                  /insights reports, learn new workflows, and share your own.
+                </p>
+              </div>
+
+              <!-- Sort tabs -->
+              <div
+                class="mb-6 inline-flex items-center gap-1 rounded-xl bg-slate-100 p-1"
+              >
+                <button
+                  class="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium bg-white text-slate-900 shadow-sm"
+                >
+                  Newest
+                </button>
+                <button
+                  class="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-slate-500"
+                >
+                  Most Voted
+                </button>
+                <button
+                  class="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-slate-500"
+                >
+                  Trending
+                </button>
+              </div>
+
+              <!-- Contributor rows -->
+              <div class="space-y-3">
+                <!-- Row 1 -->
+                <a
+                  href="#"
+                  class="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 hover:border-blue-300 hover:shadow-md block"
+                >
+                  <div
+                    class="w-12 h-12 shrink-0 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg"
+                  >
+                    C
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div
+                      class="font-semibold text-slate-900 group-hover:text-blue-600"
+                    >
+                      Craig Dos Santos
+                    </div>
+                    <div class="text-xs text-slate-400">
+                      @craigdossantos · Mar 1 - Mar 31, 2026 · 30 days
+                    </div>
+                    <div
+                      class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600"
+                    >
+                      <span
+                        ><strong class="text-slate-800">847</strong>
+                        msgs/wk</span
+                      >
+                      <span
+                        ><strong class="text-slate-800">23</strong>
+                        commits/wk</span
+                      >
+                      <span class="text-green-600">+4,210/wk</span>
+                      <span class="text-red-600">-1,830/wk</span>
+                    </div>
+                    <div class="mt-2 flex flex-wrap gap-1.5">
+                      <span
+                        class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-violet-100 text-violet-700"
+                        >🔀 Parallel Agents</span
+                      >
+                      <span
+                        class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-green-100 text-green-700"
+                        >🌳 Worktrees</span
+                      >
+                      <span
+                        class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-700"
+                        >⚡ Custom Skills</span
+                      >
+                      <span
+                        class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700"
+                        >📋 Plan Mode</span
+                      >
+                    </div>
+                  </div>
+                </a>
+
+                <!-- Row 2 -->
+                <a
+                  href="#"
+                  class="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 hover:border-blue-300 hover:shadow-md block"
+                >
+                  <div
+                    class="w-12 h-12 shrink-0 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-lg"
+                  >
+                    J
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div
+                      class="font-semibold text-slate-900 group-hover:text-blue-600"
+                    >
+                      Jesse Kriss
+                    </div>
+                    <div class="text-xs text-slate-400">
+                      @jessekriss · Feb 15 - Mar 15, 2026 · 28 days
+                    </div>
+                    <div
+                      class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600"
+                    >
+                      <span
+                        ><strong class="text-slate-800">1,204</strong>
+                        msgs/wk</span
+                      >
+                      <span
+                        ><strong class="text-slate-800">31</strong>
+                        commits/wk</span
+                      >
+                      <span class="text-green-600">+6,800/wk</span>
+                      <span class="text-red-600">-2,100/wk</span>
+                    </div>
+                    <div class="mt-2 flex flex-wrap gap-1.5">
+                      <span
+                        class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-sky-100 text-sky-700"
+                        >🪝 Hooks</span
+                      >
+                      <span
+                        class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-slate-100 text-slate-700"
+                        >🔌 MCP Servers</span
+                      >
+                      <span
+                        class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-teal-100 text-teal-700"
+                        >🧩 Subagents</span
+                      >
+                    </div>
+                  </div>
+                </a>
+
+                <!-- Row 3 — no skills (legacy row) -->
+                <a
+                  href="#"
+                  class="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 hover:border-blue-300 hover:shadow-md block"
+                >
+                  <div
+                    class="w-12 h-12 shrink-0 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-lg"
+                  >
+                    A
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div
+                      class="font-semibold text-slate-900 group-hover:text-blue-600"
+                    >
+                      Alex Chen
+                    </div>
+                    <div class="text-xs text-slate-400">
+                      @alexchen · Mar 10 - Apr 2, 2026 · 23 days
+                    </div>
+                    <div
+                      class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600"
+                    >
+                      <span
+                        ><strong class="text-slate-800">312</strong>
+                        msgs/wk</span
+                      >
+                      <span
+                        ><strong class="text-slate-800">8</strong>
+                        commits/wk</span
+                      >
+                      <span class="text-green-600">+1,450/wk</span>
+                      <span class="text-red-600">-620/wk</span>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="version-nav">
+        <button data-dir="prev" disabled>&larr; Prev</button>
+        <span class="version-label">v1 of 1</span>
+        <button data-dir="next" disabled>Next &rarr;</button>
+      </div>
+      <div class="feedback-area">
+        <label for="fb-homepage">Feedback</label>
+        <textarea
+          id="fb-homepage"
+          placeholder="Feedback on the homepage layout..."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SECTION 3: UPLOAD FLOW -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="mockup-section wide" data-section-id="upload" id="upload">
+      <span class="section-label">Upload Flow — Review Step</span>
+      <p class="section-desc">
+        The upload flow review step (step 2) with sticky navigation bar and
+        styled preview using SnapshotCard + CollapsibleSection. Step 4 preview
+        looks identical.
+      </p>
+
+      <div class="design-note info">
+        <strong>Key changes:</strong> Sticky Back/Next bar near the fold.
+        Preview shows styled output (SnapshotCard + CollapsibleSection) instead
+        of raw HTML dump. Entire drop zone is clickable on step 1.
+      </div>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div
+            class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+          >
+            <div
+              class="border-b border-slate-100 bg-slate-50 px-6 py-3 flex items-center gap-2"
+            >
+              <div class="flex gap-1.5">
+                <div class="w-3 h-3 rounded-full bg-red-400"></div>
+                <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                <div class="w-3 h-3 rounded-full bg-green-400"></div>
+              </div>
+              <span class="text-xs text-slate-400 ml-2"
+                >insightharness.com/upload</span
+              >
+            </div>
+            <div class="p-6">
+              <h1 class="mb-2 text-2xl font-bold text-slate-900">
+                Share Your Insights
+              </h1>
+              <p class="mb-6 text-slate-500 text-sm">
+                Upload your Claude Code insights report and share it with the
+                community.
+              </p>
+
+              <!-- Step indicator -->
+              <div class="mb-4 flex items-center gap-2">
+                <span
+                  class="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium bg-blue-100 text-blue-700"
+                  >✓ Upload</span
+                >
+                <div class="h-px w-8 bg-blue-300"></div>
+                <span
+                  class="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium bg-blue-600 text-white"
+                  >Review</span
+                >
+                <div class="h-px w-8 bg-slate-200"></div>
+                <span
+                  class="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium bg-slate-100 text-slate-400"
+                  >Projects</span
+                >
+                <div class="h-px w-8 bg-slate-200"></div>
+                <span
+                  class="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium bg-slate-100 text-slate-400"
+                  >Preview</span
+                >
+              </div>
+
+              <!-- STICKY NAV BAR -->
+              <div
+                class="sticky top-0 z-40 -mx-6 mb-6 flex items-center justify-between border-b border-slate-200 bg-white/95 px-6 py-3 backdrop-blur-sm"
+              >
+                <button
+                  class="flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  ← Back
+                </button>
+                <button
+                  class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  Next →
+                </button>
+              </div>
+
+              <!-- Redaction toggles (abbreviated) -->
+              <div class="mb-6 rounded-lg border border-slate-200 bg-white p-4">
+                <h3 class="mb-3 text-sm font-semibold text-slate-700">
+                  Include/Exclude Sections
+                </h3>
+                <div class="grid gap-2 sm:grid-cols-2">
+                  <button
+                    class="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-700"
+                  >
+                    At a Glance <span>👁</span>
+                  </button>
+                  <button
+                    class="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-700"
+                  >
+                    Interaction Style <span>👁</span>
+                  </button>
+                  <button
+                    class="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-700"
+                  >
+                    Project Areas <span>👁</span>
+                  </button>
+                  <button
+                    class="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-400"
+                  >
+                    Fun Ending <span>🚫</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Styled preview -->
+              <h3 class="mb-2 text-sm font-semibold text-slate-700">
+                Preview: How your report will appear
+              </h3>
+              <p class="mb-4 text-xs text-slate-500">
+                This is what others will see. Review carefully before
+                publishing.
+              </p>
+
+              <!-- Mini SnapshotCard -->
+              <div
+                class="rounded-2xl border border-slate-200 bg-white p-5 mb-4"
+              >
+                <div class="mb-3 text-xs font-medium text-slate-500">
+                  Mar 1, 2026 - Mar 31, 2026 (30 days)
+                </div>
+                <div class="flex flex-wrap gap-5 pb-4">
+                  <div class="text-center">
+                    <div class="text-xl font-bold">12</div>
+                    <div
+                      class="text-[10px] font-medium uppercase tracking-wide text-slate-400"
+                    >
+                      Sessions/wk
+                    </div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-xl font-bold">847</div>
+                    <div
+                      class="text-[10px] font-medium uppercase tracking-wide text-slate-400"
+                    >
+                      Msgs/wk
+                    </div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-xl font-bold">23</div>
+                    <div
+                      class="text-[10px] font-medium uppercase tracking-wide text-slate-400"
+                    >
+                      Commits/wk
+                    </div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-xl font-bold text-green-600">+4,210</div>
+                    <div
+                      class="text-[10px] font-medium uppercase tracking-wide text-slate-400"
+                    >
+                      Added/wk
+                    </div>
+                  </div>
+                </div>
+                <div class="border-t border-slate-100 pt-4">
+                  <div
+                    class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400"
+                  >
+                    Skills & Plugins
+                  </div>
+                  <div class="flex flex-wrap gap-1.5">
+                    <span
+                      class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-violet-100 text-violet-700"
+                      >🔀 Parallel Agents</span
+                    >
+                    <span
+                      class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-green-100 text-green-700"
+                      >🌳 Worktrees</span
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mini collapsible sections -->
+              <div class="space-y-3">
+                <div class="rounded-xl border border-slate-200 bg-white">
+                  <button
+                    class="flex w-full items-start gap-3 p-4 text-left hover:bg-slate-50"
+                  >
+                    <div class="min-w-0 flex-1">
+                      <h3 class="text-base font-semibold text-slate-900">
+                        At a Glance
+                      </h3>
+                    </div>
+                    <svg
+                      class="mt-0.5 h-4 w-4 text-slate-400 rotate-180"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                  <div
+                    class="border-t border-slate-100 px-4 pb-4 pt-3 text-sm text-slate-600"
+                  >
+                    <p>
+                      <strong>What's working:</strong> Your parallel agent
+                      workflows are impressively efficient...
+                    </p>
+                  </div>
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-white">
+                  <button
+                    class="flex w-full items-start gap-3 p-4 text-left hover:bg-slate-50"
+                  >
+                    <div class="min-w-0 flex-1">
+                      <h3 class="text-base font-semibold text-slate-900">
+                        How They Use Claude Code
+                      </h3>
+                      <p class="mt-1 text-sm text-slate-500 line-clamp-2">
+                        Heavy parallel-agent workflows with worktree
+                        isolation...
+                      </p>
+                    </div>
+                    <svg
+                      class="mt-0.5 h-4 w-4 text-slate-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="version-nav">
+        <button data-dir="prev" disabled>&larr; Prev</button>
+        <span class="version-label">v1 of 1</span>
+        <button data-dir="next" disabled>Next &rarr;</button>
+      </div>
+      <div class="feedback-area">
+        <label for="fb-upload">Feedback</label>
+        <textarea
+          id="fb-upload"
+          placeholder="Feedback on the upload flow..."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div style="height: 80px"></div>
+
+    <script>
+      function initViewportToggle() {
+        const buttons = document.querySelectorAll(".viewport-toggle button");
+        buttons.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const viewport = btn.dataset.viewport;
+            buttons.forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            document.body.classList.remove(
+              "viewport-mobile",
+              "viewport-desktop",
+            );
+            document.body.classList.add(`viewport-${viewport}`);
+          });
+        });
+      }
+      initViewportToggle();
+
+      function initVersionNav() {
+        document.querySelectorAll(".mockup-section").forEach((section) => {
+          const versions = section.querySelectorAll(".version");
+          const nav = section.querySelector(".version-nav");
+          if (!nav || versions.length <= 1) return;
+          nav.classList.add("visible");
+          const label = nav.querySelector(".version-label");
+          const prevBtn = nav.querySelector('[data-dir="prev"]');
+          const nextBtn = nav.querySelector('[data-dir="next"]');
+          let current = 1;
+          function show(idx) {
+            versions.forEach((v) => v.classList.remove("active"));
+            versions[idx - 1].classList.add("active");
+            current = idx;
+            label.textContent = `v${idx} of ${versions.length}`;
+            prevBtn.disabled = idx <= 1;
+            nextBtn.disabled = idx >= versions.length;
+          }
+          prevBtn.addEventListener("click", () => {
+            if (current > 1) show(current - 1);
+          });
+          nextBtn.addEventListener("click", () => {
+            if (current < versions.length) show(current + 1);
+          });
+          show(1);
+        });
+      }
+      document.querySelectorAll(".mockup-section").forEach((section) => {
+        const versions = section.querySelectorAll(".version");
+        if (versions.length === 1) versions[0].classList.add("active");
+      });
+      initVersionNav();
+
+      function copyAllFeedback() {
+        const feedback = {};
+        const currentViewport = document.body.classList.contains(
+          "viewport-mobile",
+        )
+          ? "mobile"
+          : "desktop";
+        document.querySelectorAll(".mockup-section").forEach((section) => {
+          const id = section.dataset.sectionId;
+          const textarea = section.querySelector("textarea");
+          if (textarea && textarea.value.trim()) {
+            const versions = section.querySelectorAll(".version");
+            const activeVersion = section.querySelector(".version.active");
+            const versionNum = activeVersion
+              ? activeVersion.dataset.version
+              : "1";
+            feedback[id] = {
+              feedback: textarea.value.trim(),
+              viewing_version: parseInt(versionNum),
+              total_versions: versions.length,
+              viewport: currentViewport,
+            };
+          }
+        });
+        if (Object.keys(feedback).length === 0) {
+          alert("No feedback entered yet.");
+          return;
+        }
+        const json = JSON.stringify(
+          {
+            mockup: document.title,
+            timestamp: new Date().toISOString(),
+            viewport: currentViewport,
+            sections: feedback,
+          },
+          null,
+          2,
+        );
+        navigator.clipboard.writeText(json).then(() => {
+          const btn = document.querySelector(".copy-all-btn");
+          btn.textContent = "Copied!";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = "Copy All Feedback";
+            btn.classList.remove("copied");
+          }, 2000);
+        });
+      }
+
+      document.querySelectorAll(".feedback-area textarea").forEach((ta) => {
+        const counter = ta.parentElement.querySelector(".char-count");
+        if (!counter) return;
+        ta.addEventListener("input", () => {
+          counter.textContent = ta.value.length
+            ? `${ta.value.length} chars`
+            : "";
+        });
+      });
+    </script>
+  </body>
+</html>

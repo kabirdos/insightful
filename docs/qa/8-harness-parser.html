@@ -1,0 +1,1156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QA: PR #8 — Parse, store, and display insight-harness reports</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #f5f5f0;
+        color: #333;
+      }
+
+      /* ── Sticky Nav ── */
+      .qa-nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: #1e1e1e;
+        color: #fff;
+        padding: 10px 16px;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+      .qa-nav .title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-right: 12px;
+        white-space: nowrap;
+      }
+      .qa-nav a {
+        color: #a8c8ff;
+        text-decoration: none;
+        font-size: 12px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        transition: background 0.15s;
+      }
+      .qa-nav a:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .qa-nav .copy-all-btn {
+        margin-left: auto;
+        background: #2563eb;
+        color: #fff;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: background 0.15s;
+      }
+      .qa-nav .copy-all-btn:hover {
+        background: #1d4ed8;
+      }
+      .qa-nav .copy-all-btn.copied {
+        background: #16a34a;
+      }
+
+      /* ── Summary banner ── */
+      .qa-summary {
+        max-width: 700px;
+        margin: 24px auto 0;
+        padding: 0 16px;
+      }
+      .qa-summary .banner {
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 10px;
+        padding: 16px 20px;
+      }
+      .qa-summary h2 {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+      .qa-summary .meta {
+        font-size: 13px;
+        color: #666;
+        line-height: 1.6;
+      }
+      .qa-summary .meta a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+      .qa-summary .meta a:hover {
+        text-decoration: underline;
+      }
+      .qa-summary .progress-bar {
+        margin-top: 12px;
+        height: 6px;
+        background: #e5e7eb;
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .qa-summary .progress-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: 3px;
+        transition:
+          width 0.3s,
+          background 0.3s;
+        background: #2563eb;
+      }
+      .qa-summary .progress-text {
+        font-size: 12px;
+        color: #888;
+        margin-top: 4px;
+        text-align: right;
+      }
+
+      /* ── Test section ── */
+      .test-section {
+        max-width: 700px;
+        margin: 32px auto;
+        padding: 0 16px;
+      }
+
+      .test-card {
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 10px;
+        padding: 16px 20px;
+        transition: border-color 0.2s;
+      }
+      .test-card.result-pass {
+        border-color: #86efac;
+      }
+      .test-card.result-fail {
+        border-color: #fca5a5;
+      }
+      .test-card.result-skip {
+        border-color: #fcd34d;
+      }
+
+      .test-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .test-number {
+        background: #1e1e1e;
+        color: #fff;
+        min-width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .test-title {
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 1.4;
+        padding-top: 3px;
+      }
+
+      .test-steps {
+        margin: 10px 0 10px 38px;
+        font-size: 13px;
+        line-height: 1.7;
+        color: #555;
+      }
+      .test-steps ol {
+        padding-left: 18px;
+      }
+      .test-steps li {
+        margin-bottom: 2px;
+      }
+      .test-steps code {
+        background: #f3f4f6;
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: 12px;
+        color: #d946ef;
+      }
+
+      .test-expect {
+        margin: 8px 0 12px 38px;
+        font-size: 13px;
+        color: #166534;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 6px;
+        padding: 8px 12px;
+        line-height: 1.5;
+      }
+      .test-expect strong {
+        font-weight: 600;
+      }
+
+      /* ── Result buttons ── */
+      .test-result {
+        display: flex;
+        gap: 8px;
+        margin: 12px 0 0 38px;
+      }
+      .result-btn {
+        padding: 5px 14px;
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
+        background: #f9fafb;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s;
+        color: #374151;
+      }
+      .result-btn:hover {
+        background: #e5e7eb;
+      }
+      .result-btn.selected {
+        color: #fff;
+        border-color: transparent;
+      }
+      .result-btn[data-result="pass"].selected {
+        background: #16a34a;
+      }
+      .result-btn[data-result="fail"].selected {
+        background: #dc2626;
+      }
+      .result-btn[data-result="skip"].selected {
+        background: #ca8a04;
+      }
+
+      /* ── Feedback area ── */
+      .feedback-area {
+        margin: 12px 0 0 38px;
+      }
+      .feedback-area label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #888;
+        margin-bottom: 6px;
+      }
+      .feedback-area textarea {
+        width: 100%;
+        min-height: 60px;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        padding: 10px;
+        font-family: inherit;
+        font-size: 14px;
+        line-height: 1.5;
+        resize: vertical;
+        color: #333;
+      }
+      .feedback-area textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .feedback-area .char-count {
+        font-size: 11px;
+        color: #aaa;
+        text-align: right;
+        margin-top: 4px;
+      }
+
+      .section-divider {
+        height: 1px;
+        background: #e5e5e5;
+        max-width: 700px;
+        margin: 0 auto;
+      }
+
+      /* ── Category label ── */
+      .category-label {
+        max-width: 700px;
+        margin: 32px auto 0;
+        padding: 0 16px;
+      }
+      .category-label span {
+        background: #1e1e1e;
+        color: #fff;
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="qa-nav">
+      <span class="title">QA: PR #8</span>
+      <a href="#upload">Upload Flow</a>
+      <a href="#detail">Detail Page</a>
+      <a href="#harness-sections">Harness Sections</a>
+      <a href="#regression">Regression</a>
+      <a href="#edge-cases">Edge Cases</a>
+      <a href="#responsive">Responsive</a>
+      <button class="copy-all-btn" onclick="copyAllFeedback()">
+        Copy All Feedback
+      </button>
+    </nav>
+
+    <div class="qa-summary">
+      <div class="banner">
+        <h2>Parse, store, and display insight-harness reports</h2>
+        <div class="meta">
+          <strong>PR:</strong>
+          <a
+            href="https://github.com/kabirdos/insightful/pull/8"
+            target="_blank"
+            >#8 — feat: parse, store, and display insight-harness reports</a
+          ><br />
+          <strong>Test against:</strong>
+          <a
+            href="https://insightful-git-feat-harness-par-20782a-craigs-projects-1c8806a8.vercel.app"
+            target="_blank"
+            >Vercel Preview</a
+          ><br />
+          <strong>Branch:</strong> feat/harness-parser-and-display
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">0 of 16 completed</div>
+      </div>
+    </div>
+
+    <!-- ═══════ UPLOAD FLOW ═══════ -->
+    <div class="category-label" id="upload">
+      <span>Upload Flow</span>
+    </div>
+
+    <div class="test-section" data-test-id="test-1">
+      <div class="test-card">
+        <div class="test-header">
+          <span class="test-number">1</span>
+          <span class="test-title"
+            >Upload a plain /insights report (happy path)</span
+          >
+        </div>
+        <div class="test-steps">
+          <ol>
+            <li>Sign in and navigate to <code>/upload</code></li>
+            <li>
+              Upload your <code>~/.claude/usage-data/report.html</code> file
+            </li>
+            <li>
+              Proceed through redaction review, projects, and preview steps
+            </li>
+            <li>Click <code>Publish Insights</code></li>
+          </ol>
+        </div>
+        <div class="test-expect">
+          <strong>Expected:</strong> Report publishes successfully and redirects
+          to the detail page. Stats (sessions, messages, date range) display
+          correctly. No harness-specific sections appear (no autonomy box, no
+          feature pills, no "Harness Profile" heading).
+        </div>
+        <div class="test-result">
+          <button class="result-btn" data-result="pass">Pass</button>
+          <button class="result-btn" data-result="fail">Fail</button>
+          <button class="result-btn" data-result="skip">Skip</button>
+        </div>
+        <div class="feedback-area">
+          <label for="fb-test-1">Notes</label>
+          <textarea
+            id="fb-test-1"
+            placeholder="Describe what you observed..."
+          ></textarea>
+          <div class="char-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-section" data-test-id="test-2">
+      <div class="test-card">
+        <div class="test-header">
+          <span class="test-number">2</span>
+          <span class="test-title"
+            >Upload an /insight-harness report (happy path)</span
+          >
+        </div>
+        <div class="test-steps">
+          <ol>
+            <li>Sign in and navigate to <code>/upload</code></li>
+            <li>
+              Upload your
+              <code>~/.claude/usage-data/insight-harness.html</code> file
+            </li>
+            <li>Proceed through all steps and publish</li>
+          </ol>
+        </div>
+        <div class="test-expect">
+          <strong>Expected:</strong> Report publishes and redirects to detail
+          page. The detail page shows harness-specific sections: "Harness Stats"
+          row (tokens, duration, avg session, etc.), autonomy box (dark
+          background with label like "Fire-and-Forget"), and feature pills
+          (green/grey badges). A "Harness Profile" heading appears with
+          collapsible sections below.
+        </div>
+        <div class="test-result">
+          <button class="result-btn" data-result="pass">Pass</button>
+          <button class="result-btn" data-result="fail">Fail</button>
+          <button class="result-btn" data-result="skip">Skip</button>
+        </div>
+        <div class="feedback-area">
+          <label for="fb-test-2">Notes</label>
+          <textarea
+            id="fb-test-2"
+            placeholder="Describe what you observed..."
+          ></textarea>
+          <div class="char-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-section" data-test-id="test-3">
+      <div class="test-card">
+        <div class="test-header">
+          <span class="test-number">3</span>
+          <span class="test-title"
+            >Harness upload preserves /insights narrative sections</span
+          >
+        </div>
+        <div class="test-steps">
+          <ol>
+            <li>
+              After uploading an insight-harness report (test 2), check the
+              detail page
+            </li>
+            <li>
+              Scroll to the collapsible sections below the harness profile
+            </li>
+            <li>
+              Expand "At a Glance", "How They Use Claude Code", "Impressive
+              Workflows"
+            </li>
+          </ol>
+        </div>
+        <div class="test-expect">
+          <strong>Expected:</strong> The standard /insights narrative sections
+          appear with real content (not empty). "At a Glance" shows what's
+          working/hindering. The data should come from the embedded insights tab
+          within the harness HTML.
+        </div>
+        <div class="test-result">
+          <button class="result-btn" data-result="pass">Pass</button>
+          <button class="result-btn" data-result="fail">Fail</button>
+          <button class="result-btn" data-result="skip">Skip</button>
+        </div>
+        <div class="feedback-area">
+          <label for="fb-test-3">Notes</label>
+          <textarea
+            id="fb-test-3"
+            placeholder="Describe what you observed..."
+          ></textarea>
+          <div class="char-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ DETAIL PAGE ═══════ -->
+    <div class="category-label" id="detail">
+      <span>Detail Page — Harness Overview</span>
+    </div>
+
+    <div class="test-section" data-test-id="test-4">
+      <div class="test-card">
+        <div class="test-header">
+          <span class="test-number">4</span>
+          <span class="test-title">Harness stats row shows correct values</span>
+        </div>
+        <div class="test-steps">
+          <ol>
+            <li>View a published insight-harness report</li>
+            <li>Look at the "Harness Stats" section below the SnapshotCard</li>
+            <li>
+              Compare token count, duration, skills used, hooks, PRs against
+              your local harness report
+            </li>
+          </ol>
+        </div>
+        <div class="test-expect">
+          <strong>Expected:</strong> Values match what your local
+          insight-harness.html shows. Token count displays with K/M formatting.
+          Duration shows hours. All stats are non-zero for a real report.
+        </div>
+        <div class="test-result">
+          <button class="result-btn" data-result="pass">Pass</button>
+          <button class="result-btn" data-result="fail">Fail</button>
+          <button class="result-btn" data-result="skip">Skip</button>
+        </div>
+        <div class="feedback-area">
+          <label for="fb-test-4">Notes</label>
+          <textarea
+            id="fb-test-4"
+            placeholder="Describe what you observed..."
+          ></textarea>
+          <div class="char-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-section" data-test-id="test-5">
+      <div class="test-card">
+        <div class="test-header">
+          <span class="test-number">5</span>
+          <span class="test-title"
+            >Autonomy box renders with correct label and stats</span
+          >
+        </div>
+        <div class="test-steps">
+          <ol>
+            <li>
+              On the harness report detail page, find the dark-background
+              autonomy box
+            </li>
+            <li>
+              Check the label text (should be "Fire-and-Forget", "Directive", or
+              "Collaborative")
+            </li>
+            <li>Check the description line and the stat row at the bottom</li>
+          </ol>
+        </div>
+        <div class="test-expect">
+          <strong>Expected:</strong> Autonomy label is visible and matches the
+          harness report. Stats show user msgs, assistant msgs, turns, and error
+          rate. The box has a gradient dark background and white text.
+        </div>
+        <div class="test-result">
+          <button class="result-btn" data-result="pass">Pass</button>
+          <button class="result-btn" data-result="fail">Fail</button>
+          <button class="result-btn" data-result="skip">Skip</button>
+        </div>
+        <div class="feedback-area">
+          <label for="fb-test-5">Notes</label>
+          <textarea
+            id="fb-test-5"
+            placeholder="Describe what you observed..."
+          ></textarea>
+          <div class="char-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-section" data-test-id="test-6">
+      <div class="test-card">
+        <div class="test-header">
+          <span class="test-number">6</span>
+          <span class="test-title"
+            >Feature pills show correct on/off states</span
+          >
+        </div>
+        <div class="test-steps">
+          <ol>
+            <li>Below the autonomy box, look for the row of feature pills</li>
+            <li>
+              Check that active features show green pills and inactive show grey
+            </li>
+            <li>
+              Verify pill names match (Status Line, Task Agents, MCP,
+              Sub-Agents, etc.)
+            </li>
+          </ol>
+        </div>
+        <div class="test-expect">
+          <strong>Expected:</strong> Pills render as rounded badges with correct
+          coloring. Active pills have green background, inactive are grey/muted.
+          Values in parentheses (counts/percentages) display correctly.
+        </div>
+        <div class="test-result">
+          <button class="result-btn" data-result="pass">Pass</button>
+          <button class="result-btn" data-result="fail">Fail</button>
+          <button class="result-btn" data-result="skip">Skip</button>
+        </div>
+        <div class="feedback-area">
+          <label for="fb-test-6">Notes</label>
+          <textarea
+            id="fb-test-6"
+            placeholder="Describe what you observed..."
+          ></textarea>
+          <div class="char-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ HARNESS SECTIONS ═══════ -->
+    <div class="category-label" id="harness-sections">
+      <span>Harness Profile Sections</span>
+    </div>
+
+    <div class="test-section" data-test-id="test-7">
+      <div class="test-card">
+        <div class="test-header">
+          <span class="test-number">7</span>
+          <span class="test-title"
+            >Skills & Commands section shows skill table</span
+          >
+        </div>
+        <div class="test-steps">
+          <ol>
+            <li>Expand the "Skills & Commands" collapsible section</li>
+            <li>
+              Verify the table shows skill names, source (custom/plugin), and
+              call counts
+            </li>
+            <li>
+              Check that skill names match what's in your local harness report
+            </li>
+          </ol>
+        </div>
+        <div class="test-expect">
+          <strong>Expected:</strong> A data table with columns Skill, Source,
+          Calls. Rows populated with real skill data. Source shows "custom" or
+          "plugin". Call counts are numbers.
+        </div>
+        <div class="test-result">
+          <button class="result-btn" data-result="pass">Pass</button>
+          <button class="result-btn" data-result="fail">Fail</button>
+          <button class="result-btn" data-result="skip">Skip</button>
+        </div>
+        <div class="feedback-area">
+          <label for="fb-test-7">Notes</label>
+          <textarea
+            id="fb-test-7"
+            placeholder="Describe what you observed..."
+          ></textarea>
+          <div class="char-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-section" data-test-id="test-8">
+      <div class="test-card">
+        <div class="test-header">
+          <span class="test-number">8</span>
+          <span class="test-title"
+            >Tool Usage bar chart displays correctly</span
+          >
+        </div>
+        <div class="test-steps">
+          <ol>
+            <li>Expand the "Tool Usage" collapsible section</li>
+            <li>
+              Check that horizontal bars show tool names (Read, Edit, Bash,
+              etc.)
+            </li>
+            <li>
+              Verify bars are proportional (most-used tool has longest bar)
+            </li>
+          </ol>
+        </div>
+        <div class="test-expect">
+          <strong>Expected:</strong> Horizontal bar chart with tool names on the
+          left, bars in the middle, counts on the right. Common tools (Read,
+          Edit, Bash, Grep, Glob) should appear. Bars scale proportionally.
+        </div>
+        <div class="test-result">
+          <button class="result-btn" data-result="pass">Pass</button>
+          <button class="result-btn" data-result="fail">Fail</button>
+          <button class="result-btn" data-result="skip">Skip</button>
+        </div>
+        <div class="feedback-area">
+          <label for="fb-test-8">Notes</label>
+          <textarea
+            id="fb-test-8"
+            placeholder="Describe what you observed..."
+          ></textarea>
+          <div class="char-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-section" data-test-id="test-9">
+      <div class="test-card">
+        <div class="test-header">
+          <span class="test-number">9</span>
+          <span class="test-title"
+            >Hooks, Plugins, and other sections render</span
+          >
+        </div>
+        <div class="test-steps">
+          <ol>
+            <li>
+              Expand each remaining section: Hooks & Safety, Plugins, File
+              Operation Style, CLI Tools, Languages & Models, Git Patterns,
+              Versions
+            </li>
+            <li>For each, verify content is populated (not empty/blank)</li>
+            <li>Check that Plugins show name, version, and on/off badge</li>
+          </ol>
+        </div>
+        <div class="test-expect">
+          <strong>Expected:</strong> All sections render without errors. Hooks
+          table has Event/Matcher/Script columns. Plugins show card grid with
+          badges. File Op Style shows ratios. Each section's data matches the
+          harness report.
+        </div>
+        <div class="test-result">
+          <button class="result-btn" data-result="pass">Pass</button>
+          <button class="result-btn" data-result="fail">Fail</button>
+          <button class="result-btn" data-result="skip">Skip</button>
+        </div>
+        <div class="feedback-area">
+          <label for="fb-test-9">Notes</label>
+          <textarea
+            id="fb-test-9"
+            placeholder="Describe what you observed..."
+          ></textarea>
+          <div class="char-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-section" data-test-id="test-10">
+      <div class="test-card">
+        <div class="test-header">
+          <span class="test-number">10</span>
+          <span class="test-title"
+            >Writeup Analysis section renders narrative content</span
+          >
+        </div>
+        <div class="test-steps">
+          <ol>
+            <li>Expand the "Writeup Analysis" collapsible section</li>
+            <li>
+              Check that multiple sub-sections appear (How This Harness Works,
+              Skills & Workflows, etc.)
+            </li>
+            <li>
+              Verify the blue-bordered "tip" boxes render with styled formatting
+            </li>
+            <li>
+              Right-click and inspect: confirm no <code>&lt;script&gt;</code> or
+              <code>&lt;iframe&gt;</code> tags in the HTML
+            </li>
+          </ol>
+        </div>
+        <div class="test-expect">
+          <strong>Expected:</strong> Narrative text with paragraphs, lists, and
+          tip boxes. Content is readable and well-formatted. No raw HTML
+          visible. No script injection artifacts.
+        </div>
+        <div class="test-result">
+          <button class="result-btn" data-result="pass">Pass</button>
+          <button class="result-btn" data-result="fail">Fail</button>
+          <button class="result-btn" data-result="skip">Skip</button>
+        </div>
+        <div class="feedback-area">
+          <label for="fb-test-10">Notes</label>
+          <textarea
+            id="fb-test-10"
+            placeholder="Describe what you observed..."
+          ></textarea>
+          <div class="char-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ REGRESSION ═══════ -->
+    <div class="category-label" id="regression">
+      <span>Regression Tests</span>
+    </div>
+
+    <div class="test-section" data-test-id="test-11">
+      <div class="test-card">
+        <div class="test-header">
+          <span class="test-number">11</span>
+          <span class="test-title"
+            >Existing /insights reports still display correctly</span
+          >
+        </div>
+        <div class="test-steps">
+          <ol>
+            <li>
+              Navigate to an existing published /insights report (not harness)
+            </li>
+            <li>
+              Check that SnapshotCard, At a Glance, and all sections render as
+              before
+            </li>
+            <li>
+              Verify no "Harness Profile" heading or harness sections appear
+            </li>
+          </ol>
+        </div>
+        <div class="test-expect">
+          <strong>Expected:</strong> Existing reports display identically to
+          before this PR. No harness UI leaks into plain /insights reports.
+          Stats, narrative sections, and votes all work.
+        </div>
+        <div class="test-result">
+          <button class="result-btn" data-result="pass">Pass</button>
+          <button class="result-btn" data-result="fail">Fail</button>
+          <button class="result-btn" data-result="skip">Skip</button>
+        </div>
+        <div class="feedback-area">
+          <label for="fb-test-11">Notes</label>
+          <textarea
+            id="fb-test-11"
+            placeholder="Describe what you observed..."
+          ></textarea>
+          <div class="char-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-section" data-test-id="test-12">
+      <div class="test-card">
+        <div class="test-header">
+          <span class="test-number">12</span>
+          <span class="test-title"
+            >Homepage listing shows both report types</span
+          >
+        </div>
+        <div class="test-steps">
+          <ol>
+            <li>Navigate to <code>/</code> (homepage)</li>
+            <li>
+              Check that both /insights and /insight-harness reports appear in
+              the feed
+            </li>
+            <li>
+              Click into one of each type and verify the detail pages load
+            </li>
+          </ol>
+        </div>
+        <div class="test-expect">
+          <strong>Expected:</strong> Both report types listed. Cards render
+          without errors. Clicking into each navigates to the correct detail
+          page.
+        </div>
+        <div class="test-result">
+          <button class="result-btn" data-result="pass">Pass</button>
+          <button class="result-btn" data-result="fail">Fail</button>
+          <button class="result-btn" data-result="skip">Skip</button>
+        </div>
+        <div class="feedback-area">
+          <label for="fb-test-12">Notes</label>
+          <textarea
+            id="fb-test-12"
+            placeholder="Describe what you observed..."
+          ></textarea>
+          <div class="char-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-section" data-test-id="test-13">
+      <div class="test-card">
+        <div class="test-header">
+          <span class="test-number">13</span>
+          <span class="test-title"
+            >Voting, comments, and share still work on harness reports</span
+          >
+        </div>
+        <div class="test-steps">
+          <ol>
+            <li>On a harness report detail page, try voting on a section</li>
+            <li>Try the "Share" button and verify the URL copies</li>
+            <li>Scroll to the comments section and verify it loads</li>
+          </ol>
+        </div>
+        <div class="test-expect">
+          <strong>Expected:</strong> All social features work the same as on
+          /insights reports. Voting increments counts, share copies URL, comment
+          section renders.
+        </div>
+        <div class="test-result">
+          <button class="result-btn" data-result="pass">Pass</button>
+          <button class="result-btn" data-result="fail">Fail</button>
+          <button class="result-btn" data-result="skip">Skip</button>
+        </div>
+        <div class="feedback-area">
+          <label for="fb-test-13">Notes</label>
+          <textarea
+            id="fb-test-13"
+            placeholder="Describe what you observed..."
+          ></textarea>
+          <div class="char-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ EDGE CASES ═══════ -->
+    <div class="category-label" id="edge-cases">
+      <span>Edge Cases</span>
+    </div>
+
+    <div class="test-section" data-test-id="test-14">
+      <div class="test-card">
+        <div class="test-header">
+          <span class="test-number">14</span>
+          <span class="test-title">Upload a non-HTML file shows error</span>
+        </div>
+        <div class="test-steps">
+          <ol>
+            <li>Navigate to <code>/upload</code></li>
+            <li>
+              Try to upload a <code>.txt</code> or <code>.json</code> file
+            </li>
+          </ol>
+        </div>
+        <div class="test-expect">
+          <strong>Expected:</strong> An error message appears ("Please upload an
+          HTML file" or "File must be an HTML file"). No crash or blank screen.
+        </div>
+        <div class="test-result">
+          <button class="result-btn" data-result="pass">Pass</button>
+          <button class="result-btn" data-result="fail">Fail</button>
+          <button class="result-btn" data-result="skip">Skip</button>
+        </div>
+        <div class="feedback-area">
+          <label for="fb-test-14">Notes</label>
+          <textarea
+            id="fb-test-14"
+            placeholder="Describe what you observed..."
+          ></textarea>
+          <div class="char-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-section" data-test-id="test-15">
+      <div class="test-card">
+        <div class="test-header">
+          <span class="test-number">15</span>
+          <span class="test-title"
+            >Harness report without /insights tab still works</span
+          >
+        </div>
+        <div class="test-steps">
+          <ol>
+            <li>
+              If you have a harness report generated without running /insights
+              first (no embedded insights tab), upload it
+            </li>
+            <li>If not available, skip this test</li>
+            <li>
+              Check that harness sections render, and narrative sections are
+              empty/absent
+            </li>
+          </ol>
+        </div>
+        <div class="test-expect">
+          <strong>Expected:</strong> The report publishes. Harness data
+          (autonomy, pills, tools, skills) displays correctly. Narrative
+          sections (At a Glance, Interaction Style) are absent or show empty
+          states. No crash.
+        </div>
+        <div class="test-result">
+          <button class="result-btn" data-result="pass">Pass</button>
+          <button class="result-btn" data-result="fail">Fail</button>
+          <button class="result-btn" data-result="skip">Skip</button>
+        </div>
+        <div class="feedback-area">
+          <label for="fb-test-15">Notes</label>
+          <textarea
+            id="fb-test-15"
+            placeholder="Describe what you observed..."
+          ></textarea>
+          <div class="char-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ RESPONSIVE ═══════ -->
+    <div class="category-label" id="responsive">
+      <span>Responsive & Visual</span>
+    </div>
+
+    <div class="test-section" data-test-id="test-16">
+      <div class="test-card">
+        <div class="test-header">
+          <span class="test-number">16</span>
+          <span class="test-title"
+            >Harness sections render correctly on mobile</span
+          >
+        </div>
+        <div class="test-steps">
+          <ol>
+            <li>
+              View a harness report detail page on mobile (or use browser
+              DevTools responsive mode, ~375px width)
+            </li>
+            <li>
+              Check the autonomy box, feature pills, bar charts, tables, and
+              plugin cards
+            </li>
+            <li>Verify nothing overflows horizontally or gets cut off</li>
+          </ol>
+        </div>
+        <div class="test-expect">
+          <strong>Expected:</strong> All harness sections are readable on
+          mobile. Bar charts truncate labels gracefully. Tables scroll
+          horizontally if needed. Feature pills wrap to multiple lines. No
+          horizontal overflow on the page.
+        </div>
+        <div class="test-result">
+          <button class="result-btn" data-result="pass">Pass</button>
+          <button class="result-btn" data-result="fail">Fail</button>
+          <button class="result-btn" data-result="skip">Skip</button>
+        </div>
+        <div class="feedback-area">
+          <label for="fb-test-16">Notes</label>
+          <textarea
+            id="fb-test-16"
+            placeholder="Describe what you observed..."
+          ></textarea>
+          <div class="char-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height: 80px"></div>
+
+    <script>
+      // ── Result buttons ──
+      document.querySelectorAll(".result-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const section = btn.closest(".test-section");
+          const card = section.querySelector(".test-card");
+          const buttons = section.querySelectorAll(".result-btn");
+
+          buttons.forEach((b) => b.classList.remove("selected"));
+          btn.classList.add("selected");
+
+          card.classList.remove("result-pass", "result-fail", "result-skip");
+          card.classList.add("result-" + btn.dataset.result);
+
+          updateProgress();
+        });
+      });
+
+      // ── Progress tracking ──
+      function updateProgress() {
+        const total = document.querySelectorAll(".test-section").length;
+        const done = document.querySelectorAll(".result-btn.selected").length;
+        const passed = document.querySelectorAll(
+          '.result-btn[data-result="pass"].selected',
+        ).length;
+        const failed = document.querySelectorAll(
+          '.result-btn[data-result="fail"].selected',
+        ).length;
+
+        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        const fill = document.getElementById("progressFill");
+        const text = document.getElementById("progressText");
+
+        fill.style.width = pct + "%";
+        if (failed > 0) {
+          fill.style.background = "#dc2626";
+        } else if (done === total) {
+          fill.style.background = "#16a34a";
+        } else {
+          fill.style.background = "#2563eb";
+        }
+
+        const parts = [`${done} of ${total} completed`];
+        if (passed > 0) parts.push(`${passed} passed`);
+        if (failed > 0) parts.push(`${failed} failed`);
+        text.textContent = parts.join(" · ");
+      }
+
+      // ── Copy All Feedback ──
+      function copyAllFeedback() {
+        const tests = {};
+        document.querySelectorAll(".test-section").forEach((section) => {
+          const id = section.dataset.testId;
+          const title =
+            section.querySelector(".test-title")?.textContent?.trim() || id;
+          const textarea = section.querySelector("textarea");
+          const selectedBtn = section.querySelector(".result-btn.selected");
+          const result = selectedBtn ? selectedBtn.dataset.result : null;
+          const feedback = textarea ? textarea.value.trim() : "";
+
+          if (result || feedback) {
+            tests[id] = { title, result: result || "untested" };
+            if (feedback) tests[id].feedback = feedback;
+          }
+        });
+
+        if (Object.keys(tests).length === 0) {
+          alert(
+            "No results or feedback entered yet. Mark tests and add notes first.",
+          );
+          return;
+        }
+
+        const passed = Object.values(tests).filter(
+          (t) => t.result === "pass",
+        ).length;
+        const failed = Object.values(tests).filter(
+          (t) => t.result === "fail",
+        ).length;
+        const skipped = Object.values(tests).filter(
+          (t) => t.result === "skip",
+        ).length;
+
+        const json = JSON.stringify(
+          {
+            qa_checklist: document.title,
+            timestamp: new Date().toISOString(),
+            summary: {
+              passed,
+              failed,
+              skipped,
+              total: Object.keys(tests).length,
+            },
+            tests,
+          },
+          null,
+          2,
+        );
+
+        navigator.clipboard.writeText(json).then(() => {
+          const btn = document.querySelector(".copy-all-btn");
+          btn.textContent = "Copied!";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = "Copy All Feedback";
+            btn.classList.remove("copied");
+          }, 2000);
+        });
+      }
+
+      // ── Textarea char counts ──
+      document.querySelectorAll(".feedback-area textarea").forEach((ta) => {
+        const counter = ta.parentElement.querySelector(".char-count");
+        if (!counter) return;
+        ta.addEventListener("input", () => {
+          counter.textContent = ta.value.length
+            ? `${ta.value.length} chars`
+            : "";
+        });
+      });
+    </script>
+  </body>
+</html>

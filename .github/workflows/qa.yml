@@ -47,8 +47,6 @@ jobs:
           done
 
       - name: Run Claude QA
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           claude --print --output-format json "$(cat <<'PROMPT'
           You are QA testing a Next.js web app running at http://localhost:3000.

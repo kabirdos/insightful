@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insight Harness</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #f8fafc;
+        color: #1e293b;
+        line-height: 1.5;
+      }
+
+      /* Nav */
+      nav {
+        background: #fff;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 0 2rem;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+      .nav-brand {
+        font-weight: 700;
+        font-size: 1.15rem;
+        color: #6366f1;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .nav-brand svg {
+        width: 22px;
+        height: 22px;
+      }
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        font-size: 0.875rem;
+      }
+      .nav-links a {
+        color: #64748b;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .nav-links a:hover {
+        color: #6366f1;
+      }
+      .btn-upload-nav {
+        background: #6366f1;
+        color: #fff !important;
+        padding: 0.4rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: background 0.2s;
+      }
+      .btn-upload-nav:hover {
+        background: #4f46e5;
+      }
+
+      /* Hero */
+      .hero {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 3rem 2rem 2.5rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3rem;
+        align-items: center;
+      }
+      .hero-left h1 {
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1.2;
+        color: #0f172a;
+        margin-bottom: 1rem;
+      }
+      .hero-left h1 span {
+        color: #6366f1;
+      }
+      .hero-left p {
+        color: #475569;
+        font-size: 1.05rem;
+        margin-bottom: 1.25rem;
+        max-width: 440px;
+      }
+      .hero-privacy {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-bottom: 1.5rem;
+      }
+      .hero-ctas {
+        display: flex;
+        gap: 0.75rem;
+      }
+      .btn-primary {
+        background: #6366f1;
+        color: #fff;
+        border: none;
+        padding: 0.65rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .btn-primary:hover {
+        background: #4f46e5;
+      }
+      .btn-outline {
+        background: transparent;
+        color: #6366f1;
+        border: 2px solid #6366f1;
+        padding: 0.55rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .btn-outline:hover {
+        background: #eef2ff;
+      }
+
+      /* Cards shared */
+      .card {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        padding: 1.25rem;
+        transition:
+          box-shadow 0.2s,
+          transform 0.15s;
+        position: relative;
+      }
+      .card:hover {
+        box-shadow: 0 8px 24px rgba(99, 102, 241, 0.1);
+        transform: translateY(-2px);
+      }
+
+      /* Featured card */
+      .featured-card {
+        max-width: 400px;
+      }
+      .featured-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: #fff;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 0.2rem 0.6rem;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
+      .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .card-name {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: #0f172a;
+      }
+      .card-handle {
+        font-size: 0.78rem;
+        color: #94a3b8;
+      }
+      .card-stats {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+      .stat {
+        text-align: center;
+        flex: 1;
+      }
+      .stat-value {
+        font-weight: 700;
+        font-size: 1rem;
+        color: #0f172a;
+      }
+      .stat-label {
+        font-size: 0.68rem;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      /* Heatmap */
+      .heatmap-section {
+        margin-bottom: 1rem;
+      }
+      .heatmap-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 0.4rem;
+      }
+      .heatmap-total {
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #0f172a;
+      }
+      .heatmap-legend {
+        font-size: 0.65rem;
+        color: #94a3b8;
+      }
+      .heatmap-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 3px;
+      }
+      .hm-cell {
+        aspect-ratio: 1;
+        border-radius: 3px;
+      }
+
+      /* Badges */
+      .badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+      }
+      .badge {
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.2rem 0.55rem;
+        border-radius: 6px;
+      }
+      .badge-indigo {
+        background: #eef2ff;
+        color: #6366f1;
+      }
+      .badge-emerald {
+        background: #ecfdf5;
+        color: #059669;
+      }
+      .badge-amber {
+        background: #fffbeb;
+        color: #d97706;
+      }
+      .badge-rose {
+        background: #fff1f2;
+        color: #e11d48;
+      }
+      .badge-sky {
+        background: #f0f9ff;
+        color: #0284c7;
+      }
+      .badge-violet {
+        background: #f5f3ff;
+        color: #7c3aed;
+      }
+
+      /* Grid */
+      .section-title {
+        text-align: center;
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 0.4rem;
+      }
+      .section-sub {
+        text-align: center;
+        font-size: 0.9rem;
+        color: #64748b;
+        margin-bottom: 2rem;
+      }
+      .grid {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 2rem 3rem;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+      }
+      .grid-section {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 2.5rem 2rem 0;
+      }
+
+      /* How it works */
+      .how-section {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 3rem 2rem;
+      }
+      .how-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+        margin-bottom: 1.5rem;
+      }
+      .how-card {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        padding: 1.5rem;
+        text-align: center;
+      }
+      .how-step {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #eef2ff;
+        color: #6366f1;
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin-bottom: 0.75rem;
+      }
+      .how-card h3 {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 0.5rem;
+      }
+      .how-card p {
+        font-size: 0.82rem;
+        color: #64748b;
+      }
+      .how-card code {
+        display: inline-block;
+        background: #1e293b;
+        color: #a5f3fc;
+        padding: 0.3rem 0.7rem;
+        border-radius: 6px;
+        font-size: 0.78rem;
+        font-family: "SF Mono", Monaco, monospace;
+        margin-top: 0.4rem;
+      }
+      .upgrade-note {
+        text-align: center;
+        background: #f5f3ff;
+        border: 1px solid #ddd6fe;
+        border-radius: 10px;
+        padding: 1rem 1.5rem;
+        font-size: 0.85rem;
+        color: #5b21b6;
+      }
+      .upgrade-note strong {
+        color: #6d28d9;
+      }
+
+      /* Footer CTA */
+      .footer-cta {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        padding: 2.5rem 2rem;
+        text-align: center;
+      }
+      .footer-cta h2 {
+        color: #fff;
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+      }
+      .footer-cta p {
+        color: #c7d2fe;
+        font-size: 0.9rem;
+        margin-bottom: 1.25rem;
+      }
+      .btn-white {
+        background: #fff;
+        color: #6366f1;
+        border: none;
+        padding: 0.65rem 1.75rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: transform 0.15s;
+      }
+      .btn-white:hover {
+        transform: scale(1.03);
+      }
+
+      footer {
+        background: #1e293b;
+        padding: 1.25rem 2rem;
+        text-align: center;
+        font-size: 0.75rem;
+        color: #64748b;
+      }
+
+      @media (max-width: 768px) {
+        .hero {
+          grid-template-columns: 1fr;
+          padding: 2rem 1rem;
+          gap: 1.5rem;
+        }
+        .featured-card {
+          max-width: 100%;
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .how-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (min-width: 769px) and (max-width: 1024px) {
+        .grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Nav -->
+    <nav>
+      <div class="nav-brand">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 16v-4M12 8h.01" />
+        </svg>
+        Insight Harness
+      </div>
+      <div class="nav-links">
+        <a href="#">Browse</a>
+        <a href="#">How It Works</a>
+        <a href="#" class="btn-upload-nav">Upload Your Insights</a>
+      </div>
+    </nav>
+
+    <!-- Split Hero -->
+    <section class="hero">
+      <div class="hero-left">
+        <h1>Your Claude Code harness, <span>visualized</span></h1>
+        <p>
+          See how other developers use tools, skills, plugins, and workflows
+          across real coding sessions.
+        </p>
+        <div class="hero-privacy">
+          &#x1f512; All personal data is automatically removed before publishing
+        </div>
+        <div class="hero-ctas">
+          <button class="btn-primary">Browse Profiles</button>
+          <button class="btn-outline">Upload Your Insights</button>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="card featured-card">
+          <span class="featured-badge">Featured</span>
+          <div class="card-header">
+            <div
+              class="avatar"
+              style="background: linear-gradient(135deg, #6366f1, #8b5cf6)"
+            >
+              SC
+            </div>
+            <div>
+              <div class="card-name">Sarah Chen</div>
+              <div class="card-handle">@sarahcodes</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="stat">
+              <div class="stat-value" style="color: #0ea5e9">42</div>
+              <div class="stat-label">Sessions/wk</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value" style="color: #6366f1">620</div>
+              <div class="stat-label">Messages/wk</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value" style="color: #10b981">18</div>
+              <div class="stat-label">Commits/wk</div>
+            </div>
+          </div>
+          <div class="heatmap-section">
+            <div class="heatmap-header">
+              <span class="heatmap-total">1.2M tokens</span>
+              <span class="heatmap-legend"
+                >100K &middot; 400K &middot; 800K+</span
+              >
+            </div>
+            <div class="heatmap-grid" id="hm-featured"></div>
+          </div>
+          <div class="badges">
+            <span class="badge badge-indigo">Parallel Agents</span>
+            <span class="badge badge-emerald">TDD</span>
+            <span class="badge badge-amber">Custom Skills</span>
+            <span class="badge badge-sky">Git Worktrees</span>
+            <span class="badge badge-violet">MCP Tools</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Profile Grid -->
+    <div class="grid-section">
+      <div class="section-title">Community Profiles</div>
+      <div class="section-sub">
+        Explore how developers configure and use their Claude Code harness
+      </div>
+    </div>
+    <div class="grid">
+      <!-- Card 1 -->
+      <div class="card">
+        <div class="card-header">
+          <div
+            class="avatar"
+            style="background: linear-gradient(135deg, #10b981, #059669)"
+          >
+            MR
+          </div>
+          <div>
+            <div class="card-name">Marcus Rodriguez</div>
+            <div class="card-handle">@mrodriguez</div>
+          </div>
+        </div>
+        <div class="card-stats">
+          <div class="stat">
+            <div class="stat-value" style="color: #0ea5e9">28</div>
+            <div class="stat-label">Sessions/wk</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" style="color: #6366f1">410</div>
+            <div class="stat-label">Messages/wk</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" style="color: #10b981">24</div>
+            <div class="stat-label">Commits/wk</div>
+          </div>
+        </div>
+        <div class="heatmap-section">
+          <div class="heatmap-header">
+            <span class="heatmap-total">890K tokens</span>
+            <span class="heatmap-legend"
+              >100K &middot; 400K &middot; 800K+</span
+            >
+          </div>
+          <div class="heatmap-grid" id="hm-1"></div>
+        </div>
+        <div class="badges">
+          <span class="badge badge-emerald">TDD</span>
+          <span class="badge badge-rose">Debugging</span>
+          <span class="badge badge-indigo">Code Review</span>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="card">
+        <div class="card-header">
+          <div
+            class="avatar"
+            style="background: linear-gradient(135deg, #f59e0b, #d97706)"
+          >
+            AK
+          </div>
+          <div>
+            <div class="card-name">Aisha Khan</div>
+            <div class="card-handle">@aishak</div>
+          </div>
+        </div>
+        <div class="card-stats">
+          <div class="stat">
+            <div class="stat-value" style="color: #0ea5e9">55</div>
+            <div class="stat-label">Sessions/wk</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" style="color: #6366f1">780</div>
+            <div class="stat-label">Messages/wk</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" style="color: #10b981">31</div>
+            <div class="stat-label">Commits/wk</div>
+          </div>
+        </div>
+        <div class="heatmap-section">
+          <div class="heatmap-header">
+            <span class="heatmap-total">1.8M tokens</span>
+            <span class="heatmap-legend"
+              >100K &middot; 400K &middot; 800K+</span
+            >
+          </div>
+          <div class="heatmap-grid" id="hm-2"></div>
+        </div>
+        <div class="badges">
+          <span class="badge badge-amber">Custom Skills</span>
+          <span class="badge badge-violet">Hooks</span>
+          <span class="badge badge-sky">Worktrees</span>
+          <span class="badge badge-indigo">Planning</span>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="card">
+        <div class="card-header">
+          <div
+            class="avatar"
+            style="background: linear-gradient(135deg, #0ea5e9, #0284c7)"
+          >
+            JL
+          </div>
+          <div>
+            <div class="card-name">James Liu</div>
+            <div class="card-handle">@jliu_dev</div>
+          </div>
+        </div>
+        <div class="card-stats">
+          <div class="stat">
+            <div class="stat-value" style="color: #0ea5e9">15</div>
+            <div class="stat-label">Sessions/wk</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" style="color: #6366f1">220</div>
+            <div class="stat-label">Messages/wk</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" style="color: #10b981">12</div>
+            <div class="stat-label">Commits/wk</div>
+          </div>
+        </div>
+        <div class="heatmap-section">
+          <div class="heatmap-header">
+            <span class="heatmap-total">420K tokens</span>
+            <span class="heatmap-legend"
+              >100K &middot; 400K &middot; 800K+</span
+            >
+          </div>
+          <div class="heatmap-grid" id="hm-3"></div>
+        </div>
+        <div class="badges">
+          <span class="badge badge-rose">Refactoring</span>
+          <span class="badge badge-emerald">Testing</span>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="card">
+        <div class="card-header">
+          <div
+            class="avatar"
+            style="background: linear-gradient(135deg, #f43f5e, #e11d48)"
+          >
+            EP
+          </div>
+          <div>
+            <div class="card-name">Elena Popova</div>
+            <div class="card-handle">@elena_p</div>
+          </div>
+        </div>
+        <div class="card-stats">
+          <div class="stat">
+            <div class="stat-value" style="color: #0ea5e9">38</div>
+            <div class="stat-label">Sessions/wk</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" style="color: #6366f1">540</div>
+            <div class="stat-label">Messages/wk</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" style="color: #10b981">22</div>
+            <div class="stat-label">Commits/wk</div>
+          </div>
+        </div>
+        <div class="heatmap-section">
+          <div class="heatmap-header">
+            <span class="heatmap-total">1.1M tokens</span>
+            <span class="heatmap-legend"
+              >100K &middot; 400K &middot; 800K+</span
+            >
+          </div>
+          <div class="heatmap-grid" id="hm-4"></div>
+        </div>
+        <div class="badges">
+          <span class="badge badge-violet">MCP Tools</span>
+          <span class="badge badge-amber">Automation</span>
+          <span class="badge badge-sky">CI/CD</span>
+        </div>
+      </div>
+
+      <!-- Card 5 -->
+      <div class="card">
+        <div class="card-header">
+          <div
+            class="avatar"
+            style="background: linear-gradient(135deg, #8b5cf6, #7c3aed)"
+          >
+            DW
+          </div>
+          <div>
+            <div class="card-name">David Wilson</div>
+            <div class="card-handle">@dwilson</div>
+          </div>
+        </div>
+        <div class="card-stats">
+          <div class="stat">
+            <div class="stat-value" style="color: #0ea5e9">62</div>
+            <div class="stat-label">Sessions/wk</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" style="color: #6366f1">920</div>
+            <div class="stat-label">Messages/wk</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" style="color: #10b981">35</div>
+            <div class="stat-label">Commits/wk</div>
+          </div>
+        </div>
+        <div class="heatmap-section">
+          <div class="heatmap-header">
+            <span class="heatmap-total">2.4M tokens</span>
+            <span class="heatmap-legend"
+              >100K &middot; 400K &middot; 800K+</span
+            >
+          </div>
+          <div class="heatmap-grid" id="hm-5"></div>
+        </div>
+        <div class="badges">
+          <span class="badge badge-indigo">Parallel Agents</span>
+          <span class="badge badge-emerald">Full-stack</span>
+          <span class="badge badge-rose">Rapid Prototyping</span>
+          <span class="badge badge-amber">Skills</span>
+        </div>
+      </div>
+
+      <!-- Card 6 -->
+      <div class="card">
+        <div class="card-header">
+          <div
+            class="avatar"
+            style="background: linear-gradient(135deg, #10b981, #0ea5e9)"
+          >
+            PN
+          </div>
+          <div>
+            <div class="card-name">Priya Nair</div>
+            <div class="card-handle">@priya_n</div>
+          </div>
+        </div>
+        <div class="card-stats">
+          <div class="stat">
+            <div class="stat-value" style="color: #0ea5e9">20</div>
+            <div class="stat-label">Sessions/wk</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" style="color: #6366f1">310</div>
+            <div class="stat-label">Messages/wk</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" style="color: #10b981">14</div>
+            <div class="stat-label">Commits/wk</div>
+          </div>
+        </div>
+        <div class="heatmap-section">
+          <div class="heatmap-header">
+            <span class="heatmap-total">580K tokens</span>
+            <span class="heatmap-legend"
+              >100K &middot; 400K &middot; 800K+</span
+            >
+          </div>
+          <div class="heatmap-grid" id="hm-6"></div>
+        </div>
+        <div class="badges">
+          <span class="badge badge-sky">Documentation</span>
+          <span class="badge badge-violet">Research</span>
+          <span class="badge badge-emerald">Quality</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- How It Works -->
+    <section class="how-section">
+      <div class="section-title">How It Works</div>
+      <div class="section-sub">
+        From local data to shareable profile in three steps
+      </div>
+      <div class="how-grid">
+        <div class="how-card">
+          <div class="how-step">1</div>
+          <h3>Run /insights</h3>
+          <p>Generate a summary of your Claude Code usage locally.</p>
+          <code>$ claude /insights</code>
+        </div>
+        <div class="how-card">
+          <div class="how-step">2</div>
+          <h3>Upload your insights</h3>
+          <p>
+            We strip personal data automatically. Your code and conversations
+            stay private.
+          </p>
+        </div>
+        <div class="how-card">
+          <div class="how-step">3</div>
+          <h3>Share your profile</h3>
+          <p>A public page others can browse and learn from.</p>
+        </div>
+      </div>
+      <div class="upgrade-note">
+        <strong>Go deeper with /harness-profile</strong> &mdash; token usage,
+        cost breakdowns, skill proficiency scores, and detailed workflow
+        analysis.
+      </div>
+    </section>
+
+    <!-- Footer CTA -->
+    <section class="footer-cta">
+      <h2>Ready to share your harness?</h2>
+      <p>Run /insights in Claude Code and upload in under a minute.</p>
+      <button class="btn-white">Upload Your Insights</button>
+    </section>
+
+    <footer>
+      &copy; 2026 Insight Harness. Built for the Claude Code community.
+    </footer>
+
+    <script>
+      // Heatmap generation — per-card unique patterns
+      function generateHeatmap(id, intensity) {
+        const grid = document.getElementById(id);
+        const cells = 12 * 7; // 84 cells
+        // Indigo-to-violet gradient stops
+        const colors = [
+          "#eef2ff", // empty/minimal
+          "#c7d2fe", // low
+          "#a5b4fc", // low-med
+          "#818cf8", // medium
+          "#7c3aed", // med-high
+          "#6d28d9", // high
+          "#5b21b6", // very high
+        ];
+        for (let i = 0; i < cells; i++) {
+          const cell = document.createElement("div");
+          cell.className = "hm-cell";
+          // Use intensity multiplier + randomness for unique per-card patterns
+          const rand = Math.random();
+          const weighted = rand * intensity;
+          let ci;
+          if (weighted < 0.25) ci = 0;
+          else if (weighted < 0.4) ci = 1;
+          else if (weighted < 0.55) ci = 2;
+          else if (weighted < 0.7) ci = 3;
+          else if (weighted < 0.82) ci = 4;
+          else if (weighted < 0.92) ci = 5;
+          else ci = 6;
+          cell.style.background = colors[ci];
+          grid.appendChild(cell);
+        }
+      }
+
+      // Each card gets a different intensity profile
+      generateHeatmap("hm-featured", 1.1);
+      generateHeatmap("hm-1", 0.85);
+      generateHeatmap("hm-2", 1.3);
+      generateHeatmap("hm-3", 0.55);
+      generateHeatmap("hm-4", 1.0);
+      generateHeatmap("hm-5", 1.4);
+      generateHeatmap("hm-6", 0.65);
+    </script>
+  </body>
+</html>

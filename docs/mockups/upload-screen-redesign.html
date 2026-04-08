@@ -1,0 +1,3677 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Upload Screen Redesign — Side-by-Side Comparison</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        background: #f5f5f0;
+        color: #333;
+      }
+
+      /* Mockup shell styles */
+      .mockup-nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: #1e1e1e;
+        color: #fff;
+        padding: 10px 16px;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+      .mockup-nav .title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-right: 12px;
+        white-space: nowrap;
+      }
+      .mockup-nav a {
+        color: #a8c8ff;
+        text-decoration: none;
+        font-size: 12px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        transition: background 0.15s;
+      }
+      .mockup-nav a:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .viewport-toggle {
+        display: flex;
+        gap: 2px;
+        margin-left: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        padding: 2px;
+      }
+      .viewport-toggle button {
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.5);
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s;
+      }
+      .viewport-toggle button:hover {
+        color: rgba(255, 255, 255, 0.8);
+      }
+      .viewport-toggle button.active {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+      }
+      .mockup-nav .copy-all-btn {
+        margin-left: auto;
+        background: #2563eb;
+        color: #fff;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .mockup-nav .copy-all-btn:hover {
+        background: #1d4ed8;
+      }
+      .mockup-nav .copy-all-btn.copied {
+        background: #16a34a;
+      }
+      .mockup-section {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+      .mockup-section.wide {
+        max-width: 1200px;
+      }
+      body.viewport-mobile .mockup-section,
+      body.viewport-mobile .mockup-section.wide {
+        max-width: 420px;
+      }
+      body.viewport-desktop .mockup-section {
+        max-width: 900px;
+      }
+      body.viewport-desktop .mockup-section.wide {
+        max-width: 1200px;
+      }
+      .section-label {
+        background: #1e1e1e;
+        color: #fff;
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 12px;
+      }
+      .section-desc {
+        font-size: 13px;
+        color: #888;
+        margin-bottom: 16px;
+        line-height: 1.5;
+      }
+      .section-divider {
+        height: 1px;
+        background: #ddd;
+        margin: 48px 0;
+      }
+      .version-container {
+        position: relative;
+      }
+      .version {
+        display: none;
+      }
+      .version.active {
+        display: block;
+      }
+      .version-nav {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 12px;
+        padding: 8px;
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+      }
+      .version-nav.visible {
+        display: flex;
+      }
+      .version-nav button {
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-size: 12px;
+        font-family: inherit;
+        cursor: pointer;
+        color: #374151;
+      }
+      .version-nav button:hover:not(:disabled) {
+        background: #e5e7eb;
+      }
+      .version-nav button:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+      .version-nav .version-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        min-width: 80px;
+        text-align: center;
+      }
+      .feedback-area {
+        margin-top: 16px;
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        padding: 12px;
+      }
+      .feedback-area label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #888;
+        margin-bottom: 6px;
+      }
+      .feedback-area textarea {
+        width: 100%;
+        min-height: 80px;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        padding: 10px;
+        font-family: inherit;
+        font-size: 14px;
+        line-height: 1.5;
+        resize: vertical;
+        color: #333;
+      }
+      .feedback-area textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .feedback-area .char-count {
+        font-size: 11px;
+        color: #aaa;
+        text-align: right;
+        margin-top: 4px;
+      }
+      .design-note {
+        background: #fffbeb;
+        border: 1px solid #fcd34d;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin: 12px 0;
+        font-size: 12px;
+        color: #92400e;
+        line-height: 1.5;
+      }
+      .design-note strong {
+        font-weight: 600;
+      }
+      .design-note.info {
+        background: #f0fdf4;
+        border-color: #86efac;
+        color: #166534;
+      }
+      .design-note.future {
+        background: #eff6ff;
+        border-color: #93c5fd;
+        color: #1e40af;
+      }
+
+      /* Upload mockup specific */
+      .upload-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+      }
+      body.viewport-mobile .upload-columns {
+        grid-template-columns: 1fr;
+      }
+      .upload-col {
+        background: #fff;
+        border-radius: 12px;
+        border: 1.5px solid #e2e8f0;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .upload-col.premium {
+        border-color: #93c5fd;
+        box-shadow:
+          0 0 0 1px rgba(37, 99, 235, 0.08),
+          0 4px 16px rgba(37, 99, 235, 0.06);
+      }
+      .col-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .col-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .badge {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 3px 8px;
+        border-radius: 999px;
+      }
+      .badge-recommended {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
+      .step-block {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .step-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .step-num {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #f1f5f9;
+        color: #475569;
+        font-size: 11px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .upload-col.premium .step-num {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
+      .step-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #334155;
+      }
+      .step-desc {
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.5;
+      }
+      .cmd-block {
+        background: #0f172a;
+        color: #e2e8f0;
+        font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+        font-size: 12px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        overflow-x: auto;
+        white-space: pre;
+        line-height: 1.6;
+        position: relative;
+      }
+      .cmd-block .cmd-prompt {
+        color: #94a3b8;
+        user-select: none;
+      }
+      .cmd-block .cmd-text {
+        color: #7dd3fc;
+      }
+      .cmd-block-copy {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: #94a3b8;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s;
+      }
+      .cmd-block-copy:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: #fff;
+      }
+      .drop-zone {
+        border: 2px dashed #cbd5e1;
+        border-radius: 10px;
+        padding: 24px 16px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: #f8fafc;
+      }
+      .drop-zone:hover {
+        border-color: #93c5fd;
+        background: #f0f7ff;
+      }
+      .upload-col.premium .drop-zone {
+        border-color: #93c5fd;
+        background: #f8fbff;
+      }
+      .upload-col.premium .drop-zone:hover {
+        border-color: #60a5fa;
+        background: #eff6ff;
+      }
+      .drop-zone-icon {
+        width: 36px;
+        height: 36px;
+        margin: 0 auto 8px;
+        color: #94a3b8;
+      }
+      .drop-zone-text {
+        font-size: 13px;
+        font-weight: 500;
+        color: #475569;
+        margin-bottom: 4px;
+      }
+      .drop-zone-sub {
+        font-size: 11px;
+        color: #94a3b8;
+      }
+      .path-block {
+        background: #f1f5f9;
+        border-radius: 6px;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+      }
+      .path-block code {
+        font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+        font-size: 11px;
+        color: #334155;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .path-block button {
+        background: none;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        padding: 3px 6px;
+        cursor: pointer;
+        color: #64748b;
+        font-size: 10px;
+        flex-shrink: 0;
+        transition: all 0.15s;
+      }
+      .path-block button:hover {
+        background: #e2e8f0;
+      }
+      .finder-tip {
+        font-size: 10px;
+        color: #94a3b8;
+        margin-top: 6px;
+        text-align: center;
+      }
+      .finder-tip kbd {
+        background: #e2e8f0;
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: 10px;
+        font-family: inherit;
+        border: 1px solid #cbd5e1;
+      }
+      .bottom-note {
+        text-align: center;
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 24px;
+        line-height: 1.6;
+      }
+
+      /* Redact step */
+      .redact-step {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        padding: 12px 14px;
+      }
+      .redact-step .shield-icon {
+        flex-shrink: 0;
+        color: #16a34a;
+        margin-top: 1px;
+      }
+      .upload-col.premium .redact-step {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+      }
+      .upload-col.premium .redact-step .shield-icon {
+        color: #2563eb;
+      }
+
+      /* Comparison table */
+      .compare-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        margin-top: 8px;
+      }
+      .compare-table th {
+        text-align: left;
+        padding: 8px 12px;
+        font-weight: 600;
+        color: #475569;
+        border-bottom: 2px solid #e2e8f0;
+        font-size: 12px;
+      }
+      .compare-table th:not(:first-child) {
+        text-align: center;
+      }
+      .compare-table td {
+        padding: 7px 12px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+      }
+      .compare-table td:not(:first-child) {
+        text-align: center;
+      }
+      .compare-table tr:last-child td {
+        border-bottom: none;
+      }
+      .check-yes {
+        color: #16a34a;
+        font-weight: 700;
+      }
+      .check-no {
+        color: #cbd5e1;
+      }
+      .compare-table .highlight-col {
+        background: #f0f7ff;
+      }
+
+      /* Collapsible compare toggle */
+      .compare-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        user-select: none;
+        padding: 4px 0;
+      }
+      .compare-toggle h3 {
+        margin: 0;
+      }
+      .compare-toggle .chevron {
+        transition: transform 0.2s;
+        color: #94a3b8;
+        flex-shrink: 0;
+      }
+      .compare-toggle.expanded .chevron {
+        transform: rotate(180deg);
+      }
+      .compare-teaser {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-top: 4px;
+      }
+      .compare-body {
+        display: none;
+        margin-top: 12px;
+      }
+      .compare-body.open {
+        display: block;
+      }
+
+      /* Dark mode mockup preview */
+      .dark-preview {
+        display: none;
+      }
+      .dark-preview.active {
+        display: block;
+      }
+      .light-preview {
+        display: block;
+      }
+      .light-preview.active {
+        display: block;
+      }
+
+      /* Dark mode column styles */
+      .dark-wrapper {
+        background: #0f172a;
+        border-radius: 12px;
+        padding: 32px;
+      }
+      .dark-wrapper .upload-col {
+        background: #1e293b;
+        border-color: #334155;
+      }
+      .dark-wrapper .upload-col.premium {
+        border-color: #1e40af;
+        box-shadow:
+          0 0 0 1px rgba(37, 99, 235, 0.15),
+          0 4px 16px rgba(37, 99, 235, 0.1);
+      }
+      .dark-wrapper .col-title {
+        color: #e2e8f0;
+      }
+      .dark-wrapper .step-num {
+        background: #334155;
+        color: #cbd5e1;
+      }
+      .dark-wrapper .upload-col.premium .step-num {
+        background: #1e3a5f;
+        color: #60a5fa;
+      }
+      .dark-wrapper .step-title {
+        color: #e2e8f0;
+      }
+      .dark-wrapper .step-desc {
+        color: #cbd5e1;
+      }
+      .dark-wrapper .drop-zone {
+        border-color: #475569;
+        background: #1e293b;
+      }
+      .dark-wrapper .drop-zone:hover {
+        border-color: #60a5fa;
+        background: #1e293b;
+      }
+      .dark-wrapper .upload-col.premium .drop-zone {
+        border-color: #1e40af;
+        background: #0f1d32;
+      }
+      .dark-wrapper .drop-zone-text {
+        color: #e2e8f0;
+      }
+      .dark-wrapper .drop-zone-sub {
+        color: #94a3b8;
+      }
+      .dark-wrapper .drop-zone-icon {
+        color: #64748b;
+      }
+      .dark-wrapper .path-block {
+        background: #334155;
+      }
+      .dark-wrapper .path-block code {
+        color: #e2e8f0;
+      }
+      .dark-wrapper .path-block button {
+        border-color: #475569;
+        color: #cbd5e1;
+      }
+      .dark-wrapper .path-block button:hover {
+        background: #475569;
+      }
+      .dark-wrapper .finder-tip {
+        color: #94a3b8;
+      }
+      .dark-wrapper .finder-tip kbd {
+        background: #334155;
+        border-color: #475569;
+        color: #cbd5e1;
+      }
+      .dark-wrapper .bottom-note {
+        color: #cbd5e1;
+      }
+      .dark-wrapper .compare-wrapper {
+        background: #1e293b;
+        border-color: #334155;
+      }
+      .dark-wrapper .compare-wrapper h3 {
+        color: #e2e8f0;
+      }
+      .dark-wrapper .compare-table th {
+        color: #cbd5e1;
+        border-bottom-color: #334155;
+      }
+      .dark-wrapper .compare-table td {
+        color: #e2e8f0;
+        border-bottom-color: #1e293b;
+      }
+      .dark-wrapper .compare-table .highlight-col {
+        background: rgba(96, 165, 250, 0.1);
+      }
+      .dark-wrapper .badge-recommended {
+        background: #1e3a5f;
+        color: #60a5fa;
+      }
+      .dark-wrapper .redact-step {
+        background: rgba(34, 197, 94, 0.08);
+        border-color: #166534;
+      }
+      .dark-wrapper .redact-step .step-title {
+        color: #e2e8f0;
+      }
+      .dark-wrapper .redact-step .step-desc {
+        color: #cbd5e1;
+      }
+      .dark-wrapper .redact-step .shield-icon {
+        color: #4ade80;
+      }
+      .dark-wrapper .upload-col.premium .redact-step {
+        background: rgba(96, 165, 250, 0.08);
+        border-color: #1e40af;
+      }
+      .dark-wrapper .upload-col.premium .redact-step .shield-icon {
+        color: #60a5fa;
+      }
+      .dark-wrapper .compare-toggle .chevron {
+        color: #64748b;
+      }
+      .dark-wrapper .compare-teaser {
+        color: #64748b;
+      }
+      .dark-wrapper .check-no {
+        color: #475569;
+      }
+
+      .compare-wrapper {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin-top: 24px;
+      }
+      .compare-wrapper h3 {
+        font-size: 14px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 0;
+      }
+
+      /* ===== V3 styles ===== */
+
+      /* Reassurance banner (common Step 3) */
+      .reassurance-banner {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        background: #f0fdf4;
+        border: 1.5px solid #bbf7d0;
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin-top: 28px;
+      }
+      .reassurance-banner .shield-icon {
+        flex-shrink: 0;
+        color: #16a34a;
+        margin-top: 2px;
+      }
+      .reassurance-banner .banner-content {
+        flex: 1;
+      }
+      .reassurance-banner .banner-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+      }
+      .reassurance-banner .banner-label .step-num {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #dcfce7;
+        color: #16a34a;
+        font-size: 11px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .reassurance-banner .banner-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #166534;
+      }
+      .reassurance-banner .banner-desc {
+        font-size: 13px;
+        color: #15803d;
+        line-height: 1.6;
+      }
+      .dark-wrapper .reassurance-banner {
+        background: rgba(34, 197, 94, 0.08);
+        border-color: #166534;
+      }
+      .dark-wrapper .reassurance-banner .banner-label .step-num {
+        background: rgba(34, 197, 94, 0.15);
+        color: #4ade80;
+      }
+      .dark-wrapper .reassurance-banner .banner-title {
+        color: #4ade80;
+      }
+      .dark-wrapper .reassurance-banner .banner-desc {
+        color: #86efac;
+      }
+
+      /* V3 cmd-block: full-width, left-aligned */
+      .v3 .cmd-block {
+        margin-left: 0;
+        margin-right: 0;
+        padding: 12px 48px 12px 14px;
+        display: flex;
+        align-items: center;
+      }
+      .v3 .step-block .cmd-block {
+        margin-top: 4px;
+      }
+
+      /* V3 cmd-block-copy: prominent */
+      .v3 .cmd-block-copy {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #e2e8f0;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+      .v3 .cmd-block-copy:hover {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.4);
+        color: #fff;
+      }
+
+      /* Compare preview with gradient fade */
+      .compare-preview-wrapper {
+        position: relative;
+        overflow: hidden;
+      }
+      .compare-preview-wrapper .compare-table {
+        margin-top: 8px;
+      }
+      .compare-preview-wrapper .fade-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: linear-gradient(transparent, #fff);
+        pointer-events: none;
+      }
+      .dark-wrapper .compare-preview-wrapper .fade-overlay {
+        background: linear-gradient(transparent, #1e293b);
+      }
+      .compare-preview-wrapper .see-all-btn {
+        display: block;
+        margin: 12px auto 0;
+        background: none;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 6px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #2563eb;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s;
+      }
+      .compare-preview-wrapper .see-all-btn:hover {
+        background: #f0f7ff;
+        border-color: #93c5fd;
+      }
+      .dark-wrapper .compare-preview-wrapper .see-all-btn {
+        border-color: #475569;
+        color: #60a5fa;
+      }
+      .dark-wrapper .compare-preview-wrapper .see-all-btn:hover {
+        background: rgba(96, 165, 250, 0.1);
+        border-color: #60a5fa;
+      }
+      .compare-preview-wrapper .full-table {
+        display: none;
+      }
+      .compare-preview-wrapper.expanded .preview-table {
+        display: none;
+      }
+      .compare-preview-wrapper.expanded .full-table {
+        display: block;
+      }
+      .compare-preview-wrapper.expanded .fade-overlay {
+        display: none;
+      }
+    </style>
+  </head>
+  <body class="viewport-desktop">
+    <nav class="mockup-nav">
+      <span class="title">Upload Screen Redesign</span>
+      <a href="#light-mode">Light Mode</a>
+      <a href="#dark-mode">Dark Mode</a>
+      <a href="#comparison">Comparison Table</a>
+      <div class="viewport-toggle">
+        <button data-viewport="mobile">Mobile</button>
+        <button data-viewport="desktop" class="active">Desktop</button>
+      </div>
+      <button class="copy-all-btn" onclick="copyAllFeedback()">
+        Copy All Feedback
+      </button>
+    </nav>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SECTION 1: LIGHT MODE -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div
+      class="mockup-section wide"
+      data-section-id="light-mode"
+      id="light-mode"
+    >
+      <span class="section-label">Light Mode — Upload Step 1</span>
+      <p class="section-desc">
+        Side-by-side comparison layout replacing the current single drop zone.
+        Each column guides the user through generating and uploading one of the
+        two report types.
+      </p>
+
+      <div class="design-note info">
+        <strong>Key changes from current:</strong> Single drop zone replaced
+        with two guided columns. Each column has numbered steps (generate, then
+        upload). Right column is visually accented as the recommended option.
+        Comparison table below clarifies the difference.
+      </div>
+
+      <div class="design-note info">
+        <strong>v2 changes:</strong> Added Step 3 "Review &amp; Redact" to both
+        columns. Renamed "Upgraded" to "Enhanced" with "(free)" label.
+        Comparison table collapsed by default. See version toggle below.
+      </div>
+
+      <div class="design-note info">
+        <strong>v3 changes:</strong> Both shield icons green. "Install the
+        Insight Harness skill" copy. Step 3 pulled out as full-width reassurance
+        banner below columns. Comparison table shows first 3 rows with gradient
+        fade + "See all features" button. Code blocks left-aligned and
+        full-width. Copy buttons made prominent.
+      </div>
+
+      <div class="version-container">
+        <!-- ===== V1 (original) ===== -->
+        <div class="version" data-version="1">
+          <!-- Page header -->
+          <div style="text-align: center; margin-bottom: 28px">
+            <h1
+              style="
+                font-size: 22px;
+                font-weight: 800;
+                color: #0f172a;
+                margin-bottom: 6px;
+              "
+            >
+              Upload Your Report
+            </h1>
+            <p style="font-size: 14px; color: #64748b">
+              Choose your report type, generate it in Claude Code, then upload
+              the file.
+            </p>
+          </div>
+
+          <!-- Two columns -->
+          <div class="upload-columns">
+            <!-- LEFT: /insights (Standard) -->
+            <div class="upload-col">
+              <div class="col-header">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#475569"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                  />
+                  <polyline points="14,2 14,8 20,8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                  <polyline points="10,9 9,9 8,9" />
+                </svg>
+                <span class="col-title">/insights (Standard)</span>
+              </div>
+
+              <div class="step-block">
+                <div class="step-header">
+                  <span class="step-num">1</span>
+                  <span class="step-title">Run /insights</span>
+                </div>
+                <p class="step-desc">
+                  Built into Claude Code. Generates a narrative report about
+                  your usage patterns.
+                </p>
+                <div class="cmd-block">
+                  <span class="cmd-prompt">&gt; </span
+                  ><span class="cmd-text">/insights</span>
+                  <button
+                    class="cmd-block-copy"
+                    onclick="copyCmd(this, '/insights')"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              <div class="step-block">
+                <div class="step-header">
+                  <span class="step-num">2</span>
+                  <span class="step-title">Upload the report</span>
+                </div>
+                <div
+                  class="drop-zone"
+                  ondragover="event.preventDefault()"
+                  ondrop="event.preventDefault()"
+                >
+                  <svg
+                    class="drop-zone-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                  <div class="drop-zone-text">
+                    Drop file here or click to browse
+                  </div>
+                  <div class="drop-zone-sub">Accepts .html files</div>
+                </div>
+                <div class="path-block">
+                  <code>~/.claude/usage-data/report.html</code>
+                  <button
+                    onclick="copyCmd(this, '~/.claude/usage-data/report.html')"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <p class="finder-tip">
+                  Tip: In Finder, press <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd
+                    >G</kbd
+                  >
+                  and paste the path above.
+                </p>
+              </div>
+            </div>
+
+            <!-- RIGHT: /insight-harness (Upgraded — v1 name) -->
+            <div class="upload-col premium">
+              <div class="col-header">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#2563eb"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polygon
+                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                  />
+                </svg>
+                <span class="col-title">/insight-harness (Upgraded)</span>
+                <span class="badge badge-recommended">Recommended</span>
+              </div>
+
+              <div class="step-block">
+                <div class="step-header">
+                  <span class="step-num">1</span>
+                  <span class="step-title">Install the skill</span>
+                </div>
+                <p class="step-desc">
+                  Everything from /insights PLUS token usage, tool breakdowns,
+                  skill inventory, hooks, agent patterns, and more.
+                </p>
+                <div class="cmd-block" style="font-size: 11px">
+                  <span class="cmd-prompt">&gt; </span
+                  ><span class="cmd-text"
+                    >claude install-skill
+                    https://github.com/craigdossantos/claude-toolkit/tree/main/skills/insight-harness</span
+                  >
+                  <button
+                    class="cmd-block-copy"
+                    onclick="
+                      copyCmd(
+                        this,
+                        'claude install-skill https://github.com/craigdossantos/claude-toolkit/tree/main/skills/insight-harness',
+                      )
+                    "
+                  >
+                    Copy
+                  </button>
+                </div>
+                <p class="step-desc" style="margin-top: 4px">Then run:</p>
+                <div class="cmd-block">
+                  <span class="cmd-prompt">&gt; </span
+                  ><span class="cmd-text">/insight-harness</span>
+                  <button
+                    class="cmd-block-copy"
+                    onclick="copyCmd(this, '/insight-harness')"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              <div class="step-block">
+                <div class="step-header">
+                  <span class="step-num">2</span>
+                  <span class="step-title">Upload the report</span>
+                </div>
+                <div
+                  class="drop-zone"
+                  ondragover="event.preventDefault()"
+                  ondrop="event.preventDefault()"
+                >
+                  <svg
+                    class="drop-zone-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                  <div class="drop-zone-text">
+                    Drop file here or click to browse
+                  </div>
+                  <div class="drop-zone-sub">Accepts .html files</div>
+                </div>
+                <div class="path-block">
+                  <code>~/.claude/usage-data/insight-harness.html</code>
+                  <button
+                    onclick="
+                      copyCmd(this, '~/.claude/usage-data/insight-harness.html')
+                    "
+                  >
+                    Copy
+                  </button>
+                </div>
+                <p class="finder-tip">
+                  Tip: In Finder, press <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd
+                    >G</kbd
+                  >
+                  and paste the path above.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <p class="bottom-note">
+            Both report types work. The Insight Harness report includes
+            everything from /insights plus detailed harness data.
+          </p>
+
+          <div class="compare-wrapper">
+            <h3>What's included?</h3>
+            <table class="compare-table">
+              <thead>
+                <tr>
+                  <th>Feature</th>
+                  <th>/insights</th>
+                  <th class="highlight-col">/insight-harness</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Usage narrative</td>
+                  <td class="check-yes">&#10003;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr>
+                  <td>Conversation count</td>
+                  <td class="check-yes">&#10003;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr>
+                  <td>Active days &amp; streaks</td>
+                  <td class="check-yes">&#10003;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr>
+                  <td>Model usage breakdown</td>
+                  <td class="check-yes">&#10003;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr>
+                  <td>Token consumption stats</td>
+                  <td class="check-no">&#8212;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr>
+                  <td>Tool usage breakdown</td>
+                  <td class="check-no">&#8212;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr>
+                  <td>Skill inventory</td>
+                  <td class="check-no">&#8212;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr>
+                  <td>Hooks &amp; MCP servers</td>
+                  <td class="check-no">&#8212;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr>
+                  <td>Agent patterns</td>
+                  <td class="check-no">&#8212;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr>
+                  <td>Cost estimation</td>
+                  <td class="check-no">&#8212;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ===== V2 (with feedback applied) ===== -->
+        <div class="version" data-version="2">
+          <div style="text-align: center; margin-bottom: 28px">
+            <h1
+              style="
+                font-size: 22px;
+                font-weight: 800;
+                color: #0f172a;
+                margin-bottom: 6px;
+              "
+            >
+              Upload Your Report
+            </h1>
+            <p style="font-size: 14px; color: #64748b">
+              Choose your report type, generate it in Claude Code, then upload
+              the file.
+            </p>
+          </div>
+
+          <div class="upload-columns">
+            <!-- LEFT: /insights (Standard) — v2 -->
+            <div class="upload-col">
+              <div class="col-header">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#475569"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                  />
+                  <polyline points="14,2 14,8 20,8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                  <polyline points="10,9 9,9 8,9" />
+                </svg>
+                <span class="col-title">/insights (Standard)</span>
+              </div>
+
+              <!-- Step 1 -->
+              <div class="step-block">
+                <div class="step-header">
+                  <span class="step-num">1</span>
+                  <span class="step-title">Run /insights</span>
+                </div>
+                <p class="step-desc">
+                  Built into Claude Code. Generates a narrative report about
+                  your usage patterns.
+                </p>
+                <div class="cmd-block">
+                  <span class="cmd-prompt">&gt; </span
+                  ><span class="cmd-text">/insights</span>
+                  <button
+                    class="cmd-block-copy"
+                    onclick="copyCmd(this, '/insights')"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              <!-- Step 2 -->
+              <div class="step-block">
+                <div class="step-header">
+                  <span class="step-num">2</span>
+                  <span class="step-title">Upload the report</span>
+                </div>
+                <div
+                  class="drop-zone"
+                  ondragover="event.preventDefault()"
+                  ondrop="event.preventDefault()"
+                >
+                  <svg
+                    class="drop-zone-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                  <div class="drop-zone-text">
+                    Drop file here or click to browse
+                  </div>
+                  <div class="drop-zone-sub">Accepts .html files</div>
+                </div>
+                <div class="path-block">
+                  <code>~/.claude/usage-data/report.html</code>
+                  <button
+                    onclick="copyCmd(this, '~/.claude/usage-data/report.html')"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <p class="finder-tip">
+                  Tip: In Finder, press <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd
+                    >G</kbd
+                  >
+                  and paste the path above.
+                </p>
+              </div>
+
+              <!-- Step 3: Review & Redact -->
+              <div class="step-block">
+                <div class="step-header">
+                  <span class="step-num">3</span>
+                  <span class="step-title">Review &amp; Redact</span>
+                </div>
+                <div class="redact-step">
+                  <svg
+                    class="shield-icon"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                  <div>
+                    <p class="step-desc">
+                      We'll automatically detect non-public information (project
+                      names, file paths, emails) and let you review before
+                      sharing. Nothing is published without your approval.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT: /insight-harness (Enhanced) — v2 -->
+            <div class="upload-col premium">
+              <div class="col-header">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#2563eb"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polygon
+                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                  />
+                </svg>
+                <span class="col-title">/insight-harness (Enhanced)</span>
+                <span class="badge badge-recommended">Recommended</span>
+              </div>
+
+              <!-- Step 1 -->
+              <div class="step-block">
+                <div class="step-header">
+                  <span class="step-num">1</span>
+                  <span class="step-title"
+                    >Install the skill
+                    <span
+                      style="font-weight: 400; color: #16a34a; font-size: 11px"
+                      >(free)</span
+                    ></span
+                  >
+                </div>
+                <p class="step-desc">
+                  Everything from /insights PLUS token usage, tool breakdowns,
+                  skill inventory, hooks, agent patterns, and more.
+                </p>
+                <div class="cmd-block" style="font-size: 11px">
+                  <span class="cmd-prompt">&gt; </span
+                  ><span class="cmd-text"
+                    >claude install-skill
+                    https://github.com/craigdossantos/claude-toolkit/tree/main/skills/insight-harness</span
+                  >
+                  <button
+                    class="cmd-block-copy"
+                    onclick="
+                      copyCmd(
+                        this,
+                        'claude install-skill https://github.com/craigdossantos/claude-toolkit/tree/main/skills/insight-harness',
+                      )
+                    "
+                  >
+                    Copy
+                  </button>
+                </div>
+                <p class="step-desc" style="margin-top: 4px">Then run:</p>
+                <div class="cmd-block">
+                  <span class="cmd-prompt">&gt; </span
+                  ><span class="cmd-text">/insight-harness</span>
+                  <button
+                    class="cmd-block-copy"
+                    onclick="copyCmd(this, '/insight-harness')"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              <!-- Step 2 -->
+              <div class="step-block">
+                <div class="step-header">
+                  <span class="step-num">2</span>
+                  <span class="step-title">Upload the report</span>
+                </div>
+                <div
+                  class="drop-zone"
+                  ondragover="event.preventDefault()"
+                  ondrop="event.preventDefault()"
+                >
+                  <svg
+                    class="drop-zone-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                  <div class="drop-zone-text">
+                    Drop file here or click to browse
+                  </div>
+                  <div class="drop-zone-sub">Accepts .html files</div>
+                </div>
+                <div class="path-block">
+                  <code>~/.claude/usage-data/insight-harness.html</code>
+                  <button
+                    onclick="
+                      copyCmd(this, '~/.claude/usage-data/insight-harness.html')
+                    "
+                  >
+                    Copy
+                  </button>
+                </div>
+                <p class="finder-tip">
+                  Tip: In Finder, press <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd
+                    >G</kbd
+                  >
+                  and paste the path above.
+                </p>
+              </div>
+
+              <!-- Step 3: Review & Redact -->
+              <div class="step-block">
+                <div class="step-header">
+                  <span class="step-num">3</span>
+                  <span class="step-title">Review &amp; Redact</span>
+                </div>
+                <div class="redact-step">
+                  <svg
+                    class="shield-icon"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                  <div>
+                    <p class="step-desc">
+                      We'll automatically detect non-public information (project
+                      names, file paths, emails) and let you review before
+                      sharing. Nothing is published without your approval.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p class="bottom-note">
+            Both report types work. The Enhanced report includes everything from
+            /insights plus detailed harness data.
+          </p>
+
+          <!-- Collapsible comparison table -->
+          <div class="compare-wrapper">
+            <div class="compare-toggle" onclick="toggleCompare(this)">
+              <h3>What's included in each report?</h3>
+              <svg
+                class="chevron"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+            <p class="compare-teaser">
+              The Enhanced report includes everything from Standard plus 10
+              additional sections
+            </p>
+            <div class="compare-body">
+              <table class="compare-table">
+                <thead>
+                  <tr>
+                    <th>Feature</th>
+                    <th>/insights</th>
+                    <th class="highlight-col">/insight-harness</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Usage narrative</td>
+                    <td class="check-yes">&#10003;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Conversation count</td>
+                    <td class="check-yes">&#10003;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Active days &amp; streaks</td>
+                    <td class="check-yes">&#10003;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Model usage breakdown</td>
+                    <td class="check-yes">&#10003;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Token consumption stats</td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Tool usage breakdown</td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Skill inventory</td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Hooks &amp; MCP servers</td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Agent patterns</td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Cost estimation</td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== V3 (feedback round 2) ===== -->
+        <div class="version active" data-version="3">
+          <div class="v3">
+            <div style="text-align: center; margin-bottom: 28px">
+              <h1
+                style="
+                  font-size: 22px;
+                  font-weight: 800;
+                  color: #0f172a;
+                  margin-bottom: 6px;
+                "
+              >
+                Upload Your Report
+              </h1>
+              <p style="font-size: 14px; color: #64748b">
+                Choose your report type, generate it in Claude Code, then upload
+                the file.
+              </p>
+            </div>
+
+            <div class="upload-columns">
+              <!-- LEFT: /insights (Standard) — v3 -->
+              <div class="upload-col">
+                <div class="col-header">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#475569"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                    />
+                    <polyline points="14,2 14,8 20,8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10,9 9,9 8,9" />
+                  </svg>
+                  <span class="col-title">/insights (Standard)</span>
+                </div>
+
+                <!-- Step 1 -->
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">1</span>
+                    <span class="step-title">Run /insights</span>
+                  </div>
+                  <p class="step-desc">
+                    Built into Claude Code. Generates a narrative report about
+                    your usage patterns.
+                  </p>
+                  <div class="cmd-block">
+                    <span class="cmd-prompt">&gt; </span
+                    ><span class="cmd-text">/insights</span>
+                    <button
+                      class="cmd-block-copy"
+                      onclick="copyCmd(this, '/insights')"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">2</span>
+                    <span class="step-title">Upload the report</span>
+                  </div>
+                  <div
+                    class="drop-zone"
+                    ondragover="event.preventDefault()"
+                    ondrop="event.preventDefault()"
+                  >
+                    <svg
+                      class="drop-zone-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <div class="drop-zone-text">
+                      Drop file here or click to browse
+                    </div>
+                    <div class="drop-zone-sub">Accepts .html files</div>
+                  </div>
+                  <div class="path-block">
+                    <code>~/.claude/usage-data/report.html</code>
+                    <button
+                      onclick="
+                        copyCmd(this, '~/.claude/usage-data/report.html')
+                      "
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <p class="finder-tip">
+                    Tip: In Finder, press <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd
+                      >G</kbd
+                    >
+                    and paste the path above.
+                  </p>
+                </div>
+              </div>
+
+              <!-- RIGHT: /insight-harness (Enhanced) — v3 -->
+              <div class="upload-col premium">
+                <div class="col-header">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#2563eb"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                    />
+                  </svg>
+                  <span class="col-title">/insight-harness (Enhanced)</span>
+                  <span class="badge badge-recommended">Recommended</span>
+                </div>
+
+                <!-- Step 1 -->
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">1</span>
+                    <span class="step-title"
+                      >Install the Insight Harness skill
+                      <span
+                        style="
+                          font-weight: 400;
+                          color: #16a34a;
+                          font-size: 11px;
+                        "
+                        >(free)</span
+                      ></span
+                    >
+                  </div>
+                  <p class="step-desc">
+                    Everything from /insights PLUS token usage, tool breakdowns,
+                    skill inventory, hooks, agent patterns, and more.
+                  </p>
+                  <div class="cmd-block" style="font-size: 11px">
+                    <span class="cmd-prompt">&gt; </span
+                    ><span class="cmd-text"
+                      >claude install-skill
+                      https://github.com/craigdossantos/claude-toolkit/tree/main/skills/insight-harness</span
+                    >
+                    <button
+                      class="cmd-block-copy"
+                      onclick="
+                        copyCmd(
+                          this,
+                          'claude install-skill https://github.com/craigdossantos/claude-toolkit/tree/main/skills/insight-harness',
+                        )
+                      "
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <p class="step-desc" style="margin-top: 4px">Then run:</p>
+                  <div class="cmd-block">
+                    <span class="cmd-prompt">&gt; </span
+                    ><span class="cmd-text">/insight-harness</span>
+                    <button
+                      class="cmd-block-copy"
+                      onclick="copyCmd(this, '/insight-harness')"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">2</span>
+                    <span class="step-title">Upload the report</span>
+                  </div>
+                  <div
+                    class="drop-zone"
+                    ondragover="event.preventDefault()"
+                    ondrop="event.preventDefault()"
+                  >
+                    <svg
+                      class="drop-zone-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <div class="drop-zone-text">
+                      Drop file here or click to browse
+                    </div>
+                    <div class="drop-zone-sub">Accepts .html files</div>
+                  </div>
+                  <div class="path-block">
+                    <code>~/.claude/usage-data/insight-harness.html</code>
+                    <button
+                      onclick="
+                        copyCmd(
+                          this,
+                          '~/.claude/usage-data/insight-harness.html',
+                        )
+                      "
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <p class="finder-tip">
+                    Tip: In Finder, press <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd
+                      >G</kbd
+                    >
+                    and paste the path above.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3: Reassurance banner (common to both paths) -->
+            <div class="reassurance-banner">
+              <svg
+                class="shield-icon"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              <div class="banner-content">
+                <div class="banner-label">
+                  <span class="step-num">3</span>
+                  <span class="banner-title">Review &amp; Redact</span>
+                </div>
+                <p class="banner-desc">
+                  We automatically detect non-public information (project names,
+                  file paths, emails) and let you review before sharing.
+                </p>
+              </div>
+            </div>
+
+            <p class="bottom-note">
+              Both report types work. The Enhanced report includes everything
+              from /insights plus detailed harness data.
+            </p>
+
+            <!-- Comparison table with gradient preview -->
+            <div class="compare-wrapper">
+              <h3 style="margin-bottom: 4px">
+                What's included in each report?
+              </h3>
+              <div class="compare-preview-wrapper" id="light-compare-v3">
+                <!-- Preview: first 3 rows visible -->
+                <div class="preview-table">
+                  <table class="compare-table">
+                    <thead>
+                      <tr>
+                        <th>Feature</th>
+                        <th>/insights</th>
+                        <th class="highlight-col">/insight-harness</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Usage narrative</td>
+                        <td class="check-yes">&#10003;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Conversation count</td>
+                        <td class="check-yes">&#10003;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Active days &amp; streaks</td>
+                        <td class="check-yes">&#10003;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Model usage breakdown</td>
+                        <td class="check-yes">&#10003;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div class="fade-overlay"></div>
+                </div>
+                <!-- Full table (hidden until expanded) -->
+                <div class="full-table">
+                  <table class="compare-table">
+                    <thead>
+                      <tr>
+                        <th>Feature</th>
+                        <th>/insights</th>
+                        <th class="highlight-col">/insight-harness</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Usage narrative</td>
+                        <td class="check-yes">&#10003;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Conversation count</td>
+                        <td class="check-yes">&#10003;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Active days &amp; streaks</td>
+                        <td class="check-yes">&#10003;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Model usage breakdown</td>
+                        <td class="check-yes">&#10003;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Token consumption stats</td>
+                        <td class="check-no">&#8212;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Tool usage breakdown</td>
+                        <td class="check-no">&#8212;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Skill inventory</td>
+                        <td class="check-no">&#8212;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Hooks &amp; MCP servers</td>
+                        <td class="check-no">&#8212;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Agent patterns</td>
+                        <td class="check-no">&#8212;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Cost estimation</td>
+                        <td class="check-no">&#8212;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <button class="see-all-btn" onclick="togglePreviewTable(this)">
+                  See all features &#9660;
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Version nav -->
+        <div class="version-nav visible">
+          <button data-dir="prev" disabled>&larr; Prev</button>
+          <span class="version-label">Version 3 of 3</span>
+          <button data-dir="next" disabled>Next &rarr;</button>
+        </div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="feedback-area">
+        <label>Feedback — Light Mode Layout</label>
+        <textarea
+          data-feedback="light-mode"
+          placeholder="Does the side-by-side layout clearly communicate the two options? Is the 'Recommended' column prominent enough without being pushy?"
+        ></textarea>
+        <div class="char-count">0 chars</div>
+      </div>
+    </div>
+
+    <div
+      class="section-divider"
+      style="max-width: 1200px; margin-left: auto; margin-right: auto"
+    ></div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SECTION 2: DARK MODE -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="mockup-section wide" data-section-id="dark-mode" id="dark-mode">
+      <span class="section-label">Dark Mode — Upload Step 1</span>
+      <p class="section-desc">
+        Same layout in dark mode. Verifying that the premium accent, drop zones,
+        and command blocks remain legible and visually distinct.
+      </p>
+
+      <div class="design-note info">
+        <strong>v2 changes:</strong> Improved dark mode contrast to meet WCAG AA
+        ratios (4.5:1 normal text, 3:1 large text). Text upgraded from slate-400
+        (#94a3b8) to slate-200 (#e2e8f0) / slate-300 (#cbd5e1). Added Step 3
+        "Review &amp; Redact". Renamed "Upgraded" to "Enhanced" with "(free)".
+        Collapsible comparison table.
+      </div>
+
+      <div class="design-note info">
+        <strong>v3 changes:</strong> Both shield icons green. "Install the
+        Insight Harness skill" copy. Step 3 pulled out as full-width reassurance
+        banner below columns. Comparison table shows first 3 rows with gradient
+        fade + "See all features" button. Code blocks left-aligned and
+        full-width. Copy buttons made prominent.
+      </div>
+
+      <div class="version-container">
+        <!-- ===== V1 (original dark mode) ===== -->
+        <div class="version" data-version="1">
+          <div
+            class="dark-wrapper"
+            style="/* v1 uses original contrast levels */"
+          >
+            <div style="text-align: center; margin-bottom: 28px">
+              <h1
+                style="
+                  font-size: 22px;
+                  font-weight: 800;
+                  color: #f1f5f9;
+                  margin-bottom: 6px;
+                "
+              >
+                Upload Your Report
+              </h1>
+              <p style="font-size: 14px; color: #94a3b8">
+                Choose your report type, generate it in Claude Code, then upload
+                the file.
+              </p>
+            </div>
+
+            <div class="upload-columns">
+              <!-- LEFT: Standard (v1 dark) -->
+              <div class="upload-col">
+                <div class="col-header">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#94a3b8"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                    />
+                    <polyline points="14,2 14,8 20,8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10,9 9,9 8,9" />
+                  </svg>
+                  <span class="col-title">/insights (Standard)</span>
+                </div>
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">1</span
+                    ><span class="step-title">Run /insights</span>
+                  </div>
+                  <p class="step-desc">
+                    Built into Claude Code. Generates a narrative report about
+                    your usage patterns.
+                  </p>
+                  <div class="cmd-block">
+                    <span class="cmd-prompt">&gt; </span
+                    ><span class="cmd-text">/insights</span>
+                  </div>
+                </div>
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">2</span
+                    ><span class="step-title">Upload the report</span>
+                  </div>
+                  <div class="drop-zone">
+                    <svg
+                      class="drop-zone-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <div class="drop-zone-text">
+                      Drop file here or click to browse
+                    </div>
+                    <div class="drop-zone-sub">Accepts .html files</div>
+                  </div>
+                  <div class="path-block">
+                    <code>~/.claude/usage-data/report.html</code
+                    ><button>Copy</button>
+                  </div>
+                  <p class="finder-tip">
+                    Tip: In Finder, press <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd
+                      >G</kbd
+                    >
+                    and paste the path above.
+                  </p>
+                </div>
+              </div>
+
+              <!-- RIGHT: Upgraded (v1 dark) -->
+              <div class="upload-col premium">
+                <div class="col-header">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#60a5fa"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                    />
+                  </svg>
+                  <span class="col-title">/insight-harness (Upgraded)</span>
+                  <span class="badge badge-recommended">Recommended</span>
+                </div>
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">1</span
+                    ><span class="step-title">Install the skill</span>
+                  </div>
+                  <p class="step-desc">
+                    Everything from /insights PLUS token usage, tool breakdowns,
+                    skill inventory, hooks, agent patterns, and more.
+                  </p>
+                  <div class="cmd-block" style="font-size: 11px">
+                    <span class="cmd-prompt">&gt; </span
+                    ><span class="cmd-text"
+                      >claude install-skill
+                      https://github.com/craigdossantos/claude-toolkit/tree/main/skills/insight-harness</span
+                    >
+                  </div>
+                  <p class="step-desc" style="margin-top: 4px">Then run:</p>
+                  <div class="cmd-block">
+                    <span class="cmd-prompt">&gt; </span
+                    ><span class="cmd-text">/insight-harness</span>
+                  </div>
+                </div>
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">2</span
+                    ><span class="step-title">Upload the report</span>
+                  </div>
+                  <div class="drop-zone">
+                    <svg
+                      class="drop-zone-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <div class="drop-zone-text">
+                      Drop file here or click to browse
+                    </div>
+                    <div class="drop-zone-sub">Accepts .html files</div>
+                  </div>
+                  <div class="path-block">
+                    <code>~/.claude/usage-data/insight-harness.html</code
+                    ><button>Copy</button>
+                  </div>
+                  <p class="finder-tip">
+                    Tip: In Finder, press <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd
+                      >G</kbd
+                    >
+                    and paste the path above.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <p class="bottom-note">
+              Both report types work. The Insight Harness report includes
+              everything from /insights plus detailed harness data.
+            </p>
+
+            <div class="compare-wrapper">
+              <h3>What's included?</h3>
+              <table class="compare-table">
+                <thead>
+                  <tr>
+                    <th>Feature</th>
+                    <th>/insights</th>
+                    <th class="highlight-col">/insight-harness</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Usage narrative</td>
+                    <td class="check-yes">&#10003;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Conversation count</td>
+                    <td class="check-yes">&#10003;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Active days &amp; streaks</td>
+                    <td class="check-yes">&#10003;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Model usage breakdown</td>
+                    <td class="check-yes">&#10003;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Token consumption stats</td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Tool usage breakdown</td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Skill inventory</td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Hooks &amp; MCP servers</td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Agent patterns</td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Cost estimation</td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== V2 (dark mode with contrast fixes + feedback) ===== -->
+        <div class="version" data-version="2">
+          <div class="dark-wrapper">
+            <div style="text-align: center; margin-bottom: 28px">
+              <h1
+                style="
+                  font-size: 22px;
+                  font-weight: 800;
+                  color: #f1f5f9;
+                  margin-bottom: 6px;
+                "
+              >
+                Upload Your Report
+              </h1>
+              <p style="font-size: 14px; color: #cbd5e1">
+                Choose your report type, generate it in Claude Code, then upload
+                the file.
+              </p>
+            </div>
+
+            <div class="upload-columns">
+              <!-- LEFT: Standard (v2 dark) -->
+              <div class="upload-col">
+                <div class="col-header">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#cbd5e1"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                    />
+                    <polyline points="14,2 14,8 20,8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10,9 9,9 8,9" />
+                  </svg>
+                  <span class="col-title">/insights (Standard)</span>
+                </div>
+
+                <!-- Step 1 -->
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">1</span
+                    ><span class="step-title">Run /insights</span>
+                  </div>
+                  <p class="step-desc">
+                    Built into Claude Code. Generates a narrative report about
+                    your usage patterns.
+                  </p>
+                  <div class="cmd-block">
+                    <span class="cmd-prompt">&gt; </span
+                    ><span class="cmd-text">/insights</span>
+                  </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">2</span
+                    ><span class="step-title">Upload the report</span>
+                  </div>
+                  <div class="drop-zone">
+                    <svg
+                      class="drop-zone-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <div class="drop-zone-text">
+                      Drop file here or click to browse
+                    </div>
+                    <div class="drop-zone-sub">Accepts .html files</div>
+                  </div>
+                  <div class="path-block">
+                    <code>~/.claude/usage-data/report.html</code
+                    ><button>Copy</button>
+                  </div>
+                  <p class="finder-tip">
+                    Tip: In Finder, press <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd
+                      >G</kbd
+                    >
+                    and paste the path above.
+                  </p>
+                </div>
+
+                <!-- Step 3: Review & Redact -->
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">3</span
+                    ><span class="step-title">Review &amp; Redact</span>
+                  </div>
+                  <div class="redact-step">
+                    <svg
+                      class="shield-icon"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    <div>
+                      <p class="step-desc">
+                        We'll automatically detect non-public information
+                        (project names, file paths, emails) and let you review
+                        before sharing. Nothing is published without your
+                        approval.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- RIGHT: Enhanced (v2 dark) -->
+              <div class="upload-col premium">
+                <div class="col-header">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#60a5fa"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                    />
+                  </svg>
+                  <span class="col-title">/insight-harness (Enhanced)</span>
+                  <span class="badge badge-recommended">Recommended</span>
+                </div>
+
+                <!-- Step 1 -->
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">1</span>
+                    <span class="step-title"
+                      >Install the skill
+                      <span
+                        style="
+                          font-weight: 400;
+                          color: #4ade80;
+                          font-size: 11px;
+                        "
+                        >(free)</span
+                      ></span
+                    >
+                  </div>
+                  <p class="step-desc">
+                    Everything from /insights PLUS token usage, tool breakdowns,
+                    skill inventory, hooks, agent patterns, and more.
+                  </p>
+                  <div class="cmd-block" style="font-size: 11px">
+                    <span class="cmd-prompt">&gt; </span
+                    ><span class="cmd-text"
+                      >claude install-skill
+                      https://github.com/craigdossantos/claude-toolkit/tree/main/skills/insight-harness</span
+                    >
+                  </div>
+                  <p class="step-desc" style="margin-top: 4px">Then run:</p>
+                  <div class="cmd-block">
+                    <span class="cmd-prompt">&gt; </span
+                    ><span class="cmd-text">/insight-harness</span>
+                  </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">2</span
+                    ><span class="step-title">Upload the report</span>
+                  </div>
+                  <div class="drop-zone">
+                    <svg
+                      class="drop-zone-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <div class="drop-zone-text">
+                      Drop file here or click to browse
+                    </div>
+                    <div class="drop-zone-sub">Accepts .html files</div>
+                  </div>
+                  <div class="path-block">
+                    <code>~/.claude/usage-data/insight-harness.html</code
+                    ><button>Copy</button>
+                  </div>
+                  <p class="finder-tip">
+                    Tip: In Finder, press <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd
+                      >G</kbd
+                    >
+                    and paste the path above.
+                  </p>
+                </div>
+
+                <!-- Step 3: Review & Redact -->
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">3</span
+                    ><span class="step-title">Review &amp; Redact</span>
+                  </div>
+                  <div class="redact-step">
+                    <svg
+                      class="shield-icon"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    <div>
+                      <p class="step-desc">
+                        We'll automatically detect non-public information
+                        (project names, file paths, emails) and let you review
+                        before sharing. Nothing is published without your
+                        approval.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p class="bottom-note">
+              Both report types work. The Enhanced report includes everything
+              from /insights plus detailed harness data.
+            </p>
+
+            <!-- Collapsible comparison table (dark) -->
+            <div class="compare-wrapper">
+              <div class="compare-toggle" onclick="toggleCompare(this)">
+                <h3>What's included in each report?</h3>
+                <svg
+                  class="chevron"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
+              <p class="compare-teaser">
+                The Enhanced report includes everything from Standard plus 10
+                additional sections
+              </p>
+              <div class="compare-body">
+                <table class="compare-table">
+                  <thead>
+                    <tr>
+                      <th>Feature</th>
+                      <th>/insights</th>
+                      <th class="highlight-col">/insight-harness</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Usage narrative</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Conversation count</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Active days &amp; streaks</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Model usage breakdown</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Token consumption stats</td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Tool usage breakdown</td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Skill inventory</td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Hooks &amp; MCP servers</td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Agent patterns</td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Cost estimation</td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== V3 (feedback round 2 — dark mode) ===== -->
+        <div class="version active" data-version="3">
+          <div class="dark-wrapper v3">
+            <div style="text-align: center; margin-bottom: 28px">
+              <h1
+                style="
+                  font-size: 22px;
+                  font-weight: 800;
+                  color: #f1f5f9;
+                  margin-bottom: 6px;
+                "
+              >
+                Upload Your Report
+              </h1>
+              <p style="font-size: 14px; color: #cbd5e1">
+                Choose your report type, generate it in Claude Code, then upload
+                the file.
+              </p>
+            </div>
+
+            <div class="upload-columns">
+              <!-- LEFT: Standard (v3 dark) -->
+              <div class="upload-col">
+                <div class="col-header">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#cbd5e1"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                    />
+                    <polyline points="14,2 14,8 20,8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10,9 9,9 8,9" />
+                  </svg>
+                  <span class="col-title">/insights (Standard)</span>
+                </div>
+
+                <!-- Step 1 -->
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">1</span>
+                    <span class="step-title">Run /insights</span>
+                  </div>
+                  <p class="step-desc">
+                    Built into Claude Code. Generates a narrative report about
+                    your usage patterns.
+                  </p>
+                  <div class="cmd-block">
+                    <span class="cmd-prompt">&gt; </span
+                    ><span class="cmd-text">/insights</span>
+                    <button
+                      class="cmd-block-copy"
+                      onclick="copyCmd(this, '/insights')"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">2</span>
+                    <span class="step-title">Upload the report</span>
+                  </div>
+                  <div class="drop-zone">
+                    <svg
+                      class="drop-zone-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <div class="drop-zone-text">
+                      Drop file here or click to browse
+                    </div>
+                    <div class="drop-zone-sub">Accepts .html files</div>
+                  </div>
+                  <div class="path-block">
+                    <code>~/.claude/usage-data/report.html</code>
+                    <button
+                      onclick="
+                        copyCmd(this, '~/.claude/usage-data/report.html')
+                      "
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <p class="finder-tip">
+                    Tip: In Finder, press <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd
+                      >G</kbd
+                    >
+                    and paste the path above.
+                  </p>
+                </div>
+              </div>
+
+              <!-- RIGHT: Enhanced (v3 dark) -->
+              <div class="upload-col premium">
+                <div class="col-header">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#60a5fa"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                    />
+                  </svg>
+                  <span class="col-title">/insight-harness (Enhanced)</span>
+                  <span class="badge badge-recommended">Recommended</span>
+                </div>
+
+                <!-- Step 1 -->
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">1</span>
+                    <span class="step-title"
+                      >Install the Insight Harness skill
+                      <span
+                        style="
+                          font-weight: 400;
+                          color: #4ade80;
+                          font-size: 11px;
+                        "
+                        >(free)</span
+                      ></span
+                    >
+                  </div>
+                  <p class="step-desc">
+                    Everything from /insights PLUS token usage, tool breakdowns,
+                    skill inventory, hooks, agent patterns, and more.
+                  </p>
+                  <div class="cmd-block" style="font-size: 11px">
+                    <span class="cmd-prompt">&gt; </span
+                    ><span class="cmd-text"
+                      >claude install-skill
+                      https://github.com/craigdossantos/claude-toolkit/tree/main/skills/insight-harness</span
+                    >
+                    <button
+                      class="cmd-block-copy"
+                      onclick="
+                        copyCmd(
+                          this,
+                          'claude install-skill https://github.com/craigdossantos/claude-toolkit/tree/main/skills/insight-harness',
+                        )
+                      "
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <p class="step-desc" style="margin-top: 4px">Then run:</p>
+                  <div class="cmd-block">
+                    <span class="cmd-prompt">&gt; </span
+                    ><span class="cmd-text">/insight-harness</span>
+                    <button
+                      class="cmd-block-copy"
+                      onclick="copyCmd(this, '/insight-harness')"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step-block">
+                  <div class="step-header">
+                    <span class="step-num">2</span>
+                    <span class="step-title">Upload the report</span>
+                  </div>
+                  <div class="drop-zone">
+                    <svg
+                      class="drop-zone-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <div class="drop-zone-text">
+                      Drop file here or click to browse
+                    </div>
+                    <div class="drop-zone-sub">Accepts .html files</div>
+                  </div>
+                  <div class="path-block">
+                    <code>~/.claude/usage-data/insight-harness.html</code>
+                    <button
+                      onclick="
+                        copyCmd(
+                          this,
+                          '~/.claude/usage-data/insight-harness.html',
+                        )
+                      "
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <p class="finder-tip">
+                    Tip: In Finder, press <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd
+                      >G</kbd
+                    >
+                    and paste the path above.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3: Reassurance banner (common to both paths) -->
+            <div class="reassurance-banner">
+              <svg
+                class="shield-icon"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              <div class="banner-content">
+                <div class="banner-label">
+                  <span class="step-num">3</span>
+                  <span class="banner-title">Review &amp; Redact</span>
+                </div>
+                <p class="banner-desc">
+                  We automatically detect non-public information (project names,
+                  file paths, emails) and let you review before sharing.
+                </p>
+              </div>
+            </div>
+
+            <p class="bottom-note">
+              Both report types work. The Enhanced report includes everything
+              from /insights plus detailed harness data.
+            </p>
+
+            <!-- Comparison table with gradient preview (dark) -->
+            <div class="compare-wrapper">
+              <h3 style="margin-bottom: 4px">
+                What's included in each report?
+              </h3>
+              <div class="compare-preview-wrapper" id="dark-compare-v3">
+                <!-- Preview: first 3 rows visible -->
+                <div class="preview-table">
+                  <table class="compare-table">
+                    <thead>
+                      <tr>
+                        <th>Feature</th>
+                        <th>/insights</th>
+                        <th class="highlight-col">/insight-harness</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Usage narrative</td>
+                        <td class="check-yes">&#10003;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Conversation count</td>
+                        <td class="check-yes">&#10003;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Active days &amp; streaks</td>
+                        <td class="check-yes">&#10003;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Model usage breakdown</td>
+                        <td class="check-yes">&#10003;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div class="fade-overlay"></div>
+                </div>
+                <!-- Full table (hidden until expanded) -->
+                <div class="full-table">
+                  <table class="compare-table">
+                    <thead>
+                      <tr>
+                        <th>Feature</th>
+                        <th>/insights</th>
+                        <th class="highlight-col">/insight-harness</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Usage narrative</td>
+                        <td class="check-yes">&#10003;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Conversation count</td>
+                        <td class="check-yes">&#10003;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Active days &amp; streaks</td>
+                        <td class="check-yes">&#10003;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Model usage breakdown</td>
+                        <td class="check-yes">&#10003;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Token consumption stats</td>
+                        <td class="check-no">&#8212;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Tool usage breakdown</td>
+                        <td class="check-no">&#8212;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Skill inventory</td>
+                        <td class="check-no">&#8212;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Hooks &amp; MCP servers</td>
+                        <td class="check-no">&#8212;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Agent patterns</td>
+                        <td class="check-no">&#8212;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                      <tr>
+                        <td>Cost estimation</td>
+                        <td class="check-no">&#8212;</td>
+                        <td class="check-yes highlight-col">&#10003;</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <button class="see-all-btn" onclick="togglePreviewTable(this)">
+                  See all features &#9660;
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Version nav -->
+        <div class="version-nav visible">
+          <button data-dir="prev" disabled>&larr; Prev</button>
+          <span class="version-label">Version 3 of 3</span>
+          <button data-dir="next" disabled>Next &rarr;</button>
+        </div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="feedback-area">
+        <label>Feedback — Dark Mode</label>
+        <textarea
+          data-feedback="dark-mode"
+          placeholder="How does the dark mode version look? Is the premium column accent visible enough? Any contrast issues?"
+        ></textarea>
+        <div class="char-count">0 chars</div>
+      </div>
+    </div>
+
+    <div
+      class="section-divider"
+      style="max-width: 1200px; margin-left: auto; margin-right: auto"
+    ></div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SECTION 3: COMPARISON TABLE STANDALONE -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="mockup-section" data-section-id="comparison" id="comparison">
+      <span class="section-label">Comparison Table — Detail</span>
+      <p class="section-desc">
+        The "What's included?" comparison table shown below the two upload
+        columns. Should this be expanded/collapsed by default? Should it use
+        icons instead of checkmarks?
+      </p>
+
+      <div class="design-note info">
+        <strong>v2 changes:</strong> Table is now collapsed by default behind a
+        "What's included in each report?" toggle. Shows a teaser line when
+        collapsed. Resolves the open question from v1.
+      </div>
+
+      <div class="design-note info">
+        <strong>v3 changes:</strong> Instead of fully collapsed, the first 3-4
+        rows are visible with a gradient fade and "See all features" button.
+        Gives an immediate preview of the content while hinting at more.
+      </div>
+
+      <div class="design-note info">
+        <strong>v4 changes:</strong> Reordered preview rows so the first 4
+        visible rows include 2 harness-only features (token usage breakdown,
+        skill &amp; plugin inventory). This way the fade preview immediately
+        shows meaningful differences instead of making both reports look
+        identical.
+      </div>
+
+      <div class="version-container">
+        <!-- ===== V1 (original — always open) ===== -->
+        <div class="version" data-version="1">
+          <div class="design-note future">
+            <strong>Open question:</strong> Should the comparison table be
+            collapsed behind a "What's the difference?" disclosure toggle to
+            reduce initial cognitive load? Or is it important enough to show by
+            default?
+          </div>
+
+          <div class="compare-wrapper">
+            <h3>What's included?</h3>
+            <table class="compare-table">
+              <thead>
+                <tr>
+                  <th style="width: 50%">Feature</th>
+                  <th style="width: 25%">/insights</th>
+                  <th style="width: 25%" class="highlight-col">
+                    /insight-harness
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Usage narrative &amp; writing style</td>
+                  <td class="check-yes">&#10003;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr>
+                  <td>Conversation count &amp; duration</td>
+                  <td class="check-yes">&#10003;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr>
+                  <td>Active days &amp; streaks</td>
+                  <td class="check-yes">&#10003;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr>
+                  <td>Model usage breakdown</td>
+                  <td class="check-yes">&#10003;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr style="background: #fefce8">
+                  <td style="font-weight: 600; color: #92400e">
+                    Token consumption stats
+                  </td>
+                  <td class="check-no">&#8212;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr style="background: #fefce8">
+                  <td style="font-weight: 600; color: #92400e">
+                    Tool usage breakdown
+                  </td>
+                  <td class="check-no">&#8212;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr style="background: #fefce8">
+                  <td style="font-weight: 600; color: #92400e">
+                    Skill inventory
+                  </td>
+                  <td class="check-no">&#8212;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr style="background: #fefce8">
+                  <td style="font-weight: 600; color: #92400e">
+                    Hooks &amp; MCP servers
+                  </td>
+                  <td class="check-no">&#8212;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr style="background: #fefce8">
+                  <td style="font-weight: 600; color: #92400e">
+                    Agent patterns &amp; delegation
+                  </td>
+                  <td class="check-no">&#8212;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+                <tr style="background: #fefce8">
+                  <td style="font-weight: 600; color: #92400e">
+                    Cost estimation
+                  </td>
+                  <td class="check-no">&#8212;</td>
+                  <td class="check-yes highlight-col">&#10003;</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ===== V2 (collapsed by default) ===== -->
+        <div class="version" data-version="2">
+          <div class="compare-wrapper">
+            <div class="compare-toggle" onclick="toggleCompare(this)">
+              <h3>What's included in each report?</h3>
+              <svg
+                class="chevron"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+            <p class="compare-teaser">
+              The Enhanced report includes everything from Standard plus 10
+              additional sections
+            </p>
+            <div class="compare-body">
+              <table class="compare-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50%">Feature</th>
+                    <th style="width: 25%">/insights</th>
+                    <th style="width: 25%" class="highlight-col">
+                      /insight-harness
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Usage narrative &amp; writing style</td>
+                    <td class="check-yes">&#10003;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Conversation count &amp; duration</td>
+                    <td class="check-yes">&#10003;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Active days &amp; streaks</td>
+                    <td class="check-yes">&#10003;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr>
+                    <td>Model usage breakdown</td>
+                    <td class="check-yes">&#10003;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr style="background: #fefce8">
+                    <td style="font-weight: 600; color: #92400e">
+                      Token consumption stats
+                    </td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr style="background: #fefce8">
+                    <td style="font-weight: 600; color: #92400e">
+                      Tool usage breakdown
+                    </td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr style="background: #fefce8">
+                    <td style="font-weight: 600; color: #92400e">
+                      Skill inventory
+                    </td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr style="background: #fefce8">
+                    <td style="font-weight: 600; color: #92400e">
+                      Hooks &amp; MCP servers
+                    </td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr style="background: #fefce8">
+                    <td style="font-weight: 600; color: #92400e">
+                      Agent patterns &amp; delegation
+                    </td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                  <tr style="background: #fefce8">
+                    <td style="font-weight: 600; color: #92400e">
+                      Cost estimation
+                    </td>
+                    <td class="check-no">&#8212;</td>
+                    <td class="check-yes highlight-col">&#10003;</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== V3 (gradient preview) ===== -->
+        <div class="version" data-version="3">
+          <div class="compare-wrapper">
+            <h3 style="margin-bottom: 4px">What's included in each report?</h3>
+            <div class="compare-preview-wrapper" id="standalone-compare-v3">
+              <!-- Preview: first 4 rows visible -->
+              <div class="preview-table">
+                <table class="compare-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 50%">Feature</th>
+                      <th style="width: 25%">/insights</th>
+                      <th style="width: 25%" class="highlight-col">
+                        /insight-harness
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Usage narrative &amp; writing style</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Conversation count &amp; duration</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Active days &amp; streaks</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Model usage breakdown</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="fade-overlay"></div>
+              </div>
+              <!-- Full table (hidden until expanded) -->
+              <div class="full-table">
+                <table class="compare-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 50%">Feature</th>
+                      <th style="width: 25%">/insights</th>
+                      <th style="width: 25%" class="highlight-col">
+                        /insight-harness
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Usage narrative &amp; writing style</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Conversation count &amp; duration</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Active days &amp; streaks</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Model usage breakdown</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr style="background: #fefce8">
+                      <td style="font-weight: 600; color: #92400e">
+                        Token consumption stats
+                      </td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr style="background: #fefce8">
+                      <td style="font-weight: 600; color: #92400e">
+                        Tool usage breakdown
+                      </td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr style="background: #fefce8">
+                      <td style="font-weight: 600; color: #92400e">
+                        Skill inventory
+                      </td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr style="background: #fefce8">
+                      <td style="font-weight: 600; color: #92400e">
+                        Hooks &amp; MCP servers
+                      </td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr style="background: #fefce8">
+                      <td style="font-weight: 600; color: #92400e">
+                        Agent patterns &amp; delegation
+                      </td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr style="background: #fefce8">
+                      <td style="font-weight: 600; color: #92400e">
+                        Cost estimation
+                      </td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <button class="see-all-btn" onclick="togglePreviewTable(this)">
+                See all features &#9660;
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== V4 (reordered preview rows) ===== -->
+        <div class="version active" data-version="4">
+          <div class="compare-wrapper">
+            <h3 style="margin-bottom: 4px">What's included in each report?</h3>
+            <div class="compare-preview-wrapper" id="standalone-compare-v4">
+              <!-- Preview: first 4 rows visible — reordered to show differences -->
+              <div class="preview-table">
+                <table class="compare-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 50%">Feature</th>
+                      <th style="width: 25%">/insights</th>
+                      <th style="width: 25%" class="highlight-col">
+                        /insight-harness
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Usage narrative &amp; insights</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr style="background: #fefce8">
+                      <td style="font-weight: 600; color: #92400e">
+                        Token usage breakdown
+                      </td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr style="background: #fefce8">
+                      <td style="font-weight: 600; color: #92400e">
+                        Skill &amp; plugin inventory
+                      </td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Project areas</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="fade-overlay"></div>
+              </div>
+              <!-- Full table (hidden until expanded) -->
+              <div class="full-table">
+                <table class="compare-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 50%">Feature</th>
+                      <th style="width: 25%">/insights</th>
+                      <th style="width: 25%" class="highlight-col">
+                        /insight-harness
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Usage narrative &amp; insights</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr style="background: #fefce8">
+                      <td style="font-weight: 600; color: #92400e">
+                        Token usage breakdown
+                      </td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr style="background: #fefce8">
+                      <td style="font-weight: 600; color: #92400e">
+                        Skill &amp; plugin inventory
+                      </td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Project areas</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Conversation count &amp; duration</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Active days &amp; streaks</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr>
+                      <td>Model usage breakdown</td>
+                      <td class="check-yes">&#10003;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr style="background: #fefce8">
+                      <td style="font-weight: 600; color: #92400e">
+                        Tool usage stats
+                      </td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr style="background: #fefce8">
+                      <td style="font-weight: 600; color: #92400e">
+                        Hook definitions
+                      </td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr style="background: #fefce8">
+                      <td style="font-weight: 600; color: #92400e">
+                        MCP servers
+                      </td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr style="background: #fefce8">
+                      <td style="font-weight: 600; color: #92400e">
+                        Agent dispatch patterns
+                      </td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                    <tr style="background: #fefce8">
+                      <td style="font-weight: 600; color: #92400e">
+                        Cost estimation
+                      </td>
+                      <td class="check-no">&#8212;</td>
+                      <td class="check-yes highlight-col">&#10003;</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <button class="see-all-btn" onclick="togglePreviewTable(this)">
+                See all features &#9660;
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Version nav -->
+        <div class="version-nav visible">
+          <button data-dir="prev" disabled>&larr; Prev</button>
+          <span class="version-label">Version 4 of 4</span>
+          <button data-dir="next" disabled>Next &rarr;</button>
+        </div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="feedback-area">
+        <label>Feedback — Comparison Table</label>
+        <textarea
+          data-feedback="comparison"
+          placeholder="Is the comparison table helpful? Too many rows? Should harness-only features be highlighted differently?"
+        ></textarea>
+        <div class="char-count">0 chars</div>
+      </div>
+    </div>
+
+    <div style="height: 80px"></div>
+
+    <script>
+      // Viewport toggle
+      document.querySelectorAll(".viewport-toggle button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document
+            .querySelectorAll(".viewport-toggle button")
+            .forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          const vp = btn.dataset.viewport;
+          document.body.classList.remove("viewport-mobile", "viewport-desktop");
+          document.body.classList.add("viewport-" + vp);
+        });
+      });
+
+      // Version navigation
+      document.querySelectorAll(".version-container").forEach((container) => {
+        const versions = container.querySelectorAll(".version");
+        if (versions.length <= 1) return;
+        const nav = container.querySelector(".version-nav");
+        if (!nav) return;
+        nav.classList.add("visible");
+        // Find which version is active initially
+        let current = 0;
+        versions.forEach((v, i) => {
+          if (v.classList.contains("active")) current = i;
+        });
+        const label = nav.querySelector(".version-label");
+        const prevBtn = nav.querySelector('[data-dir="prev"]');
+        const nextBtn = nav.querySelector('[data-dir="next"]');
+        function update() {
+          versions.forEach((v, i) =>
+            v.classList.toggle("active", i === current),
+          );
+          label.textContent =
+            "Version " + (current + 1) + " of " + versions.length;
+          prevBtn.disabled = current === 0;
+          nextBtn.disabled = current === versions.length - 1;
+        }
+        update();
+        prevBtn.addEventListener("click", () => {
+          if (current > 0) {
+            current--;
+            update();
+          }
+        });
+        nextBtn.addEventListener("click", () => {
+          if (current < versions.length - 1) {
+            current++;
+            update();
+          }
+        });
+      });
+
+      // Char count
+      document.querySelectorAll(".feedback-area textarea").forEach((ta) => {
+        const counter = ta.parentElement.querySelector(".char-count");
+        ta.addEventListener("input", () => {
+          counter.textContent = ta.value.length + " chars";
+        });
+      });
+
+      // Compare table toggle
+      function toggleCompare(toggle) {
+        const wrapper = toggle.closest(".compare-wrapper");
+        const body = wrapper.querySelector(".compare-body");
+        const teaser = wrapper.querySelector(".compare-teaser");
+        const isOpen = body.classList.contains("open");
+        if (isOpen) {
+          body.classList.remove("open");
+          toggle.classList.remove("expanded");
+          if (teaser) teaser.style.display = "";
+        } else {
+          body.classList.add("open");
+          toggle.classList.add("expanded");
+          if (teaser) teaser.style.display = "none";
+        }
+      }
+
+      // Copy all feedback
+      function copyAllFeedback() {
+        const sections = document.querySelectorAll(".mockup-section");
+        let text =
+          "Upload Screen Redesign — Feedback\n" + "=".repeat(40) + "\n\n";
+        sections.forEach((s) => {
+          const id = s.dataset.sectionId;
+          const label = s.querySelector(".section-label")?.textContent || id;
+          const ta = s.querySelector("textarea");
+          const val = ta ? ta.value.trim() : "";
+          text += label + "\n" + "-".repeat(label.length) + "\n";
+          text += (val || "(no feedback)") + "\n\n";
+        });
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = document.querySelector(".copy-all-btn");
+          btn.classList.add("copied");
+          btn.textContent = "Copied!";
+          setTimeout(() => {
+            btn.classList.remove("copied");
+            btn.textContent = "Copy All Feedback";
+          }, 2000);
+        });
+      }
+
+      // Toggle preview table (v3 gradient compare)
+      function togglePreviewTable(btn) {
+        const wrapper = btn.closest(".compare-preview-wrapper");
+        const isExpanded = wrapper.classList.contains("expanded");
+        if (isExpanded) {
+          wrapper.classList.remove("expanded");
+          btn.innerHTML = "See all features &#9660;";
+        } else {
+          wrapper.classList.add("expanded");
+          btn.innerHTML = "Show less &#9650;";
+        }
+      }
+
+      // Copy command helper
+      function copyCmd(btn, text) {
+        navigator.clipboard.writeText(text).then(() => {
+          const orig = btn.textContent;
+          btn.textContent = "Copied!";
+          setTimeout(() => {
+            btn.textContent = orig;
+          }, 1500);
+        });
+      }
+    </script>
+  </body>
+</html>

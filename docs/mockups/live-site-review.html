@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insightful — Live Site Review</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+        background: #f8fafc;
+        color: #1e293b;
+      }
+
+      /* Sticky nav */
+      .nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: #0f172a;
+        color: #e2e8f0;
+        padding: 10px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .nav-title {
+        font-weight: 700;
+        font-size: 15px;
+        white-space: nowrap;
+      }
+      .nav a {
+        color: #93c5fd;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 500;
+      }
+      .nav a:hover {
+        color: #bfdbfe;
+      }
+      .nav-spacer {
+        flex: 1;
+      }
+      .viewport-toggle {
+        display: flex;
+        gap: 4px;
+      }
+      .viewport-toggle button {
+        background: #1e293b;
+        border: 1px solid #334155;
+        color: #94a3b8;
+        padding: 4px 10px;
+        font-size: 11px;
+        cursor: pointer;
+        border-radius: 4px;
+        font-family: inherit;
+      }
+      .viewport-toggle button.active {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+      }
+      .copy-btn {
+        background: #22c55e;
+        color: white;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .copy-btn:hover {
+        background: #16a34a;
+      }
+
+      /* Sections */
+      .mockup-section {
+        max-width: 1200px;
+        margin: 32px auto;
+        padding: 0 20px;
+      }
+      .mockup-section.wide {
+        max-width: 1400px;
+      }
+      .section-label {
+        display: inline-block;
+        background: #0f172a;
+        color: #e2e8f0;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 4px 10px;
+        border-radius: 4px;
+        margin-bottom: 8px;
+      }
+      .section-desc {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 16px;
+        line-height: 1.5;
+      }
+      .section-divider {
+        max-width: 1200px;
+        margin: 0 auto;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      /* Iframe frames */
+      .iframe-frame {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      }
+      .iframe-frame iframe {
+        width: 100%;
+        border: none;
+        display: block;
+      }
+
+      /* Mobile viewport */
+      body.viewport-mobile .iframe-frame {
+        max-width: 375px;
+        margin: 0 auto;
+        border-radius: 24px;
+        border: 3px solid #1e293b;
+      }
+
+      /* Design notes */
+      .design-note {
+        background: #fef3c7;
+        border: 1px solid #fcd34d;
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 12px;
+        margin-bottom: 12px;
+        line-height: 1.5;
+      }
+      .design-note.info {
+        background: #dbeafe;
+        border-color: #93c5fd;
+      }
+      .design-note.future {
+        background: #f3e8ff;
+        border-color: #c4b5fd;
+      }
+      .design-note strong {
+        font-weight: 700;
+      }
+
+      /* Version nav */
+      .version {
+        display: none;
+      }
+      .version.active {
+        display: block;
+      }
+      .version-nav {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 12px;
+      }
+      .version-nav button {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        padding: 6px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        font-family: inherit;
+      }
+      .version-nav button:hover:not(:disabled) {
+        background: #e2e8f0;
+      }
+      .version-nav button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .version-label {
+        font-size: 12px;
+        color: #64748b;
+        font-weight: 500;
+      }
+
+      /* Feedback */
+      .feedback-area {
+        margin-top: 16px;
+      }
+      .feedback-area label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 4px;
+      }
+      .feedback-area textarea {
+        width: 100%;
+        min-height: 80px;
+        padding: 10px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 13px;
+        resize: vertical;
+      }
+      .feedback-area textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+      .char-count {
+        font-size: 11px;
+        color: #94a3b8;
+        text-align: right;
+        margin-top: 2px;
+      }
+    </style>
+  </head>
+  <body class="viewport-desktop">
+    <div class="nav">
+      <span class="nav-title">Insightful — Live Site Review</span>
+      <a href="#homepage">Homepage</a>
+      <a href="#upload">Upload</a>
+      <a href="#report-harness">Report (Harness)</a>
+      <a href="#report-standard">Report (Standard)</a>
+      <a href="#user-profile">User Profile</a>
+      <span class="nav-spacer"></span>
+      <div class="viewport-toggle">
+        <button class="active" onclick="setViewport('desktop')">Desktop</button>
+        <button onclick="setViewport('mobile')">Mobile</button>
+      </div>
+      <button class="copy-btn" onclick="copyFeedback()">
+        Copy All Feedback
+      </button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: Homepage -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="mockup-section wide" data-section-id="homepage" id="homepage">
+      <span class="section-label">Homepage</span>
+      <p class="section-desc">
+        The landing page at insightharness.com — shows featured reports and the
+        value proposition.
+      </p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="design-note info">
+            <strong>Source:</strong> Captured from
+            <code>https://insightharness.com/</code> — this is the current live
+            state.
+          </div>
+          <div class="iframe-frame">
+            <iframe
+              src="https://insightharness.com/"
+              style="height: 1200px"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+
+      <div class="version-nav">
+        <button data-dir="prev" disabled>&larr; Prev</button>
+        <span class="version-label">v1 of 1</span>
+        <button data-dir="next" disabled>Next &rarr;</button>
+      </div>
+
+      <div class="feedback-area">
+        <label for="fb-homepage">Feedback</label>
+        <textarea
+          id="fb-homepage"
+          placeholder="Voice transcribe or type feedback for the homepage..."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: Upload Page -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="mockup-section wide" data-section-id="upload" id="upload">
+      <span class="section-label">Upload Page</span>
+      <p class="section-desc">
+        The upload flow at /upload — where users upload their /insights or
+        /insight-harness report.
+      </p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="design-note info">
+            <strong>Source:</strong> Captured from
+            <code>https://insightharness.com/upload</code> — this is the current
+            live state. Note: requires login to see full upload UI.
+          </div>
+          <div class="iframe-frame">
+            <iframe
+              src="https://insightharness.com/upload"
+              style="height: 1000px"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+
+      <div class="version-nav">
+        <button data-dir="prev" disabled>&larr; Prev</button>
+        <span class="version-label">v1 of 1</span>
+        <button data-dir="next" disabled>Next &rarr;</button>
+      </div>
+
+      <div class="feedback-area">
+        <label for="fb-upload">Feedback</label>
+        <textarea
+          id="fb-upload"
+          placeholder="Voice transcribe or type feedback for the upload page..."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: Report Page (Harness) -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div
+      class="mockup-section wide"
+      data-section-id="report-harness"
+      id="report-harness"
+    >
+      <span class="section-label">Report Page — Insight Harness</span>
+      <p class="section-desc">
+        An enhanced /insight-harness report with full data dashboard + narrative
+        sections.
+      </p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="design-note info">
+            <strong>Source:</strong> Captured from
+            <code
+              >https://insightharness.com/insights/elena-volkov-20260402-harness-demo</code
+            >
+            — this is the current live state.
+          </div>
+          <div class="iframe-frame">
+            <iframe
+              src="https://insightharness.com/insights/elena-volkov-20260402-harness-demo"
+              style="height: 4000px"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+
+      <div class="version-nav">
+        <button data-dir="prev" disabled>&larr; Prev</button>
+        <span class="version-label">v1 of 1</span>
+        <button data-dir="next" disabled>Next &rarr;</button>
+      </div>
+
+      <div class="feedback-area">
+        <label for="fb-report-harness">Feedback</label>
+        <textarea
+          id="fb-report-harness"
+          placeholder="Voice transcribe or type feedback for the harness report page..."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: Report Page (Standard) -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div
+      class="mockup-section wide"
+      data-section-id="report-standard"
+      id="report-standard"
+    >
+      <span class="section-label">Report Page — Standard Insights</span>
+      <p class="section-desc">
+        A standard /insights report with narrative sections and basic stats.
+      </p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="design-note info">
+            <strong>Source:</strong> Captured from
+            <code
+              >https://insightharness.com/insights/sam-okafor-20260405-demo</code
+            >
+            — this is the current live state.
+          </div>
+          <div class="iframe-frame">
+            <iframe
+              src="https://insightharness.com/insights/sam-okafor-20260405-demo"
+              style="height: 3000px"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+
+      <div class="version-nav">
+        <button data-dir="prev" disabled>&larr; Prev</button>
+        <span class="version-label">v1 of 1</span>
+        <button data-dir="next" disabled>Next &rarr;</button>
+      </div>
+
+      <div class="feedback-area">
+        <label for="fb-report-standard">Feedback</label>
+        <textarea
+          id="fb-report-standard"
+          placeholder="Voice transcribe or type feedback for the standard report page..."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SECTION: User Profile -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div
+      class="mockup-section wide"
+      data-section-id="user-profile"
+      id="user-profile"
+    >
+      <span class="section-label">User Profile Page</span>
+      <p class="section-desc">
+        A user's profile page at /u/username — shows their reports and social
+        links.
+      </p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="design-note info">
+            <strong>Source:</strong> Captured from
+            <code>https://insightharness.com/u/elena-volkov</code> — this is the
+            current live state.
+          </div>
+          <div class="iframe-frame">
+            <iframe
+              src="https://insightharness.com/u/elena-volkov"
+              style="height: 1200px"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+
+      <div class="version-nav">
+        <button data-dir="prev" disabled>&larr; Prev</button>
+        <span class="version-label">v1 of 1</span>
+        <button data-dir="next" disabled>Next &rarr;</button>
+      </div>
+
+      <div class="feedback-area">
+        <label for="fb-user-profile">Feedback</label>
+        <textarea
+          id="fb-user-profile"
+          placeholder="Voice transcribe or type feedback for the user profile page..."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <script>
+      function setViewport(mode) {
+        document.body.className = "viewport-" + mode;
+        document
+          .querySelectorAll(".viewport-toggle button")
+          .forEach((b) => b.classList.remove("active"));
+        document
+          .querySelector(
+            ".viewport-toggle button:" +
+              (mode === "desktop" ? "first-child" : "last-child"),
+          )
+          .classList.add("active");
+      }
+
+      // Version navigation
+      document.querySelectorAll(".version-nav button").forEach((btn) => {
+        btn.addEventListener("click", function () {
+          const section = this.closest(".mockup-section");
+          const versions = section.querySelectorAll(".version");
+          const active = section.querySelector(".version.active");
+          const current = parseInt(active.dataset.version);
+          const dir = this.dataset.dir === "prev" ? -1 : 1;
+          const next = current + dir;
+          if (next < 1 || next > versions.length) return;
+          active.classList.remove("active");
+          section
+            .querySelector(`.version[data-version="${next}"]`)
+            .classList.add("active");
+          const label = section.querySelector(".version-label");
+          label.textContent = `v${next} of ${versions.length}`;
+          section.querySelector('[data-dir="prev"]').disabled = next <= 1;
+          section.querySelector('[data-dir="next"]').disabled =
+            next >= versions.length;
+        });
+      });
+
+      // Char counts
+      document.querySelectorAll(".feedback-area textarea").forEach((ta) => {
+        const counter = ta.parentElement.querySelector(".char-count");
+        ta.addEventListener("input", () => {
+          counter.textContent = ta.value.length + " chars";
+        });
+      });
+
+      // Copy all feedback
+      function copyFeedback() {
+        const sections = {};
+        document.querySelectorAll(".mockup-section").forEach((s) => {
+          const id = s.dataset.sectionId;
+          const ta = s.querySelector("textarea");
+          const active = s.querySelector(".version.active");
+          const total = s.querySelectorAll(".version").length;
+          sections[id] = {
+            feedback: ta ? ta.value : "",
+            viewing_version: active ? parseInt(active.dataset.version) : 1,
+            total_versions: total,
+            viewport: document.body.classList.contains("viewport-mobile")
+              ? "mobile"
+              : "desktop",
+          };
+        });
+        const json = JSON.stringify(
+          {
+            mockup: "Live Site Review",
+            timestamp: new Date().toISOString(),
+            viewport: document.body.classList.contains("viewport-mobile")
+              ? "mobile"
+              : "desktop",
+            sections,
+          },
+          null,
+          2,
+        );
+        navigator.clipboard.writeText(json).then(() => {
+          const btn = document.querySelector(".copy-btn");
+          btn.textContent = "Copied!";
+          setTimeout(() => {
+            btn.textContent = "Copy All Feedback";
+          }, 2000);
+        });
+      }
+    </script>
+  </body>
+</html>

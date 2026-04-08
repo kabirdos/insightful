@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insight Harness — Gallery Dark Refined</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Nav */
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 32px;
+        background: #0f172a;
+        border-bottom: 1px solid #1e293b;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .nav-brand {
+        font-weight: 700;
+        font-size: 18px;
+        color: #f8fafc;
+        letter-spacing: -0.3px;
+      }
+      .nav-brand span {
+        color: #f59e0b;
+      }
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+      .nav-links a {
+        color: #94a3b8;
+        text-decoration: none;
+        font-size: 14px;
+        transition: color 0.15s;
+      }
+      .nav-links a:hover {
+        color: #e2e8f0;
+      }
+      .btn-upload {
+        background: #3b82f6;
+        color: #fff;
+        border: none;
+        padding: 7px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .btn-upload:hover {
+        background: #2563eb;
+      }
+
+      /* Hero */
+      .hero {
+        text-align: center;
+        padding: 40px 32px 28px;
+        max-width: 720px;
+        margin: 0 auto;
+      }
+      .hero h1 {
+        font-size: 32px;
+        font-weight: 700;
+        color: #f8fafc;
+        letter-spacing: -0.5px;
+        margin-bottom: 8px;
+      }
+      .hero h1 span {
+        color: #f59e0b;
+      }
+      .hero p {
+        color: #94a3b8;
+        font-size: 15px;
+        margin-bottom: 18px;
+        max-width: 520px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .hero-ctas {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+      }
+      .btn-primary {
+        background: #3b82f6;
+        color: #fff;
+        border: none;
+        padding: 10px 22px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .btn-primary:hover {
+        background: #2563eb;
+      }
+      .btn-secondary {
+        background: transparent;
+        color: #94a3b8;
+        border: 1px solid #334155;
+        padding: 10px 22px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .btn-secondary:hover {
+        color: #e2e8f0;
+        border-color: #475569;
+      }
+
+      /* Section wrapper */
+      .section {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 0 32px;
+      }
+      .section-label {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        color: #64748b;
+        margin-bottom: 10px;
+      }
+
+      /* Heatmap */
+      .heatmap-section {
+        padding: 20px 0 28px;
+      }
+      .heatmap-wrap {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 16px 20px 14px;
+        overflow-x: auto;
+      }
+      .heatmap-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .heatmap-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #e2e8f0;
+      }
+      .heatmap-legend {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: #64748b;
+      }
+      .heatmap-legend span {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+      }
+      .heatmap-grid {
+        display: grid;
+        grid-template-columns: repeat(52, 12px);
+        grid-template-rows: repeat(7, 12px);
+        gap: 2px;
+        margin-bottom: 10px;
+      }
+      .heatmap-cell {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+        transition: transform 0.1s;
+      }
+      .heatmap-cell:hover {
+        transform: scale(1.6);
+        z-index: 2;
+        position: relative;
+      }
+      .h0 {
+        background: #1a2332;
+      }
+      .h1 {
+        background: #78350f;
+      }
+      .h2 {
+        background: #b45309;
+      }
+      .h3 {
+        background: #d97706;
+      }
+      .h4 {
+        background: #f59e0b;
+      }
+      .h5 {
+        background: #fbbf24;
+      }
+      .heatmap-footer {
+        font-size: 12px;
+        color: #64748b;
+        text-align: center;
+      }
+      .heatmap-footer strong {
+        color: #f59e0b;
+        font-weight: 600;
+      }
+      .heatmap-footer code {
+        background: #334155;
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-family: "SF Mono", Monaco, monospace;
+        font-size: 11px;
+        color: #94a3b8;
+      }
+      .heatmap-months {
+        display: grid;
+        grid-template-columns: repeat(52, 12px);
+        gap: 2px;
+        margin-bottom: 4px;
+        font-size: 9px;
+        color: #475569;
+      }
+      .heatmap-months span {
+        grid-column: span 4;
+        text-align: left;
+      }
+
+      /* Featured Card */
+      .featured-section {
+        padding: 0 0 24px;
+      }
+      .featured-card {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        position: relative;
+        overflow: hidden;
+      }
+      .featured-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, #3b82f6, #f59e0b);
+      }
+      .featured-label {
+        position: absolute;
+        top: 8px;
+        right: 12px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #f59e0b;
+        background: #78350f33;
+        padding: 2px 8px;
+        border-radius: 4px;
+      }
+      .featured-avatar {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: 700;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .featured-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .featured-name {
+        font-size: 16px;
+        font-weight: 700;
+        color: #f8fafc;
+      }
+      .featured-sub {
+        font-size: 12px;
+        color: #64748b;
+        margin-bottom: 6px;
+      }
+      .featured-stats {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .featured-stat-val {
+        font-size: 18px;
+        font-weight: 700;
+        color: #f8fafc;
+      }
+      .featured-stat-val.amber {
+        color: #f59e0b;
+      }
+      .featured-stat-label {
+        font-size: 11px;
+        color: #64748b;
+      }
+      .featured-badges {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      .badge {
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-weight: 500;
+        background: #334155;
+        color: #94a3b8;
+        white-space: nowrap;
+      }
+      .badge.blue {
+        background: #1e3a5f;
+        color: #60a5fa;
+      }
+      .badge.purple {
+        background: #3b1f6e;
+        color: #a78bfa;
+      }
+      .badge.green {
+        background: #14532d;
+        color: #4ade80;
+      }
+
+      /* Bento Grid */
+      .bento-section {
+        padding: 0 0 32px;
+      }
+      .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-auto-rows: auto;
+        gap: 12px;
+      }
+      .bento-card {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 14px 16px;
+        transition:
+          border-color 0.15s,
+          transform 0.15s;
+        cursor: pointer;
+      }
+      .bento-card:hover {
+        border-color: #475569;
+        transform: translateY(-1px);
+      }
+      .bento-card.large {
+        grid-column: span 2;
+      }
+      .bento-top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .bento-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .bento-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #f8fafc;
+      }
+      .bento-handle {
+        font-size: 11px;
+        color: #64748b;
+      }
+      .bento-stats {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+      }
+      .bento-stat-val {
+        font-size: 15px;
+        font-weight: 700;
+        color: #e2e8f0;
+      }
+      .bento-stat-label {
+        font-size: 10px;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .bento-badges {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+      }
+      .bento-bar {
+        height: 3px;
+        border-radius: 2px;
+        margin-top: 8px;
+        background: #334155;
+        overflow: hidden;
+      }
+      .bento-bar-fill {
+        height: 100%;
+        border-radius: 2px;
+      }
+
+      /* How It Works */
+      .how-section {
+        padding: 0 0 32px;
+      }
+      .how-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      .how-card {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 16px;
+      }
+      .how-step {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        background: #334155;
+        color: #f59e0b;
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      .how-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #f8fafc;
+        margin-bottom: 4px;
+      }
+      .how-desc {
+        font-size: 13px;
+        color: #94a3b8;
+        line-height: 1.4;
+      }
+      .how-code {
+        font-family: "SF Mono", Monaco, monospace;
+        font-size: 12px;
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 4px;
+        padding: 6px 10px;
+        margin-top: 8px;
+        color: #94a3b8;
+        display: block;
+      }
+      .how-code .cmd {
+        color: #4ade80;
+      }
+      .how-bonus {
+        margin-top: 12px;
+        text-align: center;
+        font-size: 12px;
+        color: #64748b;
+      }
+      .how-bonus code {
+        background: #334155;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: "SF Mono", Monaco, monospace;
+        font-size: 11px;
+        color: #f59e0b;
+      }
+
+      /* Footer CTA */
+      .footer-cta {
+        background: #172554;
+        border-top: 1px solid #1e3a5f;
+        text-align: center;
+        padding: 28px 32px;
+      }
+      .footer-cta h3 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #f8fafc;
+        margin-bottom: 6px;
+      }
+      .footer-cta p {
+        font-size: 14px;
+        color: #94a3b8;
+        margin-bottom: 14px;
+      }
+
+      /* Footer */
+      footer {
+        text-align: center;
+        padding: 16px 32px;
+        font-size: 12px;
+        color: #475569;
+        border-top: 1px solid #1e293b;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Nav -->
+    <nav>
+      <div class="nav-brand"><span>⬡</span> Insight Harness</div>
+      <div class="nav-links">
+        <a href="#">Browse</a>
+        <a href="#">Leaderboard</a>
+        <a href="#">About</a>
+        <button class="btn-upload">Upload Report</button>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <div class="hero">
+      <h1>See how developers <span>actually</span> use Claude Code</h1>
+      <p>
+        Browse harness profiles from the community. Compare setups, discover
+        skills, and learn what works.
+      </p>
+      <div class="hero-ctas">
+        <button class="btn-primary">Browse Profiles</button>
+        <button class="btn-secondary">Upload Yours</button>
+      </div>
+    </div>
+
+    <!-- Token Heatmap -->
+    <div class="section heatmap-section">
+      <div class="heatmap-wrap">
+        <div class="heatmap-header">
+          <div class="heatmap-title">Community Token Usage</div>
+          <div class="heatmap-legend">
+            Less <span class="h0"></span><span class="h1"></span
+            ><span class="h2"></span><span class="h3"></span
+            ><span class="h4"></span><span class="h5"></span> More
+          </div>
+        </div>
+        <div class="heatmap-months">
+          <span>Apr</span><span>May</span><span>Jun</span><span>Jul</span>
+          <span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span>
+          <span>Dec</span><span>Jan</span><span>Feb</span><span>Mar</span>
+          <span></span>
+        </div>
+        <div class="heatmap-grid" id="heatmap"></div>
+        <div class="heatmap-footer">
+          <strong>4.2M tokens</strong> tracked across 238 profiles · Powered by
+          <code>/harness-profile</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- Featured Report -->
+    <div class="section featured-section">
+      <p class="section-label">Featured Profile</p>
+      <div class="featured-card">
+        <span class="featured-label">★ Featured</span>
+        <div class="featured-avatar">SM</div>
+        <div class="featured-info">
+          <div class="featured-name">Sarah Martinez</div>
+          <div class="featured-sub">
+            Full-stack · 14 skills · Active 28 of 30 days
+          </div>
+          <div class="featured-stats">
+            <div>
+              <div class="featured-stat-val amber">482K</div>
+              <div class="featured-stat-label">Tokens / week</div>
+            </div>
+            <div>
+              <div class="featured-stat-val">23</div>
+              <div class="featured-stat-label">Custom skills</div>
+            </div>
+            <div>
+              <div class="featured-stat-val">8</div>
+              <div class="featured-stat-label">Hooks configured</div>
+            </div>
+            <div>
+              <div class="featured-stat-val">94%</div>
+              <div class="featured-stat-label">Accept rate</div>
+            </div>
+          </div>
+        </div>
+        <div class="featured-badges">
+          <span class="badge blue">TypeScript</span>
+          <span class="badge purple">MCP Tools</span>
+          <span class="badge green">TDD</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bento Grid -->
+    <div class="section bento-section">
+      <p class="section-label">Community Profiles</p>
+      <div class="bento-grid">
+        <!-- Large card 1 -->
+        <div class="bento-card large">
+          <div class="bento-top">
+            <div
+              class="bento-avatar"
+              style="background: linear-gradient(135deg, #f59e0b, #ef4444)"
+            >
+              JK
+            </div>
+            <div>
+              <div class="bento-name">James Kang</div>
+              <div class="bento-handle">Backend architect</div>
+            </div>
+          </div>
+          <div class="bento-stats">
+            <div>
+              <div class="bento-stat-val">312K</div>
+              <div class="bento-stat-label">Tokens/wk</div>
+            </div>
+            <div>
+              <div class="bento-stat-val">17</div>
+              <div class="bento-stat-label">Skills</div>
+            </div>
+            <div>
+              <div class="bento-stat-val">12</div>
+              <div class="bento-stat-label">Hooks</div>
+            </div>
+            <div>
+              <div class="bento-stat-val">6</div>
+              <div class="bento-stat-label">MCP servers</div>
+            </div>
+          </div>
+          <div class="bento-badges">
+            <span class="badge blue">Go</span>
+            <span class="badge purple">Kubernetes</span>
+            <span class="badge">Worktrees</span>
+          </div>
+          <div class="bento-bar">
+            <div
+              class="bento-bar-fill"
+              style="
+                width: 78%;
+                background: linear-gradient(90deg, #f59e0b, #ef4444);
+              "
+            ></div>
+          </div>
+        </div>
+
+        <!-- Large card 2 -->
+        <div class="bento-card large">
+          <div class="bento-top">
+            <div
+              class="bento-avatar"
+              style="background: linear-gradient(135deg, #8b5cf6, #ec4899)"
+            >
+              AL
+            </div>
+            <div>
+              <div class="bento-name">Ana Lucia</div>
+              <div class="bento-handle">ML engineer</div>
+            </div>
+          </div>
+          <div class="bento-stats">
+            <div>
+              <div class="bento-stat-val">528K</div>
+              <div class="bento-stat-label">Tokens/wk</div>
+            </div>
+            <div>
+              <div class="bento-stat-val">21</div>
+              <div class="bento-stat-label">Skills</div>
+            </div>
+            <div>
+              <div class="bento-stat-val">5</div>
+              <div class="bento-stat-label">Hooks</div>
+            </div>
+            <div>
+              <div class="bento-stat-val">91%</div>
+              <div class="bento-stat-label">Accept</div>
+            </div>
+          </div>
+          <div class="bento-badges">
+            <span class="badge blue">Python</span>
+            <span class="badge green">DSPy</span>
+            <span class="badge purple">Agents</span>
+          </div>
+          <div class="bento-bar">
+            <div
+              class="bento-bar-fill"
+              style="
+                width: 92%;
+                background: linear-gradient(90deg, #8b5cf6, #ec4899);
+              "
+            ></div>
+          </div>
+        </div>
+
+        <!-- Small card 1 -->
+        <div class="bento-card">
+          <div class="bento-top">
+            <div
+              class="bento-avatar"
+              style="background: linear-gradient(135deg, #10b981, #3b82f6)"
+            >
+              DP
+            </div>
+            <div>
+              <div class="bento-name">Dev Patel</div>
+              <div class="bento-handle">Frontend</div>
+            </div>
+          </div>
+          <div class="bento-stats">
+            <div>
+              <div class="bento-stat-val">189K</div>
+              <div class="bento-stat-label">Tokens/wk</div>
+            </div>
+            <div>
+              <div class="bento-stat-val">9</div>
+              <div class="bento-stat-label">Skills</div>
+            </div>
+          </div>
+          <div class="bento-badges">
+            <span class="badge blue">React</span>
+            <span class="badge">CSS</span>
+          </div>
+        </div>
+
+        <!-- Small card 2 -->
+        <div class="bento-card">
+          <div class="bento-top">
+            <div
+              class="bento-avatar"
+              style="background: linear-gradient(135deg, #f59e0b, #84cc16)"
+            >
+              RW
+            </div>
+            <div>
+              <div class="bento-name">Rachel Wu</div>
+              <div class="bento-handle">DevOps</div>
+            </div>
+          </div>
+          <div class="bento-stats">
+            <div>
+              <div class="bento-stat-val">267K</div>
+              <div class="bento-stat-label">Tokens/wk</div>
+            </div>
+            <div>
+              <div class="bento-stat-val">15</div>
+              <div class="bento-stat-label">Skills</div>
+            </div>
+          </div>
+          <div class="bento-badges">
+            <span class="badge green">Terraform</span>
+            <span class="badge">CI/CD</span>
+          </div>
+        </div>
+
+        <!-- Small card 3 -->
+        <div class="bento-card">
+          <div class="bento-top">
+            <div
+              class="bento-avatar"
+              style="background: linear-gradient(135deg, #ef4444, #f97316)"
+            >
+              MT
+            </div>
+            <div>
+              <div class="bento-name">Marcus T.</div>
+              <div class="bento-handle">Systems</div>
+            </div>
+          </div>
+          <div class="bento-stats">
+            <div>
+              <div class="bento-stat-val">401K</div>
+              <div class="bento-stat-label">Tokens/wk</div>
+            </div>
+            <div>
+              <div class="bento-stat-val">19</div>
+              <div class="bento-stat-label">Skills</div>
+            </div>
+          </div>
+          <div class="bento-badges">
+            <span class="badge blue">Rust</span>
+            <span class="badge purple">MCP</span>
+          </div>
+        </div>
+
+        <!-- Small card 4 -->
+        <div class="bento-card">
+          <div class="bento-top">
+            <div
+              class="bento-avatar"
+              style="background: linear-gradient(135deg, #06b6d4, #3b82f6)"
+            >
+              KN
+            </div>
+            <div>
+              <div class="bento-name">Kim Nguyen</div>
+              <div class="bento-handle">Mobile</div>
+            </div>
+          </div>
+          <div class="bento-stats">
+            <div>
+              <div class="bento-stat-val">145K</div>
+              <div class="bento-stat-label">Tokens/wk</div>
+            </div>
+            <div>
+              <div class="bento-stat-val">7</div>
+              <div class="bento-stat-label">Skills</div>
+            </div>
+          </div>
+          <div class="bento-badges">
+            <span class="badge blue">Swift</span>
+            <span class="badge">Xcode</span>
+          </div>
+        </div>
+
+        <!-- Small card 5 -->
+        <div class="bento-card">
+          <div class="bento-top">
+            <div
+              class="bento-avatar"
+              style="background: linear-gradient(135deg, #a855f7, #6366f1)"
+            >
+              OB
+            </div>
+            <div>
+              <div class="bento-name">Olga B.</div>
+              <div class="bento-handle">Data eng</div>
+            </div>
+          </div>
+          <div class="bento-stats">
+            <div>
+              <div class="bento-stat-val">356K</div>
+              <div class="bento-stat-label">Tokens/wk</div>
+            </div>
+            <div>
+              <div class="bento-stat-val">11</div>
+              <div class="bento-stat-label">Skills</div>
+            </div>
+          </div>
+          <div class="bento-badges">
+            <span class="badge blue">Python</span>
+            <span class="badge green">dbt</span>
+          </div>
+        </div>
+
+        <!-- Small card 6 -->
+        <div class="bento-card">
+          <div class="bento-top">
+            <div
+              class="bento-avatar"
+              style="background: linear-gradient(135deg, #14b8a6, #22c55e)"
+            >
+              TH
+            </div>
+            <div>
+              <div class="bento-name">Tyler H.</div>
+              <div class="bento-handle">Full-stack</div>
+            </div>
+          </div>
+          <div class="bento-stats">
+            <div>
+              <div class="bento-stat-val">223K</div>
+              <div class="bento-stat-label">Tokens/wk</div>
+            </div>
+            <div>
+              <div class="bento-stat-val">13</div>
+              <div class="bento-stat-label">Skills</div>
+            </div>
+          </div>
+          <div class="bento-badges">
+            <span class="badge blue">Rails</span>
+            <span class="badge">TDD</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="section how-section">
+      <p class="section-label">How It Works</p>
+      <div class="how-grid">
+        <div class="how-card">
+          <div class="how-step">1</div>
+          <div class="how-title">Generate your profile</div>
+          <div class="how-desc">
+            Run the harness-profile skill in Claude Code to generate a snapshot
+            of your setup.
+          </div>
+          <code class="how-code"
+            ><span class="cmd">/harness-profile</span></code
+          >
+        </div>
+        <div class="how-card">
+          <div class="how-step">2</div>
+          <div class="how-title">Upload your report</div>
+          <div class="how-desc">
+            Drop the generated HTML file here. We extract stats, skills, hooks,
+            and token data automatically.
+          </div>
+        </div>
+        <div class="how-card">
+          <div class="how-step">3</div>
+          <div class="how-title">Browse & compare</div>
+          <div class="how-desc">
+            Explore community profiles, discover new skills, and see how your
+            setup stacks up.
+          </div>
+        </div>
+      </div>
+      <div class="how-bonus">
+        Tip: <code>/harness-profile</code> provides richer data than
+        <code>/insights</code> — token usage, skill inventory, hook configs, and
+        workflow patterns.
+      </div>
+    </div>
+
+    <!-- Footer CTA -->
+    <div class="footer-cta">
+      <h3>Share your harness setup</h3>
+      <p>Join 238 developers who've shared how they work with Claude Code.</p>
+      <button class="btn-primary">Upload Your Profile</button>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      Insight Harness &middot; A community project &middot; Not affiliated with
+      Anthropic
+    </footer>
+
+    <script>
+      // Generate heatmap cells with deterministic pseudo-random data
+      const grid = document.getElementById("heatmap");
+      const levels = [
+        "h0",
+        "h0",
+        "h0",
+        "h1",
+        "h1",
+        "h2",
+        "h2",
+        "h3",
+        "h3",
+        "h4",
+        "h5",
+      ];
+      // Seed-style pattern: weekends lower, recent weeks higher
+      for (let col = 0; col < 52; col++) {
+        for (let row = 0; row < 7; row++) {
+          const cell = document.createElement("div");
+          cell.className = "heatmap-cell";
+          // Weight: higher columns (recent) = more activity
+          const recencyBoost = col / 52;
+          // Weekends (row 0=Sun, 6=Sat) are lower
+          const isWeekend = row === 0 || row === 6;
+          const rand = Math.random();
+          let level;
+          if (isWeekend) {
+            level = rand < 0.6 ? 0 : rand < 0.8 ? 1 : 2;
+          } else {
+            const threshold = 0.3 - recencyBoost * 0.25;
+            if (rand < threshold) level = 0;
+            else if (rand < threshold + 0.2) level = 1;
+            else if (rand < threshold + 0.4) level = 2;
+            else if (rand < threshold + 0.55) level = 3;
+            else if (rand < threshold + 0.7) level = 4;
+            else level = 5;
+          }
+          cell.classList.add("h" + level);
+          grid.appendChild(cell);
+        }
+      }
+    </script>
+  </body>
+</html>

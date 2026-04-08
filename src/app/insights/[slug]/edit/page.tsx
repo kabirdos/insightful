@@ -94,7 +94,6 @@ export default function EditReportPage() {
   const [hiddenSections, setHiddenSections] = useState<Record<string, boolean>>(
     {},
   );
-  const [hiddenStats, setHiddenStats] = useState<Record<string, boolean>>({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingSave, setPendingSave] = useState<Record<
     string,
@@ -126,10 +125,6 @@ export default function EditReportPage() {
     setHiddenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const toggleStat = (key: string) => {
-    setHiddenStats((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
   const buildSaveBody = () => {
     const body: Record<string, unknown> = {};
 
@@ -139,12 +134,6 @@ export default function EditReportPage() {
         body[section.key] = null;
       }
     }
-
-    // Null out hidden stats
-    if (hiddenStats["sessions"]) body.sessionCount = null;
-    if (hiddenStats["messages"]) body.messageCount = null;
-    if (hiddenStats["commits"]) body.commitCount = null;
-    if (hiddenStats["tokens"]) body.totalTokens = null;
 
     return body;
   };
@@ -259,10 +248,6 @@ export default function EditReportPage() {
 
   const isHarness = report.reportType === "insight-harness";
   const harnessData = report.harnessData;
-
-  // Suppress unused variable lint — toggleStat is wired up for stat hiding
-  void toggleStat;
-  void hiddenStats;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">

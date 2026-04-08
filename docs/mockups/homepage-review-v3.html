@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insight Harness — Homepage Review v3</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f1f5f9;
+        color: #1e293b;
+      }
+
+      .review-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(255, 255, 255, 0.97);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid #e2e8f0;
+        padding: 14px 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .review-header h1 {
+        font-size: 17px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .header-right {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .nav-link {
+        padding: 6px 14px;
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        border: 1px solid #cbd5e1;
+        color: #475569;
+        background: white;
+        transition: all 0.15s;
+      }
+      .nav-link:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+      }
+
+      .copy-btn {
+        padding: 8px 20px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        border: none;
+        background: #2563eb;
+        color: white;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .copy-btn:hover {
+        background: #1d4ed8;
+      }
+      .copy-btn.copied {
+        background: #16a34a;
+      }
+
+      .direction-section {
+        border-bottom: 2px solid #e2e8f0;
+        background: white;
+      }
+
+      .direction-header {
+        padding: 20px 32px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .direction-badge {
+        width: 36px;
+        height: 36px;
+        border-radius: 9px;
+        font-size: 16px;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: white;
+      }
+      .badge-h {
+        background: #6366f1;
+      }
+      .badge-i {
+        background: #8b5cf6;
+      }
+
+      .direction-info h2 {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .direction-info p {
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 2px;
+        line-height: 1.5;
+      }
+
+      .mockup-frame {
+        width: 100%;
+        height: 900px;
+        border: none;
+        display: block;
+      }
+
+      .feedback-section {
+        padding: 16px 32px 20px;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+      }
+      .feedback-section label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 8px;
+      }
+      .feedback-section textarea {
+        width: 100%;
+        min-height: 100px;
+        padding: 12px 14px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        font-family: inherit;
+        font-size: 13px;
+        color: #334155;
+        background: white;
+        resize: vertical;
+        line-height: 1.6;
+      }
+      .feedback-section textarea:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      }
+      .feedback-section textarea::placeholder {
+        color: #94a3b8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="review-header">
+      <h1>Insight Harness — Homepage Review v3</h1>
+      <div class="header-right">
+        <a href="#direction-h" class="nav-link">H: Gallery Light v2</a>
+        <a href="#direction-i" class="nav-link">I: Hybrid Light v2</a>
+        <button class="copy-btn" onclick="copyAll()">Copy All Feedback</button>
+      </div>
+    </div>
+
+    <!-- Direction H -->
+    <div id="direction-h" class="direction-section">
+      <div class="direction-header">
+        <div class="direction-badge badge-h">H</div>
+        <div class="direction-info">
+          <h2>Gallery Light v2</h2>
+          <p>
+            Light mode, colorful badges, per-person token heatmaps on each card,
+            privacy messaging, /insights primary with /harness-profile upgrade
+            path. Bento grid layout.
+          </p>
+        </div>
+      </div>
+      <iframe
+        class="mockup-frame"
+        src="homepage-h-gallery-light-v2.html"
+      ></iframe>
+      <div class="feedback-section">
+        <label for="fb-h">Feedback — Direction H: Gallery Light v2</label>
+        <textarea
+          id="fb-h"
+          placeholder="What do you like? What would you change? Any elements to keep for the final version?"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- Direction I -->
+    <div id="direction-i" class="direction-section">
+      <div class="direction-header">
+        <div class="direction-badge badge-i">I</div>
+        <div class="direction-info">
+          <h2>Hybrid Light v2</h2>
+          <p>
+            Split hero (copy left, featured card right), per-person token
+            heatmaps, colorful accents, privacy note, /insights primary with
+            /harness-profile upgrade. Gallery grid below.
+          </p>
+        </div>
+      </div>
+      <iframe
+        class="mockup-frame"
+        src="homepage-i-hybrid-light-v2.html"
+      ></iframe>
+      <div class="feedback-section">
+        <label for="fb-i">Feedback — Direction I: Hybrid Light v2</label>
+        <textarea
+          id="fb-i"
+          placeholder="What do you like? What would you change? Any elements to keep for the final version?"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- Overall -->
+    <div
+      style="
+        padding: 24px 32px;
+        background: white;
+        border-top: 2px solid #e2e8f0;
+      "
+    >
+      <label
+        for="fb-overall"
+        style="
+          display: block;
+          font-size: 14px;
+          font-weight: 700;
+          color: #0f172a;
+          margin-bottom: 8px;
+        "
+        >Overall Notes & Direction</label
+      >
+      <textarea
+        id="fb-overall"
+        style="
+          width: 100%;
+          min-height: 120px;
+          padding: 12px 14px;
+          border-radius: 8px;
+          border: 1px solid #cbd5e1;
+          font-family: inherit;
+          font-size: 13px;
+          color: #334155;
+          resize: vertical;
+          line-height: 1.6;
+        "
+        placeholder="Which direction should we go? Any elements to mix? General thoughts on the homepage strategy?"
+      ></textarea>
+    </div>
+
+    <script>
+      function copyAll() {
+        const h = document.getElementById("fb-h").value;
+        const i = document.getElementById("fb-i").value;
+        const overall = document.getElementById("fb-overall").value;
+
+        let text = "# Homepage Review v3 Feedback\n\n";
+        if (h) text += "## H: Gallery Light v2\n" + h + "\n\n";
+        if (i) text += "## I: Hybrid Light v2\n" + i + "\n\n";
+        if (overall) text += "## Overall\n" + overall + "\n";
+
+        if (!h && !i && !overall) {
+          text = "(No feedback entered yet)";
+        }
+
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = document.querySelector(".copy-btn");
+          btn.textContent = "Copied!";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = "Copy All Feedback";
+            btn.classList.remove("copied");
+          }, 2000);
+        });
+      }
+    </script>
+  </body>
+</html>

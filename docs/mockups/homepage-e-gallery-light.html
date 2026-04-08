@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insight Harness — Gallery Light</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        background: #f8fafc;
+        color: #0f172a;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: #3b82f6;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+
+      /* NAV */
+      .nav {
+        background: #fff;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 0 24px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .nav-logo {
+        font-weight: 700;
+        font-size: 18px;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .nav-logo span {
+        color: #2563eb;
+      }
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+      .nav-links a {
+        color: #475569;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .nav-links a:hover {
+        color: #0f172a;
+        text-decoration: none;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.15s;
+      }
+      .btn-primary {
+        background: #2563eb;
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: #1d4ed8;
+        text-decoration: none;
+      }
+      .btn-outline {
+        background: transparent;
+        color: #2563eb;
+        border: 1.5px solid #2563eb;
+      }
+      .btn-outline:hover {
+        background: #eff6ff;
+        text-decoration: none;
+      }
+      .btn-sm {
+        padding: 6px 14px;
+        font-size: 13px;
+      }
+
+      /* HERO */
+      .hero {
+        text-align: center;
+        padding: 48px 24px 32px;
+        max-width: 640px;
+        margin: 0 auto;
+      }
+      .hero h1 {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        margin-bottom: 8px;
+      }
+      .hero p {
+        color: #475569;
+        font-size: 16px;
+        margin-bottom: 20px;
+      }
+      .hero-ctas {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+      }
+
+      /* HEATMAP */
+      .heatmap-section {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 0 24px 40px;
+      }
+      .heatmap-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      }
+      .heatmap-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 12px;
+      }
+      .heatmap-header h3 {
+        font-size: 15px;
+        font-weight: 700;
+      }
+      .heatmap-header .stat {
+        font-size: 13px;
+        color: #475569;
+      }
+      .heatmap-header .stat strong {
+        color: #2563eb;
+      }
+      .heatmap-grid {
+        display: flex;
+        gap: 3px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+      }
+      .heatmap-col {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .heatmap-cell {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+        background: #eff6ff;
+      }
+      .heatmap-cell.l1 {
+        background: #dbeafe;
+      }
+      .heatmap-cell.l2 {
+        background: #93c5fd;
+      }
+      .heatmap-cell.l3 {
+        background: #3b82f6;
+      }
+      .heatmap-cell.l4 {
+        background: #1d4ed8;
+      }
+      .heatmap-legend {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 10px;
+        justify-content: flex-end;
+      }
+      .heatmap-legend span {
+        font-size: 11px;
+        color: #94a3b8;
+      }
+      .heatmap-legend .cell {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+      }
+      .heatmap-footer {
+        margin-top: 10px;
+        font-size: 12px;
+        color: #94a3b8;
+      }
+      .heatmap-footer a {
+        color: #3b82f6;
+      }
+
+      /* FEATURED */
+      .featured-section {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 0 24px 32px;
+      }
+      .featured-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      .featured-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #2563eb;
+        background: #eff6ff;
+        padding: 2px 8px;
+        border-radius: 4px;
+        margin-bottom: 12px;
+        display: inline-block;
+      }
+      .avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: #dbeafe;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #2563eb;
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+      .avatar.lg {
+        width: 56px;
+        height: 56px;
+        font-size: 22px;
+      }
+      .featured-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .featured-name {
+        font-weight: 700;
+        font-size: 16px;
+      }
+      .featured-meta {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-top: 2px;
+      }
+      .featured-stats {
+        display: flex;
+        gap: 24px;
+        margin-top: 8px;
+      }
+      .featured-stat {
+        text-align: center;
+      }
+      .featured-stat .val {
+        font-size: 18px;
+        font-weight: 800;
+        color: #0f172a;
+      }
+      .featured-stat .label {
+        font-size: 11px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+      .featured-tags {
+        display: flex;
+        gap: 6px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+      }
+      .tag {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: #f1f5f9;
+        color: #475569;
+        font-weight: 500;
+      }
+      .tag.blue {
+        background: #eff6ff;
+        color: #2563eb;
+      }
+
+      /* GRID */
+      .grid-section {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 0 24px 40px;
+      }
+      .grid-section h2 {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 16px;
+      }
+      .report-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      .report-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 16px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        transition:
+          transform 0.15s,
+          border-color 0.15s,
+          box-shadow 0.15s;
+        cursor: pointer;
+      }
+      .report-card:hover {
+        transform: translateY(-2px);
+        border-color: #93c5fd;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+      }
+      .card-top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .card-name {
+        font-weight: 700;
+        font-size: 14px;
+      }
+      .card-date {
+        font-size: 11px;
+        color: #94a3b8;
+      }
+      .card-stats {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+      .card-stat .val {
+        font-size: 16px;
+        font-weight: 800;
+      }
+      .card-stat .label {
+        font-size: 10px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+      .card-badges {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+      }
+      .badge {
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        background: #f1f5f9;
+        color: #64748b;
+        font-weight: 500;
+      }
+
+      /* HOW IT WORKS */
+      .how-section {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 0 24px 48px;
+      }
+      .how-section h2 {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 16px;
+        text-align: center;
+      }
+      .how-steps {
+        display: flex;
+        gap: 16px;
+      }
+      .how-step {
+        flex: 1;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      }
+      .how-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: #eff6ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 12px;
+        font-size: 20px;
+        color: #2563eb;
+      }
+      .how-step h4 {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .how-step p {
+        font-size: 13px;
+        color: #475569;
+      }
+      .how-callout {
+        margin-top: 16px;
+        background: #eff6ff;
+        border: 1px solid #dbeafe;
+        border-radius: 8px;
+        padding: 12px 16px;
+        text-align: center;
+        font-size: 13px;
+        color: #1e40af;
+      }
+      .how-callout strong {
+        font-weight: 700;
+      }
+
+      /* FOOTER CTA */
+      .footer-cta {
+        background: #eff6ff;
+        border-top: 1px solid #dbeafe;
+        padding: 40px 24px;
+        text-align: center;
+      }
+      .footer-cta h2 {
+        font-size: 22px;
+        font-weight: 800;
+        margin-bottom: 8px;
+      }
+      .footer-cta p {
+        color: #475569;
+        font-size: 14px;
+        margin-bottom: 16px;
+      }
+
+      /* FOOTER */
+      .footer {
+        padding: 20px 24px;
+        text-align: center;
+        font-size: 12px;
+        color: #94a3b8;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      @media (max-width: 768px) {
+        .report-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .how-steps {
+          flex-direction: column;
+        }
+        .featured-card {
+          flex-direction: column;
+          text-align: center;
+        }
+        .featured-stats {
+          justify-content: center;
+        }
+        .featured-tags {
+          justify-content: center;
+        }
+      }
+      @media (max-width: 480px) {
+        .report-grid {
+          grid-template-columns: 1fr;
+        }
+        .hero h1 {
+          font-size: 22px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- NAV -->
+    <nav class="nav">
+      <div class="nav-logo"><span>&gt;_</span> Insight Harness</div>
+      <div class="nav-links">
+        <a href="#">Browse</a>
+        <a href="#">Top</a>
+        <a href="#">Search</a>
+        <a href="#" class="btn btn-primary btn-sm">Upload</a>
+      </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+      <h1>See how developers actually use Claude Code</h1>
+      <p>
+        Upload your /insights report. Get a shareable profile of your AI coding
+        workflow.
+      </p>
+      <div class="hero-ctas">
+        <a href="#" class="btn btn-primary">Browse Reports</a>
+        <a href="#" class="btn btn-outline">Upload Yours</a>
+      </div>
+    </section>
+
+    <!-- HEATMAP -->
+    <section class="heatmap-section">
+      <div class="heatmap-card">
+        <div class="heatmap-header">
+          <h3>Community Pulse</h3>
+          <div class="stat">
+            <strong>4.2M</strong> tokens tracked this month
+          </div>
+        </div>
+        <div class="heatmap-grid" id="heatmap"></div>
+        <div class="heatmap-legend">
+          <span>Less</span>
+          <div class="cell heatmap-cell"></div>
+          <div class="cell heatmap-cell l1"></div>
+          <div class="cell heatmap-cell l2"></div>
+          <div class="cell heatmap-cell l3"></div>
+          <div class="cell heatmap-cell l4"></div>
+          <span>More</span>
+        </div>
+        <div class="heatmap-footer">
+          Powered by <a href="#">/harness-profile</a> &mdash; get deeper
+          insights than /insights alone
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURED -->
+    <section class="featured-section">
+      <span class="featured-label">Featured Report</span>
+      <div class="featured-card">
+        <div class="avatar lg">SK</div>
+        <div class="featured-info">
+          <div class="featured-name">Sarah Kim</div>
+          <div class="featured-meta">
+            Mar 1 &ndash; Mar 31, 2026 &middot; 23 active days
+          </div>
+          <div class="featured-stats">
+            <div class="featured-stat">
+              <div class="val">847</div>
+              <div class="label">Conversations</div>
+            </div>
+            <div class="featured-stat">
+              <div class="val">1.2M</div>
+              <div class="label">Tokens</div>
+            </div>
+            <div class="featured-stat">
+              <div class="val">$38</div>
+              <div class="label">Cost</div>
+            </div>
+            <div class="featured-stat">
+              <div class="val">92%</div>
+              <div class="label">Tool Use</div>
+            </div>
+          </div>
+          <div class="featured-tags">
+            <span class="tag blue">React</span>
+            <span class="tag blue">TypeScript</span>
+            <span class="tag">Multi-file edits</span>
+            <span class="tag">Test-driven</span>
+            <span class="tag">Custom skills</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REPORT GRID -->
+    <section class="grid-section">
+      <h2>Recent Reports</h2>
+      <div class="report-grid">
+        <div class="report-card">
+          <div class="card-top">
+            <div class="avatar">JD</div>
+            <div>
+              <div class="card-name">Jake Donovan</div>
+              <div class="card-date">Mar 15 &ndash; Mar 31</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="card-stat">
+              <div class="val">312</div>
+              <div class="label">Convos</div>
+            </div>
+            <div class="card-stat">
+              <div class="val">580K</div>
+              <div class="label">Tokens</div>
+            </div>
+            <div class="card-stat">
+              <div class="val">$16</div>
+              <div class="label">Cost</div>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge">Python</span><span class="badge">Django</span
+            ><span class="badge">Bash scripts</span>
+          </div>
+        </div>
+        <div class="report-card">
+          <div class="card-top">
+            <div class="avatar">ML</div>
+            <div>
+              <div class="card-name">Maria Lopez</div>
+              <div class="card-date">Mar 1 &ndash; Mar 28</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="card-stat">
+              <div class="val">529</div>
+              <div class="label">Convos</div>
+            </div>
+            <div class="card-stat">
+              <div class="val">910K</div>
+              <div class="label">Tokens</div>
+            </div>
+            <div class="card-stat">
+              <div class="val">$27</div>
+              <div class="label">Cost</div>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge">Next.js</span><span class="badge">Tailwind</span
+            ><span class="badge">Parallel agents</span>
+          </div>
+        </div>
+        <div class="report-card">
+          <div class="card-top">
+            <div class="avatar">AT</div>
+            <div>
+              <div class="card-name">Alex Turner</div>
+              <div class="card-date">Feb 20 &ndash; Mar 20</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="card-stat">
+              <div class="val">198</div>
+              <div class="label">Convos</div>
+            </div>
+            <div class="card-stat">
+              <div class="val">340K</div>
+              <div class="label">Tokens</div>
+            </div>
+            <div class="card-stat">
+              <div class="val">$9</div>
+              <div class="label">Cost</div>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge">Rust</span><span class="badge">CLI tools</span
+            ><span class="badge">TDD</span>
+          </div>
+        </div>
+        <div class="report-card">
+          <div class="card-top">
+            <div class="avatar">PR</div>
+            <div>
+              <div class="card-name">Priya Rao</div>
+              <div class="card-date">Mar 5 &ndash; Mar 31</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="card-stat">
+              <div class="val">421</div>
+              <div class="label">Convos</div>
+            </div>
+            <div class="card-stat">
+              <div class="val">780K</div>
+              <div class="label">Tokens</div>
+            </div>
+            <div class="card-stat">
+              <div class="val">$22</div>
+              <div class="label">Cost</div>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge">Go</span><span class="badge">Microservices</span
+            ><span class="badge">Custom hooks</span>
+          </div>
+        </div>
+        <div class="report-card">
+          <div class="card-top">
+            <div class="avatar">EM</div>
+            <div>
+              <div class="card-name">Erik Muller</div>
+              <div class="card-date">Mar 1 &ndash; Mar 25</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="card-stat">
+              <div class="val">156</div>
+              <div class="label">Convos</div>
+            </div>
+            <div class="card-stat">
+              <div class="val">290K</div>
+              <div class="label">Tokens</div>
+            </div>
+            <div class="card-stat">
+              <div class="val">$8</div>
+              <div class="label">Cost</div>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge">Swift</span><span class="badge">iOS</span
+            ><span class="badge">Refactoring</span>
+          </div>
+        </div>
+        <div class="report-card">
+          <div class="card-top">
+            <div class="avatar">LW</div>
+            <div>
+              <div class="card-name">Lisa Wang</div>
+              <div class="card-date">Mar 10 &ndash; Mar 31</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="card-stat">
+              <div class="val">673</div>
+              <div class="label">Convos</div>
+            </div>
+            <div class="card-stat">
+              <div class="val">1.1M</div>
+              <div class="label">Tokens</div>
+            </div>
+            <div class="card-stat">
+              <div class="val">$31</div>
+              <div class="label">Cost</div>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge">Ruby</span><span class="badge">Rails</span
+            ><span class="badge">12 skills</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="how-section">
+      <h2>How It Works</h2>
+      <div class="how-steps">
+        <div class="how-step">
+          <div class="how-icon">&gt;_</div>
+          <h4>1. Run /insights</h4>
+          <p>Generate your Claude Code report in seconds</p>
+        </div>
+        <div class="how-step">
+          <div class="how-icon">&uarr;</div>
+          <h4>2. Upload</h4>
+          <p>Drop the HTML file on Insight Harness</p>
+        </div>
+        <div class="how-step">
+          <div class="how-icon">&#x1f517;</div>
+          <h4>3. Share</h4>
+          <p>Get a public profile others can learn from</p>
+        </div>
+      </div>
+      <div class="how-callout">
+        <strong>Want deeper data?</strong> Run <code>/harness-profile</code> for
+        token usage, cost analysis, and more
+      </div>
+    </section>
+
+    <!-- FOOTER CTA -->
+    <section class="footer-cta">
+      <h2>Ready to share yours?</h2>
+      <p>
+        See how your workflow compares. Upload your report in under a minute.
+      </p>
+      <a href="#" class="btn btn-primary">Upload Your Report</a>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      Insight Harness &mdash; Built for the Claude Code community
+    </footer>
+
+    <script>
+      // Generate heatmap
+      (function () {
+        const grid = document.getElementById("heatmap");
+        const levels = ["", "l1", "l2", "l3", "l4"];
+        // Weight toward lower levels for realism
+        const weights = [0.35, 0.25, 0.2, 0.12, 0.08];
+
+        function pickLevel() {
+          const r = Math.random();
+          let cum = 0;
+          for (let i = 0; i < weights.length; i++) {
+            cum += weights[i];
+            if (r < cum) return levels[i];
+          }
+          return levels[0];
+        }
+
+        for (let week = 0; week < 52; week++) {
+          const col = document.createElement("div");
+          col.className = "heatmap-col";
+          for (let day = 0; day < 7; day++) {
+            const cell = document.createElement("div");
+            cell.className = "heatmap-cell " + pickLevel();
+            col.appendChild(cell);
+          }
+          grid.appendChild(col);
+        }
+      })();
+    </script>
+  </body>
+</html>

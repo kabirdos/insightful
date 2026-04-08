@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insight Harness — The Gallery</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0f172a;
+        --card: #1e293b;
+        --card-border: #334155;
+        --blue: #3b82f6;
+        --blue-hover: #2563eb;
+        --white: #f8fafc;
+        --text: #cbd5e1;
+        --muted: #94a3b8;
+        --dim: #64748b;
+        --radius: 14px;
+        --mono:
+          "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", monospace;
+        --sans:
+          "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ── Nav ── */
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 32px;
+        border-bottom: 1px solid var(--card-border);
+        position: sticky;
+        top: 0;
+        background: rgba(15, 23, 42, 0.92);
+        backdrop-filter: blur(12px);
+        z-index: 100;
+      }
+      .nav-logo {
+        font-weight: 700;
+        font-size: 18px;
+        color: var(--white);
+        letter-spacing: -0.3px;
+      }
+      .nav-logo span {
+        color: var(--blue);
+      }
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .nav-link {
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: color 0.15s;
+      }
+      .nav-link:hover {
+        color: var(--white);
+      }
+      .search-box {
+        background: var(--card);
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        padding: 6px 12px;
+        color: var(--text);
+        font-size: 13px;
+        width: 200px;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .search-box::placeholder {
+        color: var(--dim);
+      }
+      .search-box:focus {
+        border-color: var(--blue);
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+        border: none;
+      }
+      .btn-primary {
+        background: var(--blue);
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: var(--blue-hover);
+        transform: translateY(-1px);
+      }
+      .btn-outline {
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--card-border);
+      }
+      .btn-outline:hover {
+        border-color: var(--blue);
+        color: var(--white);
+      }
+      .btn-sm {
+        padding: 6px 14px;
+        font-size: 13px;
+      }
+
+      /* ── Hero ── */
+      .hero {
+        text-align: center;
+        padding: 56px 32px 40px;
+        max-width: 720px;
+        margin: 0 auto;
+      }
+      .hero h1 {
+        font-size: 40px;
+        font-weight: 800;
+        color: var(--white);
+        letter-spacing: -0.5px;
+        line-height: 1.15;
+        margin-bottom: 12px;
+      }
+      .hero p {
+        font-size: 17px;
+        color: var(--muted);
+        margin-bottom: 28px;
+        max-width: 520px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .hero-ctas {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+      }
+
+      /* ── Section wrapper ── */
+      .section {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 32px;
+      }
+      .section-label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--blue);
+        margin-bottom: 12px;
+      }
+
+      /* ── Featured Card ── */
+      .featured {
+        margin-bottom: 48px;
+      }
+      .featured-card {
+        background: var(--card);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius);
+        padding: 32px;
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: 32px;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+      }
+      .featured-card:hover {
+        border-color: var(--blue);
+        box-shadow: 0 0 24px rgba(59, 130, 246, 0.12);
+      }
+      .featured-profile {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 22px;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .featured-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .featured-name {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--white);
+      }
+      .featured-handle {
+        font-size: 14px;
+        color: var(--dim);
+        font-family: var(--mono);
+      }
+      .featured-date {
+        font-size: 13px;
+        color: var(--dim);
+      }
+      .stat-row {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .stat {
+        display: flex;
+        flex-direction: column;
+      }
+      .stat-value {
+        font-family: var(--mono);
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--white);
+      }
+      .stat-label {
+        font-size: 12px;
+        color: var(--dim);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .featured-body {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .weekly-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+      }
+      .weekly-stat {
+        background: rgba(15, 23, 42, 0.5);
+        border-radius: 10px;
+        padding: 14px;
+        text-align: center;
+      }
+      .weekly-stat .stat-value {
+        font-size: 16px;
+      }
+      .weekly-stat .stat-label {
+        font-size: 11px;
+        margin-top: 2px;
+      }
+      .projects-list {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .badge-blue {
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+      }
+      .badge-green {
+        background: rgba(34, 197, 94, 0.15);
+        color: #4ade80;
+      }
+      .badge-purple {
+        background: rgba(168, 85, 247, 0.15);
+        color: #c084fc;
+      }
+      .badge-amber {
+        background: rgba(245, 158, 11, 0.15);
+        color: #fbbf24;
+      }
+      .badge-pink {
+        background: rgba(236, 72, 153, 0.15);
+        color: #f472b6;
+      }
+      .badge-teal {
+        background: rgba(20, 184, 166, 0.15);
+        color: #2dd4bf;
+      }
+      .insight-quote {
+        background: rgba(59, 130, 246, 0.06);
+        border-left: 3px solid var(--blue);
+        border-radius: 0 10px 10px 0;
+        padding: 14px 18px;
+        font-size: 14px;
+        font-style: italic;
+        color: var(--text);
+        line-height: 1.5;
+      }
+
+      /* ── Report Grid ── */
+      .grid-section {
+        margin-bottom: 64px;
+      }
+      .grid-section h2 {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--white);
+        margin-bottom: 24px;
+      }
+      .report-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-auto-rows: auto;
+        gap: 16px;
+      }
+      .report-card {
+        background: var(--card);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius);
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s,
+          transform 0.2s;
+        cursor: pointer;
+      }
+      .report-card:hover {
+        border-color: var(--blue);
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
+      }
+      .report-card.tall {
+        grid-row: span 2;
+      }
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .avatar-sm {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 15px;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .card-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--white);
+      }
+      .card-handle {
+        font-size: 12px;
+        color: var(--dim);
+        font-family: var(--mono);
+      }
+      .card-date {
+        font-size: 11px;
+        color: var(--dim);
+        margin-top: 2px;
+      }
+      .card-stats {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .card-stat-value {
+        font-family: var(--mono);
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--white);
+      }
+      .card-stat-label {
+        font-size: 11px;
+        color: var(--dim);
+      }
+      .card-badges {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      /* ── Explainer ── */
+      .explainer {
+        padding: 64px 0;
+      }
+      .explainer-inner {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 32px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 48px;
+        align-items: center;
+      }
+      .explainer h2 {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--white);
+        margin-bottom: 14px;
+      }
+      .explainer p {
+        color: var(--muted);
+        font-size: 15px;
+        margin-bottom: 24px;
+        line-height: 1.7;
+      }
+      .steps {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .step {
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+      }
+      .step-num {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--blue);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+        flex-shrink: 0;
+      }
+      .step-text {
+        font-size: 14px;
+        color: var(--text);
+      }
+      .step-text strong {
+        color: var(--white);
+      }
+      .terminal {
+        background: #0c0e14;
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+      .terminal-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 14px;
+        background: rgba(30, 41, 59, 0.6);
+        border-bottom: 1px solid var(--card-border);
+      }
+      .terminal-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .terminal-bar span {
+        font-size: 12px;
+        color: var(--dim);
+        margin-left: 8px;
+        font-family: var(--mono);
+      }
+      .terminal-body {
+        padding: 20px;
+        font-family: var(--mono);
+        font-size: 13px;
+        line-height: 1.8;
+        color: var(--muted);
+      }
+      .terminal-body .prompt {
+        color: #4ade80;
+      }
+      .terminal-body .cmd {
+        color: var(--white);
+      }
+      .terminal-body .comment {
+        color: var(--dim);
+      }
+      .terminal-body .output {
+        color: var(--blue);
+      }
+
+      /* ── Footer CTA ── */
+      .footer-cta {
+        text-align: center;
+        padding: 64px 32px 80px;
+        border-top: 1px solid var(--card-border);
+      }
+      .footer-cta h2 {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--white);
+        margin-bottom: 10px;
+      }
+      .footer-cta p {
+        color: var(--muted);
+        margin-bottom: 24px;
+        font-size: 15px;
+      }
+
+      /* ── Responsive ── */
+      @media (max-width: 860px) {
+        .featured-card {
+          grid-template-columns: 1fr;
+        }
+        .report-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .report-card.tall {
+          grid-row: span 1;
+        }
+        .explainer-inner {
+          grid-template-columns: 1fr;
+        }
+        .weekly-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 560px) {
+        .hero h1 {
+          font-size: 28px;
+        }
+        .report-grid {
+          grid-template-columns: 1fr;
+        }
+        nav {
+          padding: 12px 16px;
+        }
+        .section {
+          padding: 0 16px;
+        }
+        .search-box {
+          width: 140px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ── Nav ── -->
+    <nav>
+      <div class="nav-logo">Insight<span>Harness</span></div>
+      <div class="nav-right">
+        <input type="text" class="search-box" placeholder="Search reports..." />
+        <a href="#" class="nav-link">Top</a>
+        <a href="#" class="nav-link">Recent</a>
+        <a href="#" class="btn btn-primary btn-sm">Upload</a>
+      </div>
+    </nav>
+
+    <!-- ── Hero ── -->
+    <section class="hero">
+      <h1>See how developers actually use Claude Code</h1>
+      <p>
+        Upload your
+        <code style="font-family: var(--mono); color: var(--blue)"
+          >/insights</code
+        >
+        report and join a gallery of real developer workflows. Browse how others
+        use parallel agents, plan mode, and more.
+      </p>
+      <div class="hero-ctas">
+        <a href="#grid" class="btn btn-primary">Browse Reports</a>
+        <a href="#" class="btn btn-outline">Upload Yours</a>
+      </div>
+    </section>
+
+    <!-- ── Featured Report ── -->
+    <div class="section featured">
+      <p class="section-label">Featured Report</p>
+      <div class="featured-card">
+        <div class="featured-profile">
+          <div class="featured-header">
+            <div
+              class="avatar"
+              style="background: linear-gradient(135deg, #6366f1, #3b82f6)"
+            >
+              SC
+            </div>
+            <div>
+              <div class="featured-name">Sarah Chen</div>
+              <div class="featured-handle">@sarahchen</div>
+            </div>
+          </div>
+          <div class="featured-date">Feb 3 &ndash; Mar 30, 2026</div>
+          <div class="stat-row">
+            <div class="stat">
+              <span class="stat-value">847</span>
+              <span class="stat-label">Sessions</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value">12.4k</span>
+              <span class="stat-label">Messages</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value">45</span>
+              <span class="stat-label">Projects</span>
+            </div>
+          </div>
+          <div class="projects-list">
+            <span class="badge badge-blue">parallel agents</span>
+            <span class="badge badge-green">worktrees</span>
+            <span class="badge badge-purple">plan mode</span>
+            <span class="badge badge-amber">MCP tools</span>
+          </div>
+        </div>
+        <div class="featured-body">
+          <div class="weekly-grid">
+            <div class="weekly-stat">
+              <div class="stat-value">18.2</div>
+              <div class="stat-label">Sessions / wk</div>
+            </div>
+            <div class="weekly-stat">
+              <div class="stat-value">267</div>
+              <div class="stat-label">Messages / wk</div>
+            </div>
+            <div class="weekly-stat">
+              <div class="stat-value">3.1</div>
+              <div class="stat-label">Projects / wk</div>
+            </div>
+            <div class="weekly-stat">
+              <div class="stat-value">42 min</div>
+              <div class="stat-label">Avg session</div>
+            </div>
+          </div>
+          <div class="projects-list">
+            <span class="badge badge-teal">React</span>
+            <span class="badge badge-pink">TypeScript</span>
+            <span class="badge badge-blue">Next.js</span>
+            <span class="badge badge-amber">Python</span>
+            <span class="badge badge-purple">Rust</span>
+            <span class="badge badge-green">DevOps</span>
+          </div>
+          <div class="insight-quote">
+            "Heavy parallel-agent user who delegates refactoring and testing to
+            sub-agents while staying in a planning loop on the main thread. Uses
+            worktrees to keep feature work isolated — rarely touches main
+            directly."
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Report Grid ── -->
+    <div class="section grid-section" id="grid">
+      <h2>Recent Reports</h2>
+      <div class="report-grid">
+        <!-- Card 1 — tall -->
+        <div class="report-card tall">
+          <div class="card-header">
+            <div
+              class="avatar-sm"
+              style="background: linear-gradient(135deg, #f97316, #ef4444)"
+            >
+              MR
+            </div>
+            <div>
+              <div class="card-name">Marcus Reyes</div>
+              <div class="card-handle">@marcus.dev</div>
+              <div class="card-date">Mar 1 &ndash; Mar 28, 2026</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="stat">
+              <span class="card-stat-value">624</span
+              ><span class="card-stat-label">Sessions</span>
+            </div>
+            <div class="stat">
+              <span class="card-stat-value">9.8k</span
+              ><span class="card-stat-label">Messages</span>
+            </div>
+            <div class="stat">
+              <span class="card-stat-value">31</span
+              ><span class="card-stat-label">Projects</span>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-green">TDD</span>
+            <span class="badge badge-blue">plan mode</span>
+            <span class="badge badge-purple">custom skills</span>
+          </div>
+          <div
+            class="insight-quote"
+            style="font-size: 13px; padding: 10px 14px"
+          >
+            "Methodical TDD practitioner — writes failing tests first, then
+            iterates with Claude until green. Rarely skips the
+            red-green-refactor loop."
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="report-card">
+          <div class="card-header">
+            <div
+              class="avatar-sm"
+              style="background: linear-gradient(135deg, #10b981, #14b8a6)"
+            >
+              AJ
+            </div>
+            <div>
+              <div class="card-name">Aisha Johnson</div>
+              <div class="card-handle">@aishaj</div>
+              <div class="card-date">Feb 15 &ndash; Mar 30, 2026</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="stat">
+              <span class="card-stat-value">412</span
+              ><span class="card-stat-label">Sessions</span>
+            </div>
+            <div class="stat">
+              <span class="card-stat-value">5.6k</span
+              ><span class="card-stat-label">Messages</span>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-amber">hooks</span>
+            <span class="badge badge-teal">MCP servers</span>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="report-card">
+          <div class="card-header">
+            <div
+              class="avatar-sm"
+              style="background: linear-gradient(135deg, #8b5cf6, #a855f7)"
+            >
+              TP
+            </div>
+            <div>
+              <div class="card-name">Tomas Petersen</div>
+              <div class="card-handle">@tpetersen</div>
+              <div class="card-date">Jan 20 &ndash; Mar 25, 2026</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="stat">
+              <span class="card-stat-value">1,204</span
+              ><span class="card-stat-label">Sessions</span>
+            </div>
+            <div class="stat">
+              <span class="card-stat-value">18.1k</span
+              ><span class="card-stat-label">Messages</span>
+            </div>
+            <div class="stat">
+              <span class="card-stat-value">58</span
+              ><span class="card-stat-label">Projects</span>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-pink">parallel agents</span>
+            <span class="badge badge-blue">worktrees</span>
+            <span class="badge badge-green">Rust</span>
+          </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="report-card">
+          <div class="card-header">
+            <div
+              class="avatar-sm"
+              style="background: linear-gradient(135deg, #ec4899, #f43f5e)"
+            >
+              LW
+            </div>
+            <div>
+              <div class="card-name">Lena Wu</div>
+              <div class="card-handle">@lenawu</div>
+              <div class="card-date">Mar 5 &ndash; Mar 30, 2026</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="stat">
+              <span class="card-stat-value">189</span
+              ><span class="card-stat-label">Sessions</span>
+            </div>
+            <div class="stat">
+              <span class="card-stat-value">2.3k</span
+              ><span class="card-stat-label">Messages</span>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-purple">plan mode</span>
+            <span class="badge badge-amber">Django</span>
+          </div>
+        </div>
+
+        <!-- Card 5 — tall -->
+        <div class="report-card tall">
+          <div class="card-header">
+            <div
+              class="avatar-sm"
+              style="background: linear-gradient(135deg, #3b82f6, #06b6d4)"
+            >
+              RK
+            </div>
+            <div>
+              <div class="card-name">Raj Krishnamurthy</div>
+              <div class="card-handle">@rajk</div>
+              <div class="card-date">Feb 1 &ndash; Mar 28, 2026</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="stat">
+              <span class="card-stat-value">938</span
+              ><span class="card-stat-label">Sessions</span>
+            </div>
+            <div class="stat">
+              <span class="card-stat-value">14.7k</span
+              ><span class="card-stat-label">Messages</span>
+            </div>
+            <div class="stat">
+              <span class="card-stat-value">42</span
+              ><span class="card-stat-label">Projects</span>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-teal">sub-agents</span>
+            <span class="badge badge-pink">code review</span>
+            <span class="badge badge-blue">monorepo</span>
+          </div>
+          <div
+            class="insight-quote"
+            style="font-size: 13px; padding: 10px 14px"
+          >
+            "Delegates code review to sub-agents with strict checklists, then
+            manually verifies flagged items. Runs a 200k-line monorepo with 6
+            services."
+          </div>
+        </div>
+
+        <!-- Card 6 -->
+        <div class="report-card">
+          <div class="card-header">
+            <div
+              class="avatar-sm"
+              style="background: linear-gradient(135deg, #f59e0b, #eab308)"
+            >
+              JN
+            </div>
+            <div>
+              <div class="card-name">Jun Nakamura</div>
+              <div class="card-handle">@jnakamura</div>
+              <div class="card-date">Mar 10 &ndash; Mar 30, 2026</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="stat">
+              <span class="card-stat-value">305</span
+              ><span class="card-stat-label">Sessions</span>
+            </div>
+            <div class="stat">
+              <span class="card-stat-value">4.1k</span
+              ><span class="card-stat-label">Messages</span>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-green">Go</span>
+            <span class="badge badge-purple">custom skills</span>
+            <span class="badge badge-amber">hooks</span>
+          </div>
+        </div>
+
+        <!-- Card 7 -->
+        <div class="report-card">
+          <div class="card-header">
+            <div
+              class="avatar-sm"
+              style="background: linear-gradient(135deg, #14b8a6, #22c55e)"
+            >
+              EO
+            </div>
+            <div>
+              <div class="card-name">Elena Okafor</div>
+              <div class="card-handle">@elenao</div>
+              <div class="card-date">Feb 20 &ndash; Mar 28, 2026</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="stat">
+              <span class="card-stat-value">571</span
+              ><span class="card-stat-label">Sessions</span>
+            </div>
+            <div class="stat">
+              <span class="card-stat-value">7.9k</span
+              ><span class="card-stat-label">Messages</span>
+            </div>
+            <div class="stat">
+              <span class="card-stat-value">23</span
+              ><span class="card-stat-label">Projects</span>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-blue">TypeScript</span>
+            <span class="badge badge-pink">parallel agents</span>
+          </div>
+        </div>
+
+        <!-- Card 8 -->
+        <div class="report-card">
+          <div class="card-header">
+            <div
+              class="avatar-sm"
+              style="background: linear-gradient(135deg, #6366f1, #818cf8)"
+            >
+              DS
+            </div>
+            <div>
+              <div class="card-name">Daniel Schulz</div>
+              <div class="card-handle">@dschulz</div>
+              <div class="card-date">Mar 1 &ndash; Mar 30, 2026</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div class="stat">
+              <span class="card-stat-value">256</span
+              ><span class="card-stat-label">Sessions</span>
+            </div>
+            <div class="stat">
+              <span class="card-stat-value">3.4k</span
+              ><span class="card-stat-label">Messages</span>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-teal">plan mode</span>
+            <span class="badge badge-amber">Swift</span>
+            <span class="badge badge-green">iOS</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Explainer ── -->
+    <div class="explainer">
+      <div class="explainer-inner">
+        <div>
+          <p class="section-label">How it works</p>
+          <h2>What is /insights?</h2>
+          <p>
+            Claude Code has a built-in command that analyzes your usage
+            patterns, tool preferences, and workflow habits across all your
+            projects. Insight Harness lets you share that analysis with the
+            community.
+          </p>
+          <div class="steps">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-text">
+                <strong>Run the command.</strong> Type
+                <code style="font-family: var(--mono); color: var(--blue)"
+                  >claude /insights</code
+                >
+                in your terminal to generate your report.
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-text">
+                <strong>Upload your report.</strong> Paste the output or drag
+                the HTML file into Insight Harness.
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-text">
+                <strong>Join the gallery.</strong> Your report appears in the
+                public gallery. Browse others, compare workflows, and learn new
+                techniques.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="terminal-dot" style="background: #ef4444"></div>
+            <div class="terminal-dot" style="background: #f59e0b"></div>
+            <div class="terminal-dot" style="background: #22c55e"></div>
+            <span>Terminal</span>
+          </div>
+          <div class="terminal-body">
+            <div>
+              <span class="prompt">$</span>
+              <span class="cmd">claude /insights</span>
+            </div>
+            <br />
+            <div class="comment"># Analyzing your Claude Code usage...</div>
+            <div class="comment">
+              # Scanning 847 sessions across 45 projects
+            </div>
+            <br />
+            <div class="output">--- Your Claude Code Insights ---</div>
+            <div>Sessions: <span class="cmd">847</span></div>
+            <div>Messages: <span class="cmd">12,431</span></div>
+            <div>Top tools: <span class="cmd">Edit, Bash, Read</span></div>
+            <div>
+              Features: <span class="cmd">parallel agents, worktrees</span>
+            </div>
+            <div>
+              Style: <span class="cmd">"Delegation-heavy planner"</span>
+            </div>
+            <br />
+            <div class="output">Report saved to ./insights-report.html</div>
+            <div>
+              <span class="prompt">$</span>
+              <span class="cmd" style="opacity: 0.5">_</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Footer CTA ── -->
+    <section class="footer-cta">
+      <h2>Ready to share yours?</h2>
+      <p>
+        Run
+        <code style="font-family: var(--mono); color: var(--blue)"
+          >claude /insights</code
+        >, upload the report, and see how you compare.
+      </p>
+      <a
+        href="#"
+        class="btn btn-primary"
+        style="padding: 12px 28px; font-size: 16px"
+        >Upload Your Report</a
+      >
+    </section>
+  </body>
+</html>

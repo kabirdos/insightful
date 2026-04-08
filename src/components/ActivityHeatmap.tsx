@@ -15,7 +15,6 @@ interface ActivityHeatmapProps {
   totalTokens?: number;
   dayCount?: number;
   dateRangeStart?: string;
-  dateRangeEnd?: string;
   slug?: string;
 }
 
@@ -205,7 +204,6 @@ export default function ActivityHeatmap({
   totalTokens,
   dayCount,
   dateRangeStart,
-  dateRangeEnd,
   slug,
 }: ActivityHeatmapProps) {
   // Build grids from dailyData or aggregate stats

@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insight Harness — Homepage Design Review</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #0a0a0f;
+        color: #e2e8f0;
+        padding: 0;
+      }
+
+      .review-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(10, 10, 15, 0.95);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid #1e293b;
+        padding: 16px 32px;
+      }
+
+      .review-header h1 {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .review-header p {
+        font-size: 13px;
+        color: #94a3b8;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+
+      .nav-links a {
+        display: inline-block;
+        padding: 6px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+      }
+
+      .nav-links a.option-a {
+        background: #1e3a5f;
+        color: #60a5fa;
+        border: 1px solid #2563eb;
+      }
+      .nav-links a.option-b {
+        background: #1a2e1a;
+        color: #4ade80;
+        border: 1px solid #16a34a;
+      }
+      .nav-links a.option-c {
+        background: #2a1f3d;
+        color: #a78bfa;
+        border: 1px solid #7c3aed;
+      }
+      .nav-links a.option-d {
+        background: #1a2f2f;
+        color: #2dd4bf;
+        border: 1px solid #0d9488;
+      }
+
+      .nav-links a:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.2);
+      }
+
+      .direction-section {
+        padding: 0;
+        border-bottom: 3px solid #1e293b;
+      }
+
+      .direction-header {
+        padding: 24px 32px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .direction-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        font-size: 18px;
+        font-weight: 800;
+        flex-shrink: 0;
+      }
+
+      .badge-a {
+        background: #1e3a5f;
+        color: #60a5fa;
+      }
+      .badge-b {
+        background: #1a2e1a;
+        color: #4ade80;
+      }
+      .badge-c {
+        background: #2a1f3d;
+        color: #a78bfa;
+      }
+      .badge-d {
+        background: #1a2f2f;
+        color: #2dd4bf;
+      }
+
+      .direction-info h2 {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .direction-info p {
+        font-size: 13px;
+        color: #94a3b8;
+        line-height: 1.5;
+      }
+
+      .direction-info .consensus {
+        display: inline-block;
+        margin-top: 6px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .consensus-high {
+        background: #064e3b;
+        color: #34d399;
+      }
+      .consensus-med {
+        background: #422006;
+        color: #fbbf24;
+      }
+
+      .mockup-frame {
+        width: 100%;
+        height: 900px;
+        border: none;
+        display: block;
+      }
+
+      .feedback-bar {
+        padding: 16px 32px;
+        background: #111827;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .feedback-bar span {
+        font-size: 13px;
+        color: #64748b;
+        margin-right: 8px;
+      }
+
+      .feedback-btn {
+        padding: 6px 16px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        border: 1px solid #334155;
+        background: #1e293b;
+        color: #cbd5e1;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .feedback-btn:hover {
+        background: #334155;
+        color: white;
+      }
+      .feedback-btn.selected {
+        background: #2563eb;
+        border-color: #3b82f6;
+        color: white;
+      }
+
+      .feedback-btn.fav {
+        border-color: #16a34a;
+      }
+      .feedback-btn.fav:hover,
+      .feedback-btn.fav.selected {
+        background: #16a34a;
+        border-color: #22c55e;
+        color: white;
+      }
+
+      .summary-section {
+        padding: 32px;
+        background: #0f172a;
+        border-top: 2px solid #1e293b;
+      }
+
+      .summary-section h2 {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 16px;
+      }
+
+      .consensus-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
+      }
+
+      .consensus-item {
+        padding: 12px 16px;
+        background: #1e293b;
+        border-radius: 8px;
+        border-left: 3px solid #3b82f6;
+      }
+
+      .consensus-item h4 {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      .consensus-item p {
+        font-size: 12px;
+        color: #94a3b8;
+        line-height: 1.4;
+      }
+
+      .consensus-item .score {
+        font-size: 11px;
+        color: #34d399;
+        font-weight: 600;
+        margin-top: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="review-header">
+      <h1>Insight Harness — Homepage Design Review</h1>
+      <p>
+        4 distinct directions based on 10-agent consensus analysis. Scroll to
+        review each, or jump:
+      </p>
+      <div class="nav-links">
+        <a href="#direction-a" class="option-a">A: The Gallery</a>
+        <a href="#direction-b" class="option-b">B: The Terminal</a>
+        <a href="#direction-c" class="option-c">C: The Showcase</a>
+        <a href="#direction-d" class="option-d">D: The Observatory</a>
+        <a
+          href="#consensus"
+          style="background: #1e293b; color: #94a3b8; border: 1px solid #334155"
+          >Consensus Summary</a
+        >
+      </div>
+    </div>
+
+    <!-- Direction A: The Gallery -->
+    <div id="direction-a" class="direction-section">
+      <div class="direction-header">
+        <div class="direction-badge badge-a">A</div>
+        <div class="direction-info">
+          <h2>The Gallery</h2>
+          <p>
+            Dark bento grid of real report cards. Browse-first,
+            social-proof-heavy. Follows the proven Vercel/Linear pattern but
+            leads with content over copy.
+          </p>
+          <span class="consensus consensus-high"
+            >8/10 agents endorsed "lead with real data"</span
+          >
+        </div>
+      </div>
+      <iframe class="mockup-frame" src="homepage-a-gallery.html"></iframe>
+      <div class="feedback-bar">
+        <span>Your take:</span>
+        <button class="feedback-btn" onclick="toggle(this)">Love it</button>
+        <button class="feedback-btn" onclick="toggle(this)">
+          Has potential
+        </button>
+        <button class="feedback-btn" onclick="toggle(this)">Not for us</button>
+        <button class="feedback-btn fav" onclick="toggle(this)">
+          ⭐ Favorite
+        </button>
+      </div>
+    </div>
+
+    <!-- Direction B: The Terminal -->
+    <div id="direction-b" class="direction-section">
+      <div class="direction-header">
+        <div class="direction-badge badge-b">B</div>
+        <div class="direction-info">
+          <h2>The Terminal</h2>
+          <p>
+            Monospace-heavy live-feed aesthetic. CLI-styled, information-dense,
+            no fluff. Feels like a developer's natural habitat — trust through
+            density.
+          </p>
+          <span class="consensus consensus-med"
+            >3/10 agents endorsed "terminal/CLI aesthetic"</span
+          >
+        </div>
+      </div>
+      <iframe class="mockup-frame" src="homepage-b-terminal.html"></iframe>
+      <div class="feedback-bar">
+        <span>Your take:</span>
+        <button class="feedback-btn" onclick="toggle(this)">Love it</button>
+        <button class="feedback-btn" onclick="toggle(this)">
+          Has potential
+        </button>
+        <button class="feedback-btn" onclick="toggle(this)">Not for us</button>
+        <button class="feedback-btn fav" onclick="toggle(this)">
+          ⭐ Favorite
+        </button>
+      </div>
+    </div>
+
+    <!-- Direction C: The Showcase -->
+    <div id="direction-c" class="direction-section">
+      <div class="direction-header">
+        <div class="direction-badge badge-c">C</div>
+        <div class="direction-info">
+          <h2>The Showcase</h2>
+          <p>
+            One featured report rendered full-width as the hero. Minimal copy,
+            maximum show-don't-tell. Editorial, magazine-like, the product
+            explains itself through the artifact.
+          </p>
+          <span class="consensus consensus-high"
+            >8/10 agents endorsed "sample report IS the hero"</span
+          >
+        </div>
+      </div>
+      <iframe class="mockup-frame" src="homepage-c-showcase.html"></iframe>
+      <div class="feedback-bar">
+        <span>Your take:</span>
+        <button class="feedback-btn" onclick="toggle(this)">Love it</button>
+        <button class="feedback-btn" onclick="toggle(this)">
+          Has potential
+        </button>
+        <button class="feedback-btn" onclick="toggle(this)">Not for us</button>
+        <button class="feedback-btn fav" onclick="toggle(this)">
+          ⭐ Favorite
+        </button>
+      </div>
+    </div>
+
+    <!-- Direction D: The Observatory -->
+    <div id="direction-d" class="direction-section">
+      <div class="direction-header">
+        <div class="direction-badge badge-d">D</div>
+        <div class="direction-info">
+          <h2>The Observatory</h2>
+          <p>
+            Data-viz forward with aggregate stats, heatmaps, trending skills.
+            The platform as living intelligence about how developers use Claude
+            Code. Mission control aesthetic.
+          </p>
+          <span class="consensus consensus-med"
+            >Outlier direction from Historian + Disruptor — bold but
+            distinctive</span
+          >
+        </div>
+      </div>
+      <iframe class="mockup-frame" src="homepage-d-observatory.html"></iframe>
+      <div class="feedback-bar">
+        <span>Your take:</span>
+        <button class="feedback-btn" onclick="toggle(this)">Love it</button>
+        <button class="feedback-btn" onclick="toggle(this)">
+          Has potential
+        </button>
+        <button class="feedback-btn" onclick="toggle(this)">Not for us</button>
+        <button class="feedback-btn fav" onclick="toggle(this)">
+          ⭐ Favorite
+        </button>
+      </div>
+    </div>
+
+    <!-- Consensus Summary -->
+    <div id="consensus" class="summary-section">
+      <h2>Consensus Analysis (10 Agents)</h2>
+      <div class="consensus-grid">
+        <div class="consensus-item">
+          <h4>Lead with real report data, not hero copy</h4>
+          <p>
+            The sample report IS the hero element. Show actual data before
+            asking for anything.
+          </p>
+          <div class="score">8/10 agents agreed</div>
+        </div>
+        <div class="consensus-item">
+          <h4>Browse-first, upload-second CTA</h4>
+          <p>
+            Social proof before ask. Let visitors see value before committing to
+            upload.
+          </p>
+          <div class="score">6/10 agents agreed</div>
+        </div>
+        <div class="consensus-item">
+          <h4>Dark-first with monospace accent</h4>
+          <p>
+            Signals technical credibility. But needs warmth and distinction to
+            avoid feeling generic.
+          </p>
+          <div class="score">6/10 agents agreed</div>
+        </div>
+        <div class="consensus-item">
+          <h4>Live feed or recent activity</h4>
+          <p>
+            Shows the platform is alive. Real timestamps and usernames build
+            trust faster than copy.
+          </p>
+          <div class="score">6/10 agents agreed</div>
+        </div>
+        <div class="consensus-item" style="border-left-color: #fbbf24">
+          <h4>Make /insights explainer opt-in, not prominent</h4>
+          <p>
+            Multiple agents warned that a prominent explainer signals "this
+            isn't for you" to the core audience.
+          </p>
+          <div class="score" style="color: #fbbf24">
+            Tension: 4 agents for, 3 against
+          </div>
+        </div>
+        <div class="consensus-item" style="border-left-color: #f472b6">
+          <h4>Outlier: Side-by-side comparison as entry</h4>
+          <p>
+            Make the homepage a live demo — compare two reports. The product IS
+            the landing page.
+          </p>
+          <div class="score" style="color: #f472b6">
+            1 agent (Disruptor) — high potential if bold
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function toggle(btn) {
+        const bar = btn.parentElement;
+        const isFav = btn.classList.contains("fav");
+        if (!isFav) {
+          bar
+            .querySelectorAll(".feedback-btn:not(.fav)")
+            .forEach((b) => b.classList.remove("selected"));
+        }
+        btn.classList.toggle("selected");
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insight Harness — Homepage Design Review v2</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f1f5f9;
+        color: #1e293b;
+      }
+
+      .review-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid #e2e8f0;
+        padding: 16px 32px;
+      }
+
+      .review-header h1 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .review-header p {
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 2px;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+
+      .nav-links a {
+        display: inline-block;
+        padding: 6px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+        background: white;
+      }
+      .nav-links a:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+      }
+      .nav-links a.active {
+        background: #2563eb;
+        color: white;
+        border-color: #2563eb;
+      }
+
+      .direction-section {
+        border-bottom: 2px solid #e2e8f0;
+        background: white;
+        margin-bottom: 0;
+      }
+
+      .direction-header {
+        padding: 24px 32px 16px;
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .direction-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        font-size: 18px;
+        font-weight: 800;
+        flex-shrink: 0;
+        background: #2563eb;
+        color: white;
+      }
+      .badge-e {
+        background: #2563eb;
+      }
+      .badge-f {
+        background: #d97706;
+      }
+      .badge-g {
+        background: #7c3aed;
+      }
+
+      .direction-info h2 {
+        font-size: 18px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .direction-info p {
+        font-size: 13px;
+        color: #64748b;
+        line-height: 1.5;
+        margin-top: 4px;
+      }
+
+      .direction-info .tags {
+        display: flex;
+        gap: 6px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+      }
+      .tag {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 99px;
+        font-size: 11px;
+        font-weight: 600;
+        border: 1px solid;
+      }
+      .tag-light {
+        background: #eff6ff;
+        color: #2563eb;
+        border-color: #bfdbfe;
+      }
+      .tag-dark {
+        background: #fef3c7;
+        color: #92400e;
+        border-color: #fde68a;
+      }
+      .tag-hybrid {
+        background: #f3e8ff;
+        color: #6d28d9;
+        border-color: #ddd6fe;
+      }
+      .tag-feature {
+        background: #ecfdf5;
+        color: #065f46;
+        border-color: #a7f3d0;
+      }
+
+      .mockup-frame {
+        width: 100%;
+        height: 900px;
+        border: none;
+        display: block;
+      }
+
+      .feedback-section {
+        padding: 20px 32px;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      .feedback-section h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 12px;
+      }
+
+      .feedback-row {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .feedback-buttons {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+
+      .feedback-btn {
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        border: 1px solid #cbd5e1;
+        background: white;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .feedback-btn:hover {
+        background: #f1f5f9;
+        border-color: #94a3b8;
+      }
+      .feedback-btn.selected {
+        background: #2563eb;
+        border-color: #2563eb;
+        color: white;
+      }
+      .feedback-btn.fav {
+        border-color: #16a34a;
+        color: #16a34a;
+      }
+      .feedback-btn.fav:hover,
+      .feedback-btn.fav.selected {
+        background: #16a34a;
+        border-color: #16a34a;
+        color: white;
+      }
+
+      .feedback-textarea {
+        flex: 1;
+        min-width: 280px;
+      }
+
+      .feedback-textarea textarea {
+        width: 100%;
+        min-height: 80px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        font-family: inherit;
+        font-size: 13px;
+        color: #334155;
+        background: white;
+        resize: vertical;
+        line-height: 1.5;
+      }
+      .feedback-textarea textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .feedback-textarea textarea::placeholder {
+        color: #94a3b8;
+      }
+
+      .feedback-aspects {
+        display: flex;
+        gap: 12px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+
+      .aspect-rating {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #64748b;
+      }
+
+      .aspect-rating select {
+        padding: 4px 8px;
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
+        font-size: 12px;
+        background: white;
+        color: #334155;
+      }
+
+      .summary-section {
+        padding: 32px;
+        background: white;
+        border-top: 2px solid #e2e8f0;
+      }
+
+      .summary-section h2 {
+        font-size: 18px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 8px;
+      }
+      .summary-section > p {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 20px;
+      }
+
+      .context-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 12px;
+      }
+
+      .context-item {
+        padding: 14px 16px;
+        background: #f8fafc;
+        border-radius: 8px;
+        border-left: 3px solid #2563eb;
+      }
+      .context-item h4 {
+        font-size: 13px;
+        font-weight: 600;
+        color: #0f172a;
+        margin-bottom: 4px;
+      }
+      .context-item p {
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="review-header">
+      <h1>Insight Harness — Homepage Design Review v2</h1>
+      <p>
+        3 refined directions based on your feedback. Gallery base, token
+        heatmap, How It Works, /harness-profile hook. Rate each and leave notes.
+      </p>
+      <div class="nav-links">
+        <a href="#direction-e" class="active">E: Gallery Light</a>
+        <a href="#direction-f">F: Gallery Dark Refined</a>
+        <a href="#direction-g">G: Hybrid (Gallery + Showcase)</a>
+        <a href="#direction-a">← A: Original Gallery</a>
+        <a href="#context">Design Context</a>
+      </div>
+    </div>
+
+    <!-- Direction E: Gallery Light -->
+    <div id="direction-e" class="direction-section">
+      <div class="direction-header">
+        <div class="direction-badge badge-e">E</div>
+        <div class="direction-info">
+          <h2>Gallery Light</h2>
+          <p>
+            Clean light mode with blue accent. Bento grid of reports, token
+            usage heatmap, How It Works section. Compact and professional.
+          </p>
+          <div class="tags">
+            <span class="tag tag-light">Light Mode</span>
+            <span class="tag tag-feature">Token Heatmap</span>
+            <span class="tag tag-feature">How It Works</span>
+            <span class="tag tag-feature">/harness-profile hook</span>
+          </div>
+        </div>
+      </div>
+      <iframe class="mockup-frame" src="homepage-e-gallery-light.html"></iframe>
+      <div class="feedback-section">
+        <h3>Your Feedback — Direction E</h3>
+        <div class="feedback-row">
+          <div
+            class="feedback-buttons"
+            style="flex-direction: column; gap: 8px"
+          >
+            <div style="display: flex; gap: 8px">
+              <button class="feedback-btn" onclick="toggle(this)">
+                Love it
+              </button>
+              <button class="feedback-btn" onclick="toggle(this)">
+                Has potential
+              </button>
+              <button class="feedback-btn" onclick="toggle(this)">
+                Not for us
+              </button>
+              <button class="feedback-btn fav" onclick="toggle(this)">
+                ⭐ Favorite
+              </button>
+            </div>
+            <div class="feedback-aspects">
+              <div class="aspect-rating">
+                Layout:
+                <select>
+                  <option>—</option>
+                  <option>Great</option>
+                  <option>Good</option>
+                  <option>Needs work</option>
+                </select>
+              </div>
+              <div class="aspect-rating">
+                Color/Mode:
+                <select>
+                  <option>—</option>
+                  <option>Great</option>
+                  <option>Good</option>
+                  <option>Needs work</option>
+                </select>
+              </div>
+              <div class="aspect-rating">
+                Heatmap:
+                <select>
+                  <option>—</option>
+                  <option>Great</option>
+                  <option>Good</option>
+                  <option>Needs work</option>
+                </select>
+              </div>
+              <div class="aspect-rating">
+                Density:
+                <select>
+                  <option>—</option>
+                  <option>Great</option>
+                  <option>Good</option>
+                  <option>Needs work</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="feedback-textarea">
+            <textarea
+              placeholder="What do you like? What would you change? Any elements to steal for the final version?"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Direction F: Gallery Dark Refined -->
+    <div id="direction-f" class="direction-section">
+      <div class="direction-header">
+        <div class="direction-badge badge-f">F</div>
+        <div class="direction-info">
+          <h2>Gallery Dark Refined</h2>
+          <p>
+            Warm dark mode with amber/orange token heatmap. Tighter spacing,
+            more compact cards. The original Gallery direction refined with your
+            feedback.
+          </p>
+          <div class="tags">
+            <span class="tag tag-dark">Warm Dark Mode</span>
+            <span class="tag tag-feature">Token Heatmap (amber)</span>
+            <span class="tag tag-feature">How It Works</span>
+            <span class="tag tag-feature">/harness-profile hook</span>
+          </div>
+        </div>
+      </div>
+      <iframe
+        class="mockup-frame"
+        src="homepage-f-gallery-dark-refined.html"
+      ></iframe>
+      <div class="feedback-section">
+        <h3>Your Feedback — Direction F</h3>
+        <div class="feedback-row">
+          <div
+            class="feedback-buttons"
+            style="flex-direction: column; gap: 8px"
+          >
+            <div style="display: flex; gap: 8px">
+              <button class="feedback-btn" onclick="toggle(this)">
+                Love it
+              </button>
+              <button class="feedback-btn" onclick="toggle(this)">
+                Has potential
+              </button>
+              <button class="feedback-btn" onclick="toggle(this)">
+                Not for us
+              </button>
+              <button class="feedback-btn fav" onclick="toggle(this)">
+                ⭐ Favorite
+              </button>
+            </div>
+            <div class="feedback-aspects">
+              <div class="aspect-rating">
+                Layout:
+                <select>
+                  <option>—</option>
+                  <option>Great</option>
+                  <option>Good</option>
+                  <option>Needs work</option>
+                </select>
+              </div>
+              <div class="aspect-rating">
+                Color/Mode:
+                <select>
+                  <option>—</option>
+                  <option>Great</option>
+                  <option>Good</option>
+                  <option>Needs work</option>
+                </select>
+              </div>
+              <div class="aspect-rating">
+                Heatmap:
+                <select>
+                  <option>—</option>
+                  <option>Great</option>
+                  <option>Good</option>
+                  <option>Needs work</option>
+                </select>
+              </div>
+              <div class="aspect-rating">
+                Density:
+                <select>
+                  <option>—</option>
+                  <option>Great</option>
+                  <option>Good</option>
+                  <option>Needs work</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="feedback-textarea">
+            <textarea
+              placeholder="What do you like? What would you change? Any elements to steal for the final version?"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Direction G: Hybrid -->
+    <div id="direction-g" class="direction-section">
+      <div class="direction-header">
+        <div class="direction-badge badge-g">G</div>
+        <div class="direction-info">
+          <h2>Hybrid (Gallery + Showcase)</h2>
+          <p>
+            Light mode with a split hero — copy on the left, featured report
+            card on the right. Token heatmap strip, then bento grid below. Best
+            of both directions.
+          </p>
+          <div class="tags">
+            <span class="tag tag-hybrid">Hybrid Layout</span>
+            <span class="tag tag-light">Light Mode</span>
+            <span class="tag tag-feature">Split Hero</span>
+            <span class="tag tag-feature">Token Heatmap</span>
+            <span class="tag tag-feature">/harness-profile hook</span>
+          </div>
+        </div>
+      </div>
+      <iframe class="mockup-frame" src="homepage-g-hybrid.html"></iframe>
+      <div class="feedback-section">
+        <h3>Your Feedback — Direction G</h3>
+        <div class="feedback-row">
+          <div
+            class="feedback-buttons"
+            style="flex-direction: column; gap: 8px"
+          >
+            <div style="display: flex; gap: 8px">
+              <button class="feedback-btn" onclick="toggle(this)">
+                Love it
+              </button>
+              <button class="feedback-btn" onclick="toggle(this)">
+                Has potential
+              </button>
+              <button class="feedback-btn" onclick="toggle(this)">
+                Not for us
+              </button>
+              <button class="feedback-btn fav" onclick="toggle(this)">
+                ⭐ Favorite
+              </button>
+            </div>
+            <div class="feedback-aspects">
+              <div class="aspect-rating">
+                Layout:
+                <select>
+                  <option>—</option>
+                  <option>Great</option>
+                  <option>Good</option>
+                  <option>Needs work</option>
+                </select>
+              </div>
+              <div class="aspect-rating">
+                Color/Mode:
+                <select>
+                  <option>—</option>
+                  <option>Great</option>
+                  <option>Good</option>
+                  <option>Needs work</option>
+                </select>
+              </div>
+              <div class="aspect-rating">
+                Heatmap:
+                <select>
+                  <option>—</option>
+                  <option>Great</option>
+                  <option>Good</option>
+                  <option>Needs work</option>
+                </select>
+              </div>
+              <div class="aspect-rating">
+                Density:
+                <select>
+                  <option>—</option>
+                  <option>Great</option>
+                  <option>Good</option>
+                  <option>Needs work</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="feedback-textarea">
+            <textarea
+              placeholder="What do you like? What would you change? Any elements to steal for the final version?"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Original Gallery for reference -->
+    <div id="direction-a" class="direction-section" style="opacity: 0.85">
+      <div class="direction-header">
+        <div class="direction-badge" style="background: #475569">A</div>
+        <div class="direction-info">
+          <h2>Original Gallery (Reference)</h2>
+          <p>
+            The original dark Gallery mockup from round 1 — included for
+            comparison. This was your favorite from the first batch.
+          </p>
+          <div class="tags">
+            <span class="tag tag-dark">Dark Mode</span>
+            <span
+              class="tag"
+              style="background: #fef2f2; color: #991b1b; border-color: #fecaca"
+              >No token heatmap</span
+            >
+          </div>
+        </div>
+      </div>
+      <iframe class="mockup-frame" src="homepage-a-gallery.html"></iframe>
+    </div>
+
+    <!-- Design Context -->
+    <div id="context" class="summary-section">
+      <h2>Design Context & Decisions</h2>
+      <p>
+        Key insights from the 10-agent consensus analysis and your round 1
+        feedback that shaped these directions.
+      </p>
+      <div class="context-grid">
+        <div class="context-item">
+          <h4>Lead with real data (8/10 agents)</h4>
+          <p>
+            The sample report IS the hero. Show actual developer profiles before
+            asking for anything.
+          </p>
+        </div>
+        <div class="context-item">
+          <h4>Token heatmap as hook (your feedback)</h4>
+          <p>
+            Tokens are the currency devs talk about. The heatmap both visualizes
+            this and promotes /harness-profile for richer data.
+          </p>
+        </div>
+        <div class="context-item">
+          <h4>Browse-first CTA (6/10 agents)</h4>
+          <p>
+            Social proof before ask. Let visitors see value before committing to
+            upload.
+          </p>
+        </div>
+        <div class="context-item">
+          <h4>Light mode exploration (your feedback)</h4>
+          <p>
+            Dark mode is standard for dev tools but you're not sure it's right
+            here. Two light options (E, G) and one warm dark (F) to compare.
+          </p>
+        </div>
+        <div class="context-item">
+          <h4>Compact density (your feedback)</h4>
+          <p>
+            Showcase was too spread out. All three directions use tighter
+            spacing and horizontal layouts for stat rows.
+          </p>
+        </div>
+        <div class="context-item">
+          <h4>/harness-profile as upgrade path</h4>
+          <p>
+            Each mockup mentions the harness-profile skill as a way to get
+            deeper data (token usage, cost analysis). This creates a funnel from
+            /insights → /harness-profile.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function toggle(btn) {
+        const bar = btn.closest(".feedback-section");
+        const isFav = btn.classList.contains("fav");
+        if (!isFav) {
+          bar
+            .querySelectorAll(".feedback-btn:not(.fav)")
+            .forEach((b) => b.classList.remove("selected"));
+        }
+        btn.classList.toggle("selected");
+      }
+    </script>
+  </body>
+</html>
