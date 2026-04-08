@@ -20,7 +20,7 @@ import clsx from "clsx";
 
 const navLinks = [
   { href: "/", label: "Home", icon: Home },
-  { href: "/top", label: "Top", icon: TrendingUp },
+  { href: "/top", label: "Explore", icon: TrendingUp },
   { href: "/search", label: "Search", icon: Search },
 ];
 
