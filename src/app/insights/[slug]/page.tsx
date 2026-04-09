@@ -58,7 +58,6 @@ interface ReportData {
   frictionAnalysis: InsightsData["friction_analysis"] | null;
   suggestions: InsightsData["suggestions"] | null;
   onTheHorizon: InsightsData["on_the_horizon"] | null;
-  funEnding: InsightsData["fun_ending"] | null;
   // v3: Harness fields
   reportType: string;
   totalTokens: number | null;
@@ -145,14 +144,6 @@ const SECTIONS: Array<{
     icon: "🔮",
     iconBgClass: "bg-purple-100 dark:bg-purple-900/30",
   },
-  {
-    key: "fun_ending",
-    label: "Fun Ending",
-    dataKey: "funEnding",
-    sectionType: "fun_ending",
-    icon: "🎉",
-    iconBgClass: "bg-pink-100 dark:bg-pink-900/30",
-  },
 ];
 
 function getSectionSummary(
@@ -162,7 +153,6 @@ function getSectionSummary(
   const atAGlance = report.atAGlance;
   const interactionStyle = report.interactionStyle;
   const projectAreas = report.projectAreas;
-  const funEnding = report.funEnding;
 
   switch (sectionKey) {
     case "interaction_style": {
@@ -188,12 +178,6 @@ function getSectionSummary(
       return atAGlance?.quick_wins ?? null;
     case "on_the_horizon":
       return atAGlance?.ambitious_workflows ?? null;
-    case "fun_ending": {
-      if (!funEnding?.headline) return null;
-      return funEnding.detail
-        ? `${funEnding.headline}. ${funEnding.detail.split(".")[0]}.`
-        : funEnding.headline;
-    }
     default:
       return null;
   }
@@ -414,17 +398,6 @@ export default function InsightDetailPage() {
             <ToolUsageTreemap toolUsage={report.harnessData.toolUsage} />
           )}
 
-          {/* Workflow Diagrams */}
-          {report.harnessData.workflowData &&
-            !(report.hiddenHarnessSections ?? []).includes("workflowData") && (
-              <>
-                <WorkflowDiagram
-                  workflowData={report.harnessData.workflowData}
-                  authorHandle={report.author.username}
-                />
-              </>
-            )}
-
           {/* Skills Card Grid */}
           {report.harnessData.skillInventory.length > 0 && (
             <SkillCardGrid skillInventory={report.harnessData.skillInventory} />
@@ -436,7 +409,7 @@ export default function InsightDetailPage() {
               icon="🔌"
               iconBgClass="bg-teal-100 dark:bg-teal-900/30"
               title="Plugins"
-              defaultOpen={false}
+              defaultOpen={true}
             >
               <div className="grid gap-2 sm:grid-cols-2">
                 {report.harnessData.plugins.map((p) => (
@@ -470,6 +443,15 @@ export default function InsightDetailPage() {
               </div>
             </CollapsibleSection>
           )}
+
+          {/* Workflow Diagrams */}
+          {report.harnessData.workflowData &&
+            !(report.hiddenHarnessSections ?? []).includes("workflowData") && (
+              <WorkflowDiagram
+                workflowData={report.harnessData.workflowData}
+                authorHandle={report.author.username}
+              />
+            )}
 
           {/* CLI Tools Donut */}
           {Object.keys(report.harnessData.cliTools).length > 0 && (

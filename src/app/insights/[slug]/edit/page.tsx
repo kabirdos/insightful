@@ -36,7 +36,6 @@ interface ReportData {
   frictionAnalysis: unknown;
   suggestions: unknown;
   onTheHorizon: unknown;
-  funEnding: unknown;
   author: { id: string; username: string; displayName: string | null };
 }
 
@@ -64,7 +63,6 @@ const SECTIONS = [
     sectionType: "on_the_horizon",
     label: "On the Horizon",
   },
-  { key: "funEnding", sectionType: "fun_ending", label: "Fun Ending" },
 ] as const;
 
 function EyeToggle({
