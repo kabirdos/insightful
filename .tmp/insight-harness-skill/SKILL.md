@@ -24,6 +24,8 @@ The extractor uses a whitelist-only approach against:
 What IS extracted:
 
 - Tool names and counts
+- Tool transition sequences (which tool follows which — tool names only, no arguments)
+- Workflow phase classifications derived from tool names and command first-tokens
 - Shell command program names only
 - Skill names and how often their `SKILL.md` files were loaded
 - Plugin manifests, versions, and bundled skill names
@@ -46,6 +48,12 @@ What is NEVER retained in the report:
   report does not claim token consumption stats.
 - Skill usage is inferred from `SKILL.md` loads, which is a strong proxy for
   actual use but not a perfect ground truth.
+
+## Workflow Data
+
+- **Workflow phases** — classifies tool usage into phases (exploration, implementation, testing, shipping, orchestration) and shows the distribution across sessions
+- **Phase transitions** — tracks how you move between workflow phases (e.g., exploration -> implementation), with statistics on disciplined patterns like "test before ship"
+- **Tool transitions** — tracks sequential tool usage patterns within turns (e.g., Read -> Edit), showing your most common tool flows
 
 ## How to Run
 

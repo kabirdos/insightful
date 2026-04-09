@@ -31,6 +31,7 @@ import GitPatternsDisplay from "@/components/GitPatternsDisplay";
 import PermissionModeDisplay from "@/components/PermissionModeDisplay";
 import HooksSafetyTable from "@/components/HooksSafetyTable";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
+import WorkflowDiagram from "@/components/WorkflowDiagram";
 
 interface ReportData {
   id: string;
@@ -66,6 +67,7 @@ interface ReportData {
   prCount: number | null;
   autonomyLabel: string | null;
   harnessData: HarnessData | null;
+  hiddenHarnessSections: string[];
   author: {
     username: string;
     displayName: string | null;
@@ -410,6 +412,17 @@ export default function InsightDetailPage() {
           {Object.keys(report.harnessData.toolUsage).length > 0 && (
             <ToolUsageTreemap toolUsage={report.harnessData.toolUsage} />
           )}
+
+          {/* Workflow Diagrams */}
+          {report.harnessData.workflowData &&
+            !(report.hiddenHarnessSections ?? []).includes("workflowData") && (
+              <>
+                <WorkflowDiagram
+                  workflowData={report.harnessData.workflowData}
+                  authorHandle={report.author.username}
+                />
+              </>
+            )}
 
           {/* Skills Card Grid */}
           {report.harnessData.skillInventory.length > 0 && (

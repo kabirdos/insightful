@@ -11,6 +11,8 @@ import type {
   HarnessAgentDispatch,
   HarnessGitPatterns,
   HarnessWriteupSection,
+  HarnessWorkflowData,
+  HarnessPhaseStats,
 } from "@/types/insights";
 
 /**
@@ -47,6 +49,7 @@ export function parseHarnessHtml(html: string): HarnessData {
     gitPatterns: parseGitPatterns($),
     versions: parseVersionTags($, "Claude Code Versions"),
     writeupSections: parseWriteupSections($),
+    workflowData: parseWorkflowData($),
     integrityHash: parseIntegrityHash($),
   };
 }
@@ -481,6 +484,127 @@ function parseIntegrityHash($: cheerio.CheerioAPI): string {
   } catch {
     return "";
   }
+}
+
+// ---------------------------------------------------------------------------
+// Workflow Data (Phases & Tool Transitions)
+// ---------------------------------------------------------------------------
+
+function parseWorkflowData($: cheerio.CheerioAPI): HarnessWorkflowData | null {
+  const phaseSection = findSectionByTitle($, "Workflow Phases");
+  const skillSection = findSectionByTitle($, "Skill Workflow");
+
+  if (!phaseSection && !skillSection) return null;
+
+  // Parse skill invocations from bar-rows in Skill Workflow section
+  const skillInvocations: Record<string, number> = {};
+  const agentDispatches: Record<string, number> = {};
+  const workflowPatterns: Array<{ sequence: string[]; count: number }> = [];
+
+  if (skillSection) {
+    // The section has three groups separated by .footnote labels:
+    // 1. Skill invocations (bar-rows after "Skill invocations" footnote)
+    // 2. Agent dispatches (bar-rows after "Agent dispatches" footnote)
+    // 3. Workflow patterns (bar-rows after "Common workflow patterns" footnote)
+    let currentGroup = "skills";
+    skillSection.children().each((_, el) => {
+      const $el = $(el);
+      if ($el.hasClass("footnote")) {
+        const text = $el.text().trim().toLowerCase();
+        if (text.includes("agent dispatch")) {
+          currentGroup = "agents";
+        } else if (text.includes("workflow pattern")) {
+          currentGroup = "patterns";
+        } else if (text.includes("skill invocation")) {
+          currentGroup = "skills";
+        }
+        return;
+      }
+      if ($el.hasClass("bar-row")) {
+        const label = $el.find(".bar-label").text().trim();
+        const value = $el.find(".bar-value").text().trim();
+        if (!label) return;
+        if (currentGroup === "skills") {
+          skillInvocations[label] = parseNumericValue(value);
+        } else if (currentGroup === "agents") {
+          agentDispatches[label] = parseNumericValue(value);
+        } else if (currentGroup === "patterns") {
+          // Pattern labels use " → " as separator
+          const parts = label.split(/\s*→\s*/);
+          workflowPatterns.push({
+            sequence: parts,
+            count: parseNumericValue(value),
+          });
+        }
+      }
+    });
+  }
+
+  // Parse phase distribution from kv-rows
+  const phaseDistribution: Record<string, number> = {};
+  if (phaseSection) {
+    phaseSection.find(".kv-row").each((_, el) => {
+      const key = $(el).find(".mono").text().trim();
+      const valText = $(el).find(".meta").text().trim();
+      const numMatch = valText.match(/(\d+)/);
+      if (key && numMatch) {
+        phaseDistribution[key] = parseInt(numMatch[1], 10);
+      }
+    });
+  }
+
+  // Parse phase transitions from bar chart rows
+  const phaseTransitions: Record<string, number> = {};
+  if (phaseSection) {
+    // Phase transitions are in the second column of the two-col layout
+    const columns = phaseSection.find(".two-col > div");
+    if (columns.length >= 2) {
+      $(columns[1])
+        .find(".bar-row")
+        .each((_, el) => {
+          const label = $(el).find(".bar-label").text().trim();
+          const value = $(el).find(".bar-value").text().trim();
+          if (label) {
+            phaseTransitions[label] = parseNumericValue(value);
+          }
+        });
+    }
+  }
+
+  // Parse phase stats from meta elements
+  const phaseStats: HarnessPhaseStats = {
+    testBeforeShipPct: 0,
+    exploreBeforeImplPct: 0,
+    totalSessionsWithPhases: 0,
+  };
+
+  if (phaseSection) {
+    phaseSection.find(".meta").each((_, el) => {
+      const text = $(el).text().trim();
+      const strongVal = $(el).find("strong").text().trim();
+      if (text.includes("explore before")) {
+        phaseStats.exploreBeforeImplPct = parseInt(strongVal, 10) || 0;
+      } else if (text.includes("test before")) {
+        phaseStats.testBeforeShipPct = parseInt(strongVal, 10) || 0;
+      }
+    });
+
+    // Total sessions from section header count
+    const countText = phaseSection.find(".section-header .count").text().trim();
+    const countMatch = countText.match(/(\d+)/);
+    if (countMatch) {
+      phaseStats.totalSessionsWithPhases = parseInt(countMatch[1], 10);
+    }
+  }
+
+  return {
+    skillInvocations,
+    agentDispatches,
+    workflowPatterns,
+    phaseTransitions,
+    phaseDistribution,
+    phaseStats,
+  };
 }
 
 // ---------------------------------------------------------------------------

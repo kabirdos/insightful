@@ -10,6 +10,8 @@ import HeroStats from "@/components/HeroStats";
 import HowIWorkCluster from "@/components/HowIWorkCluster";
 import ToolUsageTreemap from "@/components/ToolUsageTreemap";
 import SkillCardGrid from "@/components/SkillCardGrid";
+import WorkflowDiagram from "@/components/WorkflowDiagram";
+
 import CollapsibleSection from "@/components/CollapsibleSection";
 import SectionRenderer from "@/components/SectionRenderer";
 import Link from "next/link";
@@ -133,6 +135,14 @@ export default function EditReportPage() {
       if (hiddenSections[section.key]) {
         body[section.key] = null;
       }
+    }
+
+    // Handle harness sub-section visibility via dedicated allowlisted field
+    const hiddenHarness = Object.entries(hiddenSections)
+      .filter(([key, hidden]) => hidden && key === "workflowData")
+      .map(([key]) => key);
+    if (hiddenHarness.length > 0) {
+      body.hiddenHarnessSections = hiddenHarness;
     }
 
     return body;
@@ -303,6 +313,27 @@ export default function EditReportPage() {
           )}
           {harnessData.skillInventory.length > 0 && (
             <SkillCardGrid skillInventory={harnessData.skillInventory} />
+          )}
+          {harnessData.workflowData && (
+            <div className={hiddenSections["workflowData"] ? "opacity-40" : ""}>
+              <div className="mb-1 flex items-center gap-2">
+                <EyeToggle
+                  enabled={!hiddenSections["workflowData"]}
+                  onToggle={() => toggleSection("workflowData")}
+                />
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Workflow Diagrams
+                </span>
+                {hiddenSections["workflowData"] && (
+                  <span className="text-xs text-red-500">Will be removed</span>
+                )}
+              </div>
+              {!hiddenSections["workflowData"] && (
+                <>
+                  <WorkflowDiagram workflowData={harnessData.workflowData} />
+                </>
+              )}
+            </div>
           )}
         </>
       )}

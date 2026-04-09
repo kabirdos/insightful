@@ -191,6 +191,21 @@ export interface HarnessWriteupSection {
   contentHtml: string;
 }
 
+export interface HarnessPhaseStats {
+  testBeforeShipPct: number;
+  exploreBeforeImplPct: number;
+  totalSessionsWithPhases: number;
+}
+
+export interface HarnessWorkflowData {
+  skillInvocations: Record<string, number>;
+  agentDispatches: Record<string, number>;
+  workflowPatterns: Array<{ sequence: string[]; count: number }>;
+  phaseTransitions: Record<string, number>;
+  phaseDistribution: Record<string, number>;
+  phaseStats: HarnessPhaseStats;
+}
+
 export interface HarnessData {
   stats: HarnessStats;
   autonomy: HarnessAutonomy;
@@ -211,6 +226,7 @@ export interface HarnessData {
   gitPatterns: HarnessGitPatterns;
   versions: string[];
   writeupSections: HarnessWriteupSection[];
+  workflowData: HarnessWorkflowData | null;
   integrityHash: string;
 }
 
@@ -405,6 +421,7 @@ export function normalizeHarnessData(raw: unknown): HarnessData | null {
     versions: (obj.versions as string[]) ?? [],
     writeupSections:
       (obj.writeupSections as HarnessData["writeupSections"]) ?? [],
+    workflowData: (obj.workflowData as HarnessData["workflowData"]) ?? null,
     integrityHash: (obj.integrityHash as string) ?? "",
   };
 }
