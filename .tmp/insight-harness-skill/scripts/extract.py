@@ -256,6 +256,46 @@ def process_command_for_skills(command: str | list[Any], skill_loads: Counter[st
     return command_name
 
 
+def _classify_tool_phase(tool_name: str, cmd_name: str | None = None) -> str:
+    """Classify a tool call into a workflow phase.
+
+    PRIVACY: Only read tool name — never read tool arguments
+    except for shell commands (first token only via extract_program_name)
+
+    Phases:
+    - exploration: read-type tools, curl, wget
+    - implementation: write/edit tools, npm/npx/node/bun/pnpm/docker
+    - testing: test commands (pytest, jest, vitest, etc.)
+    - shipping: git/gh commands
+    - orchestration: spawn_agent, update_plan
+    - other: everything else
+    """
+    EXPLORATION_TOOLS = {"read_file", "list_dir", "search_files", "grep", "glob", "view_image"}
+    IMPLEMENTATION_TOOLS = {"apply_patch", "write_file", "create_file", "patch"}
+    ORCHESTRATION_TOOLS = {"spawn_agent", "update_plan"}
+    TEST_COMMANDS = {"pytest", "jest", "vitest", "mocha", "rspec", "test", "cargo"}
+    SHIP_COMMANDS = {"git", "gh"}
+    IMPL_COMMANDS = {"npm", "npx", "node", "bun", "pnpm", "docker", "docker-compose"}
+    EXPLORE_COMMANDS = {"curl", "wget", "cat", "head", "tail", "find", "ls"}
+
+    if tool_name in EXPLORATION_TOOLS:
+        return "exploration"
+    if tool_name in IMPLEMENTATION_TOOLS:
+        return "implementation"
+    if tool_name in ORCHESTRATION_TOOLS:
+        return "orchestration"
+    if tool_name in {"exec_command", "shell_command", "shell"} and cmd_name:
+        if cmd_name in TEST_COMMANDS:
+            return "testing"
+        if cmd_name in SHIP_COMMANDS:
+            return "shipping"
+        if cmd_name in EXPLORE_COMMANDS:
+            return "exploration"
+        if cmd_name in IMPL_COMMANDS:
+            return "implementation"
+    return "other"
+
+
 def collect_report_data(days: int) -> dict[str, Any]:
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 
@@ -275,6 +315,16 @@ def collect_report_data(days: int) -> dict[str, Any]:
     project_fingerprints: set[str] = set()
     active_days: set[str] = set()
 
+    # Tool transition tracking (tool A -> tool B within a turn)
+    tool_transitions: Counter[str] = Counter()
+    prev_tool_in_turn: str | None = None
+
+    # Phase transition tracking
+    phase_transitions: Counter[str] = Counter()
+    prev_phase_in_turn: str | None = None
+    phase_call_counts: Counter[str] = Counter()
+    session_phase_sequences: list[list[str]] = []
+
     user_messages = 0
     agent_messages = 0
     reasoning_items = 0
@@ -291,6 +341,7 @@ def collect_report_data(days: int) -> dict[str, Any]:
 
         sessions_scanned += 1
         session_seen_at: datetime | None = None
+        session_phases_seen: list[str] = []
 
         try:
             handle = session_file.open(encoding="utf-8", errors="replace")
@@ -341,6 +392,8 @@ def collect_report_data(days: int) -> dict[str, Any]:
                     event_type = str(payload.get("type", ""))
                     if event_type == "user_message":
                         user_messages += 1
+                        prev_tool_in_turn = None
+                        prev_phase_in_turn = None
                     elif event_type == "agent_message":
                         agent_messages += 1
                         phases[str(payload.get("phase", "unknown"))] += 1
@@ -360,6 +413,12 @@ def collect_report_data(days: int) -> dict[str, Any]:
 
                 name = str(item.get("name", "unknown"))
                 tool_usage[name] += 1
+
+                # Tool transition tracking
+                if prev_tool_in_turn is not None:
+                    tool_transitions[f"{prev_tool_in_turn}->{name}"] += 1
+                prev_tool_in_turn = name
+
                 args = parse_json_arg(item.get("arguments"))
 
                 if name == "exec_command":
@@ -388,6 +447,25 @@ def collect_report_data(days: int) -> dict[str, Any]:
                     if len(parts) >= 2:
                         mcp_servers[parts[1]] += 1
 
+                # Phase classification
+                _cmd_name_for_phase: str | None = None
+                if name in {"exec_command", "shell_command", "shell"}:
+                    _cmd_name_for_phase = extract_program_name(
+                        args.get("cmd") or args.get("command") or ""
+                    )
+                current_phase = _classify_tool_phase(name, _cmd_name_for_phase)
+                phase_call_counts[current_phase] += 1
+
+                if prev_phase_in_turn is not None and prev_phase_in_turn != current_phase:
+                    phase_transitions[f"{prev_phase_in_turn}->{current_phase}"] += 1
+                prev_phase_in_turn = current_phase
+
+                if not session_phases_seen or session_phases_seen[-1] != current_phase:
+                    session_phases_seen.append(current_phase)
+
+        if session_phases_seen:
+            session_phase_sequences.append(session_phases_seen)
+
     installed_skills = load_installed_skills()
     for skill_name, count in skill_loads.items():
         if skill_name in installed_skills:
@@ -407,6 +485,24 @@ def collect_report_data(days: int) -> dict[str, Any]:
 
     plugins = load_plugins()
     ecosystem = analyze_project_ecosystem()
+
+    # Phase statistics
+    total_phase_calls = sum(phase_call_counts.values()) or 1
+    phase_pcts = {k: round(v / total_phase_calls * 100) for k, v in phase_call_counts.most_common()}
+
+    sessions_that_test_before_ship = 0
+    sessions_that_explore_before_implement = 0
+    for seq in session_phase_sequences:
+        if "testing" in seq and "shipping" in seq:
+            if seq.index("testing") < seq.index("shipping"):
+                sessions_that_test_before_ship += 1
+        if "exploration" in seq and "implementation" in seq:
+            if seq.index("exploration") < seq.index("implementation"):
+                sessions_that_explore_before_implement += 1
+
+    total_with_phases = len(session_phase_sequences) or 1
+    test_before_ship_pct = round(sessions_that_test_before_ship / total_with_phases * 100)
+    explore_before_impl_pct = round(sessions_that_explore_before_implement / total_with_phases * 100)
 
     tool_calls_total = sum(tool_usage.values())
     autonomy_ratio = round(user_messages / agent_messages, 3) if agent_messages else 0.0
@@ -468,6 +564,18 @@ def collect_report_data(days: int) -> dict[str, Any]:
         "agent_message_phases": dict(phases),
         "mcp_servers": dict(mcp_servers.most_common(10)),
         "ecosystem": ecosystem,
+        # Tool transitions (top 30 most common A->B pairs)
+        "tool_transitions": dict(tool_transitions.most_common(30)),
+        # Phase transitions (top 20 most common phase->phase pairs)
+        "phase_transitions": dict(phase_transitions.most_common(20)),
+        # Phase call distribution (percentage per phase)
+        "phase_distribution": phase_pcts,
+        # Phase pattern stats
+        "phase_stats": {
+            "test_before_ship_pct": test_before_ship_pct,
+            "explore_before_impl_pct": explore_before_impl_pct,
+            "total_sessions_with_phases": len(session_phase_sequences),
+        },
     }
 
 
@@ -924,6 +1032,22 @@ def generate_html(report: dict[str, Any]) -> str:
         <h2>Project Ecosystem</h2>
         <div class="kv-grid">{render_kv(report['ecosystem'])}</div>
         <p class="footnote">These are existence checks only. The extractor does not read repository content from your projects.</p>
+      </div>
+      <div class="card">
+        <h2>Workflow Phases</h2>
+        <div class="footnote" style="margin-top:0;margin-bottom:10px">{report.get('phase_stats', {}).get('total_sessions_with_phases', 0)} sessions analyzed</div>
+        <div class="kv-grid">{render_kv(report.get('phase_distribution', {}))}</div>
+        <div class="footnote" style="margin-top:10px">Phase transitions</div>
+        {render_bar_rows(report.get('phase_transitions', {}))}
+        <div class="footnote" style="margin-top:10px">
+          <strong>{report.get('phase_stats', {}).get('explore_before_impl_pct', 0)}%</strong> explore before implementing &middot;
+          <strong>{report.get('phase_stats', {}).get('test_before_ship_pct', 0)}%</strong> test before shipping
+        </div>
+      </div>
+      <div class="card">
+        <h2>Tool Transitions</h2>
+        <div class="footnote" style="margin-top:0;margin-bottom:10px">{sum(report.get('tool_transitions', {}).values())} transitions</div>
+        {render_bar_rows(report.get('tool_transitions', {}))}
       </div>
     </section>
   </div>
