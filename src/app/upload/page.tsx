@@ -1193,6 +1193,7 @@ export default function UploadPage() {
                 >
                   <WorkflowDiagram
                     workflowData={parsed.harnessData.workflowData}
+                    agentDispatch={parsed.harnessData.agentDispatch}
                   />
                 </RedactableSection>
               )}
