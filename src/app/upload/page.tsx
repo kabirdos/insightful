@@ -34,11 +34,9 @@ import { applyRedactions } from "@/lib/redaction";
 import { normalizeChartData } from "@/lib/chart-parser";
 import { normalizeSkills } from "@/types/insights";
 import SectionRenderer from "@/components/SectionRenderer";
-import HarnessSections from "@/components/HarnessSections";
 import ModelDonutChart from "@/components/ModelDonutChart";
 import SnapshotCard from "@/components/SnapshotCard";
 import CollapsibleSection from "@/components/CollapsibleSection";
-import HarnessOverview from "@/components/HarnessOverview";
 import HeroStats from "@/components/HeroStats";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
 import AutonomyGauge from "@/components/AutonomyGauge";
@@ -62,44 +60,6 @@ interface ProjectLinkInput {
 
 const INSIGHTS_PATH = "~/.claude/usage-data/report.html";
 const HARNESS_PATH = "~/.claude/usage-data/insight-harness.html";
-
-// Standard tools that get a compact summary line
-const STANDARD_TOOLS = new Set([
-  "Read",
-  "Write",
-  "Edit",
-  "Bash",
-  "Glob",
-  "Grep",
-  "TodoRead",
-  "TodoWrite",
-]);
-
-// Sections that are "not useful" for public sharing
-const NOT_USEFUL_SECTIONS: (keyof InsightsData)[] = [
-  "friction_analysis",
-  "suggestions",
-  "on_the_horizon",
-];
-
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
-}
-
-function perWeek(
-  value: number | null | undefined,
-  dayCount: number | null | undefined,
-): { perWeek: string; total: string } | null {
-  if (value == null || dayCount == null || dayCount === 0) return null;
-  const weeks = dayCount / 7;
-  if (weeks === 0) return null;
-  return {
-    perWeek: Math.round(value / weeks).toLocaleString(),
-    total: value.toLocaleString(),
-  };
-}
 
 function stripDisabledHarnessSections(
   data: HarnessData,
@@ -320,321 +280,6 @@ function EyeToggle({
   );
 }
 
-/* ── Inline stat card with toggle ── */
-function ReviewStatCard({
-  value,
-  subtitle,
-  label,
-  enabled,
-  onToggle,
-}: {
-  value: string;
-  subtitle?: string;
-  label: string;
-  enabled: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <div
-      className={clsx(
-        "relative rounded-xl border p-4 text-center transition-all",
-        enabled
-          ? "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/50"
-          : "border-slate-100 bg-slate-50 opacity-50 dark:border-slate-800 dark:bg-slate-900/30",
-      )}
-    >
-      <div className="absolute right-2 top-2">
-        <EyeToggle enabled={enabled} onToggle={onToggle} />
-      </div>
-      <div
-        className={clsx(
-          "whitespace-nowrap font-bold",
-          // Shrink for long values so they stay on one line in narrow columns.
-          value.length >= 8
-            ? "text-lg"
-            : value.length >= 6
-              ? "text-xl"
-              : "text-2xl",
-          enabled
-            ? "text-slate-900 dark:text-slate-100"
-            : "text-slate-400 line-through",
-        )}
-      >
-        {value}
-      </div>
-      {subtitle && (
-        <div className="mt-0.5 whitespace-nowrap text-[10px] text-slate-400">
-          {subtitle}
-        </div>
-      )}
-      <div className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
-        {label}
-      </div>
-    </div>
-  );
-}
-
-/* ── Tool usage with standard/non-standard split ── */
-function ToolUsageReview({
-  toolUsage,
-  enabled,
-  onToggle,
-}: {
-  toolUsage: Record<string, number>;
-  enabled: boolean;
-  onToggle: () => void;
-}) {
-  const entries = Object.entries(toolUsage).sort((a, b) => b[1] - a[1]);
-  const standardTools = entries.filter(([name]) => STANDARD_TOOLS.has(name));
-  const nonStandardTools = entries.filter(
-    ([name]) => !STANDARD_TOOLS.has(name),
-  );
-  const maxNonStandard =
-    nonStandardTools.length > 0 ? nonStandardTools[0][1] : 1;
-
-  return (
-    <div
-      className={clsx(
-        "rounded-xl border p-5 transition-all",
-        enabled
-          ? "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/50"
-          : "border-slate-100 bg-slate-50 opacity-40 dark:border-slate-800 dark:bg-slate-900/30",
-      )}
-    >
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-          Tool Usage
-        </h3>
-        <EyeToggle enabled={enabled} onToggle={onToggle} />
-      </div>
-
-      {enabled && (
-        <>
-          {/* Standard tools compact summary */}
-          {standardTools.length > 0 && (
-            <div className="mb-4">
-              <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                Standard Tools
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {standardTools.map(([name, count]) => (
-                  <span
-                    key={name}
-                    className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
-                  >
-                    {name}{" "}
-                    <span className="text-slate-400">
-                      {formatNumber(count)}
-                    </span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Non-standard tools with bar charts */}
-          {nonStandardTools.length > 0 && (
-            <div>
-              <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                Non-Standard Tools
-              </div>
-              <div className="space-y-2">
-                {nonStandardTools.slice(0, 8).map(([name, count]) => (
-                  <div key={name} className="flex items-center gap-2">
-                    <div className="w-24 shrink-0 truncate text-xs font-mono text-slate-700 dark:text-slate-300">
-                      {name}
-                    </div>
-                    <div className="h-3 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                      <div
-                        className="h-full rounded-full bg-blue-500 transition-all"
-                        style={{
-                          width: `${Math.max(3, (count / maxNonStandard) * 100)}%`,
-                        }}
-                      />
-                    </div>
-                    <div className="w-12 shrink-0 text-right text-xs font-mono text-slate-400">
-                      {formatNumber(count)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-/* ── Skills with expandable descriptions and mini bars ── */
-function SkillsReview({
-  skills,
-  enabled,
-  onToggle,
-  hiddenSkills,
-  onToggleSkill,
-}: {
-  skills: HarnessData["skillInventory"];
-  enabled: boolean;
-  onToggle: () => void;
-  hiddenSkills: Record<string, boolean>;
-  onToggleSkill: (name: string) => void;
-}) {
-  const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
-  const maxCalls =
-    skills.length > 0 ? Math.max(...skills.map((s) => s.calls)) : 1;
-
-  return (
-    <div
-      className={clsx(
-        "rounded-xl border p-5 transition-all",
-        enabled
-          ? "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/50"
-          : "border-slate-100 bg-slate-50 opacity-40 dark:border-slate-800 dark:bg-slate-900/30",
-      )}
-    >
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-          Skills & Commands
-        </h3>
-        <EyeToggle enabled={enabled} onToggle={onToggle} />
-      </div>
-
-      {enabled && (
-        <div className="space-y-1.5">
-          {skills.map((skill) => {
-            const skillHidden = !!hiddenSkills[skill.name];
-            return (
-              <div
-                key={skill.name}
-                className={clsx(
-                  "transition-opacity",
-                  skillHidden && "opacity-40",
-                )}
-              >
-                <div className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5">
-                  <EyeToggle
-                    enabled={!skillHidden}
-                    onToggle={() => onToggleSkill(skill.name)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpandedSkill(
-                        expandedSkill === skill.name ? null : skill.name,
-                      )
-                    }
-                    className="flex flex-1 items-center gap-2 text-left transition-colors hover:bg-slate-50 rounded-lg px-1 dark:hover:bg-slate-800"
-                  >
-                    <span
-                      className={clsx(
-                        "shrink-0 text-xs font-mono font-medium",
-                        skill.source === "custom"
-                          ? "text-blue-600 dark:text-blue-400"
-                          : "text-slate-600 dark:text-slate-400",
-                      )}
-                    >
-                      {skill.name}
-                    </span>
-                    {skill.source === "custom" && (
-                      <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">
-                        custom
-                      </span>
-                    )}
-                    <div className="flex flex-1 items-center gap-2">
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                        <div
-                          className="h-full rounded-full bg-indigo-400"
-                          style={{
-                            width: `${Math.max(3, (skill.calls / maxCalls) * 100)}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="shrink-0 text-xs text-slate-400">
-                        {skill.calls}
-                      </span>
-                    </div>
-                    <ChevronDown
-                      className={clsx(
-                        "h-3.5 w-3.5 text-slate-400 transition-transform",
-                        expandedSkill === skill.name && "rotate-180",
-                      )}
-                    />
-                  </button>
-                </div>
-                {expandedSkill === skill.name && skill.description && (
-                  <div className="ml-2 rounded-lg border-l-2 border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">
-                    {skill.description}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Section toggle wrapper for review ── */
-function ReviewSectionToggle({
-  title,
-  enabled,
-  onToggle,
-  children,
-  defaultOpen = true,
-  badge,
-}: {
-  title: string;
-  enabled: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-  badge?: string;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  return (
-    <div
-      className={clsx(
-        "rounded-xl border transition-all",
-        enabled
-          ? "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/50"
-          : "border-slate-100 bg-slate-50 opacity-40 dark:border-slate-800 dark:bg-slate-900/30",
-      )}
-    >
-      <div className="flex items-center gap-3 px-5 py-4">
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          className="flex flex-1 items-center gap-2 text-left"
-        >
-          <ChevronDown
-            className={clsx(
-              "h-4 w-4 text-slate-400 transition-transform",
-              open && "rotate-180",
-            )}
-          />
-          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-            {title}
-          </h3>
-          {badge && (
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-400">
-              {badge}
-            </span>
-          )}
-        </button>
-        <EyeToggle enabled={enabled} onToggle={onToggle} />
-      </div>
-      {open && enabled && (
-        <div className="border-t border-slate-100 px-5 pb-5 pt-4 dark:border-slate-700">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ── Redactable section wrapper — renders profile component with eye toggle overlay ── */
 function RedactableSection({
   title,
@@ -664,23 +309,6 @@ function RedactableSection({
     </div>
   );
 }
-
-const COMPARE_FEATURES: {
-  name: string;
-  insights: boolean;
-  harness: boolean;
-}[] = [
-  { name: "Usage narrative", insights: true, harness: true },
-  { name: "Conversation count", insights: true, harness: true },
-  { name: "Active days & streaks", insights: true, harness: true },
-  { name: "Model usage breakdown", insights: true, harness: true },
-  { name: "Token consumption stats", insights: false, harness: true },
-  { name: "Tool usage breakdown", insights: false, harness: true },
-  { name: "Skill inventory", insights: false, harness: true },
-  { name: "Hooks & MCP servers", insights: false, harness: true },
-  { name: "Agent patterns", insights: false, harness: true },
-  { name: "Cost estimation", insights: false, harness: true },
-];
 
 // Maps InsightsData keys to SectionRenderer sectionType and display label
 const SECTION_OPTIONS: {
@@ -741,10 +369,6 @@ export default function UploadPage() {
   const [disabledSections, setDisabledSections] = useState<
     Record<string, boolean>
   >({});
-  const [disabledStats, setDisabledStats] = useState<Record<string, boolean>>(
-    {},
-  );
-  const [hiddenSkills, setHiddenSkills] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
@@ -756,14 +380,6 @@ export default function UploadPage() {
 
   const toggleSection = (key: string) => {
     setDisabledSections((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const toggleStat = (key: string) => {
-    setDisabledStats((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const toggleSkill = (name: string) => {
-    setHiddenSkills((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
   const handleFile = async (f: File) => {
@@ -829,8 +445,6 @@ export default function UploadPage() {
     if (parsed) {
       setRedactions(parsed.detectedRedactions || []);
       setDisabledSections({});
-      setDisabledStats({});
-      setHiddenSkills({});
     }
   };
 
@@ -909,26 +523,14 @@ export default function UploadPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
-          sessionCount: disabledStats["sessions"]
-            ? null
-            : (parsed.stats.sessionCount ?? null),
-          messageCount: disabledStats["messages"]
-            ? null
-            : (parsed.stats.messageCount ?? null),
-          commitCount: disabledStats["commits"]
-            ? null
-            : (parsed.stats.commitCount ?? null),
+          sessionCount: parsed.stats.sessionCount ?? null,
+          messageCount: parsed.stats.messageCount ?? null,
+          commitCount: parsed.stats.commitCount ?? null,
           dateRangeStart: parsed.stats.dateRangeStart ?? null,
           dateRangeEnd: parsed.stats.dateRangeEnd ?? null,
-          linesAdded: disabledStats["lines"]
-            ? null
-            : (parsed.stats.linesAdded ?? null),
-          linesRemoved: disabledStats["lines"]
-            ? null
-            : (parsed.stats.linesRemoved ?? null),
-          fileCount: disabledStats["files"]
-            ? null
-            : (parsed.stats.fileCount ?? null),
+          linesAdded: parsed.stats.linesAdded ?? null,
+          linesRemoved: parsed.stats.linesRemoved ?? null,
+          fileCount: parsed.stats.fileCount ?? null,
           dayCount: parsed.stats.dayCount ?? null,
           msgsPerDay: parsed.stats.msgsPerDay ?? null,
           ...sectionFields,
@@ -937,26 +539,14 @@ export default function UploadPage() {
           detectedSkills: parsed.detectedSkills,
           // v3: Harness fields
           reportType: parsed.reportType ?? "insights",
-          totalTokens: disabledStats["tokens"]
-            ? null
-            : (parsed.harnessData?.stats.totalTokens ?? null),
+          totalTokens: parsed.harnessData?.stats.totalTokens ?? null,
           durationHours: parsed.harnessData?.stats.durationHours ?? null,
           avgSessionMinutes:
             parsed.harnessData?.stats.avgSessionMinutes ?? null,
           prCount: parsed.harnessData?.stats.prCount ?? null,
           autonomyLabel: parsed.harnessData?.autonomy.label ?? null,
           harnessData: parsed.harnessData
-            ? (() => {
-                const stripped = stripDisabledHarnessSections(
-                  parsed.harnessData,
-                  disabledSections,
-                );
-                // Filter out individually hidden skills
-                const visibleSkills = stripped.skillInventory.filter(
-                  (s) => !hiddenSkills[s.name],
-                );
-                return { ...stripped, skillInventory: visibleSkills };
-              })()
+            ? stripDisabledHarnessSections(parsed.harnessData, disabledSections)
             : null,
         }),
       });
@@ -1475,64 +1065,12 @@ export default function UploadPage() {
             Final Preview
           </h2>
           <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
-            This is exactly how your report will appear. Hit Publish when ready.
+            This is exactly how your report will appear on your profile page.
+            Use the eye toggles to hide sections before publishing.
           </p>
 
-          <SnapshotCard
-            sessionCount={parsed.stats.sessionCount ?? null}
-            messageCount={parsed.stats.messageCount ?? null}
-            linesAdded={parsed.stats.linesAdded ?? null}
-            linesRemoved={parsed.stats.linesRemoved ?? null}
-            fileCount={parsed.stats.fileCount ?? null}
-            dayCount={parsed.stats.dayCount ?? null}
-            commitCount={parsed.stats.commitCount ?? null}
-            chartData={normalizeChartData(parsed.chartData)}
-            detectedSkills={normalizeSkills(parsed.detectedSkills)}
-            keyPattern={parsed.data.interaction_style?.key_pattern ?? null}
-            projectAreas={
-              disabledSections["project_areas"]
-                ? null
-                : parsed.data.project_areas
-            }
-          />
-
-          {/* Harness preview */}
-          {parsed.harnessData && (
-            <div className="mt-4">
-              <HarnessOverview harnessData={parsed.harnessData} />
-            </div>
-          )}
-
-          <div className="mt-4 space-y-3">
-            {SECTION_OPTIONS.map(({ dataKey, sectionType, label }) => {
-              if (disabledSections[dataKey]) return null;
-              if (dataKey === "project_areas") return null;
-              const sectionData = parsed.data[dataKey];
-              if (!sectionData) return null;
-              return (
-                <CollapsibleSection
-                  key={dataKey}
-                  icon=""
-                  title={label}
-                  defaultOpen={dataKey === "at_a_glance"}
-                >
-                  <SectionRenderer
-                    slug="preview"
-                    sectionKey={dataKey}
-                    sectionType={sectionType}
-                    data={sectionData}
-                    reportId="preview"
-                    voteCount={0}
-                    voted={false}
-                    readOnly
-                  />
-                </CollapsibleSection>
-              );
-            })}
-          </div>
-
           {/* Redaction summary bar */}
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mb-6 flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/50">
             <span
               className={clsx(
                 "text-sm font-medium",
@@ -1545,7 +1083,7 @@ export default function UploadPage() {
               {redactedCount} of {totalSensitive} redacted
             </span>
             {totalSensitive > 0 && (
-              <div className="flex gap-2">
+              <div className="ml-auto flex gap-2">
                 <button
                   onClick={applyAllRedactions}
                   className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
@@ -1562,524 +1100,255 @@ export default function UploadPage() {
             )}
           </div>
 
-          {/* Harness sections preview */}
-          {parsed.harnessData && (
-            <div className="mt-4">
-              <h3 className="mb-3 text-lg font-semibold text-slate-900 dark:text-white">
-                Harness Profile
-              </h3>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                {(() => {
-                  const dayCount = parsed.stats.dayCount;
-                  const sessionsData = perWeek(
-                    parsed.stats.sessionCount,
-                    dayCount,
-                  );
-                  const msgsData = perWeek(parsed.stats.messageCount, dayCount);
-                  const tokensData = perWeek(
-                    parsed.harnessData?.stats.totalTokens ?? null,
-                    dayCount,
-                  );
-                  const commitsData = perWeek(
-                    parsed.stats.commitCount,
-                    dayCount,
-                  );
-                  const linesData = perWeek(parsed.stats.linesAdded, dayCount);
-
-                  const statCards = [
-                    {
-                      key: "sessions",
-                      value: sessionsData?.perWeek ?? "-",
-                      subtitle: sessionsData
-                        ? `${sessionsData.perWeek}/wk (${sessionsData.total} total)`
-                        : undefined,
-                      label: "Sessions/wk",
-                    },
-                    {
-                      key: "messages",
-                      value: msgsData?.perWeek ?? "-",
-                      subtitle: msgsData
-                        ? `${msgsData.perWeek}/wk (${msgsData.total} total)`
-                        : undefined,
-                      label: "Messages/wk",
-                    },
-                    {
-                      key: "tokens",
-                      value: tokensData?.perWeek
-                        ? formatNumber(
-                            parseInt(tokensData.perWeek.replace(/,/g, "")),
-                          )
-                        : "-",
-                      subtitle: tokensData
-                        ? `${tokensData.perWeek}/wk (${tokensData.total} total)`
-                        : undefined,
-                      label: "Tokens/wk",
-                    },
-                    {
-                      key: "commits",
-                      value: commitsData?.perWeek ?? "-",
-                      subtitle: commitsData
-                        ? `${commitsData.perWeek}/wk (${commitsData.total} total)`
-                        : undefined,
-                      label: "Commits/wk",
-                    },
-                    {
-                      key: "lines",
-                      value: linesData?.perWeek ? `+${linesData.perWeek}` : "-",
-                      subtitle: linesData
-                        ? `${linesData.perWeek}/wk (${linesData.total} total)`
-                        : undefined,
-                      label: "Lines/wk",
-                    },
-                  ];
-
-                  return statCards
-                    .filter((c) => c.value !== "-")
-                    .map((card) => (
-                      <ReviewStatCard
-                        key={card.key}
-                        value={card.value}
-                        subtitle={card.subtitle}
-                        label={card.label}
-                        enabled={!disabledStats[card.key]}
-                        onToggle={() => toggleStat(card.key)}
-                      />
-                    ));
-                })()}
-              </div>
-            </div>
-          )}
-
-          {/* ── Primary Sections (open by default, toggle switches) ── */}
-          <div className="mb-6 space-y-3">
-            {/* At a Glance narrative */}
-            {parsed.data.at_a_glance && (
-              <ReviewSectionToggle
-                title="At a Glance"
-                enabled={!disabledSections["at_a_glance"]}
-                onToggle={() => toggleSection("at_a_glance")}
+          {/* ── Harness Report Preview — mirrors profile page layout ── */}
+          {parsed.reportType === "insight-harness" && parsed.harnessData ? (
+            <>
+              {/* Hero Stats */}
+              <RedactableSection
+                title="Hero Stats"
+                enabled={!disabledSections["heroStats"]}
+                onToggle={() => toggleSection("heroStats")}
               >
-                <SectionRenderer
+                <HeroStats
+                  stats={parsed.harnessData.stats}
+                  dayCount={parsed.stats.dayCount ?? null}
+                  sessionCount={
+                    parsed.stats.sessionCount ??
+                    parsed.harnessData.stats.sessionCount ??
+                    0
+                  }
+                />
+              </RedactableSection>
+
+              {/* Activity Heatmap */}
+              <RedactableSection
+                title="Activity Heatmap"
+                enabled={!disabledSections["activityHeatmap"]}
+                onToggle={() => toggleSection("activityHeatmap")}
+              >
+                <ActivityHeatmap
+                  totalSessions={
+                    parsed.stats.sessionCount ??
+                    parsed.harnessData.stats.sessionCount ??
+                    undefined
+                  }
+                  totalTokens={
+                    parsed.harnessData.stats.totalTokens ?? undefined
+                  }
+                  dayCount={parsed.stats.dayCount ?? undefined}
+                  dateRangeStart={parsed.stats.dateRangeStart ?? undefined}
                   slug="preview"
-                  sectionKey="at_a_glance"
-                  sectionType="at_a_glance"
-                  data={parsed.data.at_a_glance}
-                  reportId="preview"
-                  voteCount={0}
-                  voted={false}
-                  readOnly
                 />
-              </ReviewSectionToggle>
-            )}
+              </RedactableSection>
 
-            {/* Skills & Commands */}
-            {parsed.harnessData &&
-              parsed.harnessData.skillInventory.length > 0 && (
-                <SkillsReview
-                  skills={parsed.harnessData.skillInventory}
-                  enabled={!disabledSections["skillInventory"]}
-                  onToggle={() => toggleSection("skillInventory")}
-                  hiddenSkills={hiddenSkills}
-                  onToggleSkill={toggleSkill}
-                />
-              )}
+              {/* How I Work cluster: Autonomy + Model Donut + File Ops */}
+              <RedactableSection
+                title="How I Work"
+                enabled={!disabledSections["howIWork"]}
+                onToggle={() => toggleSection("howIWork")}
+              >
+                <div className="mb-6 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/50">
+                  <h3 className="mb-4 text-[15px] font-bold text-slate-900 dark:text-slate-100">
+                    How I Work
+                  </h3>
+                  <div className="grid gap-6 sm:grid-cols-3">
+                    {parsed.harnessData.autonomy.label && (
+                      <div className="flex items-center justify-center">
+                        <AutonomyGauge autonomy={parsed.harnessData.autonomy} />
+                      </div>
+                    )}
+                    {Object.keys(parsed.harnessData.models).length > 0 && (
+                      <div className="flex items-center justify-center">
+                        <ModelDonutChart models={parsed.harnessData.models} />
+                      </div>
+                    )}
+                    {parsed.harnessData.fileOpStyle.style && (
+                      <div className="flex items-center justify-center">
+                        <FileOpStyleBar
+                          fileOpStyle={parsed.harnessData.fileOpStyle}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </RedactableSection>
 
-            {/* Tool Usage */}
-            {parsed.harnessData &&
-              Object.keys(parsed.harnessData.toolUsage).length > 0 && (
-                <ToolUsageReview
-                  toolUsage={parsed.harnessData.toolUsage}
+              {/* Tool Usage Treemap */}
+              {Object.keys(parsed.harnessData.toolUsage).length > 0 && (
+                <RedactableSection
+                  title="Tool Usage"
                   enabled={!disabledSections["toolUsage"]}
                   onToggle={() => toggleSection("toolUsage")}
-                />
-              )}
-
-            {/* Interaction Style */}
-            {parsed.data.interaction_style && (
-              <ReviewSectionToggle
-                title="Interaction Style"
-                enabled={!disabledSections["interaction_style"]}
-                onToggle={() => toggleSection("interaction_style")}
-              >
-                <SectionRenderer
-                  slug="preview"
-                  sectionKey="interaction_style"
-                  sectionType="interaction_style"
-                  data={parsed.data.interaction_style}
-                  reportId="preview"
-                  voteCount={0}
-                  voted={false}
-                  readOnly
-                />
-              </ReviewSectionToggle>
-            )}
-
-            {/* Project Areas */}
-            {parsed.data.project_areas && (
-              <ReviewSectionToggle
-                title="Project Areas"
-                enabled={!disabledSections["project_areas"]}
-                onToggle={() => toggleSection("project_areas")}
-                badge={`${parsed.data.project_areas.areas?.length ?? 0} areas`}
-              >
-                <SectionRenderer
-                  slug="preview"
-                  sectionKey="project_areas"
-                  sectionType="project_areas"
-                  data={parsed.data.project_areas}
-                  reportId="preview"
-                  voteCount={0}
-                  voted={false}
-                  readOnly
-                />
-              </ReviewSectionToggle>
-            )}
-
-            {/* Impressive Workflows */}
-            {parsed.data.what_works && (
-              <ReviewSectionToggle
-                title="Impressive Workflows"
-                enabled={!disabledSections["what_works"]}
-                onToggle={() => toggleSection("what_works")}
-              >
-                <SectionRenderer
-                  slug="preview"
-                  sectionKey="what_works"
-                  sectionType="impressive_workflows"
-                  data={parsed.data.what_works}
-                  reportId="preview"
-                  voteCount={0}
-                  voted={false}
-                  readOnly
-                />
-              </ReviewSectionToggle>
-            )}
-          </div>
-
-          {/* ── Model Distribution ── */}
-          {parsed.harnessData &&
-            Object.keys(parsed.harnessData.models).length > 0 && (
-              <ReviewSectionToggle
-                title="Model Distribution"
-                enabled={!disabledSections["models"]}
-                onToggle={() => toggleSection("models")}
-              >
-                <ModelDonutChart models={parsed.harnessData.models} />
-              </ReviewSectionToggle>
-            )}
-
-          {/* ── Detailed Sections ── */}
-          <div className="mb-6 space-y-3">
-            {/* Agent Dispatch */}
-            {parsed.harnessData &&
-              parsed.harnessData.agentDispatch &&
-              parsed.harnessData.agentDispatch.totalAgents > 0 && (
-                <ReviewSectionToggle
-                  title={`Agent Dispatch (${parsed.harnessData.agentDispatch.totalAgents} agents)`}
-                  enabled={!disabledSections["agentDispatch"]}
-                  onToggle={() => toggleSection("agentDispatch")}
-                  defaultOpen={false}
                 >
-                  <HarnessSections
-                    harnessData={{
-                      ...parsed.harnessData,
-                      skillInventory: [],
-                      toolUsage: {},
-                      hookDefinitions: [],
-                      hookFrequency: {},
-                      plugins: [],
-                      harnessFiles: [],
-                      fileOpStyle: {
-                        readPct: 0,
-                        editPct: 0,
-                        writePct: 0,
-                        grepCount: 0,
-                        globCount: 0,
-                        style: "",
-                      },
-                      cliTools: {},
-                      languages: {},
-                      models: {},
-                      permissionModes: {},
-                      mcpServers: {},
-                      gitPatterns: {
-                        prCount: 0,
-                        commitCount: 0,
-                        linesAdded: "0",
-                        branchPrefixes: {},
-                      },
-                      versions: [],
-                      writeupSections: [],
-                    }}
-                  />
-                </ReviewSectionToggle>
+                  <ToolUsageTreemap toolUsage={parsed.harnessData.toolUsage} />
+                </RedactableSection>
               )}
 
-            {/* CLI Tools */}
-            {parsed.harnessData &&
-              Object.keys(parsed.harnessData.cliTools).length > 0 && (
-                <ReviewSectionToggle
+              {/* Workflow Diagrams */}
+              {parsed.harnessData.workflowData && (
+                <RedactableSection
+                  title="Workflow Diagrams"
+                  enabled={!disabledSections["workflowData"]}
+                  onToggle={() => toggleSection("workflowData")}
+                >
+                  <WorkflowDiagram
+                    workflowData={parsed.harnessData.workflowData}
+                  />
+                </RedactableSection>
+              )}
+
+              {/* Skills Card Grid */}
+              {parsed.harnessData.skillInventory.length > 0 && (
+                <RedactableSection
+                  title="Skills"
+                  enabled={!disabledSections["skillInventory"]}
+                  onToggle={() => toggleSection("skillInventory")}
+                >
+                  <SkillCardGrid
+                    skillInventory={parsed.harnessData.skillInventory}
+                  />
+                </RedactableSection>
+              )}
+
+              {/* CLI Tools Donut */}
+              {Object.keys(parsed.harnessData.cliTools).length > 0 && (
+                <RedactableSection
                   title="CLI Tools"
                   enabled={!disabledSections["cliTools"]}
                   onToggle={() => toggleSection("cliTools")}
-                  defaultOpen={false}
                 >
-                  <div className="space-y-1.5">
-                    {Object.entries(parsed.harnessData.cliTools)
-                      .sort((a, b) => b[1] - a[1])
-                      .slice(0, 12)
-                      .map(([name, count]) => {
-                        const max = Math.max(
-                          ...Object.values(parsed.harnessData!.cliTools),
-                        );
-                        return (
-                          <div key={name} className="flex items-center gap-2">
-                            <div className="w-24 truncate text-xs font-mono text-slate-600 dark:text-slate-400">
-                              {name}
-                            </div>
-                            <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                              <div
-                                className="h-full rounded-full bg-teal-500"
-                                style={{
-                                  width: `${Math.max(3, (count / max) * 100)}%`,
-                                }}
-                              />
-                            </div>
-                            <div className="w-12 text-right text-xs font-mono text-slate-400">
-                              {formatNumber(count)}
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </ReviewSectionToggle>
+                  <CliToolsDonut cliTools={parsed.harnessData.cliTools} />
+                </RedactableSection>
               )}
 
-            {/* File Operation Style */}
-            {parsed.harnessData && parsed.harnessData.fileOpStyle.style && (
-              <ReviewSectionToggle
-                title="File Operation Style"
-                enabled={!disabledSections["fileOpStyle"]}
-                onToggle={() => toggleSection("fileOpStyle")}
-                defaultOpen={false}
+              {/* Git Patterns */}
+              <RedactableSection
+                title="Git Patterns"
+                enabled={!disabledSections["gitPatterns"]}
+                onToggle={() => toggleSection("gitPatterns")}
               >
-                <div className="flex flex-wrap gap-6">
-                  <div className="text-center">
-                    <div className="font-mono text-sm font-semibold text-slate-700 dark:text-slate-300">
-                      {parsed.harnessData.fileOpStyle.readPct}:
-                      {parsed.harnessData.fileOpStyle.editPct}:
-                      {parsed.harnessData.fileOpStyle.writePct}
-                    </div>
-                    <div className="text-[10px] text-slate-400">
-                      Read : Edit : Write
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-mono text-sm font-semibold text-slate-700 dark:text-slate-300">
-                      {parsed.harnessData.fileOpStyle.grepCount}:
-                      {parsed.harnessData.fileOpStyle.globCount}
-                    </div>
-                    <div className="text-[10px] text-slate-400">
-                      Grep : Glob
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                      {parsed.harnessData.fileOpStyle.style}
-                    </div>
-                    <div className="text-[10px] text-slate-400">Style</div>
-                  </div>
-                </div>
-              </ReviewSectionToggle>
-            )}
+                <GitPatternsDisplay
+                  gitPatterns={parsed.harnessData.gitPatterns}
+                />
+              </RedactableSection>
 
-            {/* Hooks & Safety */}
-            {parsed.harnessData &&
-              parsed.harnessData.hookDefinitions.length > 0 && (
-                <ReviewSectionToggle
+              {/* Permission Mode & Safety */}
+              <RedactableSection
+                title="Permission Mode & Safety"
+                enabled={!disabledSections["permissionModes"]}
+                onToggle={() => toggleSection("permissionModes")}
+              >
+                <PermissionModeDisplay
+                  permissionModes={parsed.harnessData.permissionModes}
+                  featurePills={parsed.harnessData.featurePills}
+                />
+              </RedactableSection>
+
+              {/* Hooks & Safety */}
+              {parsed.harnessData.hookDefinitions.length > 0 && (
+                <RedactableSection
                   title="Hooks & Safety"
                   enabled={!disabledSections["hookDefinitions"]}
                   onToggle={() => toggleSection("hookDefinitions")}
-                  defaultOpen={false}
                 >
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-slate-200 dark:border-slate-700">
-                          <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                            Event
-                          </th>
-                          <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                            Matcher
-                          </th>
-                          <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                            Script
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {parsed.harnessData.hookDefinitions.map((h, i) => (
-                          <tr
-                            key={i}
-                            className="border-b border-slate-100 dark:border-slate-800"
-                          >
-                            <td className="py-2 pr-4 font-mono text-xs text-slate-600 dark:text-slate-400">
-                              {h.event}
-                            </td>
-                            <td className="py-2 pr-4 text-xs text-slate-600 dark:text-slate-400">
-                              {h.matcher}
-                            </td>
-                            <td className="py-2 text-xs text-slate-600 dark:text-slate-400">
-                              {h.script}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </ReviewSectionToggle>
+                  <HooksSafetyTable
+                    hookDefinitions={parsed.harnessData.hookDefinitions}
+                  />
+                </RedactableSection>
               )}
 
-            {/* MCP Servers */}
-            {parsed.harnessData &&
-              Object.keys(parsed.harnessData.mcpServers).length > 0 && (
-                <ReviewSectionToggle
-                  title="MCP Servers"
-                  enabled={!disabledSections["mcpServers"]}
-                  onToggle={() => toggleSection("mcpServers")}
-                  defaultOpen={false}
-                >
-                  {Object.entries(parsed.harnessData.mcpServers)
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([server, calls]) => (
-                      <div
-                        key={server}
-                        className="flex justify-between border-b border-slate-100 py-1 dark:border-slate-800"
-                      >
-                        <span className="font-mono text-xs text-slate-600 dark:text-slate-400">
-                          {server}
-                        </span>
-                        <span className="text-xs text-slate-400">
-                          {formatNumber(calls)} calls
-                        </span>
-                      </div>
-                    ))}
-                </ReviewSectionToggle>
-              )}
-
-            {/* Plugins */}
-            {parsed.harnessData && parsed.harnessData.plugins.length > 0 && (
-              <ReviewSectionToggle
-                title="Plugins"
-                enabled={!disabledSections["plugins"]}
-                onToggle={() => toggleSection("plugins")}
-                defaultOpen={false}
-              >
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {parsed.harnessData.plugins.map((p) => (
-                    <div
-                      key={p.name}
-                      className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
-                          {p.name}
-                        </span>
-                        <span
-                          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
-                            p.active
-                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                              : "bg-slate-100 text-slate-400 dark:bg-slate-800"
-                          }`}
-                        >
-                          {p.active ? "on" : "off"}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </ReviewSectionToggle>
-            )}
-
-            {/* Languages */}
-            {parsed.harnessData &&
-              Object.keys(parsed.harnessData.languages).length > 0 && (
-                <ReviewSectionToggle
-                  title="Languages"
-                  enabled={!disabledSections["languages"]}
-                  onToggle={() => toggleSection("languages")}
-                  defaultOpen={false}
-                >
-                  <div className="space-y-1.5">
-                    {Object.entries(parsed.harnessData.languages)
-                      .sort((a, b) => b[1] - a[1])
-                      .slice(0, 10)
-                      .map(([name, count]) => {
-                        const max = Math.max(
-                          ...Object.values(parsed.harnessData!.languages),
-                        );
-                        return (
-                          <div key={name} className="flex items-center gap-2">
-                            <div className="w-24 truncate text-xs font-mono text-slate-600 dark:text-slate-400">
-                              {name}
-                            </div>
-                            <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                              <div
-                                className="h-full rounded-full bg-green-500"
-                                style={{
-                                  width: `${Math.max(3, (count / max) * 100)}%`,
-                                }}
-                              />
-                            </div>
-                            <div className="w-12 text-right text-xs font-mono text-slate-400">
-                              {formatNumber(count)}
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </ReviewSectionToggle>
-              )}
-          </div>
-
-          {/* ── "Not Useful" Sections ── */}
-          {NOT_USEFUL_SECTIONS.some((key) => parsed.data[key] != null) && (
-            <div className="mb-6">
-              {/* Warning banner */}
-              <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950/30">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                <p className="text-xs text-amber-700 dark:text-amber-400">
-                  These sections are included in your report but may not be
-                  relevant to share publicly. Consider hiding them.
-                </p>
-              </div>
-              <div className="space-y-3">
-                {NOT_USEFUL_SECTIONS.map((key) => {
-                  const opt = SECTION_OPTIONS.find((o) => o.dataKey === key);
-                  if (!opt || !parsed.data[key]) return null;
+              {/* Narrative Sections (mirrors profile page) */}
+              <div className="mt-6 space-y-4">
+                {SECTION_OPTIONS.filter(
+                  ({ dataKey }) => dataKey !== "fun_ending",
+                ).map(({ dataKey, sectionType, label }) => {
+                  const sectionData = parsed.data[dataKey];
+                  if (!sectionData) return null;
+                  const enabled = !disabledSections[dataKey];
                   return (
-                    <ReviewSectionToggle
-                      key={key}
-                      title={opt.label}
-                      enabled={!disabledSections[key]}
-                      onToggle={() => toggleSection(key)}
-                      defaultOpen={false}
+                    <RedactableSection
+                      key={dataKey}
+                      title={label}
+                      enabled={enabled}
+                      onToggle={() => toggleSection(dataKey)}
                     >
-                      <SectionRenderer
-                        slug="preview"
-                        sectionKey={key}
-                        sectionType={opt.sectionType}
-                        data={parsed.data[key]}
-                        reportId="preview"
-                        voteCount={0}
-                        voted={false}
-                        readOnly
-                      />
-                    </ReviewSectionToggle>
+                      <CollapsibleSection
+                        icon=""
+                        title={label}
+                        defaultOpen={dataKey === "at_a_glance"}
+                      >
+                        <SectionRenderer
+                          slug="preview"
+                          sectionKey={dataKey}
+                          sectionType={sectionType}
+                          data={sectionData}
+                          reportId="preview"
+                          voteCount={0}
+                          voted={false}
+                          readOnly
+                        />
+                      </CollapsibleSection>
+                    </RedactableSection>
                   );
                 })}
               </div>
-            </div>
+            </>
+          ) : (
+            /* ── Standard Insights Report Preview ── */
+            <>
+              <SnapshotCard
+                sessionCount={parsed.stats.sessionCount ?? null}
+                messageCount={parsed.stats.messageCount ?? null}
+                linesAdded={parsed.stats.linesAdded ?? null}
+                linesRemoved={parsed.stats.linesRemoved ?? null}
+                fileCount={parsed.stats.fileCount ?? null}
+                dayCount={parsed.stats.dayCount ?? null}
+                commitCount={parsed.stats.commitCount ?? null}
+                chartData={normalizeChartData(parsed.chartData)}
+                detectedSkills={normalizeSkills(parsed.detectedSkills)}
+                keyPattern={parsed.data.interaction_style?.key_pattern ?? null}
+                projectAreas={
+                  disabledSections["project_areas"]
+                    ? null
+                    : parsed.data.project_areas
+                }
+              />
+
+              <div className="mt-6 space-y-4">
+                {SECTION_OPTIONS.filter(
+                  ({ dataKey }) => dataKey !== "fun_ending",
+                ).map(({ dataKey, sectionType, label }) => {
+                  const sectionData = parsed.data[dataKey];
+                  if (!sectionData) return null;
+                  const enabled = !disabledSections[dataKey];
+                  return (
+                    <RedactableSection
+                      key={dataKey}
+                      title={label}
+                      enabled={enabled}
+                      onToggle={() => toggleSection(dataKey)}
+                    >
+                      <CollapsibleSection
+                        icon=""
+                        title={label}
+                        defaultOpen={dataKey === "at_a_glance"}
+                      >
+                        <SectionRenderer
+                          slug="preview"
+                          sectionKey={dataKey}
+                          sectionType={sectionType}
+                          data={sectionData}
+                          reportId="preview"
+                          voteCount={0}
+                          voted={false}
+                          readOnly
+                        />
+                      </CollapsibleSection>
+                    </RedactableSection>
+                  );
+                })}
+              </div>
+            </>
           )}
 
           {/* ── Inline Sensitive Data Controls ── */}

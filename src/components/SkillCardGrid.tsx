@@ -15,6 +15,7 @@ function SkillCard({
   dimmed?: boolean;
 }) {
   const isCustom = skill.source.toLowerCase() === "custom";
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <div
@@ -54,11 +55,47 @@ function SkillCard({
         {skill.source}
       </div>
       {skill.description && (
-        <p
-          className={`mt-2 text-xs leading-relaxed ${dimmed ? "text-slate-400 dark:text-slate-500" : "text-slate-600 dark:text-slate-400"}`}
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          aria-label={expanded ? "Collapse description" : "Expand description"}
+          className="group mt-2 flex w-full items-start gap-1.5 text-left"
         >
-          {skill.description}
-        </p>
+          <p
+            className={`flex-1 text-xs leading-relaxed transition-all ${
+              expanded ? "" : "line-clamp-2"
+            } ${
+              dimmed
+                ? "text-slate-400 dark:text-slate-500"
+                : "text-slate-600 dark:text-slate-400"
+            }`}
+          >
+            {skill.description}
+          </p>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            fill="none"
+            className={`mt-0.5 shrink-0 transition-transform duration-200 ${
+              expanded ? "rotate-180" : ""
+            } ${
+              dimmed
+                ? "text-slate-400 dark:text-slate-500"
+                : "text-slate-500 dark:text-slate-400"
+            }`}
+            aria-hidden="true"
+          >
+            <path
+              d="M3 4.5l3 3 3-3"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
       )}
     </div>
   );
