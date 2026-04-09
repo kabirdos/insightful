@@ -42,7 +42,22 @@ describe("buildWorkflowDiagram", () => {
       skillInvocations: { "git-commit-push-pr": 4 },
     });
     const result = buildWorkflowDiagram(data);
-    expect(result).toContain("git-commit-push-pr (4\u00d7)");
+    // Labels now use HTML with plugin source and count on separate lines
+    expect(result).toContain("git-commit-push-pr");
+    expect(result).toContain("4\u00d7");
+  });
+
+  it("includes plugin source in node labels", () => {
+    const data = makeWorkflowData({
+      skillInvocations: { "superpowers:writing-plans": 5, "ux-mockup": 3 },
+    });
+    const result = buildWorkflowDiagram(data);
+    // Plugin skills show the plugin name
+    expect(result).toContain("superpowers");
+    expect(result).toContain("writing-plans");
+    // Custom skills (no colon) show as "custom"
+    expect(result).toContain("ux-mockup");
+    expect(result).toContain("custom");
   });
 
   it("shows edge counts when pattern count > 1", () => {

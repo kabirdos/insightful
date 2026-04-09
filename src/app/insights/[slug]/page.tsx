@@ -398,6 +398,15 @@ export default function InsightDetailPage() {
             <ToolUsageTreemap toolUsage={report.harnessData.toolUsage} />
           )}
 
+          {/* Workflow Diagrams */}
+          {report.harnessData.workflowData &&
+            !(report.hiddenHarnessSections ?? []).includes("workflowData") && (
+              <WorkflowDiagram
+                workflowData={report.harnessData.workflowData}
+                authorHandle={report.author.username}
+              />
+            )}
+
           {/* Skills Card Grid */}
           {report.harnessData.skillInventory.length > 0 && (
             <SkillCardGrid skillInventory={report.harnessData.skillInventory} />
@@ -443,15 +452,6 @@ export default function InsightDetailPage() {
               </div>
             </CollapsibleSection>
           )}
-
-          {/* Workflow Diagrams */}
-          {report.harnessData.workflowData &&
-            !(report.hiddenHarnessSections ?? []).includes("workflowData") && (
-              <WorkflowDiagram
-                workflowData={report.harnessData.workflowData}
-                authorHandle={report.author.username}
-              />
-            )}
 
           {/* CLI Tools Donut */}
           {Object.keys(report.harnessData.cliTools).length > 0 && (
