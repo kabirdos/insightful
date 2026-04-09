@@ -403,6 +403,7 @@ export default function InsightDetailPage() {
             dayCount={report.dayCount ?? undefined}
             dateRangeStart={report.dateRangeStart ?? undefined}
             slug={slug}
+            models={report.harnessData?.models ?? undefined}
           />
 
           {/* How I Work cluster: Autonomy + Model Donut + File Ops */}
