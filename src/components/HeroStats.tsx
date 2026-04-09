@@ -19,6 +19,7 @@ function perWeek(value: number, dayCount: number | null): string | null {
   const weeks = dayCount / 7;
   if (weeks === 0) return null;
   const rate = value / weeks;
+  if (rate >= 1_000_000) return `${(rate / 1_000_000).toFixed(1)}M`;
   if (rate >= 1_000) return `${(rate / 1_000).toFixed(1)}K`;
   return rate < 10 ? rate.toFixed(1) : Math.round(rate).toLocaleString();
 }
@@ -101,10 +102,21 @@ function StatCard({
   const color = STAT_COLORS[label] || "#6366f1";
   const primaryDisplay = rate ? `${rate}/wk` : value;
   const subtitle = rate ? `(${value} total)` : null;
+  // Shrink the font when the display is long so "1.5M/wk" stays on one line
+  // in narrow columns (mobile shows 2 cards per row).
+  const displayLength = primaryDisplay.length;
+  const sizeClass =
+    displayLength >= 8
+      ? "text-[22px] sm:text-[24px]"
+      : displayLength >= 6
+        ? "text-[26px] sm:text-[28px]"
+        : "text-[32px]";
   return (
     <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 text-center dark:border-slate-700 dark:bg-slate-900/50">
       <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-blue-500 to-violet-500" />
-      <div className="text-[32px] font-extrabold leading-none tracking-tight text-slate-900 dark:text-slate-100">
+      <div
+        className={`${sizeClass} whitespace-nowrap font-extrabold leading-none tracking-tight text-slate-900 dark:text-slate-100`}
+      >
         {primaryDisplay}
       </div>
       <div className="mt-2">

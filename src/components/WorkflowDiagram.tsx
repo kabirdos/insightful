@@ -10,8 +10,49 @@ interface WorkflowDiagramProps {
 }
 
 /**
+ * Parse a skill identifier into its plugin source and short name.
+ * Skills are in the form "plugin-name:skill-name" or just "skill-name" (custom).
+ */
+export function parseSkillSource(skill: string): {
+  plugin: string;
+  shortName: string;
+} {
+  const colonIdx = skill.indexOf(":");
+  if (colonIdx === -1) {
+    return { plugin: "custom", shortName: skill };
+  }
+  return {
+    plugin: skill.slice(0, colonIdx),
+    shortName: skill.slice(colonIdx + 1),
+  };
+}
+
+// Mermaid fill/stroke colors per plugin source
+const PLUGIN_COLORS: Record<
+  string,
+  { fill: string; stroke: string; text: string }
+> = {
+  superpowers: { fill: "#dbeafe", stroke: "#3b82f6", text: "#1e40af" },
+  "compound-engineering": {
+    fill: "#f3e8ff",
+    stroke: "#8b5cf6",
+    text: "#6b21a8",
+  },
+  "pr-review-toolkit": { fill: "#fef3c7", stroke: "#f59e0b", text: "#92400e" },
+  "commit-commands": { fill: "#dcfce7", stroke: "#22c55e", text: "#166534" },
+  "code-review": { fill: "#fce7f3", stroke: "#ec4899", text: "#9d174d" },
+  anthropics: { fill: "#cffafe", stroke: "#06b6d4", text: "#155e75" },
+  custom: { fill: "#f1f5f9", stroke: "#94a3b8", text: "#334155" },
+};
+
+function getPluginColor(plugin: string) {
+  return PLUGIN_COLORS[plugin] || PLUGIN_COLORS.custom;
+}
+
+/**
  * Build a Mermaid flowchart from skill invocations and workflow patterns.
- * Nodes are skill names with invocation counts; edges show common transitions.
+ * Nodes are skill names with invocation counts, color-coded by plugin source.
+ * Edges show common transitions between skills.
  */
 export function buildWorkflowDiagram(
   workflowData: HarnessWorkflowData,
@@ -23,10 +64,13 @@ export function buildWorkflowDiagram(
 
   const lines: string[] = ["flowchart TD"];
 
-  // Define nodes — sanitize IDs for mermaid
+  // Define nodes with plugin source in label
   for (const [skill, count] of Object.entries(skillInvocations)) {
     const id = skill.replace(/[^a-zA-Z0-9]/g, "_");
-    const label = `${skill} (${count}\u00d7)`;
+    const { plugin, shortName } = parseSkillSource(skill);
+    // Escape quotes in labels and use the short name
+    const safeName = shortName.replace(/"/g, "'");
+    const label = `${safeName}<br/><span style='font-size:9px;opacity:0.7'>${plugin}</span><br/>${count}×`;
     lines.push(`    ${id}["${label}"]`);
   }
 
@@ -56,6 +100,16 @@ export function buildWorkflowDiagram(
     } else {
       lines.push(`    ${fromId} --> ${toId}`);
     }
+  }
+
+  // Apply color styles per node based on plugin source
+  for (const skill of skills) {
+    const id = skill.replace(/[^a-zA-Z0-9]/g, "_");
+    const { plugin } = parseSkillSource(skill);
+    const color = getPluginColor(plugin);
+    lines.push(
+      `    style ${id} fill:${color.fill},stroke:${color.stroke},color:${color.text}`,
+    );
   }
 
   return lines.join("\n");
@@ -106,6 +160,15 @@ export default function WorkflowDiagram({
 
   const hasPhaseData = Object.keys(phaseDistribution).length > 0;
 
+  // Unique plugin sources present
+  const pluginsPresent = Array.from(
+    new Set(
+      Object.keys(workflowData.skillInvocations).map(
+        (s) => parseSkillSource(s).plugin,
+      ),
+    ),
+  );
+
   return (
     <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
       <div className="mb-3 flex items-center gap-2">
@@ -129,17 +192,44 @@ export default function WorkflowDiagram({
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
       </div>
 
-      {/* Mobile fallback — ordered list of skills */}
+      {/* Mobile fallback — ordered list of skills with plugin source */}
       <div className="block sm:hidden">
         <ol className="list-decimal list-inside space-y-1 text-sm text-slate-600 dark:text-slate-400">
-          {sortedSkills.map(([name, count]) => (
-            <li key={name}>
-              <span className="font-mono text-xs">{name}</span>{" "}
-              <span className="text-slate-400">({count}x)</span>
-            </li>
-          ))}
+          {sortedSkills.map(([name, count]) => {
+            const { plugin, shortName } = parseSkillSource(name);
+            return (
+              <li key={name}>
+                <span className="font-mono text-xs">{shortName}</span>{" "}
+                <span className="text-[10px] text-slate-400">[{plugin}]</span>{" "}
+                <span className="text-slate-400">({count}x)</span>
+              </li>
+            );
+          })}
         </ol>
       </div>
+
+      {/* Plugin source legend */}
+      {pluginsPresent.length > 1 && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-slate-500 dark:text-slate-400">Source:</span>
+          {pluginsPresent.map((plugin) => {
+            const color = PLUGIN_COLORS[plugin] || PLUGIN_COLORS.custom;
+            return (
+              <span
+                key={plugin}
+                className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium"
+                style={{
+                  backgroundColor: color.fill,
+                  color: color.text,
+                  border: `1px solid ${color.stroke}`,
+                }}
+              >
+                {plugin}
+              </span>
+            );
+          })}
+        </div>
+      )}
 
       {/* Supplementary info */}
       <div className="mt-3 space-y-3 border-t border-slate-100 pt-3 dark:border-slate-800">

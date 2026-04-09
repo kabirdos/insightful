@@ -190,7 +190,7 @@ function ProfileCard({
       {/* Stats */}
       <div className="flex flex-wrap gap-x-5 gap-y-1 mb-3">
         {tokensWk && (
-          <div className="text-xs text-slate-500 dark:text-slate-400">
+          <div className="whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
             <span className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
               {tokensWk}
             </span>{" "}
@@ -198,7 +198,7 @@ function ProfileCard({
           </div>
         )}
         {sessionsWk && (
-          <div className="text-xs text-slate-500 dark:text-slate-400">
+          <div className="whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
             <span className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
               {sessionsWk}
             </span>{" "}
@@ -206,7 +206,7 @@ function ProfileCard({
           </div>
         )}
         {msgsWk && (
-          <div className="text-xs text-slate-500 dark:text-slate-400">
+          <div className="whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
             <span className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
               {msgsWk}
             </span>{" "}
@@ -214,7 +214,7 @@ function ProfileCard({
           </div>
         )}
         {commitsWk && (
-          <div className="text-xs text-slate-500 dark:text-slate-400">
+          <div className="whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
             <span className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
               {commitsWk}
             </span>{" "}

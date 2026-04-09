@@ -16,84 +16,90 @@ interface ActivityHeatmapProps {
   dayCount?: number;
   dateRangeStart?: string;
   slug?: string;
+  /** Optional model → token count map, used to estimate API cost */
+  models?: Record<string, number>;
 }
 
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const WEEKS = 5;
+// 4 weeks × 7 days = 28 cells per heatmap (no day-of-week labels)
+const WEEKS = 4;
+const DAYS_PER_WEEK = 7;
+const CELL_COUNT = WEEKS * DAYS_PER_WEEK;
 
-function getBlueLevel(
+type ColorScale = "blue" | "green" | "amber";
+
+function getLevel(
+  scale: ColorScale,
   value: number,
   max: number,
 ): { bg: string; text: string; border?: string } {
-  if (value === 0)
+  if (value === 0) {
     return {
       bg: "bg-slate-100 dark:bg-slate-800",
       text: "text-slate-400 dark:text-slate-500",
       border: "border border-slate-200 dark:border-slate-700",
     };
+  }
   const pct = value / Math.max(max, 1);
+
+  if (scale === "blue") {
+    if (pct <= 0.2)
+      return {
+        bg: "bg-blue-100 dark:bg-blue-900/40",
+        text: "text-blue-800 dark:text-blue-300",
+      };
+    if (pct <= 0.4)
+      return {
+        bg: "bg-blue-300 dark:bg-blue-800/60",
+        text: "text-blue-900 dark:text-blue-200",
+      };
+    if (pct <= 0.6)
+      return { bg: "bg-blue-400 dark:bg-blue-700", text: "text-white" };
+    if (pct <= 0.8)
+      return { bg: "bg-blue-500 dark:bg-blue-600", text: "text-white" };
+    return { bg: "bg-blue-700 dark:bg-blue-500", text: "text-white" };
+  }
+
+  if (scale === "green") {
+    if (pct <= 0.2)
+      return {
+        bg: "bg-green-100 dark:bg-green-900/40",
+        text: "text-green-800 dark:text-green-300",
+      };
+    if (pct <= 0.4)
+      return {
+        bg: "bg-green-300 dark:bg-green-800/60",
+        text: "text-green-900 dark:text-green-200",
+      };
+    if (pct <= 0.6)
+      return { bg: "bg-green-400 dark:bg-green-700", text: "text-white" };
+    if (pct <= 0.8)
+      return { bg: "bg-green-500 dark:bg-green-600", text: "text-white" };
+    return { bg: "bg-green-700 dark:bg-green-500", text: "text-white" };
+  }
+
+  // amber
   if (pct <= 0.2)
     return {
-      bg: "bg-blue-100 dark:bg-blue-900/40",
-      text: "text-blue-800 dark:text-blue-300",
+      bg: "bg-amber-100 dark:bg-amber-900/40",
+      text: "text-amber-800 dark:text-amber-300",
     };
   if (pct <= 0.4)
     return {
-      bg: "bg-blue-300 dark:bg-blue-800/60",
-      text: "text-blue-900 dark:text-blue-200",
+      bg: "bg-amber-300 dark:bg-amber-800/60",
+      text: "text-amber-900 dark:text-amber-200",
     };
   if (pct <= 0.6)
-    return {
-      bg: "bg-blue-400 dark:bg-blue-700",
-      text: "text-white",
-    };
+    return { bg: "bg-amber-400 dark:bg-amber-700", text: "text-white" };
   if (pct <= 0.8)
-    return {
-      bg: "bg-blue-500 dark:bg-blue-600",
-      text: "text-white",
-    };
-  return {
-    bg: "bg-blue-700 dark:bg-blue-500",
-    text: "text-white",
-  };
+    return { bg: "bg-amber-500 dark:bg-amber-600", text: "text-white" };
+  return { bg: "bg-amber-700 dark:bg-amber-500", text: "text-white" };
 }
 
-function getGreenLevel(
-  value: number,
-  max: number,
-): { bg: string; text: string; border?: string } {
-  if (value === 0)
-    return {
-      bg: "bg-slate-100 dark:bg-slate-800",
-      text: "text-slate-400 dark:text-slate-500",
-      border: "border border-slate-200 dark:border-slate-700",
-    };
-  const pct = value / Math.max(max, 1);
-  if (pct <= 0.2)
-    return {
-      bg: "bg-green-100 dark:bg-green-900/40",
-      text: "text-green-800 dark:text-green-300",
-    };
-  if (pct <= 0.4)
-    return {
-      bg: "bg-green-300 dark:bg-green-800/60",
-      text: "text-green-900 dark:text-green-200",
-    };
-  if (pct <= 0.6)
-    return {
-      bg: "bg-green-400 dark:bg-green-700",
-      text: "text-white",
-    };
-  if (pct <= 0.8)
-    return {
-      bg: "bg-green-500 dark:bg-green-600",
-      text: "text-white",
-    };
-  return {
-    bg: "bg-green-700 dark:bg-green-500",
-    text: "text-white",
-  };
-}
+const TITLE_COLORS: Record<ColorScale, string> = {
+  blue: "text-blue-800 dark:text-blue-400",
+  green: "text-green-800 dark:text-green-400",
+  amber: "text-amber-800 dark:text-amber-400",
+};
 
 /* ── Seeded PRNG helpers ── */
 function hashString(str: string): number {
@@ -131,68 +137,87 @@ function formatTokens(n: number): string {
   return n.toString();
 }
 
-function HeatmapGrid({
+function formatCost(n: number): string {
+  if (n === 0) return "0";
+  if (n >= 100) return `$${Math.round(n)}`;
+  if (n >= 10) return `$${n.toFixed(0)}`;
+  if (n >= 1) return `$${n.toFixed(1)}`;
+  return `$${n.toFixed(2)}`;
+}
+
+// Rough blended USD / 1M tokens, no input/output split available.
+// These are estimates — labeled "Est." in UI.
+const MODEL_BLENDED_RATE_PER_M: Array<{ match: RegExp; rate: number }> = [
+  { match: /opus/i, rate: 30 }, // blended between $15 in / $75 out
+  { match: /haiku/i, rate: 1.6 }, // blended between $0.80 in / $4 out
+  { match: /sonnet/i, rate: 6 }, // blended between $3 in / $15 out
+];
+const DEFAULT_RATE_PER_M = 6; // fall back to Sonnet-blended
+
+function estimateTotalCostUsd(models?: Record<string, number>): number {
+  if (!models) return 0;
+  let total = 0;
+  for (const [name, tokens] of Object.entries(models)) {
+    if (!tokens || tokens <= 0) continue;
+    const entry = MODEL_BLENDED_RATE_PER_M.find((m) => m.match.test(name));
+    const rate = entry ? entry.rate : DEFAULT_RATE_PER_M;
+    total += (tokens / 1_000_000) * rate;
+  }
+  return total;
+}
+
+function GridHeatmap({
   title,
-  titleColor,
+  subtitle,
+  scale,
   data,
-  getLevel,
   formatValue,
 }: {
   title: string;
-  titleColor: string;
-  data: number[][];
-  getLevel: (
-    value: number,
-    max: number,
-  ) => { bg: string; text: string; border?: string };
+  subtitle?: string;
+  scale: ColorScale;
+  data: number[]; // length CELL_COUNT
   formatValue: (n: number) => string;
 }) {
-  const allValues = data.flat();
-  const max = Math.max(...allValues, 1);
+  const max = Math.max(...data, 1);
+  const nonZero = data.filter((v) => v > 0);
+  const min = nonZero.length > 0 ? Math.min(...nonZero) : 0;
 
   return (
     <div>
       <div
-        className={`mb-2 text-xs font-bold uppercase tracking-wider ${titleColor}`}
+        className={`mb-1 text-xs font-bold uppercase tracking-wider ${TITLE_COLORS[scale]}`}
       >
         {title}
       </div>
+      {subtitle && (
+        <div className="mb-2 text-[10px] text-slate-500 dark:text-slate-400">
+          {subtitle}
+        </div>
+      )}
       <div
         className="grid gap-[3px]"
         style={{
-          gridTemplateColumns: `32px repeat(${WEEKS}, 24px)`,
+          gridTemplateColumns: `repeat(${DAYS_PER_WEEK}, minmax(0, 1fr))`,
         }}
       >
-        {/* Header row */}
-        <div />
-        {Array.from({ length: WEEKS }, (_, i) => (
-          <div
-            key={i}
-            className="text-center text-[9px] leading-4 text-slate-400"
-          >
-            W{i + 1}
-          </div>
-        ))}
-        {/* Data rows */}
-        {DAYS.map((day, dayIdx) => (
-          <React.Fragment key={day}>
-            <div className="flex h-6 items-center text-[10px] text-slate-500 dark:text-slate-400">
-              {day}
+        {data.map((value, i) => {
+          const level = getLevel(scale, value, max);
+          return (
+            <div
+              key={i}
+              title={formatValue(value)}
+              className={`flex aspect-square items-center justify-center rounded text-[10px] font-semibold ${level.bg} ${level.text} ${level.border ?? ""}`}
+            >
+              {formatValue(value)}
             </div>
-            {Array.from({ length: WEEKS }, (_, weekIdx) => {
-              const value = data[dayIdx]?.[weekIdx] ?? 0;
-              const level = getLevel(value, max);
-              return (
-                <div
-                  key={`${day}-${weekIdx}`}
-                  className={`flex h-6 w-6 items-center justify-center rounded text-[10px] font-semibold ${level.bg} ${level.text} ${level.border ?? ""}`}
-                >
-                  {formatValue(value)}
-                </div>
-              );
-            })}
-          </React.Fragment>
-        ))}
+          );
+        })}
+      </div>
+      {/* Legend: min / max for this series */}
+      <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+        <span>{formatValue(min)}</span>
+        <span>{formatValue(max)}</span>
       </div>
     </div>
   );
@@ -205,29 +230,30 @@ export default function ActivityHeatmap({
   dayCount,
   dateRangeStart,
   slug,
+  models,
 }: ActivityHeatmapProps) {
-  // Build grids from dailyData or aggregate stats
-  const { sessionsGrid, tokensGrid } = useMemo(() => {
-    const sGrid: number[][] = DAYS.map(() => Array(WEEKS).fill(0));
-    const tGrid: number[][] = DAYS.map(() => Array(WEEKS).fill(0));
-
+  const { sessionsDaily, tokensDaily } = useMemo<{
+    sessionsDaily: number[] | null;
+    tokensDaily: number[] | null;
+  }>(() => {
+    // Prefer real daily data if provided
     if (dailyData && dailyData.length > 0) {
-      // Fill grids from daily data (most recent first, reversed to chronological)
       const sorted = [...dailyData].sort(
         (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
       );
-      sorted.slice(-35).forEach((d, i) => {
-        const dayOfWeek = new Date(d.date + "T00:00:00").getDay();
-        const week = Math.floor(i / 7);
-        if (week < WEEKS && dayOfWeek < 7) {
-          sGrid[dayOfWeek][week] = d.sessions;
-          tGrid[dayOfWeek][week] = d.tokens;
-        }
+      // Take the most recent CELL_COUNT days, pad the front with zeros if short
+      const recent = sorted.slice(-CELL_COUNT);
+      const sArr = Array<number>(CELL_COUNT).fill(0);
+      const tArr = Array<number>(CELL_COUNT).fill(0);
+      const offset = CELL_COUNT - recent.length;
+      recent.forEach((d, i) => {
+        sArr[offset + i] = d.sessions;
+        tArr[offset + i] = d.tokens;
       });
-      return { sessionsGrid: sGrid, tokensGrid: tGrid };
+      return { sessionsDaily: sArr, tokensDaily: tArr };
     }
 
-    // Generate from aggregate stats
+    // Otherwise generate from aggregate stats with a seeded PRNG
     if (
       totalSessions != null &&
       totalTokens != null &&
@@ -235,59 +261,80 @@ export default function ActivityHeatmap({
       dayCount > 0 &&
       slug
     ) {
-      const effectiveDays = Math.min(dayCount, 35);
-      const sessionsDaily = generateDailyData(
+      const effectiveDays = Math.min(dayCount, CELL_COUNT);
+      const sGen = generateDailyData(
         totalSessions,
         effectiveDays,
         slug + "-sessions",
       );
-      const tokensDaily = generateDailyData(
+      const tGen = generateDailyData(
         totalTokens,
         effectiveDays,
         slug + "-tokens",
       );
-
-      // Determine starting day-of-week from dateRangeStart (or default to Monday)
-      let startDow = 1; // Monday
-      if (dateRangeStart) {
-        startDow = new Date(dateRangeStart + "T00:00:00").getDay();
-      }
-
+      // Right-align: put most recent activity at the end of the grid.
+      const sArr = Array<number>(CELL_COUNT).fill(0);
+      const tArr = Array<number>(CELL_COUNT).fill(0);
+      const offset = CELL_COUNT - effectiveDays;
       for (let i = 0; i < effectiveDays; i++) {
-        const dayOfWeek = (startDow + i) % 7;
-        const week = Math.floor(i / 7);
-        if (week < WEEKS && dayOfWeek < 7) {
-          sGrid[dayOfWeek][week] = sessionsDaily[i];
-          tGrid[dayOfWeek][week] = tokensDaily[i];
-        }
+        sArr[offset + i] = sGen[i];
+        tArr[offset + i] = tGen[i];
       }
-      return { sessionsGrid: sGrid, tokensGrid: tGrid };
+      // dateRangeStart currently unused now that we don't label days,
+      // but kept in the signature for forward compatibility.
+      void dateRangeStart;
+      return { sessionsDaily: sArr, tokensDaily: tArr };
     }
 
-    return { sessionsGrid: null, tokensGrid: null };
+    return { sessionsDaily: null, tokensDaily: null };
   }, [dailyData, totalSessions, totalTokens, dayCount, dateRangeStart, slug]);
 
-  if (!sessionsGrid || !tokensGrid) return null;
+  // Distribute estimated total cost proportionally to the tokens-per-day
+  // series. If we have no tokens, fall back to zeros.
+  const costDaily = useMemo<number[] | null>(() => {
+    if (!tokensDaily) return null;
+    const totalCost = estimateTotalCostUsd(models);
+    if (totalCost <= 0) {
+      // Fallback: still derive from totalTokens using default blended rate
+      const fallbackTotal =
+        (totalTokens ?? tokensDaily.reduce((a, b) => a + b, 0)) *
+        (DEFAULT_RATE_PER_M / 1_000_000);
+      if (fallbackTotal <= 0) return tokensDaily.map(() => 0);
+      const tokenSum = tokensDaily.reduce((a, b) => a + b, 0) || 1;
+      return tokensDaily.map((t) => (t / tokenSum) * fallbackTotal);
+    }
+    const tokenSum = tokensDaily.reduce((a, b) => a + b, 0) || 1;
+    return tokensDaily.map((t) => (t / tokenSum) * totalCost);
+  }, [tokensDaily, models, totalTokens]);
+
+  if (!sessionsDaily || !tokensDaily || !costDaily) return null;
+
+  const totalCostEstimate = costDaily.reduce((a, b) => a + b, 0);
 
   return (
     <div className="mb-6 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/50">
       <h3 className="mb-4 text-[15px] font-bold text-slate-900 dark:text-slate-100">
         Activity
       </h3>
-      <div className="grid gap-6 sm:grid-cols-2">
-        <HeatmapGrid
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <GridHeatmap
           title="Sessions"
-          titleColor="text-blue-800 dark:text-blue-400"
-          data={sessionsGrid}
-          getLevel={getBlueLevel}
-          formatValue={(n) => n.toString()}
+          scale="blue"
+          data={sessionsDaily}
+          formatValue={(n) => (n > 0 ? n.toString() : "")}
         />
-        <HeatmapGrid
+        <GridHeatmap
           title="Tokens"
-          titleColor="text-green-800 dark:text-green-400"
-          data={tokensGrid}
-          getLevel={getGreenLevel}
-          formatValue={formatTokens}
+          scale="green"
+          data={tokensDaily}
+          formatValue={(n) => (n > 0 ? formatTokens(n) : "")}
+        />
+        <GridHeatmap
+          title="Est. API Cost"
+          subtitle={`~${formatCost(totalCostEstimate)} total (estimate)`}
+          scale="amber"
+          data={costDaily}
+          formatValue={(n) => (n > 0 ? formatCost(n) : "")}
         />
       </div>
     </div>
