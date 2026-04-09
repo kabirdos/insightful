@@ -6,6 +6,7 @@ import { useMermaid } from "@/hooks/useMermaid";
 
 interface WorkflowDiagramProps {
   workflowData: HarnessWorkflowData;
+  authorHandle?: string;
 }
 
 /**
@@ -62,7 +63,9 @@ export function buildWorkflowDiagram(
 
 export default function WorkflowDiagram({
   workflowData,
+  authorHandle,
 }: WorkflowDiagramProps) {
+  const name = authorHandle ? `@${authorHandle}` : "This developer";
   const containerRef = useRef<HTMLDivElement>(null);
   const renderIdRef = useRef(0);
   const hasSkillData = Object.keys(workflowData.skillInvocations).length > 0;
@@ -107,7 +110,7 @@ export default function WorkflowDiagram({
     <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
       <div className="mb-3 flex items-center gap-2">
         <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-          Skill Workflow
+          {name}&apos;s Skill Workflow
         </h3>
         <span className="text-xs text-slate-400">
           {Object.values(workflowData.skillInvocations).reduce(
@@ -144,7 +147,7 @@ export default function WorkflowDiagram({
         {sortedDispatches.length > 0 && (
           <div>
             <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-              Top agent dispatches
+              What {name} delegates to agents
             </div>
             <div className="space-y-0.5">
               {sortedDispatches.map(([desc, count]) => (
@@ -167,13 +170,13 @@ export default function WorkflowDiagram({
               <span className="font-semibold text-slate-700 dark:text-slate-300">
                 {phaseStats.exploreBeforeImplPct}%
               </span>{" "}
-              explore before implementing
+              explores before implementing
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-400">
               <span className="font-semibold text-slate-700 dark:text-slate-300">
                 {phaseStats.testBeforeShipPct}%
               </span>{" "}
-              test before shipping
+              tests before shipping
             </div>
           </div>
         )}

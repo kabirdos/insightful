@@ -419,6 +419,7 @@ export default function InsightDetailPage() {
               <>
                 <WorkflowDiagram
                   workflowData={report.harnessData.workflowData}
+                  authorHandle={report.author.username}
                 />
               </>
             )}
