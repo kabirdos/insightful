@@ -40,6 +40,7 @@ function perWeek(value: number | null, dayCount: number | null): string | null {
   const weeks = dayCount / 7;
   if (weeks === 0) return null;
   const rate = value / weeks;
+  if (rate >= 1_000_000) return `${(rate / 1_000_000).toFixed(1)}M`;
   if (rate >= 1_000) return `${(rate / 1_000).toFixed(1)}K`;
   return rate < 10 ? rate.toFixed(1) : Math.round(rate).toLocaleString();
 }
@@ -115,7 +116,7 @@ function ProfileCard({ report }: { report: TopReport }) {
 
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
         {tokensWk && (
-          <span>
+          <span className="whitespace-nowrap">
             <strong className="text-slate-700 dark:text-slate-200">
               {tokensWk}
             </strong>{" "}
@@ -123,7 +124,7 @@ function ProfileCard({ report }: { report: TopReport }) {
           </span>
         )}
         {sessionsWk && (
-          <span>
+          <span className="whitespace-nowrap">
             <strong className="text-slate-700 dark:text-slate-200">
               {sessionsWk}
             </strong>{" "}
@@ -131,7 +132,7 @@ function ProfileCard({ report }: { report: TopReport }) {
           </span>
         )}
         {commitsWk && (
-          <span>
+          <span className="whitespace-nowrap">
             <strong className="text-slate-700 dark:text-slate-200">
               {commitsWk}
             </strong>{" "}
