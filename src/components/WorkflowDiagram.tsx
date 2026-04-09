@@ -8,67 +8,53 @@ interface WorkflowDiagramProps {
   workflowData: HarnessWorkflowData;
 }
 
-// Phase display names
-const PHASE_META: Record<string, { label: string }> = {
-  exploration: { label: "Exploration" },
-  implementation: { label: "Implementation" },
-  testing: { label: "Testing" },
-  shipping: { label: "Shipping" },
-  orchestration: { label: "Orchestration" },
-  other: { label: "Other" },
-};
+/**
+ * Build a Mermaid flowchart from skill invocations and workflow patterns.
+ * Nodes are skill names with invocation counts; edges show common transitions.
+ */
+export function buildWorkflowDiagram(
+  workflowData: HarnessWorkflowData,
+): string {
+  const { skillInvocations, workflowPatterns } = workflowData;
 
-export function buildStateDiagram(workflowData: HarnessWorkflowData): string {
-  const { phaseTransitions, phaseDistribution } = workflowData;
+  const skills = Object.keys(skillInvocations);
+  if (skills.length === 0) return "";
 
-  // Only include phases that have data
-  const activePhases = Object.keys(phaseDistribution).filter(
-    (p) => phaseDistribution[p] > 0,
-  );
+  const lines: string[] = ["flowchart TD"];
 
-  if (activePhases.length === 0) return "";
-
-  const lines: string[] = ["stateDiagram-v2"];
-
-  // Define states with display names
-  for (const phase of activePhases) {
-    const meta = PHASE_META[phase] || { label: phase };
-    lines.push(`    ${phase} : ${meta.label} (${phaseDistribution[phase]}%)`);
+  // Define nodes — sanitize IDs for mermaid
+  for (const [skill, count] of Object.entries(skillInvocations)) {
+    const id = skill.replace(/[^a-zA-Z0-9]/g, "_");
+    const label = `${skill} (${count}\u00d7)`;
+    lines.push(`    ${id}["${label}"]`);
   }
 
-  // Add transitions with counts
-  const totalTransitions = Object.values(phaseTransitions).reduce(
-    (a, b) => a + b,
-    0,
-  );
-
-  if (totalTransitions > 0) {
-    // Sort transitions by count descending, show top 10
-    const sorted = Object.entries(phaseTransitions)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10);
-
-    for (const [key, count] of sorted) {
-      const [from, to] = key.split("->");
-      if (
-        from &&
-        to &&
-        activePhases.includes(from) &&
-        activePhases.includes(to)
-      ) {
-        const pct = Math.round((count / totalTransitions) * 100);
-        lines.push(`    ${from} --> ${to} : ${pct}%`);
+  // Build edge counts from workflow patterns
+  const edgeCounts: Record<string, number> = {};
+  for (const pattern of workflowPatterns) {
+    const seq = pattern.sequence;
+    for (let i = 0; i < seq.length - 1; i++) {
+      const from = seq[i];
+      const to = seq[i + 1];
+      if (from && to) {
+        const key = `${from}|||${to}`;
+        edgeCounts[key] = (edgeCounts[key] || 0) + pattern.count;
       }
     }
   }
 
-  // Add start state pointing to most common phase
-  // Use .toSorted() to avoid mutating activePhases during render
-  const topPhase = [...activePhases].sort(
-    (a, b) => (phaseDistribution[b] || 0) - (phaseDistribution[a] || 0),
-  )[0];
-  if (topPhase) {
-    lines.push(`    [*] --> ${topPhase}`);
+  // Add edges sorted by count
+  const sortedEdges = Object.entries(edgeCounts).sort((a, b) => b[1] - a[1]);
+  for (const [key, count] of sortedEdges) {
+    const [from, to] = key.split("|||");
+    if (!from || !to) continue;
+    const fromId = from.replace(/[^a-zA-Z0-9]/g, "_");
+    const toId = to.replace(/[^a-zA-Z0-9]/g, "_");
+    if (count > 1) {
+      lines.push(`    ${fromId} -->|${count}x| ${toId}`);
+    } else {
+      lines.push(`    ${fromId} --> ${toId}`);
+    }
   }
 
   return lines.join("\n");
@@ -79,18 +65,18 @@ export default function WorkflowDiagram({
 }: WorkflowDiagramProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const renderIdRef = useRef(0);
-  const hasData = Object.keys(workflowData.phaseDistribution).length > 0;
-  const { ready, error, render } = useMermaid({ shouldLoad: hasData });
+  const hasSkillData = Object.keys(workflowData.skillInvocations).length > 0;
+  const { ready, error, render } = useMermaid({ shouldLoad: hasSkillData });
 
   // Render diagram when mermaid is ready
   useEffect(() => {
     if (!ready || !containerRef.current) return;
     let cancelled = false;
 
-    const diagram = buildStateDiagram(workflowData);
+    const diagram = buildWorkflowDiagram(workflowData);
     if (!diagram) return;
 
-    const id = `mermaid-state-${++renderIdRef.current}`;
+    const id = `mermaid-workflow-${++renderIdRef.current}`;
     render(id, diagram).then((svg) => {
       if (svg && !cancelled && containerRef.current) {
         containerRef.current.innerHTML = svg;
@@ -102,23 +88,33 @@ export default function WorkflowDiagram({
     };
   }, [ready, workflowData, render]);
 
-  if (error || !hasData) return null;
+  if (error || !hasSkillData) return null;
 
-  const { phaseStats } = workflowData;
+  const { phaseStats, phaseDistribution, agentDispatches } = workflowData;
 
-  // Build mobile fallback list from phase transitions
-  const sortedTransitions = Object.entries(workflowData.phaseTransitions)
+  // Build mobile fallback list from skill invocations
+  const sortedSkills = Object.entries(workflowData.skillInvocations)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 8);
+    .slice(0, 10);
+
+  const sortedDispatches = Object.entries(agentDispatches)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  const hasPhaseData = Object.keys(phaseDistribution).length > 0;
 
   return (
     <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
       <div className="mb-3 flex items-center gap-2">
         <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-          Workflow Phases
+          Skill Workflow
         </h3>
         <span className="text-xs text-slate-400">
-          {phaseStats.totalSessionsWithPhases} sessions analyzed
+          {Object.values(workflowData.skillInvocations).reduce(
+            (a, b) => a + b,
+            0,
+          )}{" "}
+          skill invocations
         </span>
       </div>
 
@@ -130,32 +126,57 @@ export default function WorkflowDiagram({
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
       </div>
 
-      {/* Mobile fallback — simple list of phase transitions */}
+      {/* Mobile fallback — ordered list of skills */}
       <div className="block sm:hidden">
         <ol className="list-decimal list-inside space-y-1 text-sm text-slate-600 dark:text-slate-400">
-          {sortedTransitions.map(([key, count]) => (
-            <li key={key}>
-              <span className="font-mono text-xs">{key}</span>{" "}
-              <span className="text-slate-400">({count})</span>
+          {sortedSkills.map(([name, count]) => (
+            <li key={name}>
+              <span className="font-mono text-xs">{name}</span>{" "}
+              <span className="text-slate-400">({count}x)</span>
             </li>
           ))}
         </ol>
       </div>
 
-      {/* Phase stats summary */}
-      <div className="mt-3 flex flex-wrap gap-4 border-t border-slate-100 pt-3 dark:border-slate-800">
-        <div className="text-xs text-slate-500 dark:text-slate-400">
-          <span className="font-semibold text-slate-700 dark:text-slate-300">
-            {phaseStats.exploreBeforeImplPct}%
-          </span>{" "}
-          explore before implementing
-        </div>
-        <div className="text-xs text-slate-500 dark:text-slate-400">
-          <span className="font-semibold text-slate-700 dark:text-slate-300">
-            {phaseStats.testBeforeShipPct}%
-          </span>{" "}
-          test before shipping
-        </div>
+      {/* Supplementary info */}
+      <div className="mt-3 space-y-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+        {/* Agent dispatches */}
+        {sortedDispatches.length > 0 && (
+          <div>
+            <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+              Top agent dispatches
+            </div>
+            <div className="space-y-0.5">
+              {sortedDispatches.map(([desc, count]) => (
+                <div
+                  key={desc}
+                  className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400"
+                >
+                  <span className="truncate font-mono">{desc}</span>
+                  <span className="ml-2 shrink-0 text-slate-400">{count}x</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Phase stats */}
+        {hasPhaseData && (
+          <div className="flex flex-wrap gap-4">
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-semibold text-slate-700 dark:text-slate-300">
+                {phaseStats.exploreBeforeImplPct}%
+              </span>{" "}
+              explore before implementing
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-semibold text-slate-700 dark:text-slate-300">
+                {phaseStats.testBeforeShipPct}%
+              </span>{" "}
+              test before shipping
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -52,10 +52,17 @@ const MOCK_HTML = `
 </section>
 
 <section>
-  <div class="section-header"><h2>Tool Transitions</h2><span class="count">120 transitions</span></div>
-  <div class="bar-row"><div class="bar-label">Read->Edit</div><div class="bar-track"><div class="bar-fill"></div></div><div class="bar-value">45</div></div>
-  <div class="bar-row"><div class="bar-label">Grep->Read</div><div class="bar-track"><div class="bar-fill"></div></div><div class="bar-value">30</div></div>
-  <div class="bar-row"><div class="bar-label">Edit->Bash</div><div class="bar-track"><div class="bar-fill"></div></div><div class="bar-value">25</div></div>
+  <div class="section-header"><h2>Skill Workflow</h2></div>
+  <div class="footnote">Skill invocations</div>
+  <div class="bar-row"><div class="bar-label">ce-brainstorm</div><div class="bar-track"><div class="bar-fill"></div></div><div class="bar-value">8</div></div>
+  <div class="bar-row"><div class="bar-label">ce-work</div><div class="bar-track"><div class="bar-fill"></div></div><div class="bar-value">12</div></div>
+  <div class="bar-row"><div class="bar-label">git-commit-push-pr</div><div class="bar-track"><div class="bar-fill"></div></div><div class="bar-value">4</div></div>
+  <div class="footnote">Agent dispatches</div>
+  <div class="bar-row"><div class="bar-label">Run tests for auth module</div><div class="bar-track"><div class="bar-fill"></div></div><div class="bar-value">3</div></div>
+  <div class="bar-row"><div class="bar-label">Lint and format changed files</div><div class="bar-track"><div class="bar-fill"></div></div><div class="bar-value">2</div></div>
+  <div class="footnote">Common workflow patterns</div>
+  <div class="bar-row"><div class="bar-label">ce-brainstorm &rarr; ce-work &rarr; git-commit-push-pr</div><div class="bar-track"><div class="bar-fill"></div></div><div class="bar-value">5</div></div>
+  <div class="bar-row"><div class="bar-label">ce-work &rarr; git-commit-push-pr</div><div class="bar-track"><div class="bar-fill"></div></div><div class="bar-value">3</div></div>
 </section>
 
 <script type="application/json" id="insight-harness-integrity">{"hash":"test123"}</script>
@@ -84,13 +91,32 @@ describe("harness-parser workflow data", () => {
     });
   });
 
-  it("parses tool transitions", () => {
+  it("parses skill invocations", () => {
     const result = parseHarnessHtml(MOCK_HTML);
-    expect(result.workflowData!.toolTransitions).toEqual({
-      "Read->Edit": 45,
-      "Grep->Read": 30,
-      "Edit->Bash": 25,
+    expect(result.workflowData!.skillInvocations).toEqual({
+      "ce-brainstorm": 8,
+      "ce-work": 12,
+      "git-commit-push-pr": 4,
     });
+  });
+
+  it("parses agent dispatches", () => {
+    const result = parseHarnessHtml(MOCK_HTML);
+    expect(result.workflowData!.agentDispatches).toEqual({
+      "Run tests for auth module": 3,
+      "Lint and format changed files": 2,
+    });
+  });
+
+  it("parses workflow patterns", () => {
+    const result = parseHarnessHtml(MOCK_HTML);
+    expect(result.workflowData!.workflowPatterns).toEqual([
+      {
+        sequence: ["ce-brainstorm", "ce-work", "git-commit-push-pr"],
+        count: 5,
+      },
+      { sequence: ["ce-work", "git-commit-push-pr"], count: 3 },
+    ]);
   });
 
   it("parses phase stats", () => {

@@ -315,9 +315,11 @@ def collect_report_data(days: int) -> dict[str, Any]:
     project_fingerprints: set[str] = set()
     active_days: set[str] = set()
 
-    # Tool transition tracking (tool A -> tool B within a turn)
-    tool_transitions: Counter[str] = Counter()
-    prev_tool_in_turn: str | None = None
+    # Skill invocation tracking (from Skill tool calls)
+    skill_invocations: Counter[str] = Counter()
+    session_skill_sequences: list[list[str]] = []
+    # Agent dispatch tracking (from Agent tool calls)
+    agent_dispatches: Counter[str] = Counter()
 
     # Phase transition tracking
     phase_transitions: Counter[str] = Counter()
@@ -342,6 +344,7 @@ def collect_report_data(days: int) -> dict[str, Any]:
         sessions_scanned += 1
         session_seen_at: datetime | None = None
         session_phases_seen: list[str] = []
+        session_skills_seen: list[str] = []
 
         try:
             handle = session_file.open(encoding="utf-8", errors="replace")
@@ -392,7 +395,6 @@ def collect_report_data(days: int) -> dict[str, Any]:
                     event_type = str(payload.get("type", ""))
                     if event_type == "user_message":
                         user_messages += 1
-                        prev_tool_in_turn = None
                         prev_phase_in_turn = None
                     elif event_type == "agent_message":
                         agent_messages += 1
@@ -414,12 +416,20 @@ def collect_report_data(days: int) -> dict[str, Any]:
                 name = str(item.get("name", "unknown"))
                 tool_usage[name] += 1
 
-                # Tool transition tracking
-                if prev_tool_in_turn is not None:
-                    tool_transitions[f"{prev_tool_in_turn}->{name}"] += 1
-                prev_tool_in_turn = name
-
                 args = parse_json_arg(item.get("arguments"))
+
+                # Skill invocation tracking (Skill tool -> input.skill)
+                if name == "Skill":
+                    skill_name = str(args.get("skill", "")).strip()
+                    if skill_name:
+                        skill_invocations[skill_name] += 1
+                        session_skills_seen.append(skill_name)
+
+                # Agent dispatch tracking (Agent tool -> input.description)
+                if name == "Agent":
+                    desc = str(args.get("description", "")).strip()[:60]
+                    if desc:
+                        agent_dispatches[desc] += 1
 
                 if name == "exec_command":
                     command_name = process_command_for_skills(args.get("cmd"), skill_loads)
@@ -465,6 +475,8 @@ def collect_report_data(days: int) -> dict[str, Any]:
 
         if session_phases_seen:
             session_phase_sequences.append(session_phases_seen)
+        if session_skills_seen:
+            session_skill_sequences.append(session_skills_seen)
 
     installed_skills = load_installed_skills()
     for skill_name, count in skill_loads.items():
@@ -565,7 +577,12 @@ def collect_report_data(days: int) -> dict[str, Any]:
         "mcp_servers": dict(mcp_servers.most_common(10)),
         "ecosystem": ecosystem,
         # Tool transitions (top 30 most common A->B pairs)
-        "tool_transitions": dict(tool_transitions.most_common(30)),
+        # Skill invocations (top 20 most common skill names)
+        "skill_invocations": dict(skill_invocations.most_common(20)),
+        # Agent dispatches (top 15 most common dispatch descriptions)
+        "agent_dispatches": dict(agent_dispatches.most_common(15)),
+        # Workflow patterns (top 10 most common skill sequences)
+        "workflow_patterns": _compute_workflow_patterns(session_skill_sequences),
         # Phase transitions (top 20 most common phase->phase pairs)
         "phase_transitions": dict(phase_transitions.most_common(20)),
         # Phase call distribution (percentage per phase)
@@ -577,6 +594,44 @@ def collect_report_data(days: int) -> dict[str, Any]:
             "total_sessions_with_phases": len(session_phase_sequences),
         },
     }
+
+
+def _render_workflow_patterns(patterns: list[dict[str, Any]]) -> str:
+    """Render workflow patterns as HTML list items."""
+    if not patterns:
+        return '<p class="empty">No patterns detected</p>'
+    rows: list[str] = []
+    for pat in patterns:
+        seq = pat.get("sequence", [])
+        count = pat.get("count", 0)
+        label = " &rarr; ".join(he(s) for s in seq)
+        rows.append(
+            f'<div class="bar-row">'
+            f'<div class="bar-label">{label}</div>'
+            f'<div class="bar-value">{count}</div>'
+            f'</div>'
+        )
+    return "\n        ".join(rows)
+
+
+def _compute_workflow_patterns(
+    session_skill_sequences: list[list[str]],
+) -> list[dict[str, Any]]:
+    """Find common skill sequences across sessions (top 10)."""
+    pattern_counts: Counter[str] = Counter()
+    for seq in session_skill_sequences:
+        # Deduplicate consecutive repeats to get the workflow shape
+        deduped: list[str] = []
+        for s in seq:
+            if not deduped or deduped[-1] != s:
+                deduped.append(s)
+        if len(deduped) >= 2:
+            key = " -> ".join(deduped)
+            pattern_counts[key] += 1
+    return [
+        {"sequence": k.split(" -> "), "count": v}
+        for k, v in pattern_counts.most_common(10)
+    ]
 
 
 def stat_card(value: str, label: str, note: str = "") -> str:
@@ -1045,9 +1100,13 @@ def generate_html(report: dict[str, Any]) -> str:
         </div>
       </div>
       <div class="card">
-        <h2>Tool Transitions</h2>
-        <div class="footnote" style="margin-top:0;margin-bottom:10px">{sum(report.get('tool_transitions', {}).values())} transitions</div>
-        {render_bar_rows(report.get('tool_transitions', {}))}
+        <h2>Skill Workflow</h2>
+        <div class="footnote" style="margin-top:0;margin-bottom:10px">Skill invocations</div>
+        {render_bar_rows(report.get('skill_invocations', {}))}
+        <div class="footnote" style="margin-top:10px">Agent dispatches</div>
+        {render_bar_rows(report.get('agent_dispatches', {}))}
+        <div class="footnote" style="margin-top:10px">Common workflow patterns</div>
+        {_render_workflow_patterns(report.get('workflow_patterns', []))}
       </div>
     </section>
   </div>

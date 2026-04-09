@@ -11,7 +11,7 @@ import HowIWorkCluster from "@/components/HowIWorkCluster";
 import ToolUsageTreemap from "@/components/ToolUsageTreemap";
 import SkillCardGrid from "@/components/SkillCardGrid";
 import WorkflowDiagram from "@/components/WorkflowDiagram";
-import ToolTransitionFlow from "@/components/ToolTransitionFlow";
+
 import CollapsibleSection from "@/components/CollapsibleSection";
 import SectionRenderer from "@/components/SectionRenderer";
 import Link from "next/link";
@@ -331,7 +331,6 @@ export default function EditReportPage() {
               {!hiddenSections["workflowData"] && (
                 <>
                   <WorkflowDiagram workflowData={harnessData.workflowData} />
-                  <ToolTransitionFlow workflowData={harnessData.workflowData} />
                 </>
               )}
             </div>

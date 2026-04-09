@@ -32,7 +32,6 @@ import PermissionModeDisplay from "@/components/PermissionModeDisplay";
 import HooksSafetyTable from "@/components/HooksSafetyTable";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
 import WorkflowDiagram from "@/components/WorkflowDiagram";
-import ToolTransitionFlow from "@/components/ToolTransitionFlow";
 
 interface ReportData {
   id: string;
@@ -419,9 +418,6 @@ export default function InsightDetailPage() {
             !(report.hiddenHarnessSections ?? []).includes("workflowData") && (
               <>
                 <WorkflowDiagram
-                  workflowData={report.harnessData.workflowData}
-                />
-                <ToolTransitionFlow
                   workflowData={report.harnessData.workflowData}
                 />
               </>

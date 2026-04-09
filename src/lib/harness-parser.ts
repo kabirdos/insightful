@@ -492,9 +492,53 @@ function parseIntegrityHash($: cheerio.CheerioAPI): string {
 
 function parseWorkflowData($: cheerio.CheerioAPI): HarnessWorkflowData | null {
   const phaseSection = findSectionByTitle($, "Workflow Phases");
-  const transSection = findSectionByTitle($, "Tool Transitions");
+  const skillSection = findSectionByTitle($, "Skill Workflow");
 
-  if (!phaseSection && !transSection) return null;
+  if (!phaseSection && !skillSection) return null;
+
+  // Parse skill invocations from bar-rows in Skill Workflow section
+  const skillInvocations: Record<string, number> = {};
+  const agentDispatches: Record<string, number> = {};
+  const workflowPatterns: Array<{ sequence: string[]; count: number }> = [];
+
+  if (skillSection) {
+    // The section has three groups separated by .footnote labels:
+    // 1. Skill invocations (bar-rows after "Skill invocations" footnote)
+    // 2. Agent dispatches (bar-rows after "Agent dispatches" footnote)
+    // 3. Workflow patterns (bar-rows after "Common workflow patterns" footnote)
+    let currentGroup = "skills";
+    skillSection.children().each((_, el) => {
+      const $el = $(el);
+      if ($el.hasClass("footnote")) {
+        const text = $el.text().trim().toLowerCase();
+        if (text.includes("agent dispatch")) {
+          currentGroup = "agents";
+        } else if (text.includes("workflow pattern")) {
+          currentGroup = "patterns";
+        } else if (text.includes("skill invocation")) {
+          currentGroup = "skills";
+        }
+        return;
+      }
+      if ($el.hasClass("bar-row")) {
+        const label = $el.find(".bar-label").text().trim();
+        const value = $el.find(".bar-value").text().trim();
+        if (!label) return;
+        if (currentGroup === "skills") {
+          skillInvocations[label] = parseNumericValue(value);
+        } else if (currentGroup === "agents") {
+          agentDispatches[label] = parseNumericValue(value);
+        } else if (currentGroup === "patterns") {
+          // Pattern labels use " → " as separator
+          const parts = label.split(/\s*→\s*/);
+          workflowPatterns.push({
+            sequence: parts,
+            count: parseNumericValue(value),
+          });
+        }
+      }
+    });
+  }
 
   // Parse phase distribution from kv-rows
   const phaseDistribution: Record<string, number> = {};
@@ -527,18 +571,6 @@ function parseWorkflowData($: cheerio.CheerioAPI): HarnessWorkflowData | null {
     }
   }
 
-  // Parse tool transitions from bar chart rows
-  const toolTransitions: Record<string, number> = {};
-  if (transSection) {
-    transSection.find(".bar-row").each((_, el) => {
-      const label = $(el).find(".bar-label").text().trim();
-      const value = $(el).find(".bar-value").text().trim();
-      if (label) {
-        toolTransitions[label] = parseNumericValue(value);
-      }
-    });
-  }
-
   // Parse phase stats from meta elements
   const phaseStats: HarnessPhaseStats = {
     testBeforeShipPct: 0,
@@ -566,7 +598,9 @@ function parseWorkflowData($: cheerio.CheerioAPI): HarnessWorkflowData | null {
   }
 
   return {
-    toolTransitions,
+    skillInvocations,
+    agentDispatches,
+    workflowPatterns,
     phaseTransitions,
     phaseDistribution,
     phaseStats,

@@ -198,7 +198,9 @@ export interface HarnessPhaseStats {
 }
 
 export interface HarnessWorkflowData {
-  toolTransitions: Record<string, number>;
+  skillInvocations: Record<string, number>;
+  agentDispatches: Record<string, number>;
+  workflowPatterns: Array<{ sequence: string[]; count: number }>;
   phaseTransitions: Record<string, number>;
   phaseDistribution: Record<string, number>;
   phaseStats: HarnessPhaseStats;

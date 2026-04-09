@@ -1,103 +1,73 @@
 import { describe, it, expect } from "vitest";
-import { buildStateDiagram } from "@/components/WorkflowDiagram";
-import { buildFlowDiagram } from "@/components/ToolTransitionFlow";
+import { buildWorkflowDiagram } from "@/components/WorkflowDiagram";
 import type { HarnessWorkflowData } from "@/types/insights";
 
-// --- buildStateDiagram ---
+function makeWorkflowData(
+  overrides: Partial<HarnessWorkflowData> = {},
+): HarnessWorkflowData {
+  return {
+    skillInvocations: {},
+    agentDispatches: {},
+    workflowPatterns: [],
+    phaseTransitions: {},
+    phaseDistribution: {},
+    phaseStats: {
+      testBeforeShipPct: 0,
+      exploreBeforeImplPct: 0,
+      totalSessionsWithPhases: 0,
+    },
+    ...overrides,
+  };
+}
 
-describe("buildStateDiagram", () => {
+describe("buildWorkflowDiagram", () => {
   it("returns empty string for empty input", () => {
-    const data: HarnessWorkflowData = {
-      toolTransitions: {},
-      phaseTransitions: {},
-      phaseDistribution: {},
-      phaseStats: {
-        testBeforeShipPct: 0,
-        exploreBeforeImplPct: 0,
-        totalSessionsWithPhases: 0,
-      },
-    };
-    expect(buildStateDiagram(data)).toBe("");
-  });
-
-  it("produces valid stateDiagram-v2 header for typical input", () => {
-    const data: HarnessWorkflowData = {
-      toolTransitions: {},
-      phaseTransitions: { "exploration->implementation": 10 },
-      phaseDistribution: { exploration: 60, implementation: 40 },
-      phaseStats: {
-        testBeforeShipPct: 0,
-        exploreBeforeImplPct: 80,
-        totalSessionsWithPhases: 5,
-      },
-    };
-    const result = buildStateDiagram(data);
-    expect(result).toContain("stateDiagram-v2");
-    expect(result).toContain("exploration");
-    expect(result).toContain("implementation");
-    expect(result).toContain("-->");
-  });
-
-  it("does not mutate phaseDistribution keys order", () => {
-    const dist = { exploration: 60, implementation: 40 };
-    const keys = Object.keys(dist);
-    const data: HarnessWorkflowData = {
-      toolTransitions: {},
-      phaseTransitions: {},
-      phaseDistribution: dist,
-      phaseStats: {
-        testBeforeShipPct: 0,
-        exploreBeforeImplPct: 0,
-        totalSessionsWithPhases: 0,
-      },
-    };
-    buildStateDiagram(data);
-    // Verify the original object was not mutated
-    expect(Object.keys(dist)).toEqual(keys);
-  });
-});
-
-// --- buildFlowDiagram ---
-
-describe("buildFlowDiagram", () => {
-  it("returns empty string for empty input", () => {
-    expect(buildFlowDiagram({})).toBe("");
+    expect(buildWorkflowDiagram(makeWorkflowData())).toBe("");
   });
 
   it("produces valid flowchart header for typical input", () => {
-    const result = buildFlowDiagram({
-      "Read->Edit": 45,
-      "Grep->Read": 30,
+    const data = makeWorkflowData({
+      skillInvocations: { "ce-brainstorm": 8, "ce-work": 12 },
+      workflowPatterns: [{ sequence: ["ce-brainstorm", "ce-work"], count: 5 }],
     });
-    expect(result).toContain("flowchart LR");
-    expect(result).toContain("Read");
-    expect(result).toContain("Edit");
+    const result = buildWorkflowDiagram(data);
+    expect(result).toContain("flowchart TD");
+    expect(result).toContain("ce_brainstorm");
+    expect(result).toContain("ce_work");
+    expect(result).toContain("-->");
   });
 
-  it("sanitizes special characters in tool names", () => {
-    const result = buildFlowDiagram({
-      "mcp.foo->Read": 10,
+  it("includes invocation counts in node labels", () => {
+    const data = makeWorkflowData({
+      skillInvocations: { "git-commit-push-pr": 4 },
     });
-    // Special chars replaced with underscores in node IDs
-    expect(result).toContain("mcp_foo");
-    // Display name in parens preserves original
-    expect(result).toContain("(mcp.foo)");
+    const result = buildWorkflowDiagram(data);
+    expect(result).toContain("git-commit-push-pr (4\u00d7)");
+  });
+
+  it("shows edge counts when pattern count > 1", () => {
+    const data = makeWorkflowData({
+      skillInvocations: { "ce-brainstorm": 8, "ce-work": 12 },
+      workflowPatterns: [{ sequence: ["ce-brainstorm", "ce-work"], count: 3 }],
+    });
+    const result = buildWorkflowDiagram(data);
+    expect(result).toContain("|3x|");
+  });
+
+  it("does not show edge count label when count is 1", () => {
+    const data = makeWorkflowData({
+      skillInvocations: { "ce-brainstorm": 1, "ce-work": 1 },
+      workflowPatterns: [{ sequence: ["ce-brainstorm", "ce-work"], count: 1 }],
+    });
+    const result = buildWorkflowDiagram(data);
+    expect(result).not.toContain("|1x|");
+    expect(result).toContain("ce_brainstorm --> ce_work");
   });
 });
-
-// --- module exports ---
 
 describe("WorkflowDiagram module", () => {
   it("exports default component", async () => {
     const mod = await import("@/components/WorkflowDiagram");
-    expect(mod.default).toBeDefined();
-    expect(typeof mod.default).toBe("function");
-  });
-});
-
-describe("ToolTransitionFlow module", () => {
-  it("exports default component", async () => {
-    const mod = await import("@/components/ToolTransitionFlow");
     expect(mod.default).toBeDefined();
     expect(typeof mod.default).toBe("function");
   });
