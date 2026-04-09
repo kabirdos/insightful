@@ -139,29 +139,36 @@ def parse_frontmatter(path: Path) -> dict[str, str] | None:
 def load_installed_skills() -> dict[str, SkillEntry]:
     result: dict[str, SkillEntry] = {}
 
+    # User skills under ~/.codex/skills/<dir>/SKILL.md
+    # IMPORTANT: The lookup key is the *directory name*, not the YAML `name:`
+    # field, because the harness logs invocations by directory name.
     for skill_file in SKILLS_DIR.glob("*/SKILL.md"):
         meta = parse_frontmatter(skill_file)
         if not meta:
             continue
         source = "system" if skill_file.parent.parent.name == ".system" else "core"
-        result[meta["name"]] = SkillEntry(
-            name=meta["name"],
+        dir_name = skill_file.parent.name
+        result[dir_name] = SkillEntry(
+            name=dir_name,
             source=source,
-            description=meta.get("description", "")[:160],
+            description=meta.get("description", "")[:500],
             loads=0,
         )
 
+    # Plugin skills — key is "plugin-name:skill-dir-name" so it matches
+    # invocation keys like "superpowers:writing-plans".
     for skill_file in PLUGINS_CACHE_DIR.glob("*/*/*/skills/*/SKILL.md"):
         meta = parse_frontmatter(skill_file)
         if not meta:
             continue
         parts = skill_file.parts
         plugin_name = parts[-4]
-        display_name = f"{plugin_name}:{meta['name']}"
+        skill_dir = skill_file.parent.name
+        display_name = f"{plugin_name}:{skill_dir}"
         result[display_name] = SkillEntry(
             name=display_name,
             source="plugin",
-            description=meta.get("description", "")[:160],
+            description=meta.get("description", "")[:500],
             loads=0,
         )
 
