@@ -39,6 +39,17 @@ import ModelDonutChart from "@/components/ModelDonutChart";
 import SnapshotCard from "@/components/SnapshotCard";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import HarnessOverview from "@/components/HarnessOverview";
+import HeroStats from "@/components/HeroStats";
+import ActivityHeatmap from "@/components/ActivityHeatmap";
+import AutonomyGauge from "@/components/AutonomyGauge";
+import FileOpStyleBar from "@/components/FileOpStyleBar";
+import ToolUsageTreemap from "@/components/ToolUsageTreemap";
+import SkillCardGrid from "@/components/SkillCardGrid";
+import CliToolsDonut from "@/components/CliToolsDonut";
+import GitPatternsDisplay from "@/components/GitPatternsDisplay";
+import PermissionModeDisplay from "@/components/PermissionModeDisplay";
+import HooksSafetyTable from "@/components/HooksSafetyTable";
+import WorkflowDiagram from "@/components/WorkflowDiagram";
 
 type Step = "upload" | "projects" | "review";
 
@@ -69,7 +80,6 @@ const NOT_USEFUL_SECTIONS: (keyof InsightsData)[] = [
   "friction_analysis",
   "suggestions",
   "on_the_horizon",
-  "fun_ending",
 ];
 
 function formatNumber(n: number): string {
@@ -338,7 +348,13 @@ function ReviewStatCard({
       </div>
       <div
         className={clsx(
-          "text-2xl font-bold",
+          "whitespace-nowrap font-bold",
+          // Shrink for long values so they stay on one line in narrow columns.
+          value.length >= 8
+            ? "text-lg"
+            : value.length >= 6
+              ? "text-xl"
+              : "text-2xl",
           enabled
             ? "text-slate-900 dark:text-slate-100"
             : "text-slate-400 line-through",
@@ -347,7 +363,9 @@ function ReviewStatCard({
         {value}
       </div>
       {subtitle && (
-        <div className="mt-0.5 text-[10px] text-slate-400">{subtitle}</div>
+        <div className="mt-0.5 whitespace-nowrap text-[10px] text-slate-400">
+          {subtitle}
+        </div>
       )}
       <div className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
         {label}
@@ -617,6 +635,36 @@ function ReviewSectionToggle({
   );
 }
 
+/* ── Redactable section wrapper — renders profile component with eye toggle overlay ── */
+function RedactableSection({
+  title,
+  enabled,
+  onToggle,
+  children,
+}: {
+  title: string;
+  enabled: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={clsx("relative", !enabled && "opacity-40")}>
+      <div className="mb-1 flex items-center gap-2">
+        <EyeToggle enabled={enabled} onToggle={onToggle} />
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          {title}
+        </span>
+        {!enabled && (
+          <span className="text-[10px] font-semibold uppercase text-red-500">
+            Will be removed
+          </span>
+        )}
+      </div>
+      <div className={clsx(!enabled && "pointer-events-none")}>{children}</div>
+    </div>
+  );
+}
+
 const COMPARE_FEATURES: {
   name: string;
   insights: boolean;
@@ -675,7 +723,6 @@ const SECTION_OPTIONS: {
     sectionType: "on_the_horizon",
     label: "On the Horizon",
   },
-  { dataKey: "fun_ending", sectionType: "fun_ending", label: "Fun Ending" },
 ];
 
 export default function UploadPage() {
