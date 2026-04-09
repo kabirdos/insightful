@@ -11,6 +11,8 @@ import type {
   HarnessAgentDispatch,
   HarnessGitPatterns,
   HarnessWriteupSection,
+  HarnessWorkflowData,
+  HarnessPhaseStats,
 } from "@/types/insights";
 
 /**
@@ -47,6 +49,7 @@ export function parseHarnessHtml(html: string): HarnessData {
     gitPatterns: parseGitPatterns($),
     versions: parseVersionTags($, "Claude Code Versions"),
     writeupSections: parseWriteupSections($),
+    workflowData: parseWorkflowData($),
     integrityHash: parseIntegrityHash($),
   };
 }
@@ -481,6 +484,93 @@ function parseIntegrityHash($: cheerio.CheerioAPI): string {
   } catch {
     return "";
   }
+}
+
+// ---------------------------------------------------------------------------
+// Workflow Data (Phases & Tool Transitions)
+// ---------------------------------------------------------------------------
+
+function parseWorkflowData($: cheerio.CheerioAPI): HarnessWorkflowData | null {
+  const phaseSection = findSectionByTitle($, "Workflow Phases");
+  const transSection = findSectionByTitle($, "Tool Transitions");
+
+  if (!phaseSection && !transSection) return null;
+
+  // Parse phase distribution from kv-rows
+  const phaseDistribution: Record<string, number> = {};
+  if (phaseSection) {
+    phaseSection.find(".kv-row").each((_, el) => {
+      const key = $(el).find(".mono").text().trim();
+      const valText = $(el).find(".meta").text().trim();
+      const numMatch = valText.match(/(\d+)/);
+      if (key && numMatch) {
+        phaseDistribution[key] = parseInt(numMatch[1], 10);
+      }
+    });
+  }
+
+  // Parse phase transitions from bar chart rows
+  const phaseTransitions: Record<string, number> = {};
+  if (phaseSection) {
+    // Phase transitions are in the second column of the two-col layout
+    const columns = phaseSection.find(".two-col > div");
+    if (columns.length >= 2) {
+      $(columns[1])
+        .find(".bar-row")
+        .each((_, el) => {
+          const label = $(el).find(".bar-label").text().trim();
+          const value = $(el).find(".bar-value").text().trim();
+          if (label) {
+            phaseTransitions[label] = parseNumericValue(value);
+          }
+        });
+    }
+  }
+
+  // Parse tool transitions from bar chart rows
+  const toolTransitions: Record<string, number> = {};
+  if (transSection) {
+    transSection.find(".bar-row").each((_, el) => {
+      const label = $(el).find(".bar-label").text().trim();
+      const value = $(el).find(".bar-value").text().trim();
+      if (label) {
+        toolTransitions[label] = parseNumericValue(value);
+      }
+    });
+  }
+
+  // Parse phase stats from meta elements
+  const phaseStats: HarnessPhaseStats = {
+    testBeforeShipPct: 0,
+    exploreBeforeImplPct: 0,
+    totalSessionsWithPhases: 0,
+  };
+
+  if (phaseSection) {
+    phaseSection.find(".meta").each((_, el) => {
+      const text = $(el).text().trim();
+      const strongVal = $(el).find("strong").text().trim();
+      if (text.includes("explore before")) {
+        phaseStats.exploreBeforeImplPct = parseInt(strongVal, 10) || 0;
+      } else if (text.includes("test before")) {
+        phaseStats.testBeforeShipPct = parseInt(strongVal, 10) || 0;
+      }
+    });
+
+    // Total sessions from section header count
+    const countText = phaseSection.find(".section-header .count").text().trim();
+    const countMatch = countText.match(/(\d+)/);
+    if (countMatch) {
+      phaseStats.totalSessionsWithPhases = parseInt(countMatch[1], 10);
+    }
+  }
+
+  return {
+    toolTransitions,
+    phaseTransitions,
+    phaseDistribution,
+    phaseStats,
+  };
 }
 
 // ---------------------------------------------------------------------------
