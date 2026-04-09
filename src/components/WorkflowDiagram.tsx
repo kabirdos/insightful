@@ -8,14 +8,14 @@ interface WorkflowDiagramProps {
   workflowData: HarnessWorkflowData;
 }
 
-// Phase display names and colors
-const PHASE_META: Record<string, { label: string; color: string }> = {
-  exploration: { label: "Exploration", color: "#3b82f6" },
-  implementation: { label: "Implementation", color: "#22c55e" },
-  testing: { label: "Testing", color: "#f59e0b" },
-  shipping: { label: "Shipping", color: "#8b5cf6" },
-  orchestration: { label: "Orchestration", color: "#06b6d4" },
-  other: { label: "Other", color: "#94a3b8" },
+// Phase display names
+const PHASE_META: Record<string, { label: string }> = {
+  exploration: { label: "Exploration" },
+  implementation: { label: "Implementation" },
+  testing: { label: "Testing" },
+  shipping: { label: "Shipping" },
+  orchestration: { label: "Orchestration" },
+  other: { label: "Other" },
 };
 
 export function buildStateDiagram(workflowData: HarnessWorkflowData): string {
@@ -32,7 +32,7 @@ export function buildStateDiagram(workflowData: HarnessWorkflowData): string {
 
   // Define states with display names
   for (const phase of activePhases) {
-    const meta = PHASE_META[phase] || { label: phase, color: "#94a3b8" };
+    const meta = PHASE_META[phase] || { label: phase };
     lines.push(`    ${phase} : ${meta.label} (${phaseDistribution[phase]}%)`);
   }
 
@@ -78,22 +78,28 @@ export default function WorkflowDiagram({
   workflowData,
 }: WorkflowDiagramProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const renderIdRef = useRef(0);
   const hasData = Object.keys(workflowData.phaseDistribution).length > 0;
   const { ready, error, render } = useMermaid({ shouldLoad: hasData });
 
   // Render diagram when mermaid is ready
   useEffect(() => {
     if (!ready || !containerRef.current) return;
+    let cancelled = false;
 
     const diagram = buildStateDiagram(workflowData);
     if (!diagram) return;
 
-    const id = `mermaid-state-${Date.now()}`;
+    const id = `mermaid-state-${++renderIdRef.current}`;
     render(id, diagram).then((svg) => {
-      if (svg && containerRef.current) {
+      if (svg && !cancelled && containerRef.current) {
         containerRef.current.innerHTML = svg;
       }
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, [ready, workflowData, render]);
 
   if (error || !hasData) return null;

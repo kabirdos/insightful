@@ -59,7 +59,8 @@ model InsightReport {
   avgSessionMinutes Float?
   prCount           Int?
   autonomyLabel     String?
-  harnessData       Json?
+  harnessData              Json?
+  hiddenHarnessSections    String[]   @default([])
 
   // Content sections (stored as redacted JSON)
   atAGlance          Json?

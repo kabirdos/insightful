@@ -57,21 +57,27 @@ export default function ToolTransitionFlow({
   workflowData,
 }: ToolTransitionFlowProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const renderIdRef = useRef(0);
   const hasData = Object.keys(workflowData.toolTransitions).length > 0;
   const { ready, error, render } = useMermaid({ shouldLoad: hasData });
 
   useEffect(() => {
     if (!ready || !containerRef.current) return;
+    let cancelled = false;
 
     const diagram = buildFlowDiagram(workflowData.toolTransitions);
     if (!diagram) return;
 
-    const id = `mermaid-flow-${Date.now()}`;
+    const id = `mermaid-flow-${++renderIdRef.current}`;
     render(id, diagram).then((svg) => {
-      if (svg && containerRef.current) {
+      if (svg && !cancelled && containerRef.current) {
         containerRef.current.innerHTML = svg;
       }
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, [ready, workflowData, render]);
 
   if (error || !hasData) return null;

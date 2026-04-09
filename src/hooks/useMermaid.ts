@@ -59,6 +59,8 @@ export function useMermaid(options: UseMermaidOptions = {}): UseMermaidReturn {
         }
         if (mountedRef.current) setReady(true);
       } catch {
+        // Reset so a future mount can retry
+        initPromise = null;
         if (mountedRef.current) setError(true);
       }
     }

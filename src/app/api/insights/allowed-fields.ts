@@ -33,4 +33,5 @@ export const ALLOWED_PUT_FIELDS = [
   "fileCount",
   "chartData",
   "detectedSkills",
+  "hiddenHarnessSections",
 ] as const;

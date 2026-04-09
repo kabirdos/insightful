@@ -137,13 +137,12 @@ export default function EditReportPage() {
       }
     }
 
-    // Handle workflow data visibility
-    if (hiddenSections["workflowData"] && report?.harnessData) {
-      // Set workflowData to null inside harnessData
-      body.harnessData = {
-        ...report.harnessData,
-        workflowData: null,
-      };
+    // Handle harness sub-section visibility via dedicated allowlisted field
+    const hiddenHarness = Object.entries(hiddenSections)
+      .filter(([key, hidden]) => hidden && key === "workflowData")
+      .map(([key]) => key);
+    if (hiddenHarness.length > 0) {
+      body.hiddenHarnessSections = hiddenHarness;
     }
 
     return body;

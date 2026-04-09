@@ -263,20 +263,20 @@ def _classify_tool_phase(tool_name: str, cmd_name: str | None = None) -> str:
     except for shell commands (first token only via extract_program_name)
 
     Phases:
-    - exploration: read-type tools, curl, wget
-    - implementation: write/edit tools, npm/npx/node/bun/pnpm/docker
-    - testing: test commands (pytest, jest, vitest, etc.)
-    - shipping: git/gh commands
-    - orchestration: spawn_agent, update_plan
-    - other: everything else
+    - exploration: Read, Grep, Glob, WebSearch, WebFetch, curl, wget
+    - implementation: Edit, Write, NotebookEdit, npm/npx/node/bun/pnpm/docker (non-test)
+    - testing: Bash with test commands (pytest, jest, vitest, etc.)
+    - shipping: Bash with git/gh commands
+    - orchestration: Agent, Skill, TaskCreate, TaskUpdate
+    - other: everything else (Bash with non-classified commands, etc.)
     """
-    EXPLORATION_TOOLS = {"read_file", "list_dir", "search_files", "grep", "glob", "view_image"}
-    IMPLEMENTATION_TOOLS = {"apply_patch", "write_file", "create_file", "patch"}
-    ORCHESTRATION_TOOLS = {"spawn_agent", "update_plan"}
+    EXPLORATION_TOOLS = {"Read", "Grep", "Glob", "WebSearch", "WebFetch", "ToolSearch"}
+    IMPLEMENTATION_TOOLS = {"Edit", "Write", "NotebookEdit"}
+    ORCHESTRATION_TOOLS = {"Agent", "Skill", "TaskCreate", "TaskUpdate", "EnterPlanMode"}
     TEST_COMMANDS = {"pytest", "jest", "vitest", "mocha", "rspec", "test", "cargo"}
     SHIP_COMMANDS = {"git", "gh"}
     IMPL_COMMANDS = {"npm", "npx", "node", "bun", "pnpm", "docker", "docker-compose"}
-    EXPLORE_COMMANDS = {"curl", "wget", "cat", "head", "tail", "find", "ls"}
+    EXPLORE_COMMANDS = {"curl", "wget"}
 
     if tool_name in EXPLORATION_TOOLS:
         return "exploration"
@@ -284,7 +284,7 @@ def _classify_tool_phase(tool_name: str, cmd_name: str | None = None) -> str:
         return "implementation"
     if tool_name in ORCHESTRATION_TOOLS:
         return "orchestration"
-    if tool_name in {"exec_command", "shell_command", "shell"} and cmd_name:
+    if tool_name == "Bash" and cmd_name:
         if cmd_name in TEST_COMMANDS:
             return "testing"
         if cmd_name in SHIP_COMMANDS:

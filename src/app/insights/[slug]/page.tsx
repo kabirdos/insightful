@@ -68,6 +68,7 @@ interface ReportData {
   prCount: number | null;
   autonomyLabel: string | null;
   harnessData: HarnessData | null;
+  hiddenHarnessSections: string[];
   author: {
     username: string;
     displayName: string | null;
@@ -414,14 +415,17 @@ export default function InsightDetailPage() {
           )}
 
           {/* Workflow Diagrams */}
-          {report.harnessData.workflowData && (
-            <>
-              <WorkflowDiagram workflowData={report.harnessData.workflowData} />
-              <ToolTransitionFlow
-                workflowData={report.harnessData.workflowData}
-              />
-            </>
-          )}
+          {report.harnessData.workflowData &&
+            !(report.hiddenHarnessSections ?? []).includes("workflowData") && (
+              <>
+                <WorkflowDiagram
+                  workflowData={report.harnessData.workflowData}
+                />
+                <ToolTransitionFlow
+                  workflowData={report.harnessData.workflowData}
+                />
+              </>
+            )}
 
           {/* Skills Card Grid */}
           {report.harnessData.skillInventory.length > 0 && (
