@@ -7,14 +7,21 @@ import { Eye, EyeOff, ArrowLeft, AlertTriangle } from "lucide-react";
 import type { HarnessData } from "@/types/insights";
 import { normalizeHarnessData } from "@/types/insights";
 import HeroStats from "@/components/HeroStats";
+import ActivityHeatmap from "@/components/ActivityHeatmap";
 import HowIWorkCluster from "@/components/HowIWorkCluster";
 import ToolUsageTreemap from "@/components/ToolUsageTreemap";
 import SkillCardGrid from "@/components/SkillCardGrid";
 import WorkflowDiagram from "@/components/WorkflowDiagram";
-
+import CliToolsDonut from "@/components/CliToolsDonut";
+import GitPatternsDisplay from "@/components/GitPatternsDisplay";
+import PermissionModeDisplay from "@/components/PermissionModeDisplay";
+import HooksSafetyTable from "@/components/HooksSafetyTable";
+import ProjectLinks from "@/components/ProjectLinks";
+import MiniBarChart from "@/components/MiniBarChart";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import SectionRenderer from "@/components/SectionRenderer";
 import Link from "next/link";
+import { getHiddenHarnessSections } from "@/lib/harness-section-visibility";
 
 interface ReportData {
   id: string;
@@ -29,6 +36,7 @@ interface ReportData {
   totalTokens: number | null;
   durationHours: number | null;
   harnessData: HarnessData | null;
+  hiddenHarnessSections: string[];
   atAGlance: unknown;
   interactionStyle: unknown;
   projectAreas: unknown;
@@ -37,6 +45,13 @@ interface ReportData {
   suggestions: unknown;
   onTheHorizon: unknown;
   author: { id: string; username: string; displayName: string | null };
+  projectLinks: Array<{
+    id: string;
+    name: string;
+    githubUrl: string | null;
+    liveUrl: string | null;
+    description: string | null;
+  }>;
 }
 
 // Section config for narrative sections
@@ -83,6 +98,31 @@ function EyeToggle({
   );
 }
 
+function HideableCard({
+  title,
+  hidden,
+  onToggle,
+  children,
+}: {
+  title: string;
+  hidden: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={hidden ? "opacity-40" : ""}>
+      <div className="mb-1 flex items-center gap-2">
+        <EyeToggle enabled={!hidden} onToggle={onToggle} />
+        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+          {title}
+        </span>
+        {hidden && <span className="text-xs text-red-500">Will be removed</span>}
+      </div>
+      {!hidden && children}
+    </div>
+  );
+}
+
 export default function EditReportPage() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
@@ -112,6 +152,11 @@ export default function EditReportPage() {
             ? normalizeHarnessData(r.harnessData)
             : null;
           setReport(r);
+          setHiddenSections(
+            Object.fromEntries(
+              (r.hiddenHarnessSections ?? []).map((key: string) => [key, true]),
+            ),
+          );
         }
         setLoading(false);
       })
@@ -135,13 +180,7 @@ export default function EditReportPage() {
       }
     }
 
-    // Handle harness sub-section visibility via dedicated allowlisted field
-    const hiddenHarness = Object.entries(hiddenSections)
-      .filter(([key, hidden]) => hidden && key === "workflowData")
-      .map(([key]) => key);
-    if (hiddenHarness.length > 0) {
-      body.hiddenHarnessSections = hiddenHarness;
-    }
+    body.hiddenHarnessSections = getHiddenHarnessSections(hiddenSections);
 
     return body;
   };
@@ -298,42 +337,355 @@ export default function EditReportPage() {
       {/* Report preview with harness sections */}
       {isHarness && harnessData && (
         <>
-          <HeroStats
-            stats={harnessData.stats}
-            dayCount={report.dayCount}
-            sessionCount={
-              report.sessionCount || harnessData.stats?.sessionCount || 0
-            }
-          />
-          <HowIWorkCluster harnessData={harnessData} />
+          <HideableCard
+            title="Hero Stats"
+            hidden={!!hiddenSections["heroStats"]}
+            onToggle={() => toggleSection("heroStats")}
+          >
+            <HeroStats
+              stats={harnessData.stats}
+              dayCount={report.dayCount}
+              sessionCount={
+                report.sessionCount || harnessData.stats?.sessionCount || 0
+              }
+            />
+          </HideableCard>
+
+          <HideableCard
+            title="Activity Heatmap"
+            hidden={!!hiddenSections["activityHeatmap"]}
+            onToggle={() => toggleSection("activityHeatmap")}
+          >
+            <ActivityHeatmap
+              totalSessions={
+                report.sessionCount ?? harnessData.stats.sessionCount ?? undefined
+              }
+              totalTokens={harnessData.stats.totalTokens ?? undefined}
+              dayCount={report.dayCount ?? undefined}
+              slug={report.slug}
+              models={harnessData.models}
+            />
+          </HideableCard>
+
+          <HideableCard
+            title="How I Work"
+            hidden={!!hiddenSections["howIWork"]}
+            onToggle={() => toggleSection("howIWork")}
+          >
+            <HowIWorkCluster harnessData={harnessData} />
+          </HideableCard>
+
           {Object.keys(harnessData.toolUsage).length > 0 && (
-            <ToolUsageTreemap toolUsage={harnessData.toolUsage} />
+            <HideableCard
+              title="Tool Usage"
+              hidden={!!hiddenSections["toolUsage"]}
+              onToggle={() => toggleSection("toolUsage")}
+            >
+              <ToolUsageTreemap toolUsage={harnessData.toolUsage} />
+            </HideableCard>
           )}
-          {harnessData.skillInventory.length > 0 && (
-            <SkillCardGrid skillInventory={harnessData.skillInventory} />
-          )}
+
           {harnessData.workflowData && (
-            <div className={hiddenSections["workflowData"] ? "opacity-40" : ""}>
-              <div className="mb-1 flex items-center gap-2">
-                <EyeToggle
-                  enabled={!hiddenSections["workflowData"]}
-                  onToggle={() => toggleSection("workflowData")}
+            <HideableCard
+              title="Workflow Diagrams"
+              hidden={!!hiddenSections["workflowData"]}
+              onToggle={() => toggleSection("workflowData")}
+            >
+              <WorkflowDiagram
+                workflowData={harnessData.workflowData}
+                agentDispatch={harnessData.agentDispatch}
+              />
+            </HideableCard>
+          )}
+
+          {harnessData.skillInventory.length > 0 && (
+            <HideableCard
+              title="Skills"
+              hidden={!!hiddenSections["skillInventory"]}
+              onToggle={() => toggleSection("skillInventory")}
+            >
+              <SkillCardGrid skillInventory={harnessData.skillInventory} />
+            </HideableCard>
+          )}
+
+          {harnessData.plugins.length > 0 && (
+            <HideableCard
+              title="Plugins"
+              hidden={!!hiddenSections["plugins"]}
+              onToggle={() => toggleSection("plugins")}
+            >
+              <CollapsibleSection
+                icon="🔌"
+                iconBgClass="bg-teal-100 dark:bg-teal-900/30"
+                title="Plugins"
+                defaultOpen={true}
+              >
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {harnessData.plugins.map((plugin) => (
+                    <div
+                      key={plugin.name}
+                      className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          {plugin.name}
+                        </span>
+                        <span
+                          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
+                            plugin.active
+                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                              : "bg-slate-100 text-slate-400 dark:bg-slate-800"
+                          }`}
+                        >
+                          {plugin.active ? "on" : "off"}
+                        </span>
+                      </div>
+                      {(plugin.version || plugin.marketplace) && (
+                        <div className="mt-0.5 text-[11px] text-slate-400">
+                          {plugin.version && `v${plugin.version}`}
+                          {plugin.version && plugin.marketplace && " · "}
+                          {plugin.marketplace}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleSection>
+            </HideableCard>
+          )}
+
+          {Object.keys(harnessData.cliTools).length > 0 && (
+            <HideableCard
+              title="CLI Tools"
+              hidden={!!hiddenSections["cliTools"]}
+              onToggle={() => toggleSection("cliTools")}
+            >
+              <CliToolsDonut cliTools={harnessData.cliTools} />
+            </HideableCard>
+          )}
+
+          <HideableCard
+            title="Git Patterns"
+            hidden={!!hiddenSections["gitPatterns"]}
+            onToggle={() => toggleSection("gitPatterns")}
+          >
+            <GitPatternsDisplay gitPatterns={harnessData.gitPatterns} />
+          </HideableCard>
+
+          <HideableCard
+            title="Permission Mode & Safety"
+            hidden={!!hiddenSections["permissionModes"]}
+            onToggle={() => toggleSection("permissionModes")}
+          >
+            <PermissionModeDisplay
+              permissionModes={harnessData.permissionModes}
+              featurePills={harnessData.featurePills}
+            />
+          </HideableCard>
+
+          {harnessData.hookDefinitions.length > 0 && (
+            <HideableCard
+              title="Hooks & Safety"
+              hidden={!!hiddenSections["hookDefinitions"]}
+              onToggle={() => toggleSection("hookDefinitions")}
+            >
+              <HooksSafetyTable hookDefinitions={harnessData.hookDefinitions} />
+            </HideableCard>
+          )}
+
+          {harnessData.agentDispatch && harnessData.agentDispatch.totalAgents > 0 && (
+            <HideableCard
+              title="Agent Dispatch"
+              hidden={!!hiddenSections["agentDispatch"]}
+              onToggle={() => toggleSection("agentDispatch")}
+            >
+              <CollapsibleSection
+                icon="🤖"
+                iconBgClass="bg-indigo-100 dark:bg-indigo-900/30"
+                title={`Agent Dispatch (${harnessData.agentDispatch.totalAgents} agents)`}
+                defaultOpen={false}
+              >
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {Object.keys(harnessData.agentDispatch.types).length > 0 && (
+                    <div>
+                      <h4 className="mb-2 text-xs font-semibold text-slate-500">
+                        Agent Types
+                      </h4>
+                      <MiniBarChart
+                        data={Object.entries(harnessData.agentDispatch.types).map(
+                          ([label, value]) => ({ label, value }),
+                        )}
+                        title=""
+                        color="bg-indigo-500"
+                      />
+                    </div>
+                  )}
+                  {Object.keys(harnessData.agentDispatch.models).length > 0 && (
+                    <div>
+                      <h4 className="mb-2 text-xs font-semibold text-slate-500">
+                        Model Tiering
+                      </h4>
+                      <MiniBarChart
+                        data={Object.entries(harnessData.agentDispatch.models).map(
+                          ([label, value]) => ({ label, value }),
+                        )}
+                        title=""
+                        color="bg-purple-500"
+                      />
+                      {harnessData.agentDispatch.backgroundPct > 0 && (
+                        <p className="mt-1 text-xs text-slate-400">
+                          {harnessData.agentDispatch.backgroundPct}% run in
+                          background
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </CollapsibleSection>
+            </HideableCard>
+          )}
+
+          {Object.keys(harnessData.languages).length > 0 && (
+            <HideableCard
+              title="Languages"
+              hidden={!!hiddenSections["languages"]}
+              onToggle={() => toggleSection("languages")}
+            >
+              <CollapsibleSection
+                icon="💻"
+                iconBgClass="bg-green-100 dark:bg-green-900/30"
+                title="Languages"
+                defaultOpen={false}
+              >
+                <MiniBarChart
+                  data={Object.entries(harnessData.languages)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 12)
+                    .map(([label, value]) => ({ label, value }))}
+                  title=""
+                  color="bg-green-500"
                 />
-                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  Workflow Diagrams
-                </span>
-                {hiddenSections["workflowData"] && (
-                  <span className="text-xs text-red-500">Will be removed</span>
-                )}
-              </div>
-              {!hiddenSections["workflowData"] && (
-                <>
-                  <WorkflowDiagram
-                    workflowData={harnessData.workflowData}
-                    agentDispatch={harnessData.agentDispatch}
-                  />
-                </>
-              )}
+              </CollapsibleSection>
+            </HideableCard>
+          )}
+
+          {Object.keys(harnessData.mcpServers).length > 0 && (
+            <HideableCard
+              title="MCP Servers"
+              hidden={!!hiddenSections["mcpServers"]}
+              onToggle={() => toggleSection("mcpServers")}
+            >
+              <CollapsibleSection
+                icon="🔗"
+                iconBgClass="bg-cyan-100 dark:bg-cyan-900/30"
+                title="MCP Servers"
+                defaultOpen={false}
+              >
+                <div className="space-y-1">
+                  {Object.entries(harnessData.mcpServers)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([server, calls]) => (
+                      <div
+                        key={server}
+                        className="flex justify-between border-b border-slate-100 py-1 dark:border-slate-800"
+                      >
+                        <span className="font-mono text-xs text-slate-600 dark:text-slate-400">
+                          {server}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          {calls.toLocaleString()} calls
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </CollapsibleSection>
+            </HideableCard>
+          )}
+
+          {harnessData.versions.length > 0 && (
+            <HideableCard
+              title="Claude Code Versions"
+              hidden={!!hiddenSections["versions"]}
+              onToggle={() => toggleSection("versions")}
+            >
+              <CollapsibleSection
+                icon="📦"
+                iconBgClass="bg-slate-100 dark:bg-slate-900/30"
+                title="Claude Code Versions"
+                defaultOpen={false}
+              >
+                <div className="flex flex-wrap gap-1.5">
+                  {harnessData.versions.map((version) => (
+                    <span
+                      key={version}
+                      className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
+                    >
+                      {version}
+                    </span>
+                  ))}
+                </div>
+              </CollapsibleSection>
+            </HideableCard>
+          )}
+
+          {harnessData.writeupSections.length > 0 && (
+            <HideableCard
+              title="Writeup Analysis"
+              hidden={!!hiddenSections["writeupSections"]}
+              onToggle={() => toggleSection("writeupSections")}
+            >
+              <CollapsibleSection
+                icon="📝"
+                iconBgClass="bg-blue-100 dark:bg-blue-900/30"
+                title="Writeup Analysis"
+                defaultOpen={false}
+              >
+                <div className="space-y-6">
+                  {harnessData.writeupSections.map((section) => (
+                    <div key={section.title}>
+                      <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        {section.title}
+                      </h4>
+                      <div
+                        className="prose prose-sm max-w-none text-slate-600 dark:text-slate-400 [&_p]:mb-2 [&_li]:mb-1"
+                        dangerouslySetInnerHTML={{ __html: section.contentHtml }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleSection>
+            </HideableCard>
+          )}
+
+          {harnessData.harnessFiles.length > 0 && (
+            <HideableCard
+              title="Harness File Ecosystem"
+              hidden={!!hiddenSections["harnessFiles"]}
+              onToggle={() => toggleSection("harnessFiles")}
+            >
+              <CollapsibleSection
+                icon="📁"
+                iconBgClass="bg-orange-100 dark:bg-orange-900/30"
+                title="Harness File Ecosystem"
+                defaultOpen={false}
+              >
+                <div className="space-y-1">
+                  {harnessData.harnessFiles.map((file) => (
+                    <div
+                      key={file}
+                      className="border-b border-slate-100 py-1 font-mono text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400"
+                    >
+                      {file}
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleSection>
+            </HideableCard>
+          )}
+
+          {report.projectLinks.length > 0 && (
+            <div className="mb-6">
+              <ProjectLinks links={report.projectLinks} />
             </div>
           )}
         </>

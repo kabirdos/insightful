@@ -163,7 +163,7 @@ export function buildWorkflowDiagram(
     const id = skill.replace(/[^a-zA-Z0-9]/g, "_");
     const { plugin, shortName } = parseSkillSource(skill);
     const safeName = shortName.replace(/"/g, "'");
-    const label = `${safeName}<br/><span style='font-size:9px;opacity:0.7'>${plugin}</span><br/>${count}×`;
+    const label = `${safeName}<br/><span style='font-size:12px;opacity:0.72'>${plugin}</span><br/><span style='font-size:13px;font-weight:700'>${count}×</span>`;
     lines.push(`    ${id}["${label}"]`);
   }
 
@@ -262,8 +262,8 @@ export default function WorkflowDiagram({
   );
 
   return (
-    <div className="mb-6 grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)]">
-      <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/50 xl:row-span-2">
+    <div className="mb-6 space-y-4">
+      <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/50">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h3 className="text-[15px] font-bold text-slate-900 dark:text-slate-100">
@@ -309,7 +309,7 @@ export default function WorkflowDiagram({
 
         <div
           ref={containerRef}
-          className="hidden min-h-[240px] items-center justify-center overflow-x-auto rounded-lg border border-slate-100 bg-slate-50/70 px-2 py-4 sm:flex dark:border-slate-800 dark:bg-slate-950/30 [&_svg]:max-w-full"
+          className="hidden min-h-[420px] items-center justify-center overflow-auto rounded-lg border border-slate-100 bg-slate-50/70 px-4 py-5 sm:flex dark:border-slate-800 dark:bg-slate-950/30 [&_svg]:min-h-[360px] [&_svg]:min-w-[960px] [&_svg]:max-w-none"
         >
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
         </div>
@@ -396,160 +396,156 @@ export default function WorkflowDiagram({
         )}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/50">
-        <div className="mb-4">
-          <h3 className="text-[15px] font-bold text-slate-900 dark:text-slate-100">
-            What {name} Delegates to Agents
-          </h3>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            The parallel work this report hands off, or the orchestration
-            footprint when task-level descriptions are intentionally omitted.
-          </p>
-        </div>
-
-        {/* Raw agent-dispatch descriptions can contain customer/repo/path
-            identifiers (see PR #4 which removed them from the extractor).
-            Any legacy reports that still have agentDispatches populated are
-            deliberately NOT rendered here — we only show the curated
-            agentDispatch.types/models summary below. */}
-
-        {hasDispatchSummary ? (
-          <div className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-3">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-800/60">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                  Total Agents
-                </div>
-                <div className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
-                  {formatCount(agentDispatch?.totalAgents ?? 0)}
-                </div>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-800/60">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                  Background
-                </div>
-                <div className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
-                  {agentDispatch?.backgroundPct ?? 0}%
-                </div>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-800/60">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                  Custom Agents
-                </div>
-                <div className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
-                  {agentDispatch?.customAgents.length ?? 0}
-                </div>
-              </div>
-            </div>
-
-            {dispatchTypeEntries.length > 0 && (
-              <div>
-                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Agent Types
-                </div>
-                <div className="space-y-2">
-                  {dispatchTypeEntries.map(([label, count]) => (
-                    <div
-                      key={label}
-                      className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300"
-                    >
-                      <span className="font-medium">{label}</span>
-                      <span className="font-mono text-slate-400">{count}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {dispatchModelEntries.length > 0 && (
-              <div>
-                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Model Tiering
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {dispatchModelEntries.map(([label, count]) => (
-                    <span
-                      key={label}
-                      className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300"
-                    >
-                      {label} ({count})
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {agentDispatch?.customAgents.length ? (
-              <div>
-                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Custom Agents
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {agentDispatch.customAgents.slice(0, 6).map((label) => (
-                    <span
-                      key={label}
-                      className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs text-violet-700 dark:border-violet-700 dark:bg-violet-950/30 dark:text-violet-300"
-                    >
-                      {label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ) : null}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/50">
+          <div className="mb-4">
+            <h3 className="text-[15px] font-bold text-slate-900 dark:text-slate-100">
+              What {name} Delegates to Agents
+            </h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              The parallel work this report hands off, or the orchestration
+              footprint when task-level descriptions are intentionally omitted.
+            </p>
           </div>
-        ) : (
-          <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-400">
-            No delegation data was captured in this report.
-          </div>
-        )}
-      </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/50">
-        <div className="mb-4">
-          <h3 className="text-[15px] font-bold text-slate-900 dark:text-slate-100">
-            Workflow Insight
-          </h3>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            What this workflow reveals about development style, sequencing, and
-            shipping posture.
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          {workflowInsights.map((insight) => (
-            <div
-              key={insight.title}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/60"
-            >
-              <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                {insight.title}
+          {hasDispatchSummary ? (
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-800/60">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    Total Agents
+                  </div>
+                  <div className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
+                    {formatCount(agentDispatch?.totalAgents ?? 0)}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-800/60">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    Background
+                  </div>
+                  <div className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
+                    {agentDispatch?.backgroundPct ?? 0}%
+                  </div>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-800/60">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    Custom Agents
+                  </div>
+                  <div className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
+                    {agentDispatch?.customAgents.length ?? 0}
+                  </div>
+                </div>
               </div>
-              <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                {insight.body}
-              </p>
+
+              {dispatchTypeEntries.length > 0 && (
+                <div>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Agent Types
+                  </div>
+                  <div className="space-y-2">
+                    {dispatchTypeEntries.map(([label, count]) => (
+                      <div
+                        key={label}
+                        className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300"
+                      >
+                        <span className="font-medium">{label}</span>
+                        <span className="font-mono text-slate-400">{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {dispatchModelEntries.length > 0 && (
+                <div>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Model Tiering
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {dispatchModelEntries.map(([label, count]) => (
+                      <span
+                        key={label}
+                        className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300"
+                      >
+                        {label} ({count})
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {agentDispatch?.customAgents.length ? (
+                <div>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Custom Agents
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {agentDispatch.customAgents.slice(0, 6).map((label) => (
+                      <span
+                        key={label}
+                        className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs text-violet-700 dark:border-violet-700 dark:bg-violet-950/30 dark:text-violet-300"
+                      >
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
-          ))}
-
-          {hasPhaseData && (
-            <div className="grid gap-3 pt-1 sm:grid-cols-2">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/60">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                  Explore Before Build
-                </div>
-                <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {phaseStats.exploreBeforeImplPct}%
-                </div>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/60">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                  Test Before Ship
-                </div>
-                <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {phaseStats.testBeforeShipPct}%
-                </div>
-              </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-400">
+              No delegation data was captured in this report.
             </div>
           )}
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/50">
+          <div className="mb-4">
+            <h3 className="text-[15px] font-bold text-slate-900 dark:text-slate-100">
+              Workflow Insight
+            </h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              What this workflow reveals about development style, sequencing, and
+              shipping posture.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {workflowInsights.map((insight) => (
+              <div
+                key={insight.title}
+                className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/60"
+              >
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {insight.title}
+                </div>
+                <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                  {insight.body}
+                </p>
+              </div>
+            ))}
+
+            {hasPhaseData && (
+              <div className="grid gap-3 pt-1 sm:grid-cols-2">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/60">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    Explore Before Build
+                  </div>
+                  <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    {phaseStats.exploreBeforeImplPct}%
+                  </div>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/60">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    Test Before Ship
+                  </div>
+                  <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    {phaseStats.testBeforeShipPct}%
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -102,7 +102,8 @@ export async function GET(request: Request) {
         ).length;
       }
 
-      const { votes: _votes, ...rest } = report;
+      const { votes: ignoredVotes, ...rest } = report;
+      void ignoredVotes;
       return {
         ...rest,
         voteCounts,
@@ -143,9 +144,22 @@ export async function GET(request: Request) {
       scored.sort((a, b) => b._trendingScore - a._trendingScore);
       results = scored
         .slice(skip, skip + limit)
-        .map(({ _trendingVotes, _trendingScore, ...rest }) => rest);
+        .map((result) => {
+          const {
+            _trendingVotes: ignoredTrendingVotes,
+            _trendingScore: ignoredTrendingScore,
+            ...rest
+          } = result;
+          void ignoredTrendingVotes;
+          void ignoredTrendingScore;
+          return rest;
+        });
     } else {
-      results = mapped.map(({ _trendingVotes, ...rest }) => rest);
+      results = mapped.map((result) => {
+        const { _trendingVotes: ignoredTrendingVotes, ...rest } = result;
+        void ignoredTrendingVotes;
+        return rest;
+      });
     }
 
     return NextResponse.json({
@@ -215,6 +229,7 @@ export async function POST(request: Request) {
       prCount,
       autonomyLabel,
       harnessData,
+      hiddenHarnessSections,
     } = body;
 
     // Auto-generate title if not provided
@@ -259,6 +274,8 @@ export async function POST(request: Request) {
           (normalizeHarnessData(
             harnessData,
           ) as unknown as Prisma.InputJsonValue) ?? undefined,
+        hiddenHarnessSections:
+          Array.isArray(hiddenHarnessSections) ? hiddenHarnessSections : [],
         ...(Array.isArray(projectLinks) && projectLinks.length > 0
           ? {
               projectLinks: {

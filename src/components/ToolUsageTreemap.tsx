@@ -21,6 +21,10 @@ function getToolBg(name: string): string {
   return TOOL_CATEGORIES[name]?.bg ?? "bg-slate-500";
 }
 
+function getToolCategory(name: string): string {
+  return TOOL_CATEGORIES[name]?.label ?? "other";
+}
+
 function formatNumber(n: number): string {
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
   return n.toString();
@@ -37,27 +41,37 @@ export default function ToolUsageTreemap({ toolUsage }: ToolUsageTreemapProps) {
       <h3 className="mb-4 text-[15px] font-bold text-slate-900 dark:text-slate-100">
         Tool Usage
       </h3>
-      <div className="flex flex-wrap gap-[3px]">
+      <div
+        className="grid gap-3"
+        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}
+      >
         {entries.map(([name, value]) => {
           const pct = (value / total) * 100;
-          // Minimum width for readability
-          const width = Math.max(pct, 4);
-          // Scale height based on proportion
-          const minHeight = pct > 8 ? 80 : 60;
+          const minHeight = pct >= 25 ? 118 : pct >= 14 ? 102 : 88;
           return (
             <div
               key={name}
-              className={`flex flex-col items-center justify-center rounded-md ${getToolBg(name)} cursor-default transition-opacity hover:opacity-85`}
+              className={`flex flex-col justify-between rounded-xl ${getToolBg(name)} cursor-default p-3 text-white transition-opacity hover:opacity-90`}
               style={{
-                width: `calc(${width}% - 3px)`,
                 minHeight: `${minHeight}px`,
-                flexGrow: pct > 15 ? 2 : 1,
               }}
             >
-              <span className="text-[13px] font-bold text-white">{name}</span>
-              <span className="text-[10px] font-medium text-white/80">
+              <div className="space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/90">
+                    {getToolCategory(name)}
+                  </span>
+                  <span className="text-[11px] font-semibold text-white/80">
+                    {Math.round(pct)}%
+                  </span>
+                </div>
+                <div className="break-words text-sm font-bold leading-tight">
+                  {name}
+                </div>
+              </div>
+              <div className="mt-3 text-lg font-extrabold tracking-tight text-white">
                 {formatNumber(value)}
-              </span>
+              </div>
             </div>
           );
         })}

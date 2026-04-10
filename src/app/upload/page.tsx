@@ -28,19 +28,15 @@ import type {
   ParsedInsightsReport,
   RedactionItem,
   InsightsData,
-  HarnessData,
 } from "@/types/insights";
 import { applyRedactions } from "@/lib/redaction";
 import { normalizeChartData } from "@/lib/chart-parser";
 import { normalizeSkills } from "@/types/insights";
 import SectionRenderer from "@/components/SectionRenderer";
-import ModelDonutChart from "@/components/ModelDonutChart";
 import SnapshotCard from "@/components/SnapshotCard";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import HeroStats from "@/components/HeroStats";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
-import AutonomyGauge from "@/components/AutonomyGauge";
-import FileOpStyleBar from "@/components/FileOpStyleBar";
 import ToolUsageTreemap from "@/components/ToolUsageTreemap";
 import SkillCardGrid from "@/components/SkillCardGrid";
 import CliToolsDonut from "@/components/CliToolsDonut";
@@ -48,6 +44,13 @@ import GitPatternsDisplay from "@/components/GitPatternsDisplay";
 import PermissionModeDisplay from "@/components/PermissionModeDisplay";
 import HooksSafetyTable from "@/components/HooksSafetyTable";
 import WorkflowDiagram from "@/components/WorkflowDiagram";
+import HowIWorkCluster from "@/components/HowIWorkCluster";
+import ProjectLinks from "@/components/ProjectLinks";
+import MiniBarChart from "@/components/MiniBarChart";
+import {
+  getHiddenHarnessSections,
+  stripHiddenHarnessData,
+} from "@/lib/harness-section-visibility";
 
 type Step = "upload" | "projects" | "review";
 
@@ -60,27 +63,6 @@ interface ProjectLinkInput {
 
 const INSIGHTS_PATH = "~/.claude/usage-data/report.html";
 const HARNESS_PATH = "~/.claude/usage-data/insight-harness.html";
-
-function stripDisabledHarnessSections(
-  data: HarnessData,
-  disabled: Record<string, boolean>,
-): HarnessData {
-  const copy = { ...data };
-  for (const key of Object.keys(disabled)) {
-    if (disabled[key] && key in copy) {
-      const k = key as keyof HarnessData;
-      const val = copy[k];
-      if (Array.isArray(val)) {
-        (copy as Record<string, unknown>)[key] = [];
-      } else if (typeof val === "object" && val !== null) {
-        (copy as Record<string, unknown>)[key] = {};
-      } else if (typeof val === "string") {
-        (copy as Record<string, unknown>)[key] = "";
-      }
-    }
-  }
-  return copy;
-}
 
 function CopyButton({
   text,
@@ -467,6 +449,7 @@ export default function UploadPage() {
     try {
       // Apply redactions client-side
       const redactedData = applyRedactions(parsed.data, redactions);
+      const hiddenHarnessSections = getHiddenHarnessSections(disabledSections);
 
       // Build the disabled sections set
       const disabledSet = new Set(
@@ -546,8 +529,9 @@ export default function UploadPage() {
           prCount: parsed.harnessData?.stats.prCount ?? null,
           autonomyLabel: parsed.harnessData?.autonomy.label ?? null,
           harnessData: parsed.harnessData
-            ? stripDisabledHarnessSections(parsed.harnessData, disabledSections)
+            ? stripHiddenHarnessData(parsed.harnessData, hiddenHarnessSections)
             : null,
+          hiddenHarnessSections,
         }),
       });
 
@@ -580,6 +564,11 @@ export default function UploadPage() {
   ];
 
   const stepIndex = steps.findIndex((s) => s.key === step);
+  const normalizedChartData = parsed ? normalizeChartData(parsed.chartData) : null;
+  const previewProjectLinks = projectLinks.map((link, index) => ({
+    ...link,
+    id: `preview-${index}`,
+  }));
 
   // Computed values for the redaction summary bar
   const redactedCount = redactions.filter((r) => r.action === "redact").length;
@@ -1065,36 +1054,39 @@ export default function UploadPage() {
             Final Preview
           </h2>
           <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
-            This is exactly how your report will appear on your profile page.
-            Use the eye toggles to hide sections before publishing.
+            This mirrors your published report layout. Use the eye toggles to
+            hide cards before publishing.
           </p>
 
           {/* Redaction summary bar */}
-          <div className="mb-6 flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/50">
+          <div className="mb-6 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800/60 dark:bg-amber-950/20">
+            <span className="text-lg text-amber-600 dark:text-amber-400">
+              ⚠
+            </span>
             <span
               className={clsx(
                 "text-sm font-medium",
                 allRedacted
                   ? "text-green-700 dark:text-green-400"
-                  : "text-amber-700 dark:text-amber-400",
+                  : "text-amber-800 dark:text-amber-300",
               )}
             >
-              {totalSensitive} potentially sensitive items detected,{" "}
-              {redactedCount} of {totalSensitive} redacted
+              {totalSensitive} potentially sensitive items detected in your
+              report, {redactedCount} of {totalSensitive} marked for redaction
             </span>
             {totalSensitive > 0 && (
               <div className="ml-auto flex gap-2">
                 <button
                   onClick={applyAllRedactions}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-900 transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-slate-900 dark:text-amber-200 dark:hover:bg-amber-950/40"
                 >
-                  Redact All
+                  Redact all sensitive items
                 </button>
                 <button
                   onClick={resetRedactions}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-900 transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-slate-900 dark:text-amber-200 dark:hover:bg-amber-950/40"
                 >
-                  Reset
+                  Reset to defaults
                 </button>
               </div>
             )}
@@ -1138,39 +1130,17 @@ export default function UploadPage() {
                   dayCount={parsed.stats.dayCount ?? undefined}
                   dateRangeStart={parsed.stats.dateRangeStart ?? undefined}
                   slug="preview"
+                  models={parsed.harnessData.models}
                 />
               </RedactableSection>
 
-              {/* How I Work cluster: Autonomy + Model Donut + File Ops */}
+              {/* How I Work cluster */}
               <RedactableSection
                 title="How I Work"
                 enabled={!disabledSections["howIWork"]}
                 onToggle={() => toggleSection("howIWork")}
               >
-                <div className="mb-6 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/50">
-                  <h3 className="mb-4 text-[15px] font-bold text-slate-900 dark:text-slate-100">
-                    How I Work
-                  </h3>
-                  <div className="grid gap-6 sm:grid-cols-3">
-                    {parsed.harnessData.autonomy.label && (
-                      <div className="flex items-center justify-center">
-                        <AutonomyGauge autonomy={parsed.harnessData.autonomy} />
-                      </div>
-                    )}
-                    {Object.keys(parsed.harnessData.models).length > 0 && (
-                      <div className="flex items-center justify-center">
-                        <ModelDonutChart models={parsed.harnessData.models} />
-                      </div>
-                    )}
-                    {parsed.harnessData.fileOpStyle.style && (
-                      <div className="flex items-center justify-center">
-                        <FileOpStyleBar
-                          fileOpStyle={parsed.harnessData.fileOpStyle}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <HowIWorkCluster harnessData={parsed.harnessData} />
               </RedactableSection>
 
               {/* Tool Usage Treemap */}
@@ -1208,6 +1178,53 @@ export default function UploadPage() {
                   <SkillCardGrid
                     skillInventory={parsed.harnessData.skillInventory}
                   />
+                </RedactableSection>
+              )}
+
+              {/* Plugins */}
+              {parsed.harnessData.plugins.length > 0 && (
+                <RedactableSection
+                  title="Plugins"
+                  enabled={!disabledSections["plugins"]}
+                  onToggle={() => toggleSection("plugins")}
+                >
+                  <CollapsibleSection
+                    icon="🔌"
+                    iconBgClass="bg-teal-100 dark:bg-teal-900/30"
+                    title="Plugins"
+                    defaultOpen={true}
+                  >
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {parsed.harnessData.plugins.map((plugin) => (
+                        <div
+                          key={plugin.name}
+                          className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
+                              {plugin.name}
+                            </span>
+                            <span
+                              className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
+                                plugin.active
+                                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                  : "bg-slate-100 text-slate-400 dark:bg-slate-800"
+                              }`}
+                            >
+                              {plugin.active ? "on" : "off"}
+                            </span>
+                          </div>
+                          {(plugin.version || plugin.marketplace) && (
+                            <div className="mt-0.5 text-[11px] text-slate-400">
+                              {plugin.version && `v${plugin.version}`}
+                              {plugin.version && plugin.marketplace && " · "}
+                              {plugin.marketplace}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleSection>
                 </RedactableSection>
               )}
 
@@ -1258,6 +1275,238 @@ export default function UploadPage() {
                 </RedactableSection>
               )}
 
+              {/* Agent Dispatch */}
+              {parsed.harnessData.agentDispatch &&
+                parsed.harnessData.agentDispatch.totalAgents > 0 && (
+                  <RedactableSection
+                    title="Agent Dispatch"
+                    enabled={!disabledSections["agentDispatch"]}
+                    onToggle={() => toggleSection("agentDispatch")}
+                  >
+                    <CollapsibleSection
+                      icon="🤖"
+                      iconBgClass="bg-indigo-100 dark:bg-indigo-900/30"
+                      title={`Agent Dispatch (${parsed.harnessData.agentDispatch.totalAgents} agents)`}
+                      defaultOpen={false}
+                    >
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {Object.keys(parsed.harnessData.agentDispatch.types)
+                          .length > 0 && (
+                          <div>
+                            <h4 className="mb-2 text-xs font-semibold text-slate-500">
+                              Agent Types
+                            </h4>
+                            <MiniBarChart
+                              data={Object.entries(
+                                parsed.harnessData.agentDispatch.types,
+                              ).map(([label, value]) => ({ label, value }))}
+                              title=""
+                              color="bg-indigo-500"
+                            />
+                          </div>
+                        )}
+                        {Object.keys(parsed.harnessData.agentDispatch.models)
+                          .length > 0 && (
+                          <div>
+                            <h4 className="mb-2 text-xs font-semibold text-slate-500">
+                              Model Tiering
+                            </h4>
+                            <MiniBarChart
+                              data={Object.entries(
+                                parsed.harnessData.agentDispatch.models,
+                              ).map(([label, value]) => ({ label, value }))}
+                              title=""
+                              color="bg-purple-500"
+                            />
+                            {parsed.harnessData.agentDispatch.backgroundPct >
+                              0 && (
+                              <p className="mt-1 text-xs text-slate-400">
+                                {
+                                  parsed.harnessData.agentDispatch
+                                    .backgroundPct
+                                }
+                                % run in background
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {parsed.harnessData.agentDispatch.customAgents.length >
+                        0 && (
+                        <div className="mt-3">
+                          <h4 className="mb-1 text-xs font-semibold text-slate-500">
+                            Custom Agents
+                          </h4>
+                          <div className="flex flex-wrap gap-1.5">
+                            {parsed.harnessData.agentDispatch.customAgents.map(
+                              (agent) => (
+                                <span
+                                  key={agent}
+                                  className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
+                                >
+                                  {agent}
+                                </span>
+                              ),
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </CollapsibleSection>
+                  </RedactableSection>
+                )}
+
+              {/* Languages */}
+              {Object.keys(parsed.harnessData.languages).length > 0 && (
+                <RedactableSection
+                  title="Languages"
+                  enabled={!disabledSections["languages"]}
+                  onToggle={() => toggleSection("languages")}
+                >
+                  <CollapsibleSection
+                    icon="💻"
+                    iconBgClass="bg-green-100 dark:bg-green-900/30"
+                    title="Languages"
+                    defaultOpen={false}
+                  >
+                    <MiniBarChart
+                      data={Object.entries(parsed.harnessData.languages)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 12)
+                        .map(([label, value]) => ({ label, value }))}
+                      title=""
+                      color="bg-green-500"
+                    />
+                  </CollapsibleSection>
+                </RedactableSection>
+              )}
+
+              {/* MCP Servers */}
+              {Object.keys(parsed.harnessData.mcpServers).length > 0 && (
+                <RedactableSection
+                  title="MCP Servers"
+                  enabled={!disabledSections["mcpServers"]}
+                  onToggle={() => toggleSection("mcpServers")}
+                >
+                  <CollapsibleSection
+                    icon="🔗"
+                    iconBgClass="bg-cyan-100 dark:bg-cyan-900/30"
+                    title="MCP Servers"
+                    defaultOpen={false}
+                  >
+                    <div className="space-y-1">
+                      {Object.entries(parsed.harnessData.mcpServers)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([server, calls]) => (
+                          <div
+                            key={server}
+                            className="flex justify-between border-b border-slate-100 py-1 dark:border-slate-800"
+                          >
+                            <span className="font-mono text-xs text-slate-600 dark:text-slate-400">
+                              {server}
+                            </span>
+                            <span className="text-xs text-slate-400">
+                              {calls.toLocaleString()} calls
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </CollapsibleSection>
+                </RedactableSection>
+              )}
+
+              {/* Versions */}
+              {parsed.harnessData.versions.length > 0 && (
+                <RedactableSection
+                  title="Claude Code Versions"
+                  enabled={!disabledSections["versions"]}
+                  onToggle={() => toggleSection("versions")}
+                >
+                  <CollapsibleSection
+                    icon="📦"
+                    iconBgClass="bg-slate-100 dark:bg-slate-900/30"
+                    title="Claude Code Versions"
+                    defaultOpen={false}
+                  >
+                    <div className="flex flex-wrap gap-1.5">
+                      {parsed.harnessData.versions.map((version) => (
+                        <span
+                          key={version}
+                          className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
+                        >
+                          {version}
+                        </span>
+                      ))}
+                    </div>
+                  </CollapsibleSection>
+                </RedactableSection>
+              )}
+
+              {/* Writeup Sections */}
+              {parsed.harnessData.writeupSections.length > 0 && (
+                <RedactableSection
+                  title="Writeup Analysis"
+                  enabled={!disabledSections["writeupSections"]}
+                  onToggle={() => toggleSection("writeupSections")}
+                >
+                  <CollapsibleSection
+                    icon="📝"
+                    iconBgClass="bg-blue-100 dark:bg-blue-900/30"
+                    title="Writeup Analysis"
+                    defaultOpen={false}
+                  >
+                    <div className="space-y-6">
+                      {parsed.harnessData.writeupSections.map((section) => (
+                        <div key={section.title}>
+                          <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                            {section.title}
+                          </h4>
+                          <div
+                            className="prose prose-sm max-w-none text-slate-600 dark:text-slate-400 [&_p]:mb-2 [&_li]:mb-1"
+                            dangerouslySetInnerHTML={{
+                              __html: section.contentHtml,
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleSection>
+                </RedactableSection>
+              )}
+
+              {/* Harness Files */}
+              {parsed.harnessData.harnessFiles.length > 0 && (
+                <RedactableSection
+                  title="Harness File Ecosystem"
+                  enabled={!disabledSections["harnessFiles"]}
+                  onToggle={() => toggleSection("harnessFiles")}
+                >
+                  <CollapsibleSection
+                    icon="📁"
+                    iconBgClass="bg-orange-100 dark:bg-orange-900/30"
+                    title="Harness File Ecosystem"
+                    defaultOpen={false}
+                  >
+                    <div className="space-y-1">
+                      {parsed.harnessData.harnessFiles.map((file) => (
+                        <div
+                          key={file}
+                          className="border-b border-slate-100 py-1 font-mono text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400"
+                        >
+                          {file}
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleSection>
+                </RedactableSection>
+              )}
+
+              {/* Project Links */}
+              {previewProjectLinks.length > 0 && (
+                <div className="mb-6">
+                  <ProjectLinks links={previewProjectLinks} />
+                </div>
+              )}
+
               {/* Narrative Sections (mirrors profile page) */}
               <div className="mt-6 space-y-4">
                 {SECTION_OPTIONS.filter(
@@ -1305,7 +1554,7 @@ export default function UploadPage() {
                 fileCount={parsed.stats.fileCount ?? null}
                 dayCount={parsed.stats.dayCount ?? null}
                 commitCount={parsed.stats.commitCount ?? null}
-                chartData={normalizeChartData(parsed.chartData)}
+                chartData={normalizedChartData}
                 detectedSkills={normalizeSkills(parsed.detectedSkills)}
                 keyPattern={parsed.data.interaction_style?.key_pattern ?? null}
                 projectAreas={
@@ -1314,6 +1563,127 @@ export default function UploadPage() {
                     : parsed.data.project_areas
                 }
               />
+
+              {normalizedChartData && (
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  {normalizedChartData.toolUsage &&
+                    normalizedChartData.toolUsage.length > 0 && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                        <MiniBarChart
+                          data={normalizedChartData.toolUsage}
+                          title="Tool Usage"
+                          color="bg-blue-500"
+                        />
+                      </div>
+                    )}
+                  {normalizedChartData.languages &&
+                    normalizedChartData.languages.length > 0 && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                        <MiniBarChart
+                          data={normalizedChartData.languages}
+                          title="Languages"
+                          color="bg-green-500"
+                        />
+                      </div>
+                    )}
+                  {normalizedChartData.requestTypes &&
+                    normalizedChartData.requestTypes.length > 0 && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                        <MiniBarChart
+                          data={normalizedChartData.requestTypes}
+                          title="Request Types"
+                          color="bg-violet-500"
+                        />
+                      </div>
+                    )}
+                  {normalizedChartData.sessionTypes &&
+                    normalizedChartData.sessionTypes.length > 0 && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                        <MiniBarChart
+                          data={normalizedChartData.sessionTypes}
+                          title="Session Types"
+                          color="bg-amber-500"
+                        />
+                      </div>
+                    )}
+                  {normalizedChartData.responseTimeDistribution &&
+                    normalizedChartData.responseTimeDistribution.length > 0 && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                        <MiniBarChart
+                          data={normalizedChartData.responseTimeDistribution}
+                          title="Response Time Distribution"
+                          color="bg-cyan-500"
+                        />
+                      </div>
+                    )}
+                  {normalizedChartData.toolErrors &&
+                    normalizedChartData.toolErrors.length > 0 && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                        <MiniBarChart
+                          data={normalizedChartData.toolErrors}
+                          title="Tool Errors"
+                          color="bg-red-500"
+                        />
+                      </div>
+                    )}
+                  {normalizedChartData.whatHelpedMost &&
+                    normalizedChartData.whatHelpedMost.length > 0 && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                        <MiniBarChart
+                          data={normalizedChartData.whatHelpedMost}
+                          title="What Helped Most"
+                          color="bg-emerald-500"
+                        />
+                      </div>
+                    )}
+                  {normalizedChartData.outcomes &&
+                    normalizedChartData.outcomes.length > 0 && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                        <MiniBarChart
+                          data={normalizedChartData.outcomes}
+                          title="Outcomes"
+                          color="bg-teal-500"
+                        />
+                      </div>
+                    )}
+                  {normalizedChartData.frictionTypes &&
+                    normalizedChartData.frictionTypes.length > 0 && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                        <MiniBarChart
+                          data={normalizedChartData.frictionTypes}
+                          title="Friction Types"
+                          color="bg-orange-500"
+                        />
+                      </div>
+                    )}
+                  {normalizedChartData.satisfaction &&
+                    normalizedChartData.satisfaction.length > 0 && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                        <MiniBarChart
+                          data={normalizedChartData.satisfaction}
+                          title="Satisfaction"
+                          color="bg-pink-500"
+                        />
+                      </div>
+                    )}
+                  {normalizedChartData.timeOfDay &&
+                    normalizedChartData.timeOfDay.length > 0 && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
+                        <MiniBarChart
+                          data={normalizedChartData.timeOfDay}
+                          title="Time of Day"
+                          color="bg-indigo-500"
+                        />
+                      </div>
+                    )}
+                </div>
+              )}
+
+              {previewProjectLinks.length > 0 && (
+                <div className="mt-6">
+                  <ProjectLinks links={previewProjectLinks} />
+                </div>
+              )}
 
               <div className="mt-6 space-y-4">
                 {SECTION_OPTIONS.filter(
@@ -1358,6 +1728,17 @@ export default function UploadPage() {
               <h3 className="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">
                 Sensitive Data Review
               </h3>
+              <div className="mb-3 flex flex-wrap gap-2 text-xs">
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/20 dark:text-amber-300">
+                  Redact: removes the text entirely
+                </span>
+                <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-800 dark:border-blue-800/60 dark:bg-blue-950/20 dark:text-blue-300">
+                  Use alias: replaces it with a safe label
+                </span>
+                <span className="rounded-full border border-green-200 bg-green-50 px-3 py-1 text-green-800 dark:border-green-800/60 dark:bg-green-950/20 dark:text-green-300">
+                  Keep: leaves the original text visible
+                </span>
+              </div>
               <div className="space-y-2">
                 {redactions.map((item) => (
                   <div
@@ -1365,10 +1746,10 @@ export default function UploadPage() {
                     className={clsx(
                       "flex flex-wrap items-center gap-2 rounded-lg border px-4 py-3",
                       item.action === "redact"
-                        ? "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20"
+                        ? "border-amber-200 bg-amber-50 dark:border-amber-800/60 dark:bg-amber-950/20"
                         : item.action === "alias"
                           ? "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20"
-                          : "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800",
+                          : "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20",
                     )}
                   >
                     {/* Type badge */}
@@ -1397,10 +1778,10 @@ export default function UploadPage() {
                       className={clsx(
                         "flex-1 font-mono text-xs",
                         item.action === "redact"
-                          ? "text-red-600 line-through dark:text-red-400"
+                          ? "text-amber-900 dark:text-amber-200"
                           : item.action === "alias"
                             ? "text-blue-600 dark:text-blue-400"
-                            : "text-slate-700 dark:text-slate-300",
+                            : "text-green-700 dark:text-green-300",
                       )}
                     >
                       {item.action === "alias" && item.alias
@@ -1408,20 +1789,37 @@ export default function UploadPage() {
                         : item.text}
                     </span>
 
-                    {/* Action buttons: R | A | K */}
-                    <div className="flex gap-1">
+                    <span
+                      className={clsx(
+                        "rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide",
+                        item.action === "redact"
+                          ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300"
+                          : item.action === "alias"
+                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
+                            : "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300",
+                      )}
+                    >
+                      {item.action === "redact"
+                        ? "Will redact"
+                        : item.action === "alias"
+                          ? "Using alias"
+                          : "Keep as-is"}
+                    </span>
+
+                    {/* Action buttons */}
+                    <div className="flex flex-wrap gap-1">
                       <button
                         onClick={() => updateRedaction(item.id, "redact")}
                         className={clsx(
-                          "rounded px-2 py-1 text-[10px] font-bold transition-colors",
+                          "rounded px-3 py-1.5 text-[11px] font-semibold transition-colors",
                           item.action === "redact"
-                            ? "bg-red-600 text-white"
-                            : "bg-slate-100 text-slate-500 hover:bg-red-100 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-red-900/30",
+                            ? "bg-amber-600 text-white"
+                            : "bg-white text-slate-600 hover:bg-amber-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-amber-900/30",
                         )}
-                        title="Redact"
+                        title="Redact this item"
                         aria-label="Redact this item"
                       >
-                        R
+                        Redact
                       </button>
                       <button
                         onClick={() => {
@@ -1432,28 +1830,28 @@ export default function UploadPage() {
                           if (alias) updateRedaction(item.id, "alias", alias);
                         }}
                         className={clsx(
-                          "rounded px-2 py-1 text-[10px] font-bold transition-colors",
+                          "rounded px-3 py-1.5 text-[11px] font-semibold transition-colors",
                           item.action === "alias"
                             ? "bg-blue-600 text-white"
-                            : "bg-slate-100 text-slate-500 hover:bg-blue-100 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-blue-900/30",
+                            : "bg-white text-slate-600 hover:bg-blue-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-blue-900/30",
                         )}
-                        title="Alias"
+                        title="Replace with alias"
                         aria-label="Alias this item"
                       >
-                        A
+                        Use alias
                       </button>
                       <button
                         onClick={() => updateRedaction(item.id, "keep")}
                         className={clsx(
-                          "rounded px-2 py-1 text-[10px] font-bold transition-colors",
+                          "rounded px-3 py-1.5 text-[11px] font-semibold transition-colors",
                           item.action === "keep"
                             ? "bg-green-600 text-white"
-                            : "bg-slate-100 text-slate-500 hover:bg-green-100 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-green-900/30",
+                            : "bg-white text-slate-600 hover:bg-green-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-green-900/30",
                         )}
-                        title="Keep"
+                        title="Keep original text"
                         aria-label="Keep this item"
                       >
-                        K
+                        Keep
                       </button>
                     </div>
                   </div>
