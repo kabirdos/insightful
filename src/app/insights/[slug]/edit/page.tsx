@@ -16,6 +16,28 @@ import WorkflowDiagram from "@/components/WorkflowDiagram";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import SectionRenderer from "@/components/SectionRenderer";
 import Link from "next/link";
+import clsx from "clsx";
+
+interface EditProject {
+  id: string;
+  name: string;
+  description: string | null;
+  githubUrl: string | null;
+  liveUrl: string | null;
+  ogImage: string | null;
+  ogTitle: string | null;
+  ogDescription: string | null;
+  favicon: string | null;
+  siteName: string | null;
+  metadataFetchedAt: string | null;
+}
+
+interface EditReportProject {
+  id: string;
+  hidden: boolean;
+  position: number;
+  project: EditProject;
+}
 
 interface ReportData {
   id: string;
@@ -37,6 +59,7 @@ interface ReportData {
   frictionAnalysis: unknown;
   suggestions: unknown;
   onTheHorizon: unknown;
+  reportProjects: EditReportProject[];
   author: { id: string; username: string; displayName: string | null };
 }
 
@@ -84,7 +107,10 @@ export default function EditReportPage() {
   > | null>(null);
 
   useEffect(() => {
-    fetch(`/api/insights/${slug}`)
+    // includeHidden=true surfaces per-report hidden junction rows so
+    // the owner can toggle them back on. The server enforces
+    // ownership before honoring the flag.
+    fetch(`/api/insights/${slug}?includeHidden=true`)
       .then((r) => r.json())
       .then((data) => {
         if (data.error) {
@@ -94,6 +120,9 @@ export default function EditReportPage() {
           r.harnessData = r.harnessData
             ? normalizeHarnessData(r.harnessData)
             : null;
+          if (!Array.isArray(r.reportProjects)) {
+            r.reportProjects = [];
+          }
           setReport(r);
         }
         setLoading(false);
@@ -103,6 +132,125 @@ export default function EditReportPage() {
         setLoading(false);
       });
   }, [slug]);
+
+  // ── Project actions ────────────────────────────────────────────
+  // Flip a ReportProject.hidden via PATCH. Updates local state
+  // optimistically; on failure we revert and show the error.
+  // All three async handlers use functional setReport(prev => ...)
+  // updates so concurrent actions don't clobber each other. If the
+  // user fires a second action while the first is in flight, each
+  // handler reads the LATEST state at the moment of the update, not
+  // a stale closure snapshot from the original click.
+
+  const toggleProjectHidden = async (projectId: string) => {
+    const current = report?.reportProjects.find(
+      (rp) => rp.project.id === projectId,
+    );
+    if (!current) return;
+    const nextHidden = !current.hidden;
+
+    // Optimistic update
+    setReport((prev) =>
+      prev
+        ? {
+            ...prev,
+            reportProjects: prev.reportProjects.map((rp) =>
+              rp.project.id === projectId ? { ...rp, hidden: nextHidden } : rp,
+            ),
+          }
+        : prev,
+    );
+
+    try {
+      const res = await fetch(`/api/insights/${slug}/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hidden: nextHidden }),
+      });
+      if (!res.ok) throw new Error("Failed to update project visibility");
+    } catch (err) {
+      // Revert on failure via functional update.
+      setReport((prev) =>
+        prev
+          ? {
+              ...prev,
+              reportProjects: prev.reportProjects.map((rp) =>
+                rp.project.id === projectId
+                  ? { ...rp, hidden: current.hidden }
+                  : rp,
+              ),
+            }
+          : prev,
+      );
+      setError(err instanceof Error ? err.message : "Failed to update project");
+    }
+  };
+
+  const deleteProjectFromLibrary = async (projectId: string) => {
+    if (!report) return;
+    if (
+      !confirm(
+        "Delete this project from your library? It will be removed from every report that references it. This cannot be undone.",
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to delete project");
+      }
+      // Remove from local state via functional update so a
+      // concurrent toggle/refresh on another project isn't lost.
+      setReport((prev) =>
+        prev
+          ? {
+              ...prev,
+              reportProjects: prev.reportProjects.filter(
+                (rp) => rp.project.id !== projectId,
+              ),
+            }
+          : prev,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete project");
+    }
+  };
+
+  const refreshProjectMetadata = async (projectId: string) => {
+    if (!report) return;
+    try {
+      const res = await fetch(`/api/projects/${projectId}/refresh-metadata`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to refresh metadata");
+      }
+      const body = await res.json();
+      const updated: EditProject = body.data;
+      // Functional update: if a concurrent delete removed the row,
+      // the map leaves prev untouched and this refresh is a no-op.
+      setReport((prev) =>
+        prev
+          ? {
+              ...prev,
+              reportProjects: prev.reportProjects.map((rp) =>
+                rp.project.id === projectId ? { ...rp, project: updated } : rp,
+              ),
+            }
+          : prev,
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to refresh metadata",
+      );
+    }
+  };
 
   const toggleSection = (key: string) => {
     setHiddenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -320,6 +468,68 @@ export default function EditReportPage() {
             </div>
           )}
         </>
+      )}
+
+      {/* Projects attached to this report */}
+      {report.reportProjects.length > 0 && (
+        <div className="mt-6">
+          <h3 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+            Projects
+          </h3>
+          <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
+            Hide a project from this report, or delete it from your library
+            (which removes it from every report).
+          </p>
+          <div className="space-y-2">
+            {report.reportProjects.map((rp) => (
+              <div
+                key={rp.id}
+                className={clsx(
+                  "flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900",
+                  rp.hidden && "opacity-50",
+                )}
+              >
+                <div className="pt-0.5">
+                  <EyeToggle
+                    enabled={!rp.hidden}
+                    onToggle={() => toggleProjectHidden(rp.project.id)}
+                    showLabel="Show on this report"
+                    hideLabel="Hide from this report"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-slate-900 dark:text-white">
+                    {rp.project.name}
+                  </p>
+                  {rp.project.description && (
+                    <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                      {rp.project.description}
+                    </p>
+                  )}
+                  <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                    {rp.project.githubUrl || rp.project.liveUrl || "No URL"}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <button
+                    type="button"
+                    onClick={() => refreshProjectMetadata(rp.project.id)}
+                    className="rounded-md px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                  >
+                    Refresh preview
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteProjectFromLibrary(rp.project.id)}
+                    className="rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                  >
+                    Delete from library
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Narrative sections with eye toggles */}
