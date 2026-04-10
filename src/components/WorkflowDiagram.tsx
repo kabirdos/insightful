@@ -3,13 +3,10 @@
 import { useEffect, useRef } from "react";
 import type {
   HarnessAgentDispatch,
-  HarnessSkillEntry,
   HarnessWorkflowData,
 } from "@/types/insights";
 import { useMermaid } from "@/hooks/useMermaid";
 import {
-  getSafeCommandHighlights,
-  getSafeSkillHighlights,
   safeSequenceLabel,
   safeSkillKeyLabel,
 } from "@/lib/privacy-safe-workflow";
@@ -17,8 +14,6 @@ import {
 interface WorkflowDiagramProps {
   workflowData: HarnessWorkflowData;
   agentDispatch?: HarnessAgentDispatch | null;
-  skillInventory?: HarnessSkillEntry[];
-  cliTools?: Record<string, number>;
   authorHandle?: string;
 }
 
@@ -77,6 +72,10 @@ function strongestWorkflowPattern(
   if (workflowPatterns.length === 0) return null;
   const strongest = [...workflowPatterns].sort((a, b) => b.count - a.count)[0];
   if (!strongest) return null;
+  // Return the raw sequence so callers can sanitize per-skill via
+  // safeSequenceLabel(). Returning a pre-joined `label` was the leak
+  // path codex flagged: it baked custom skill paths/URLs/ticket IDs
+  // into the public copy.
   return {
     sequence: strongest.sequence,
     count: strongest.count,
@@ -86,8 +85,6 @@ function strongestWorkflowPattern(
 function buildWorkflowInsights(
   workflowData: HarnessWorkflowData,
   agentDispatch?: HarnessAgentDispatch | null,
-  safeSkills: string[] = [],
-  safeCommands: string[] = [],
 ): Array<{ title: string; body: string }> {
   const insights: Array<{ title: string; body: string }> = [];
   const topSkills = topEntries(workflowData.skillInvocations, 2);
@@ -146,20 +143,6 @@ function buildWorkflowInsights(
     insights.push({
       title: "Agent-Oriented Workflow",
       body: `${agentDispatch?.totalAgents ?? 0} agents were dispatched in this report, with ${agentDispatch?.backgroundPct ?? 0}% running in the background.${typeSummary}`,
-    });
-  }
-
-  if (safeSkills.length > 0) {
-    insights.push({
-      title: "Skills In Rotation",
-      body: `The public workflow can still show useful skill context without raw task text, led here by ${safeSkills.slice(0, 3).join(", ")}.`,
-    });
-  }
-
-  if (safeCommands.length > 0) {
-    insights.push({
-      title: "Command Surface",
-      body: `The shell layer around this workflow stays readable through safe command shapes like ${safeCommands.slice(0, 3).join(", ")}.`,
     });
   }
 
@@ -225,8 +208,6 @@ export function buildWorkflowDiagram(
 export default function WorkflowDiagram({
   workflowData,
   agentDispatch,
-  skillInventory = [],
-  cliTools = {},
   authorHandle,
 }: WorkflowDiagramProps) {
   const name = authorHandle ? `@${authorHandle}` : "This developer";
@@ -258,25 +239,19 @@ export default function WorkflowDiagram({
 
   const { phaseStats, phaseDistribution } = workflowData;
   const sortedSkills = topEntries(workflowData.skillInvocations, 10);
+  const topSkillPills = topEntries(workflowData.skillInvocations, 6);
+  const topSkill = topEntries(workflowData.skillInvocations, 1)[0];
+  const strongestPattern = strongestWorkflowPattern(
+    workflowData.workflowPatterns,
+  );
   // NOTE: workflowData.agentDispatches is intentionally not read —
   // raw description keys leak customer/repo/path identifiers in
   // legacy reports. Only the curated agentDispatch.types is rendered.
   const dispatchTypeEntries = topEntries(agentDispatch?.types ?? {}, 4);
   const dispatchModelEntries = topEntries(agentDispatch?.models ?? {}, 4);
-  const safeSkills = getSafeSkillHighlights(skillInventory, 5);
-  const safeCommands = getSafeCommandHighlights(cliTools, 5);
-  const workflowInsights = buildWorkflowInsights(
-    workflowData,
-    agentDispatch,
-    safeSkills,
-    safeCommands,
-  );
+  const workflowInsights = buildWorkflowInsights(workflowData, agentDispatch);
   const hasPhaseData = Object.keys(phaseDistribution).length > 0;
   const hasDispatchSummary = (agentDispatch?.totalAgents ?? 0) > 0;
-  const strongestPattern = strongestWorkflowPattern(
-    workflowData.workflowPatterns,
-  );
-  const topSkill = topEntries(workflowData.skillInvocations, 1)[0];
 
   const pluginsPresent = Array.from(
     new Set(
@@ -287,112 +262,212 @@ export default function WorkflowDiagram({
   );
 
   return (
-    <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/50">
-      <div className="mb-3 flex items-center gap-2">
-        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-          {name}&apos;s Skill Workflow
-        </h3>
-        <span className="text-xs text-slate-400">
-          {Object.values(workflowData.skillInvocations).reduce(
-            (a, b) => a + b,
-            0,
-          )}{" "}
-          skill invocations
-        </span>
-      </div>
-
-      <div
-        ref={containerRef}
-        className="hidden sm:flex min-h-[200px] items-center justify-center overflow-x-auto [&_svg]:max-w-full"
-      >
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-      </div>
-
-      <div className="block sm:hidden">
-        <ol className="list-decimal list-inside space-y-1 text-sm text-slate-600 dark:text-slate-400">
-          {sortedSkills.map(([skillKey, count]) => {
-            const { plugin } = parseSkillSource(skillKey);
-            // Route custom skills through the risky-pattern check so
-            // identifiers like "POC-1234" or paths don't leak.
-            const safeName = safeSkillKeyLabel(skillKey);
-            return (
-              <li key={skillKey}>
-                <span className="font-mono text-xs">{safeName}</span>{" "}
-                <span className="text-[10px] text-slate-400">[{plugin}]</span>{" "}
-                <span className="text-slate-400">({count}x)</span>
-              </li>
-            );
-          })}
-        </ol>
-      </div>
-
-      {pluginsPresent.length > 1 && (
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-slate-500 dark:text-slate-400">Source:</span>
-          {pluginsPresent.map((plugin) => {
-            const color = PLUGIN_COLORS[plugin] || PLUGIN_COLORS.custom;
-            return (
-              <span
-                key={plugin}
-                className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium"
-                style={{
-                  backgroundColor: color.fill,
-                  color: color.text,
-                  border: `1px solid ${color.stroke}`,
-                }}
-              >
-                {plugin}
-              </span>
-            );
-          })}
+    <div className="mb-6 grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)]">
+      <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/50 xl:row-span-2">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="text-[15px] font-bold text-slate-900 dark:text-slate-100">
+              {name}&apos;s Skill Workflow
+            </h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              The skills this report chains together most often, rendered as a
+              repeatable workflow instead of a flat list.
+            </p>
+          </div>
+          <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
+            {Object.values(workflowData.skillInvocations).reduce(
+              (a, b) => a + b,
+              0,
+            )}{" "}
+            skill invocations
+          </div>
         </div>
-      )}
 
-      {(topSkill || strongestPattern) && (
-        <div className="mt-2 flex flex-wrap gap-2 text-xs">
-          {topSkill && (
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
-              Most used: {safeSkillKeyLabel(topSkill[0])} ({topSkill[1]}x)
-            </span>
-          )}
-          {strongestPattern && (
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
-              Strongest path: {safeSequenceLabel(strongestPattern.sequence)} (
-              {strongestPattern.count}x)
-            </span>
-          )}
+        {topSkillPills.length > 0 && (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {topSkillPills.map(([skill, count]) => {
+              const { plugin } = parseSkillSource(skill);
+              const color = getPluginColor(plugin);
+              const safeName = safeSkillKeyLabel(skill);
+              return (
+                <span
+                  key={skill}
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+                  style={{
+                    backgroundColor: color.fill,
+                    color: color.text,
+                    border: `1px solid ${color.stroke}`,
+                  }}
+                >
+                  <span>{safeName}</span>
+                  <span className="opacity-80">{count}x</span>
+                </span>
+              );
+            })}
+          </div>
+        )}
+
+        <div
+          ref={containerRef}
+          className="hidden min-h-[240px] items-center justify-center overflow-x-auto rounded-lg border border-slate-100 bg-slate-50/70 px-2 py-4 sm:flex dark:border-slate-800 dark:bg-slate-950/30 [&_svg]:max-w-full"
+        >
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
         </div>
-      )}
 
-      <div className="mt-3 space-y-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+        <div className="block sm:hidden">
+          <ol className="space-y-2">
+            {sortedSkills.map(([skillName, count]) => {
+              const { plugin } = parseSkillSource(skillName);
+              const color = getPluginColor(plugin);
+              const safeName = safeSkillKeyLabel(skillName);
+              return (
+                <li
+                  key={skillName}
+                  className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800/50"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate font-mono text-xs text-slate-700 dark:text-slate-300">
+                      {safeName}
+                    </div>
+                    <div
+                      className="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                      style={{
+                        backgroundColor: color.fill,
+                        color: color.text,
+                        border: `1px solid ${color.stroke}`,
+                      }}
+                    >
+                      {plugin}
+                    </div>
+                  </div>
+                  <span className="ml-3 shrink-0 text-xs text-slate-400">
+                    {count}x
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+
+        {(pluginsPresent.length > 1 || topSkill || strongestPattern) && (
+          <div className="mt-4 space-y-3 border-t border-slate-100 pt-4 dark:border-slate-800">
+            {pluginsPresent.length > 1 && (
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="text-slate-500 dark:text-slate-400">
+                  Source:
+                </span>
+                {pluginsPresent.map((plugin) => {
+                  const color = PLUGIN_COLORS[plugin] || PLUGIN_COLORS.custom;
+                  return (
+                    <span
+                      key={plugin}
+                      className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium"
+                      style={{
+                        backgroundColor: color.fill,
+                        color: color.text,
+                        border: `1px solid ${color.stroke}`,
+                      }}
+                    >
+                      {plugin}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2.5">
+              {topSkill && (
+                <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
+                  <strong className="text-slate-900 dark:text-slate-100">
+                    {safeSkillKeyLabel(topSkill[0])}
+                  </strong>{" "}
+                  most invoked ({topSkill[1]}x)
+                </div>
+              )}
+              {strongestPattern && (
+                <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
+                  <strong className="text-slate-900 dark:text-slate-100">
+                    {safeSequenceLabel(strongestPattern.sequence)}
+                  </strong>{" "}
+                  strongest pattern ({strongestPattern.count}x)
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/50">
+        <div className="mb-4">
+          <h3 className="text-[15px] font-bold text-slate-900 dark:text-slate-100">
+            What {name} Delegates to Agents
+          </h3>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            The parallel work this report hands off, or the orchestration
+            footprint when task-level descriptions are intentionally omitted.
+          </p>
+        </div>
+
         {/* Raw agent-dispatch descriptions can contain customer/repo/path
             identifiers (see PR #4 which removed them from the extractor).
             Any legacy reports that still have agentDispatches populated are
-            deliberately NOT rendered — we only show the curated
-            agentDispatch.types summary below. */}
+            deliberately NOT rendered here — we only show the curated
+            agentDispatch.types/models summary below. */}
 
-        {hasDispatchSummary && (
-          <div className="space-y-3">
-            <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-              What {name} delegates to agents
-            </div>
-
-            <div className="flex flex-wrap gap-2 text-xs">
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
-                {formatCount(agentDispatch?.totalAgents ?? 0)} agents total
-              </span>
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
-                {agentDispatch?.backgroundPct ?? 0}% in background
-              </span>
+        {hasDispatchSummary ? (
+          <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-3">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-800/60">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  Total Agents
+                </div>
+                <div className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
+                  {formatCount(agentDispatch?.totalAgents ?? 0)}
+                </div>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-800/60">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  Background
+                </div>
+                <div className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
+                  {agentDispatch?.backgroundPct ?? 0}%
+                </div>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-800/60">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  Custom Agents
+                </div>
+                <div className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
+                  {agentDispatch?.customAgents.length ?? 0}
+                </div>
+              </div>
             </div>
 
             {dispatchTypeEntries.length > 0 && (
               <div>
-                <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
                   Agent Types
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="space-y-2">
                   {dispatchTypeEntries.map(([label, count]) => (
+                    <div
+                      key={label}
+                      className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300"
+                    >
+                      <span className="font-medium">{label}</span>
+                      <span className="font-mono text-slate-400">{count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {dispatchModelEntries.length > 0 && (
+              <div>
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Model Tiering
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {dispatchModelEntries.map(([label, count]) => (
                     <span
                       key={label}
                       className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300"
@@ -404,105 +479,78 @@ export default function WorkflowDiagram({
               </div>
             )}
 
-            {dispatchModelEntries.length > 0 && (
+            {agentDispatch?.customAgents.length ? (
               <div>
-                <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                  Models
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Custom Agents
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {dispatchModelEntries.map(([label, count]) => (
+                  {agentDispatch.customAgents.slice(0, 6).map((label) => (
                     <span
                       key={label}
-                      className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300"
+                      className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs text-violet-700 dark:border-violet-700 dark:bg-violet-950/30 dark:text-violet-300"
                     >
-                      {label} ({count})
+                      {label}
                     </span>
                   ))}
                 </div>
               </div>
-            )}
+            ) : null}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-400">
+            No delegation data was captured in this report.
+          </div>
+        )}
+      </div>
 
-            {(safeSkills.length > 0 || safeCommands.length > 0) && (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {safeSkills.length > 0 && (
-                  <div>
-                    <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                      Relevant Skills
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {safeSkills.map((label) => (
-                        <span
-                          key={label}
-                          className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300"
-                        >
-                          {label}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+      <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/50">
+        <div className="mb-4">
+          <h3 className="text-[15px] font-bold text-slate-900 dark:text-slate-100">
+            Workflow Insight
+          </h3>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            What this workflow reveals about development style, sequencing, and
+            shipping posture.
+          </p>
+        </div>
 
-                {safeCommands.length > 0 && (
-                  <div>
-                    <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                      Relevant Commands
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {safeCommands.map((label) => (
-                        <span
-                          key={label}
-                          className="rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 font-mono text-xs text-teal-700 dark:border-teal-800 dark:bg-teal-950/30 dark:text-teal-300"
-                        >
-                          {label}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+        <div className="space-y-3">
+          {workflowInsights.map((insight) => (
+            <div
+              key={insight.title}
+              className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/60"
+            >
+              <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {insight.title}
               </div>
-            )}
-          </div>
-        )}
-
-        {workflowInsights.length > 0 && (
-          <div>
-            <div className="mb-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-              Workflow Insight
+              <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                {insight.body}
+              </p>
             </div>
-            <div className="space-y-2">
-              {workflowInsights.map((insight) => (
-                <div
-                  key={insight.title}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs dark:border-slate-700 dark:bg-slate-800/50"
-                >
-                  <div className="font-semibold text-slate-700 dark:text-slate-200">
-                    {insight.title}
-                  </div>
-                  <p className="mt-1 leading-relaxed text-slate-600 dark:text-slate-400">
-                    {insight.body}
-                  </p>
+          ))}
+
+          {hasPhaseData && (
+            <div className="grid gap-3 pt-1 sm:grid-cols-2">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/60">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  Explore Before Build
                 </div>
-              ))}
+                <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {phaseStats.exploreBeforeImplPct}%
+                </div>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/60">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  Test Before Ship
+                </div>
+                <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {phaseStats.testBeforeShipPct}%
+                </div>
+              </div>
             </div>
-          </div>
-        )}
-
-        {hasPhaseData && (
-          <div className="flex flex-wrap gap-4">
-            <div className="text-xs text-slate-500 dark:text-slate-400">
-              <span className="font-semibold text-slate-700 dark:text-slate-300">
-                {phaseStats.exploreBeforeImplPct}%
-              </span>{" "}
-              explores before implementing
-            </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">
-              <span className="font-semibold text-slate-700 dark:text-slate-300">
-                {phaseStats.testBeforeShipPct}%
-              </span>{" "}
-              tests before shipping
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

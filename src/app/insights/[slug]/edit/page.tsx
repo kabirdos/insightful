@@ -331,8 +331,6 @@ export default function EditReportPage() {
                   <WorkflowDiagram
                     workflowData={harnessData.workflowData}
                     agentDispatch={harnessData.agentDispatch}
-                    skillInventory={harnessData.skillInventory}
-                    cliTools={harnessData.cliTools}
                   />
                 </>
               )}

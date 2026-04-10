@@ -404,8 +404,6 @@ export default function InsightDetailPage() {
               <WorkflowDiagram
                 workflowData={report.harnessData.workflowData}
                 agentDispatch={report.harnessData.agentDispatch}
-                skillInventory={report.harnessData.skillInventory}
-                cliTools={report.harnessData.cliTools}
                 authorHandle={report.author.username}
               />
             )}
