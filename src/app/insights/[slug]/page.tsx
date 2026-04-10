@@ -72,12 +72,22 @@ interface ReportData {
     displayName: string | null;
     avatarUrl: string | null;
   };
-  projectLinks: Array<{
+  reportProjects: Array<{
     id: string;
-    name: string;
-    githubUrl: string | null;
-    liveUrl: string | null;
-    description: string | null;
+    hidden: boolean;
+    position: number;
+    project: {
+      id: string;
+      name: string;
+      githubUrl: string | null;
+      liveUrl: string | null;
+      description: string | null;
+      ogImage: string | null;
+      ogTitle: string | null;
+      ogDescription: string | null;
+      favicon: string | null;
+      siteName: string | null;
+    };
   }>;
   annotations: Array<{
     sectionKey: string;
@@ -657,10 +667,21 @@ export default function InsightDetailPage() {
             </CollapsibleSection>
           )}
 
-          {/* Project Links */}
-          {report.projectLinks.length > 0 && (
+          {/* Project Links — map the new junction shape to the shape
+              the existing ProjectLinks component expects. Unit 6 will
+              rewrite the component to consume reportProjects directly
+              and remove this adapter. */}
+          {report.reportProjects.length > 0 && (
             <div className="mb-6">
-              <ProjectLinks links={report.projectLinks} />
+              <ProjectLinks
+                links={report.reportProjects.map((rp) => ({
+                  id: rp.project.id,
+                  name: rp.project.name,
+                  githubUrl: rp.project.githubUrl,
+                  liveUrl: rp.project.liveUrl,
+                  description: rp.project.description,
+                }))}
+              />
             </div>
           )}
 
@@ -833,10 +854,21 @@ export default function InsightDetailPage() {
             </div>
           )}
 
-          {/* Project Links */}
-          {report.projectLinks.length > 0 && (
+          {/* Project Links — map the new junction shape to the shape
+              the existing ProjectLinks component expects. Unit 6 will
+              rewrite the component to consume reportProjects directly
+              and remove this adapter. */}
+          {report.reportProjects.length > 0 && (
             <div className="mb-6">
-              <ProjectLinks links={report.projectLinks} />
+              <ProjectLinks
+                links={report.reportProjects.map((rp) => ({
+                  id: rp.project.id,
+                  name: rp.project.name,
+                  githubUrl: rp.project.githubUrl,
+                  liveUrl: rp.project.liveUrl,
+                  description: rp.project.description,
+                }))}
+              />
             </div>
           )}
 

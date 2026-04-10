@@ -24,6 +24,13 @@ export async function GET(
     const session = await auth();
     const userId = session?.user?.id ?? null;
 
+    // Owner can opt in to seeing hidden ReportProject rows via
+    // ?includeHidden=true. Non-owners always see only visible rows,
+    // regardless of the query flag. The flag is honored only after
+    // we've verified ownership below.
+    const { searchParams } = new URL(request.url);
+    const includeHiddenRequested = searchParams.get("includeHidden") === "true";
+
     // v2 invariant: These routes use `include` (not `select`) so ALL scalar fields
     // on InsightReport flow through to the response automatically. The homepage
     // (src/app/page.tsx) and detail page (src/app/insights/[slug]/page.tsx) depend
@@ -42,7 +49,16 @@ export async function GET(
             bio: true,
           },
         },
-        projectLinks: true,
+        reportProjects: {
+          // Always filter hidden rows in the primary query. If the
+          // caller is the owner AND requested includeHidden, we do a
+          // second fetch below to append the hidden rows. This keeps
+          // non-owners from ever seeing hidden data, regardless of
+          // what they pass in ?includeHidden.
+          where: { hidden: false },
+          orderBy: { position: "asc" },
+          include: { project: true },
+        },
         annotations: true,
         votes: {
           select: { userId: true, sectionKey: true },
@@ -58,6 +74,21 @@ export async function GET(
 
     if (!report) {
       return NextResponse.json({ error: "Insight not found" }, { status: 404 });
+    }
+
+    // If the caller is the report's author and requested hidden
+    // projects, do a second fetch for the hidden junction rows and
+    // merge them into the response. Non-owners never reach this
+    // branch even if they pass ?includeHidden=true.
+    if (includeHiddenRequested && userId && userId === report.authorId) {
+      const hiddenRows = await prisma.reportProject.findMany({
+        where: { reportId: report.id, hidden: true },
+        orderBy: { position: "asc" },
+        include: { project: true },
+      });
+      // Append hidden rows after visible ones so the render order
+      // remains "visible first, hidden last" on the edit page.
+      report.reportProjects = [...report.reportProjects, ...hiddenRows];
     }
 
     // v2 compile-time contract check: fails to compile if Prisma ever stops

@@ -602,13 +602,8 @@ async function main() {
     },
   });
 
-  // Add projects to each demo user's library and attach them to reports
-  // via the new ReportProject junction model. ProjectLink rows are ALSO
-  // seeded during the transition window (Units 1-3) so that the
-  // existing read path in src/app/api/insights/[slug]/route.ts keeps
-  // rendering projects from seed data. When Unit 4 migrates the read
-  // path to ReportProject, the ProjectLink seeding block below will be
-  // removed along with the ProjectLink table itself.
+  // Add projects to each demo user's library and attach them to the
+  // report via the ReportProject junction.
   const aliceCliProject = await prisma.project.create({
     data: {
       userId: alice.id,
@@ -623,15 +618,6 @@ async function main() {
       reportId: report1.id,
       projectId: aliceCliProject.id,
       position: 0,
-    },
-  });
-  // Transitional ProjectLink seed — remove in Unit 4
-  await prisma.projectLink.create({
-    data: {
-      reportId: report1.id,
-      name: aliceCliProject.name,
-      githubUrl: aliceCliProject.githubUrl,
-      description: aliceCliProject.description,
     },
   });
 
@@ -649,15 +635,6 @@ async function main() {
       reportId: report3.id,
       projectId: carolPortfolioProject.id,
       position: 0,
-    },
-  });
-  // Transitional ProjectLink seed — remove in Unit 4
-  await prisma.projectLink.create({
-    data: {
-      reportId: report3.id,
-      name: carolPortfolioProject.name,
-      liveUrl: carolPortfolioProject.liveUrl,
-      description: carolPortfolioProject.description,
     },
   });
 

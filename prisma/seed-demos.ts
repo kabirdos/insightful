@@ -1819,26 +1819,6 @@ async function seed() {
           },
         });
       }
-      // Transitional ProjectLink seeding — during the migration window
-      // (Units 1-3) the read path still reads ProjectLink rows. Remove
-      // this block in Unit 4 when the read path switches over.
-      const existingLinks = await prisma.projectLink.findMany({
-        where: { reportId: report.id },
-        select: { name: true },
-      });
-      const existingLinkNames = new Set(existingLinks.map((l) => l.name));
-      for (const project of createdProjects) {
-        if (existingLinkNames.has(project.name)) continue;
-        await prisma.projectLink.create({
-          data: {
-            reportId: report.id,
-            name: project.name,
-            githubUrl: project.githubUrl,
-            liveUrl: project.liveUrl,
-            description: project.description,
-          },
-        });
-      }
     }
     console.log(
       `  ✓ @${demoUser.username}: ${createdProjects.length} projects, ${userReports.length} reports linked`,
@@ -1884,8 +1864,7 @@ async function cleanup() {
     await prisma.authorAnnotation.deleteMany({
       where: { reportId: { in: rids } },
     });
-    await prisma.projectLink.deleteMany({ where: { reportId: { in: rids } } });
-    // Junction rows for the new persistent-projects model. Note the
+    // Junction rows for the persistent-projects model. Note the
     // Project rows themselves are removed below via the User cascade
     // (Project.userId → User onDelete: Cascade).
     await prisma.reportProject.deleteMany({

@@ -77,23 +77,11 @@ model InsightReport {
   updatedAt DateTime @updatedAt
 
   author         User               @relation(fields: [authorId], references: [id])
-  projectLinks   ProjectLink[]
   reportProjects ReportProject[]
   votes          SectionVote[]
   highlights     SectionHighlight[]
   comments       Comment[]
   annotations    AuthorAnnotation[]
-}
-
-model ProjectLink {
-  id          String  @id @default(cuid())
-  reportId    String
-  name        String
-  githubUrl   String?
-  liveUrl     String?
-  description String?
-
-  report InsightReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
 }
 
 /// User-owned project in the library. Persists across reports.
