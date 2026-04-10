@@ -432,6 +432,60 @@ describe("fetchLinkPreview", () => {
     expect(typeof result?.ogTitle).toBe("string");
   });
 
+  it("nulls out an og:image URL that resolves to a loopback IP (regression)", async () => {
+    // Regression test for codex P1 on Unit 6: fetchLinkPreview must
+    // sanitize the URLs it extracts FROM the HTML, not only the URL
+    // of the HTML itself. A malicious page can publish
+    // <meta property="og:image" content="http://127.0.0.1/admin">
+    // and clients rendering that URL would SSRF inside their own
+    // network.
+    mockedLookup.mockImplementation(async (hostname: string) => {
+      if (hostname === "goodpage.example.com") {
+        return [{ address: "93.184.216.34", family: 4 }];
+      }
+      // Whatever the hostname of the malicious og:image is, resolve
+      // it to loopback so isSafeUrl rejects it.
+      return [{ address: "127.0.0.1", family: 4 }];
+    });
+    const html = `
+      <!doctype html>
+      <html>
+        <head>
+          <meta property="og:title" content="Title" />
+          <meta property="og:image" content="https://attacker.example.com/evil.png" />
+          <link rel="icon" href="https://attacker.example.com/evil.ico" />
+        </head>
+      </html>
+    `;
+    stubFetch(() => htmlResponse(html));
+
+    const result = await fetchLinkPreview("https://goodpage.example.com");
+
+    expect(result).not.toBeNull();
+    expect(result?.ogTitle).toBe("Title");
+    // The extracted URLs must be nulled because their hostnames
+    // resolve to loopback.
+    expect(result?.ogImage).toBeNull();
+    expect(result?.favicon).toBeNull();
+  });
+
+  it("keeps an og:image URL that resolves to a public IP", async () => {
+    mockLookupTo("93.184.216.34"); // all hostnames resolve to public
+    const html = `
+      <!doctype html>
+      <html>
+        <head>
+          <meta property="og:image" content="https://cdn.example.com/ok.png" />
+        </head>
+      </html>
+    `;
+    stubFetch(() => htmlResponse(html));
+
+    const result = await fetchLinkPreview("https://example.com");
+
+    expect(result?.ogImage).toBe("https://cdn.example.com/ok.png");
+  });
+
   it("SSRF bypass via IPv6-mapped IPv4 hex hostname is blocked (regression)", async () => {
     // The codex P1 finding: a literal hostname [::ffff:7f00:1] resolves
     // in the URL parser to the hex form and was previously allowed

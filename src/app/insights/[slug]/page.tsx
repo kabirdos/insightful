@@ -667,20 +667,11 @@ export default function InsightDetailPage() {
             </CollapsibleSection>
           )}
 
-          {/* Project Links — map the new junction shape to the shape
-              the existing ProjectLinks component expects. Unit 6 will
-              rewrite the component to consume reportProjects directly
-              and remove this adapter. */}
+          {/* Project Links — rich stacked cards with OG metadata. */}
           {report.reportProjects.length > 0 && (
             <div className="mb-6">
               <ProjectLinks
-                links={report.reportProjects.map((rp) => ({
-                  id: rp.project.id,
-                  name: rp.project.name,
-                  githubUrl: rp.project.githubUrl,
-                  liveUrl: rp.project.liveUrl,
-                  description: rp.project.description,
-                }))}
+                links={report.reportProjects.map((rp) => rp.project)}
               />
             </div>
           )}
@@ -854,20 +845,11 @@ export default function InsightDetailPage() {
             </div>
           )}
 
-          {/* Project Links — map the new junction shape to the shape
-              the existing ProjectLinks component expects. Unit 6 will
-              rewrite the component to consume reportProjects directly
-              and remove this adapter. */}
+          {/* Project Links — rich stacked cards with OG metadata. */}
           {report.reportProjects.length > 0 && (
             <div className="mb-6">
               <ProjectLinks
-                links={report.reportProjects.map((rp) => ({
-                  id: rp.project.id,
-                  name: rp.project.name,
-                  githubUrl: rp.project.githubUrl,
-                  liveUrl: rp.project.liveUrl,
-                  description: rp.project.description,
-                }))}
+                links={report.reportProjects.map((rp) => rp.project)}
               />
             </div>
           )}

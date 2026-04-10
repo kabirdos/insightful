@@ -336,12 +336,26 @@ export async function fetchLinkPreview(
         }) as unknown as ReturnType<typeof fetch>,
     });
 
+    // Sanitize the extracted image URLs through isSafeUrl BEFORE
+    // returning them. The HTML we fetched passed SSRF checks, but
+    // the URLs it publishes (og:image, favicon) are untrusted — a
+    // malicious page could embed an og:image pointing at an internal
+    // IP or cloud metadata endpoint, and if we stored that URL and
+    // the client later rendered it as <img src>, every viewer's
+    // browser would fetch it. Null out any URL that fails the check.
+    const rawOgImage = metadata.open_graph?.images?.[0]?.url ?? null;
+    const rawFavicon = metadata.favicon ?? null;
+    const [ogImageSafe, faviconSafe] = await Promise.all([
+      rawOgImage ? isSafeUrl(rawOgImage) : Promise.resolve(false),
+      rawFavicon ? isSafeUrl(rawFavicon) : Promise.resolve(false),
+    ]);
+
     return {
-      ogImage: metadata.open_graph?.images?.[0]?.url ?? null,
+      ogImage: ogImageSafe ? rawOgImage : null,
       ogTitle: metadata.open_graph?.title ?? metadata.title ?? null,
       ogDescription:
         metadata.open_graph?.description ?? metadata.description ?? null,
-      favicon: metadata.favicon ?? null,
+      favicon: faviconSafe ? rawFavicon : null,
       siteName: metadata.open_graph?.site_name ?? null,
     };
   } catch (err) {
