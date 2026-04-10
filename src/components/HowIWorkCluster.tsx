@@ -22,7 +22,7 @@ export default function HowIWorkCluster({ harnessData }: HowIWorkClusterProps) {
       <h3 className="mb-4 text-[15px] font-bold text-slate-900 dark:text-slate-100">
         How I Work
       </h3>
-      <div className="grid gap-6 sm:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(260px,1.15fr)]">
         {hasAutonomy && (
           <div className="flex items-center justify-center">
             <AutonomyGauge autonomy={autonomy} />

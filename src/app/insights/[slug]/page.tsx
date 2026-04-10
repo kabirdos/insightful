@@ -32,6 +32,8 @@ import PermissionModeDisplay from "@/components/PermissionModeDisplay";
 import HooksSafetyTable from "@/components/HooksSafetyTable";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
 import WorkflowDiagram from "@/components/WorkflowDiagram";
+import MiniBarChart from "@/components/MiniBarChart";
+import { isHarnessSectionHidden } from "@/lib/harness-section-visibility";
 
 interface ReportData {
   id: string;
@@ -183,47 +185,6 @@ function getSectionSummary(
   }
 }
 
-/* ── Small bar chart for standard report chartData ── */
-function MiniBarChart({
-  data,
-  color = "bg-blue-500",
-  title,
-}: {
-  data: Array<{ label: string; value: number }>;
-  color?: string;
-  title: string;
-}) {
-  if (!data || data.length === 0) return null;
-  const max = Math.max(...data.map((d) => d.value), 1);
-  return (
-    <div>
-      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-        {title}
-      </h4>
-      <div className="space-y-1">
-        {data.slice(0, 8).map((item) => (
-          <div key={item.label} className="flex items-center gap-2">
-            <span className="w-20 truncate text-xs text-slate-600 dark:text-slate-400">
-              {item.label}
-            </span>
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-              <div
-                className={`h-full rounded-full ${color}`}
-                style={{
-                  width: `${Math.max(3, (item.value / max) * 100)}%`,
-                }}
-              />
-            </div>
-            <span className="w-10 text-right text-xs text-slate-400">
-              {item.value}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function InsightDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
@@ -296,6 +257,7 @@ export default function InsightDetailPage() {
   );
 
   const isHarness = report.reportType === "insight-harness";
+  const hiddenHarnessSections = report.hiddenHarnessSections ?? [];
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -366,41 +328,51 @@ export default function InsightDetailPage() {
       {isHarness && report.harnessData ? (
         <>
           {/* Hero Stats */}
-          <HeroStats
-            stats={report.harnessData.stats}
-            dayCount={report.dayCount}
-            sessionCount={
-              report.sessionCount ||
-              report.harnessData?.stats?.sessionCount ||
-              0
-            }
-          />
+          {!isHarnessSectionHidden(hiddenHarnessSections, "heroStats") && (
+            <HeroStats
+              stats={report.harnessData.stats}
+              dayCount={report.dayCount}
+              sessionCount={
+                report.sessionCount ||
+                report.harnessData?.stats?.sessionCount ||
+                0
+              }
+            />
+          )}
 
           {/* Activity Heatmap — generated from aggregate stats */}
-          <ActivityHeatmap
-            totalSessions={
-              report.sessionCount ??
-              report.harnessData?.stats?.sessionCount ??
-              undefined
-            }
-            totalTokens={report.totalTokens ?? undefined}
-            dayCount={report.dayCount ?? undefined}
-            dateRangeStart={report.dateRangeStart ?? undefined}
-            slug={slug}
-            models={report.harnessData?.models ?? undefined}
-          />
+          {!isHarnessSectionHidden(
+            hiddenHarnessSections,
+            "activityHeatmap",
+          ) && (
+            <ActivityHeatmap
+              totalSessions={
+                report.sessionCount ??
+                report.harnessData?.stats?.sessionCount ??
+                undefined
+              }
+              totalTokens={report.totalTokens ?? undefined}
+              dayCount={report.dayCount ?? undefined}
+              dateRangeStart={report.dateRangeStart ?? undefined}
+              slug={slug}
+              models={report.harnessData?.models ?? undefined}
+            />
+          )}
 
           {/* How I Work cluster: Autonomy + Model Donut + File Ops */}
-          <HowIWorkCluster harnessData={report.harnessData} />
+          {!isHarnessSectionHidden(hiddenHarnessSections, "howIWork") && (
+            <HowIWorkCluster harnessData={report.harnessData} />
+          )}
 
           {/* Tool Usage Treemap */}
-          {Object.keys(report.harnessData.toolUsage).length > 0 && (
+          {!isHarnessSectionHidden(hiddenHarnessSections, "toolUsage") &&
+            Object.keys(report.harnessData.toolUsage).length > 0 && (
             <ToolUsageTreemap toolUsage={report.harnessData.toolUsage} />
           )}
 
           {/* Workflow Diagrams */}
           {report.harnessData.workflowData &&
-            !(report.hiddenHarnessSections ?? []).includes("workflowData") && (
+            !isHarnessSectionHidden(hiddenHarnessSections, "workflowData") && (
               <WorkflowDiagram
                 workflowData={report.harnessData.workflowData}
                 agentDispatch={report.harnessData.agentDispatch}
@@ -409,12 +381,14 @@ export default function InsightDetailPage() {
             )}
 
           {/* Skills Card Grid */}
-          {report.harnessData.skillInventory.length > 0 && (
+          {!isHarnessSectionHidden(hiddenHarnessSections, "skillInventory") &&
+            report.harnessData.skillInventory.length > 0 && (
             <SkillCardGrid skillInventory={report.harnessData.skillInventory} />
           )}
 
           {/* Plugins */}
-          {report.harnessData.plugins.length > 0 && (
+          {!isHarnessSectionHidden(hiddenHarnessSections, "plugins") &&
+            report.harnessData.plugins.length > 0 && (
             <CollapsibleSection
               icon="🔌"
               iconBgClass="bg-teal-100 dark:bg-teal-900/30"
@@ -455,26 +429,37 @@ export default function InsightDetailPage() {
           )}
 
           {/* CLI Tools Donut */}
-          {Object.keys(report.harnessData.cliTools).length > 0 && (
+          {!isHarnessSectionHidden(hiddenHarnessSections, "cliTools") &&
+            Object.keys(report.harnessData.cliTools).length > 0 && (
             <CliToolsDonut cliTools={report.harnessData.cliTools} />
           )}
 
           {/* Git Patterns */}
-          <GitPatternsDisplay gitPatterns={report.harnessData.gitPatterns} />
+          {!isHarnessSectionHidden(hiddenHarnessSections, "gitPatterns") && (
+            <GitPatternsDisplay gitPatterns={report.harnessData.gitPatterns} />
+          )}
 
           {/* Permission Mode & Safety */}
-          <PermissionModeDisplay
-            permissionModes={report.harnessData.permissionModes}
-            featurePills={report.harnessData.featurePills}
-          />
+          {!isHarnessSectionHidden(
+            hiddenHarnessSections,
+            "permissionModes",
+          ) && (
+            <PermissionModeDisplay
+              permissionModes={report.harnessData.permissionModes}
+              featurePills={report.harnessData.featurePills}
+            />
+          )}
 
           {/* Hooks & Safety */}
-          <HooksSafetyTable
-            hookDefinitions={report.harnessData.hookDefinitions}
-          />
+          {!isHarnessSectionHidden(hiddenHarnessSections, "hookDefinitions") && (
+            <HooksSafetyTable
+              hookDefinitions={report.harnessData.hookDefinitions}
+            />
+          )}
 
           {/* Agent Dispatch */}
-          {report.harnessData.agentDispatch &&
+          {!isHarnessSectionHidden(hiddenHarnessSections, "agentDispatch") &&
+            report.harnessData.agentDispatch &&
             report.harnessData.agentDispatch.totalAgents > 0 && (
               <CollapsibleSection
                 icon="🤖"
@@ -540,10 +525,11 @@ export default function InsightDetailPage() {
                   </div>
                 )}
               </CollapsibleSection>
-            )}
+          )}
 
           {/* Languages */}
-          {Object.keys(report.harnessData.languages).length > 0 && (
+          {!isHarnessSectionHidden(hiddenHarnessSections, "languages") &&
+            Object.keys(report.harnessData.languages).length > 0 && (
             <CollapsibleSection
               icon="💻"
               iconBgClass="bg-green-100 dark:bg-green-900/30"
@@ -562,7 +548,8 @@ export default function InsightDetailPage() {
           )}
 
           {/* MCP Servers */}
-          {Object.keys(report.harnessData.mcpServers).length > 0 && (
+          {!isHarnessSectionHidden(hiddenHarnessSections, "mcpServers") &&
+            Object.keys(report.harnessData.mcpServers).length > 0 && (
             <CollapsibleSection
               icon="🔗"
               iconBgClass="bg-cyan-100 dark:bg-cyan-900/30"
@@ -590,7 +577,8 @@ export default function InsightDetailPage() {
           )}
 
           {/* Versions */}
-          {report.harnessData.versions.length > 0 && (
+          {!isHarnessSectionHidden(hiddenHarnessSections, "versions") &&
+            report.harnessData.versions.length > 0 && (
             <CollapsibleSection
               icon="📦"
               iconBgClass="bg-slate-100 dark:bg-slate-900/30"
@@ -611,7 +599,8 @@ export default function InsightDetailPage() {
           )}
 
           {/* Writeup Sections */}
-          {report.harnessData.writeupSections.length > 0 && (
+          {!isHarnessSectionHidden(hiddenHarnessSections, "writeupSections") &&
+            report.harnessData.writeupSections.length > 0 && (
             <CollapsibleSection
               icon="📝"
               iconBgClass="bg-blue-100 dark:bg-blue-900/30"
@@ -637,7 +626,8 @@ export default function InsightDetailPage() {
           )}
 
           {/* Harness Files */}
-          {report.harnessData.harnessFiles.length > 0 && (
+          {!isHarnessSectionHidden(hiddenHarnessSections, "harnessFiles") &&
+            report.harnessData.harnessFiles.length > 0 && (
             <CollapsibleSection
               icon="📁"
               iconBgClass="bg-orange-100 dark:bg-orange-900/30"

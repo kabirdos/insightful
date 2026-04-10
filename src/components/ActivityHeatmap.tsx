@@ -27,6 +27,30 @@ const CELL_COUNT = WEEKS * DAYS_PER_WEEK;
 
 type ColorScale = "blue" | "green" | "amber";
 
+const SCALE_SWATCHS: Record<ColorScale, string[]> = {
+  blue: [
+    "bg-blue-100 dark:bg-blue-900/40",
+    "bg-blue-300 dark:bg-blue-800/60",
+    "bg-blue-400 dark:bg-blue-700",
+    "bg-blue-500 dark:bg-blue-600",
+    "bg-blue-700 dark:bg-blue-500",
+  ],
+  green: [
+    "bg-green-100 dark:bg-green-900/40",
+    "bg-green-300 dark:bg-green-800/60",
+    "bg-green-400 dark:bg-green-700",
+    "bg-green-500 dark:bg-green-600",
+    "bg-green-700 dark:bg-green-500",
+  ],
+  amber: [
+    "bg-amber-100 dark:bg-amber-900/40",
+    "bg-amber-300 dark:bg-amber-800/60",
+    "bg-amber-400 dark:bg-amber-700",
+    "bg-amber-500 dark:bg-amber-600",
+    "bg-amber-700 dark:bg-amber-500",
+  ],
+};
+
 function getLevel(
   scale: ColorScale,
   value: number,
@@ -139,6 +163,8 @@ function formatTokens(n: number): string {
 
 function formatCost(n: number): string {
   if (n === 0) return "0";
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
   if (n >= 100) return `$${Math.round(n)}`;
   if (n >= 10) return `$${n.toFixed(0)}`;
   if (n >= 1) return `$${n.toFixed(1)}`;
@@ -148,16 +174,41 @@ function formatCost(n: number): string {
 // Rough blended USD / 1M tokens, no input/output split available.
 // These are estimates — labeled "Est." in UI.
 const MODEL_BLENDED_RATE_PER_M: Array<{ match: RegExp; rate: number }> = [
-  { match: /opus/i, rate: 30 }, // blended between $15 in / $75 out
-  { match: /haiku/i, rate: 1.6 }, // blended between $0.80 in / $4 out
-  { match: /sonnet/i, rate: 6 }, // blended between $3 in / $15 out
+  { match: /opus(?:\s|[-_.])?4/i, rate: 45 },
+  { match: /opus/i, rate: 30 },
+  { match: /haiku(?:\s|[-_.])?4/i, rate: 3 },
+  { match: /haiku/i, rate: 1.6 },
+  { match: /sonnet(?:\s|[-_.])?4/i, rate: 9 },
+  { match: /sonnet/i, rate: 6 },
 ];
 const DEFAULT_RATE_PER_M = 6; // fall back to Sonnet-blended
 
-function estimateTotalCostUsd(models?: Record<string, number>): number {
-  if (!models) return 0;
+function normalizeModelTokenUsage(
+  models?: Record<string, number>,
+  totalTokens?: number,
+): Array<[string, number]> {
+  if (!models || Object.keys(models).length === 0) return [];
+
+  const entries = Object.entries(models).filter(([, tokens]) => tokens > 0);
+  if (entries.length === 0) return [];
+
+  const sum = entries.reduce((acc, [, value]) => acc + value, 0);
+  if (totalTokens && sum > 0 && sum <= 100.5) {
+    return entries.map(([name, share]) => [name, (share / sum) * totalTokens]);
+  }
+
+  return entries;
+}
+
+function estimateTotalCostUsd(
+  models?: Record<string, number>,
+  totalTokens?: number,
+): number {
+  const modelUsage = normalizeModelTokenUsage(models, totalTokens);
+  if (modelUsage.length === 0) return 0;
+
   let total = 0;
-  for (const [name, tokens] of Object.entries(models)) {
+  for (const [name, tokens] of modelUsage) {
     if (!tokens || tokens <= 0) continue;
     const entry = MODEL_BLENDED_RATE_PER_M.find((m) => m.match.test(name));
     const rate = entry ? entry.rate : DEFAULT_RATE_PER_M;
@@ -168,13 +219,13 @@ function estimateTotalCostUsd(models?: Record<string, number>): number {
 
 function GridHeatmap({
   title,
-  subtitle,
+  summary,
   scale,
   data,
   formatValue,
 }: {
   title: string;
-  subtitle?: string;
+  summary: string;
   scale: ColorScale;
   data: number[]; // length CELL_COUNT
   formatValue: (n: number) => string;
@@ -182,42 +233,62 @@ function GridHeatmap({
   const max = Math.max(...data, 1);
   const nonZero = data.filter((v) => v > 0);
   const min = nonZero.length > 0 ? Math.min(...nonZero) : 0;
+  const longestCellValue = data.reduce((longest, value) => {
+    const label = formatValue(value);
+    return label.length > longest ? label.length : longest;
+  }, 0);
+  const minCellWidth =
+    longestCellValue >= 7 ? 64 : longestCellValue >= 5 ? 56 : 44;
+  const minCellHeight =
+    longestCellValue >= 7 ? 44 : longestCellValue >= 5 ? 40 : 34;
 
   return (
-    <div>
-      <div
-        className={`mb-1 text-xs font-bold uppercase tracking-wider ${TITLE_COLORS[scale]}`}
-      >
-        {title}
-      </div>
-      {subtitle && (
-        <div className="mb-2 text-[10px] text-slate-500 dark:text-slate-400">
-          {subtitle}
+    <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/20">
+      <div className="mb-3 flex min-h-[2.5rem] items-start justify-between gap-3">
+        <div
+          className={`text-xs font-bold uppercase tracking-wider ${TITLE_COLORS[scale]}`}
+        >
+          {title}
         </div>
-      )}
-      <div
-        className="grid gap-[3px]"
-        style={{
-          gridTemplateColumns: `repeat(${DAYS_PER_WEEK}, minmax(0, 1fr))`,
-        }}
-      >
-        {data.map((value, i) => {
-          const level = getLevel(scale, value, max);
-          return (
-            <div
-              key={i}
-              title={formatValue(value)}
-              className={`flex aspect-square items-center justify-center rounded text-[10px] font-semibold ${level.bg} ${level.text} ${level.border ?? ""}`}
-            >
-              {formatValue(value)}
-            </div>
-          );
-        })}
+        <div className="text-right text-sm font-semibold text-slate-700 dark:text-slate-200">
+          {summary}
+        </div>
       </div>
-      {/* Legend: min / max for this series */}
-      <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
-        <span>{formatValue(min)}</span>
-        <span>{formatValue(max)}</span>
+
+      <div className="overflow-x-auto pb-1">
+        <div
+          className="grid min-w-max gap-[4px]"
+          style={{
+            gridTemplateColumns: `repeat(${DAYS_PER_WEEK}, minmax(${minCellWidth}px, 1fr))`,
+          }}
+        >
+          {data.map((value, i) => {
+            const level = getLevel(scale, value, max);
+            return (
+              <div
+                key={i}
+                title={formatValue(value)}
+                className={`flex items-center justify-center rounded px-1.5 text-center text-[10px] font-semibold leading-tight ${level.bg} ${level.text} ${level.border ?? ""}`}
+                style={{ minHeight: `${minCellHeight}px` }}
+              >
+                {formatValue(value)}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between gap-3 text-[10px] text-slate-500 dark:text-slate-400">
+        <span className="shrink-0">Low {formatValue(min)}</span>
+        <div className="flex items-center gap-1">
+          {SCALE_SWATCHS[scale].map((swatch, index) => (
+            <span
+              key={`${scale}-${index}`}
+              className={`h-2.5 w-5 rounded-sm ${swatch}`}
+            />
+          ))}
+        </div>
+        <span className="shrink-0">High {formatValue(max)}</span>
       </div>
     </div>
   );
@@ -293,11 +364,12 @@ export default function ActivityHeatmap({
   // series. If we have no tokens, fall back to zeros.
   const costDaily = useMemo<number[] | null>(() => {
     if (!tokensDaily) return null;
-    const totalCost = estimateTotalCostUsd(models);
+    const totalTokenCount = totalTokens ?? tokensDaily.reduce((a, b) => a + b, 0);
+    const totalCost = estimateTotalCostUsd(models, totalTokenCount);
     if (totalCost <= 0) {
       // Fallback: still derive from totalTokens using default blended rate
       const fallbackTotal =
-        (totalTokens ?? tokensDaily.reduce((a, b) => a + b, 0)) *
+        totalTokenCount *
         (DEFAULT_RATE_PER_M / 1_000_000);
       if (fallbackTotal <= 0) return tokensDaily.map(() => 0);
       const tokenSum = tokensDaily.reduce((a, b) => a + b, 0) || 1;
@@ -316,22 +388,24 @@ export default function ActivityHeatmap({
       <h3 className="mb-4 text-[15px] font-bold text-slate-900 dark:text-slate-100">
         Activity
       </h3>
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-2 2xl:grid-cols-3">
         <GridHeatmap
           title="Sessions"
+          summary={`${sessionsDaily.reduce((a, b) => a + b, 0)} total`}
           scale="blue"
           data={sessionsDaily}
           formatValue={(n) => (n > 0 ? n.toString() : "")}
         />
         <GridHeatmap
           title="Tokens"
+          summary={`${formatTokens(tokensDaily.reduce((a, b) => a + b, 0))} total`}
           scale="green"
           data={tokensDaily}
           formatValue={(n) => (n > 0 ? formatTokens(n) : "")}
         />
         <GridHeatmap
           title="Est. API Cost"
-          subtitle={`~${formatCost(totalCostEstimate)} total (estimate)`}
+          summary={`~${formatCost(totalCostEstimate)} total`}
           scale="amber"
           data={costDaily}
           formatValue={(n) => (n > 0 ? formatCost(n) : "")}
