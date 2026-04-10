@@ -7,6 +7,11 @@
  */
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
+import {
+  computeDefaultAgentDispatch,
+  computeDefaultBranchPrefixes,
+  computeDefaultHookFrequency,
+} from "./seed-helpers";
 
 const prisma = new PrismaClient();
 
@@ -191,6 +196,22 @@ function harnessReport(
       globCount: number;
       style: string;
     };
+    // Workflow data — drives the Workflow chain on the homepage card
+    workflowPatterns: { sequence: string[]; count: number }[];
+    skillInvocations: Record<string, number>;
+    // Optional richer fields — if omitted, we compute reasonable defaults
+    agentDispatch?: {
+      totalAgents: number;
+      types: Record<string, number>;
+      models: Record<string, number>;
+      backgroundPct: number;
+      customAgents: string[];
+    } | null;
+    mcpServers?: Record<string, number>;
+    permissionModes?: Record<string, number>;
+    hookFrequency?: Record<string, number>;
+    extraWriteupSections?: { title: string; contentHtml: string }[];
+    branchPrefixes?: Record<string, number>;
     // Insights sections
     whatsWorking: string;
     narrative: string;
@@ -261,7 +282,8 @@ function harnessReport(
       toolUsage: opts.toolUsage,
       skillInventory: opts.skillInventory,
       hookDefinitions: opts.hookDefs,
-      hookFrequency: {},
+      hookFrequency:
+        opts.hookFrequency ?? computeDefaultHookFrequency(opts.hookDefs),
       plugins: opts.plugins,
       harnessFiles: [
         "~/.claude/CLAUDE.md (42 lines)",
@@ -269,17 +291,26 @@ function harnessReport(
         "1 HANDOFF.md file",
       ],
       fileOpStyle: opts.fileOpStyle,
-      agentDispatch: null,
+      // Helper auto-populates agentDispatch for users whose detectedSkills
+      // include parallel_agents or subagents — matches the real extractor.
+      agentDispatch:
+        opts.agentDispatch === undefined
+          ? computeDefaultAgentDispatch(
+              opts.detectedSkills ?? [],
+              opts.sessions,
+            )
+          : opts.agentDispatch,
       cliTools: opts.cliTools,
       languages: opts.languages,
       models: opts.models,
-      permissionModes: { plan: 60, auto: 40 },
-      mcpServers: {},
+      permissionModes: opts.permissionModes ?? { plan: 60, auto: 40 },
+      mcpServers: opts.mcpServers ?? {},
       gitPatterns: {
         prCount: opts.prs,
         commitCount: opts.commits,
         linesAdded: `${(opts.linesAdded / 1000).toFixed(1)}K`,
-        branchPrefixes: { "feat/": 8, "fix/": 5 },
+        branchPrefixes:
+          opts.branchPrefixes ?? computeDefaultBranchPrefixes(opts.commits),
       },
       versions: ["1.0.16", "1.0.15"],
       writeupSections: [
@@ -287,7 +318,20 @@ function harnessReport(
           title: "How This Harness Works",
           contentHtml: `<p>This developer runs a <strong>${opts.autonomyLabel.toLowerCase()}</strong> workflow — ${opts.autonomyLabel === "Fire-and-Forget" ? "launching tasks and letting Claude work autonomously with minimal supervision" : opts.autonomyLabel === "Directive" ? "providing clear instructions and reviewing outputs methodically" : "collaborating closely with Claude in a conversational back-and-forth"}.</p>`,
         },
+        ...(opts.extraWriteupSections ?? []),
       ],
+      workflowData: {
+        skillInvocations: opts.skillInvocations,
+        agentDispatches: {},
+        workflowPatterns: opts.workflowPatterns,
+        phaseTransitions: {},
+        phaseDistribution: {},
+        phaseStats: {
+          testBeforeShipPct: 40,
+          exploreBeforeImplPct: 60,
+          totalSessionsWithPhases: opts.sessions,
+        },
+      },
       integrityHash: "demo-" + Math.random().toString(36).substring(2, 10),
     },
   };
@@ -557,6 +601,63 @@ async function seed() {
           description: "React admin with RBAC and analytics",
         },
       ],
+      workflowPatterns: [
+        {
+          sequence: [
+            "superpowers:writing-plans",
+            "superpowers:dispatching-parallel-agents",
+            "superpowers:executing-plans",
+            "pr-review-toolkit:code-reviewer",
+          ],
+          count: 32,
+        },
+        {
+          sequence: [
+            "compound-engineering:ce-brainstorm",
+            "superpowers:writing-plans",
+          ],
+          count: 14,
+        },
+      ],
+      skillInvocations: {
+        "superpowers:writing-plans": 52,
+        "superpowers:dispatching-parallel-agents": 38,
+        "superpowers:executing-plans": 45,
+        "superpowers:using-git-worktrees": 24,
+        "pr-review-toolkit:code-reviewer": 34,
+        "compound-engineering:ce-brainstorm": 18,
+        "commit-commands:commit": 89,
+      },
+      mcpServers: {
+        claude_ai_GitHub: 184,
+        stripe: 92,
+        linear: 38,
+      },
+      permissionModes: { plan: 35, auto: 60, acceptEdits: 5 },
+      hookFrequency: {
+        "PostToolUse:Write": 142,
+        "PostToolUse:Edit": 218,
+        PreCommit: 34,
+        "PostToolUse:Bash": 61,
+      },
+      extraWriteupSections: [
+        {
+          title: "Parallel Orchestration Pattern",
+          contentHtml:
+            "<p>Mika routinely dispatches 5–8 concurrent agents per feature. Each works in an isolated worktree; a synthesis agent reconciles the results and produces a single PR. This pattern is in the top 1% of parallel-agent usage across the corpus.</p>",
+        },
+        {
+          title: "Hook-Guarded Autonomy",
+          contentHtml:
+            "<p>Fire-and-Forget autonomy is safe here because of disciplined hooks. A PreCommit hook runs lint + tests before any commit, and a PostToolUse:Bash hook blocks destructive commands like <code>rm -rf</code> and <code>git reset --hard</code>.</p>",
+        },
+      ],
+      branchPrefixes: {
+        "feat/": 88,
+        "fix/": 62,
+        "chore/": 28,
+        "refactor/": 20,
+      },
       funHeadline: "Claude named a variable 'thisIsDefinitelyNotAHack'",
       funDetail: "It survived code review and made it to staging.",
     }),
@@ -803,6 +904,60 @@ async function seed() {
             "Internal tool for data annotation with active learning and model-assisted labeling",
         },
       ],
+      workflowPatterns: [
+        {
+          sequence: [
+            "compound-engineering:ce-brainstorm",
+            "compound-engineering:ce-plan",
+            "superpowers:test-driven-development",
+            "pr-review-toolkit:silent-failure-hunter",
+          ],
+          count: 21,
+        },
+        {
+          sequence: [
+            "compound-engineering:ce-plan",
+            "pr-review-toolkit:code-reviewer",
+          ],
+          count: 12,
+        },
+      ],
+      skillInvocations: {
+        "compound-engineering:ce-brainstorm": 28,
+        "compound-engineering:ce-plan": 32,
+        "superpowers:test-driven-development": 21,
+        "pr-review-toolkit:silent-failure-hunter": 14,
+        "pr-review-toolkit:code-reviewer": 19,
+        "anthropics:claude-api": 11,
+      },
+      mcpServers: {
+        anthropic_api: 126,
+        hugging_face: 48,
+        wandb: 22,
+      },
+      permissionModes: { plan: 70, auto: 25, dontAsk: 5 },
+      hookFrequency: {
+        "PostToolUse:Write": 82,
+        "PreToolUse:Bash": 18,
+      },
+      extraWriteupSections: [
+        {
+          title: "Custom Skill Workshop",
+          contentHtml:
+            "<p>Priya maintains an extensive library of custom skills focused on ML pipelines: data validation, model evaluation, and experiment tracking. Each skill is treated as a first-class artifact with its own tests.</p>",
+        },
+        {
+          title: "Silent-Failure Hunting",
+          contentHtml:
+            "<p>Heavy use of <code>pr-review-toolkit:silent-failure-hunter</code> on every PR. Priya has surfaced 12 silent-catch patterns in her codebase this month alone.</p>",
+        },
+      ],
+      branchPrefixes: {
+        "feat/": 34,
+        "fix/": 28,
+        "experiment/": 14,
+        "data/": 8,
+      },
       funHeadline: "Claude wrote a haiku in a docstring",
       funDetail:
         "While documenting a data pipeline function, Claude added: 'Data flows like water / Through pipes of transformation / Clean output emerges'. The team voted to keep it.",
@@ -1030,6 +1185,51 @@ async function seed() {
             "Responsive marketing site with CMS, blog, and SEO optimization",
         },
       ],
+      workflowPatterns: [
+        {
+          sequence: [
+            "compound-engineering:frontend-design",
+            "superpowers:writing-plans",
+            "superpowers:executing-plans",
+            "commit-commands:commit-push-pr",
+          ],
+          count: 38,
+        },
+        {
+          sequence: [
+            "superpowers:writing-plans",
+            "pr-review-toolkit:code-reviewer",
+          ],
+          count: 19,
+        },
+      ],
+      skillInvocations: {
+        "compound-engineering:frontend-design": 42,
+        "superpowers:writing-plans": 35,
+        "superpowers:executing-plans": 48,
+        "commit-commands:commit-push-pr": 54,
+        "pr-review-toolkit:code-reviewer": 26,
+        "anthropics:claude-api": 8,
+      },
+      mcpServers: {
+        stripe: 64,
+        cloudflare: 31,
+        claude_ai_GitHub: 88,
+      },
+      permissionModes: { plan: 55, auto: 40, acceptEdits: 5 },
+      hookFrequency: {
+        "PostToolUse:Write": 108,
+        "PostToolUse:Edit": 164,
+        PreCommit: 42,
+      },
+      extraWriteupSections: [
+        {
+          title: "Ship-First Freelancer Pattern",
+          contentHtml:
+            "<p>Elena ships 2-3 client projects per month. Her workflow balances directive planning (to stay on scope) with frontend-design skill invocations for rapid UI iteration. Stripe integrations are hook-verified before any commit.</p>",
+        },
+      ],
+      branchPrefixes: { "feat/": 72, "fix/": 24, "client/": 18, "deploy/": 6 },
       funHeadline:
         "Claude apologized for a 'strongly-worded' code review comment",
       funDetail:
@@ -1102,6 +1302,455 @@ async function seed() {
       funHeadline: "Claude taught Sam what a 'monad' is using pizza toppings",
       funDetail:
         "When Sam asked about functional programming concepts, Claude explained monads as 'wrapping a pizza in a box — you can transform the pizza inside without opening the box'. Sam reportedly told their entire bootcamp cohort.",
+    }),
+
+    // ── Jordan: /insight-harness report ────────────────
+    harnessReport(users["jordan-reeves"].id, "jordan-reeves", {
+      sessions: 89,
+      messages: 1120,
+      commits: 156,
+      dateStart: "2026-03-05",
+      dateEnd: "2026-04-02",
+      days: 28,
+      linesAdded: 22100,
+      linesRemoved: 6800,
+      tokens: 3100000,
+      durationHours: 54,
+      avgSession: 28,
+      skills: 9,
+      hooks: 2,
+      prs: 18,
+      autonomyLabel: "Directive",
+      detectedSkills: [
+        "headless_mode",
+        "custom_skills",
+        "plan_mode",
+        "parallel_agents",
+      ],
+      toolUsage: {
+        Read: 2200,
+        Edit: 1900,
+        Bash: 2400,
+        Write: 1100,
+        Grep: 800,
+        Glob: 600,
+      },
+      skillInventory: [
+        {
+          name: "deploy",
+          calls: 48,
+          source: "custom",
+          description: "Ship to Vercel + run smoke tests",
+        },
+        {
+          name: "headless-build",
+          calls: 31,
+          source: "custom",
+          description: "Queue overnight feature builds",
+        },
+        {
+          name: "scope-check",
+          calls: 22,
+          source: "custom",
+          description: "Prevent scope creep on MVPs",
+        },
+      ],
+      hookDefs: [
+        {
+          event: "PostToolUse:Write",
+          matcher: "*.ts",
+          script: "prettier --write $FILE",
+        },
+      ],
+      plugins: [
+        {
+          name: "superpowers",
+          version: "1.4.2",
+          marketplace: "official",
+          active: true,
+        },
+        {
+          name: "commit-commands",
+          version: "0.9.1",
+          marketplace: "community",
+          active: true,
+        },
+      ],
+      featurePills: [
+        { name: "Headless", active: true, value: "overnight" },
+        { name: "Plan Mode", active: true, value: "MVP" },
+      ],
+      models: { opus: 620000, sonnet: 2100000, haiku: 380000 },
+      languages: { TypeScript: 62, Python: 12, Shell: 26 },
+      cliTools: { git: 340, vercel: 48, gh: 82 },
+      fileOpStyle: {
+        readPct: 30,
+        editPct: 40,
+        writePct: 30,
+        grepCount: 420,
+        globCount: 190,
+        style: "ship-first",
+      },
+      workflowPatterns: [
+        {
+          sequence: [
+            "superpowers:writing-plans",
+            "superpowers:executing-plans",
+            "commit-commands:commit-push-pr",
+          ],
+          count: 42,
+        },
+        {
+          sequence: [
+            "superpowers:dispatching-parallel-agents",
+            "commit-commands:commit-push-pr",
+          ],
+          count: 15,
+        },
+      ],
+      skillInvocations: {
+        "superpowers:writing-plans": 38,
+        "superpowers:executing-plans": 52,
+        "superpowers:dispatching-parallel-agents": 19,
+        "commit-commands:commit-push-pr": 64,
+        "commit-commands:commit": 41,
+      },
+      whatsWorking:
+        "Fastest shipper in the demo set. Overnight headless builds convert plans into shipped features without human supervision for hours at a time.",
+      narrative:
+        "Jordan is an indie hacker who lives on 'ship it' energy. Launches headless builds overnight, reviews diffs over coffee, and pushes straight to production.",
+      keyPattern:
+        "Key pattern: Plan → headless execute → ship. Minimal review loop, maximum throughput.",
+      projects: [
+        {
+          name: "Lemonstand (SaaS)",
+          sessions: 34,
+          description: "B2B invoicing SaaS shipped solo in 14 days",
+        },
+        {
+          name: "FormKit Clone",
+          sessions: 22,
+          description: "OSS form builder — 1.2k stars in 3 weeks",
+        },
+      ],
+      mcpServers: {
+        vercel: 48,
+        supabase: 34,
+        stripe: 24,
+        claude_ai_GitHub: 72,
+      },
+      permissionModes: { plan: 40, auto: 50, acceptEdits: 10 },
+      hookFrequency: {
+        "PostToolUse:Write": 98,
+      },
+      extraWriteupSections: [
+        {
+          title: "Headless Overnight Builds",
+          contentHtml:
+            "<p>Jordan's signature move: queue a feature build before bed, wake up to a shipped PR. The headless-build skill combined with scope-check protection lets Claude run autonomously for 4-6 hours without breaking the MVP.</p>",
+        },
+      ],
+      branchPrefixes: { "feat/": 84, "fix/": 42, "ship/": 28 },
+      funHeadline: "Claude shipped a feature while Jordan was at the gym",
+      funDetail:
+        "Left a headless session running on a Stripe integration. Came back 90 minutes later to a working payment flow, webhook handling, and a Vercel deploy.",
+    }),
+
+    // ── Marcus: /insight-harness report ────────────────
+    harnessReport(users["marcus-chen"].id, "marcus-chen", {
+      sessions: 56,
+      messages: 780,
+      commits: 42,
+      dateStart: "2026-03-08",
+      dateEnd: "2026-04-04",
+      days: 27,
+      linesAdded: 8900,
+      linesRemoved: 3100,
+      tokens: 2400000,
+      durationHours: 38,
+      avgSession: 25,
+      skills: 7,
+      hooks: 4,
+      prs: 11,
+      autonomyLabel: "Collaborative",
+      detectedSkills: ["hooks", "subagents", "mcp_servers", "plan_mode"],
+      toolUsage: {
+        Read: 1600,
+        Edit: 1100,
+        Bash: 1800,
+        Grep: 700,
+        Write: 320,
+      },
+      skillInventory: [
+        {
+          name: "tf-review",
+          calls: 28,
+          source: "custom",
+          description: "Terraform plan pre-flight check",
+        },
+        {
+          name: "k8s-debug",
+          calls: 19,
+          source: "custom",
+          description: "Kubernetes incident triage",
+        },
+        {
+          name: "incident",
+          calls: 14,
+          source: "custom",
+          description: "Incident postmortem generator",
+        },
+      ],
+      hookDefs: [
+        {
+          event: "PreToolUse:Bash",
+          matcher: "terraform apply|kubectl apply",
+          script: "echo 'Destructive k8s/tf apply — confirming'",
+        },
+        {
+          event: "PostToolUse:Edit",
+          matcher: "*.tf",
+          script: "terraform fmt $FILE",
+        },
+      ],
+      plugins: [
+        {
+          name: "superpowers",
+          version: "1.4.2",
+          marketplace: "official",
+          active: true,
+        },
+        {
+          name: "pr-review-toolkit",
+          version: "2.0.3",
+          marketplace: "community",
+          active: true,
+        },
+        {
+          name: "anthropics",
+          version: "1.2.0",
+          marketplace: "official",
+          active: true,
+        },
+      ],
+      featurePills: [
+        { name: "Hooks", active: true, value: "k8s guard" },
+        { name: "MCP", active: true, value: "grafana" },
+      ],
+      models: { opus: 1100000, sonnet: 1200000, haiku: 100000 },
+      languages: {
+        HCL: 41,
+        YAML: 29,
+        Go: 18,
+        Python: 12,
+      },
+      cliTools: { git: 180, kubectl: 320, terraform: 180, gh: 45 },
+      fileOpStyle: {
+        readPct: 55,
+        editPct: 30,
+        writePct: 15,
+        grepCount: 620,
+        globCount: 140,
+        style: "read-heavy",
+      },
+      workflowPatterns: [
+        {
+          sequence: [
+            "compound-engineering:ce-plan",
+            "superpowers:subagent-driven-development",
+            "pr-review-toolkit:code-reviewer",
+          ],
+          count: 24,
+        },
+        {
+          sequence: [
+            "superpowers:dispatching-parallel-agents",
+            "pr-review-toolkit:silent-failure-hunter",
+          ],
+          count: 11,
+        },
+      ],
+      skillInvocations: {
+        "compound-engineering:ce-plan": 32,
+        "superpowers:subagent-driven-development": 28,
+        "superpowers:dispatching-parallel-agents": 19,
+        "pr-review-toolkit:code-reviewer": 24,
+        "pr-review-toolkit:silent-failure-hunter": 18,
+        "anthropics:claude-api": 9,
+      },
+      whatsWorking:
+        "Infrastructure-as-code workflows benefit heavily from hook-guarded destructive operations. Subagent delegation for parallel Terraform plans saves 30-40% of review time.",
+      narrative:
+        "Marcus is a DevOps lead who treats Claude Code as a cautious-but-fast collaborator. Hooks gate dangerous operations. Subagents handle parallel infra checks. Reviews are deliberate.",
+      keyPattern:
+        "Key pattern: Plan-heavy, hook-guarded, subagent-delegated infrastructure automation.",
+      projects: [
+        {
+          name: "Terraform Monorepo",
+          sessions: 28,
+          description: "50+ modules across 4 AWS accounts, shared CI/CD",
+        },
+        {
+          name: "Grafana On-Call Dashboard",
+          sessions: 14,
+          description: "Incident triage dashboard with SLO burn alerts",
+        },
+      ],
+      mcpServers: {
+        grafana: 28,
+        aws_cli: 54,
+        kubernetes: 72,
+        claude_ai_GitHub: 48,
+      },
+      permissionModes: { plan: 78, auto: 15, acceptEdits: 7 },
+      hookFrequency: {
+        "PreToolUse:Bash": 89,
+        "PostToolUse:Edit": 56,
+      },
+      extraWriteupSections: [
+        {
+          title: "Infrastructure-as-Code Discipline",
+          contentHtml:
+            "<p>Marcus treats every <code>terraform apply</code> and <code>kubectl apply</code> as a potential production incident. PreToolUse:Bash hooks force an explicit confirmation step before any destructive infra operation. This has caught two near-miss prod changes this month.</p>",
+        },
+        {
+          title: "Subagent-Delegated Review",
+          contentHtml:
+            "<p>Heavy use of <code>superpowers:subagent-driven-development</code> to run parallel infrastructure checks — one subagent plans the change, another reviews the Terraform diff, a third checks for drift against the live state.</p>",
+        },
+      ],
+      branchPrefixes: { "feat/": 18, "fix/": 12, "infra/": 14, "incident/": 4 },
+      funHeadline: "A hook saved Marcus from deleting prod (twice)",
+      funDetail:
+        "PreToolUse:Bash hook matched `terraform apply` against the prod account and blocked execution until a confirmation file existed. Once on a Monday morning, once on a Friday afternoon. Both times it was the right call.",
+    }),
+
+    // ── Sam: /insight-harness report ───────────────────
+    harnessReport(users["sam-okafor"].id, "sam-okafor", {
+      sessions: 34,
+      messages: 620,
+      commits: 28,
+      dateStart: "2026-03-15",
+      dateEnd: "2026-04-05",
+      days: 21,
+      linesAdded: 4200,
+      linesRemoved: 800,
+      tokens: 780000,
+      durationHours: 18,
+      avgSession: 22,
+      skills: 4,
+      hooks: 1,
+      prs: 6,
+      autonomyLabel: "Collaborative",
+      detectedSkills: ["plan_mode", "code_review"],
+      toolUsage: {
+        Read: 1400,
+        Edit: 620,
+        Bash: 380,
+        Grep: 420,
+        Write: 140,
+      },
+      skillInventory: [
+        {
+          name: "explain-this",
+          calls: 31,
+          source: "custom",
+          description: "Line-by-line code explanation for learning",
+        },
+        {
+          name: "first-pr",
+          calls: 8,
+          source: "custom",
+          description: "Guided walkthrough for opening a pull request",
+        },
+      ],
+      hookDefs: [
+        {
+          event: "PostToolUse:Write",
+          matcher: "*.js",
+          script: "prettier --write $FILE",
+        },
+      ],
+      plugins: [
+        {
+          name: "superpowers",
+          version: "1.4.2",
+          marketplace: "official",
+          active: true,
+        },
+        {
+          name: "pr-review-toolkit",
+          version: "2.0.3",
+          marketplace: "community",
+          active: true,
+        },
+      ],
+      featurePills: [
+        { name: "Plan Mode", active: true, value: "always" },
+        { name: "Review", active: true, value: "learning" },
+      ],
+      models: { sonnet: 680000, haiku: 100000 },
+      languages: { JavaScript: 48, TypeScript: 32, CSS: 20 },
+      cliTools: { git: 62, gh: 14 },
+      fileOpStyle: {
+        readPct: 62,
+        editPct: 22,
+        writePct: 16,
+        grepCount: 380,
+        globCount: 70,
+        style: "read-first",
+      },
+      workflowPatterns: [
+        {
+          sequence: [
+            "superpowers:brainstorming",
+            "superpowers:writing-plans",
+            "superpowers:test-driven-development",
+            "pr-review-toolkit:code-reviewer",
+          ],
+          count: 14,
+        },
+      ],
+      skillInvocations: {
+        "superpowers:brainstorming": 18,
+        "superpowers:writing-plans": 24,
+        "superpowers:test-driven-development": 16,
+        "pr-review-toolkit:code-reviewer": 22,
+      },
+      whatsWorking:
+        "Growth trajectory is clear. Each week's commits show more confident architectural decisions. Using plan mode consistently before any non-trivial change.",
+      narrative:
+        "Sam is a junior developer learning fast. Plan-first habits are already forming. Reviews are treated as learning opportunities rather than checklists.",
+      keyPattern:
+        "Key pattern: Plan → TDD → review. Every change is explained before it's made.",
+      projects: [
+        {
+          name: "Bootcamp Capstone",
+          sessions: 22,
+          description: "Full-stack task tracker for final project review",
+        },
+        {
+          name: "Portfolio Site",
+          sessions: 12,
+          description: "Next.js personal site with blog and case studies",
+        },
+      ],
+      mcpServers: {},
+      permissionModes: { plan: 88, auto: 5, acceptEdits: 7 },
+      hookFrequency: {
+        "PostToolUse:Write": 48,
+      },
+      extraWriteupSections: [
+        {
+          title: "Learning-First Pattern",
+          contentHtml:
+            "<p>Sam uses <code>/explain-this</code> on every non-trivial file before making changes. Plan mode is almost always engaged — Sam treats Claude as a patient teacher rather than an autocomplete. This read-first discipline is unusually mature for a junior developer.</p>",
+        },
+      ],
+      branchPrefixes: { "feat/": 14, "fix/": 10, "learn/": 4 },
+      funHeadline: "Sam's first PR got merged in 4 days",
+      funDetail:
+        "Used the `/first-pr` skill to draft the description, added tests without being asked, and got a rare 'LGTM ship it' from the senior reviewer on first pass.",
     }),
   ];
 

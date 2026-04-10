@@ -1,11 +1,10 @@
 name: QA Testing on Mac Mini
 
 on:
-  push:
-    branches: ['feat/*']
-  pull_request:
-    branches: [main]
-  workflow_dispatch: # Allow manual triggers
+  # Manual-only. This workflow is opt-in — trigger it from the Actions tab
+  # or via `gh workflow run "QA Testing on Mac Mini"` when you want a full
+  # browser QA pass. It no longer runs on every push/PR.
+  workflow_dispatch:
 
 jobs:
   qa-browser-test:

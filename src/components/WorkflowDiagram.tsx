@@ -1,8 +1,15 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { HarnessAgentDispatch, HarnessWorkflowData } from "@/types/insights";
+import type {
+  HarnessAgentDispatch,
+  HarnessWorkflowData,
+} from "@/types/insights";
 import { useMermaid } from "@/hooks/useMermaid";
+import {
+  safeSequenceLabel,
+  safeSkillKeyLabel,
+} from "@/lib/privacy-safe-workflow";
 
 interface WorkflowDiagramProps {
   workflowData: HarnessWorkflowData;
@@ -61,12 +68,16 @@ function topEntries(
 
 function strongestWorkflowPattern(
   workflowPatterns: HarnessWorkflowData["workflowPatterns"],
-): { label: string; count: number } | null {
+): { sequence: string[]; count: number } | null {
   if (workflowPatterns.length === 0) return null;
   const strongest = [...workflowPatterns].sort((a, b) => b.count - a.count)[0];
   if (!strongest) return null;
+  // Return the raw sequence so callers can sanitize per-skill via
+  // safeSequenceLabel(). Returning a pre-joined `label` was the leak
+  // path codex flagged: it baked custom skill paths/URLs/ticket IDs
+  // into the public copy.
   return {
-    label: strongest.sequence.join(" -> "),
+    sequence: strongest.sequence,
     count: strongest.count,
   };
 }
@@ -77,24 +88,34 @@ function buildWorkflowInsights(
 ): Array<{ title: string; body: string }> {
   const insights: Array<{ title: string; body: string }> = [];
   const topSkills = topEntries(workflowData.skillInvocations, 2);
-  const strongestPattern = strongestWorkflowPattern(workflowData.workflowPatterns);
-  const agentDispatches = topEntries(workflowData.agentDispatches, 3);
+  const strongestPattern = strongestWorkflowPattern(
+    workflowData.workflowPatterns,
+  );
+  // Deliberately NOT using workflowData.agentDispatches — those keys
+  // are raw descriptions that leak customer/repo/path identifiers in
+  // legacy reports. The curated agentDispatch.types is the privacy-safe
+  // categorization (see PR #4 removal).
   const topAgentTypes = topEntries(agentDispatch?.types ?? {}, 2);
 
   if (strongestPattern) {
+    // Sanitize each skill in the sequence so custom-skill paths/URLs/
+    // file paths don't leak into the public writeup.
+    const safeLabel = safeSequenceLabel(strongestPattern.sequence);
     insights.push({
       title: "Strongest Repeatable Path",
-      body: `${strongestPattern.label} is the clearest recurring chain in this report, repeating ${strongestPattern.count} times.`,
+      body: `${safeLabel} is the clearest recurring chain in this report, repeating ${strongestPattern.count} times.`,
     });
   }
 
   if (topSkills.length > 0) {
     const [primary, secondary] = topSkills;
+    const primaryLabel = safeSkillKeyLabel(primary[0]);
+    const secondaryLabel = secondary ? safeSkillKeyLabel(secondary[0]) : null;
     insights.push({
       title: "Most Invoked Skills",
       body: secondary
-        ? `${primary[0]} leads at ${primary[1]} uses, followed by ${secondary[0]} at ${secondary[1]}.`
-        : `${primary[0]} is the dominant skill in this report with ${primary[1]} uses.`,
+        ? `${primaryLabel} leads at ${primary[1]} uses, followed by ${secondaryLabel} at ${secondary[1]}.`
+        : `${primaryLabel} is the dominant skill in this report with ${primary[1]} uses.`,
     });
   }
 
@@ -112,15 +133,7 @@ function buildWorkflowInsights(
     });
   }
 
-  if (agentDispatches.length > 0) {
-    insights.push({
-      title: "Delegation Pattern",
-      body: `Agent handoffs cluster around ${agentDispatches
-        .map(([label]) => label)
-        .slice(0, 2)
-        .join(" and ")}, showing repeated delegation of parallelizable work.`,
-    });
-  } else if ((agentDispatch?.totalAgents ?? 0) > 0) {
+  if ((agentDispatch?.totalAgents ?? 0) > 0) {
     const typeSummary =
       topAgentTypes.length > 0
         ? ` Most runs use ${topAgentTypes
@@ -224,17 +237,20 @@ export default function WorkflowDiagram({
 
   if (error || !hasSkillData) return null;
 
-  const { phaseStats, phaseDistribution, agentDispatches } = workflowData;
+  const { phaseStats, phaseDistribution } = workflowData;
   const sortedSkills = topEntries(workflowData.skillInvocations, 10);
   const topSkillPills = topEntries(workflowData.skillInvocations, 6);
   const topSkill = topEntries(workflowData.skillInvocations, 1)[0];
-  const strongestPattern = strongestWorkflowPattern(workflowData.workflowPatterns);
-  const sortedDispatches = topEntries(agentDispatches, 8);
+  const strongestPattern = strongestWorkflowPattern(
+    workflowData.workflowPatterns,
+  );
+  // NOTE: workflowData.agentDispatches is intentionally not read —
+  // raw description keys leak customer/repo/path identifiers in
+  // legacy reports. Only the curated agentDispatch.types is rendered.
   const dispatchTypeEntries = topEntries(agentDispatch?.types ?? {}, 4);
   const dispatchModelEntries = topEntries(agentDispatch?.models ?? {}, 4);
   const workflowInsights = buildWorkflowInsights(workflowData, agentDispatch);
   const hasPhaseData = Object.keys(phaseDistribution).length > 0;
-  const hasDispatchDetails = sortedDispatches.length > 0;
   const hasDispatchSummary = (agentDispatch?.totalAgents ?? 0) > 0;
 
   const pluginsPresent = Array.from(
@@ -270,8 +286,9 @@ export default function WorkflowDiagram({
         {topSkillPills.length > 0 && (
           <div className="mb-4 flex flex-wrap gap-2">
             {topSkillPills.map(([skill, count]) => {
-              const { plugin, shortName } = parseSkillSource(skill);
+              const { plugin } = parseSkillSource(skill);
               const color = getPluginColor(plugin);
+              const safeName = safeSkillKeyLabel(skill);
               return (
                 <span
                   key={skill}
@@ -282,7 +299,7 @@ export default function WorkflowDiagram({
                     border: `1px solid ${color.stroke}`,
                   }}
                 >
-                  <span>{shortName}</span>
+                  <span>{safeName}</span>
                   <span className="opacity-80">{count}x</span>
                 </span>
               );
@@ -300,8 +317,9 @@ export default function WorkflowDiagram({
         <div className="block sm:hidden">
           <ol className="space-y-2">
             {sortedSkills.map(([skillName, count]) => {
-              const { plugin, shortName } = parseSkillSource(skillName);
+              const { plugin } = parseSkillSource(skillName);
               const color = getPluginColor(plugin);
+              const safeName = safeSkillKeyLabel(skillName);
               return (
                 <li
                   key={skillName}
@@ -309,7 +327,7 @@ export default function WorkflowDiagram({
                 >
                   <div className="min-w-0">
                     <div className="truncate font-mono text-xs text-slate-700 dark:text-slate-300">
-                      {shortName}
+                      {safeName}
                     </div>
                     <div
                       className="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold"
@@ -360,7 +378,7 @@ export default function WorkflowDiagram({
               {topSkill && (
                 <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
                   <strong className="text-slate-900 dark:text-slate-100">
-                    {parseSkillSource(topSkill[0]).shortName}
+                    {safeSkillKeyLabel(topSkill[0])}
                   </strong>{" "}
                   most invoked ({topSkill[1]}x)
                 </div>
@@ -368,7 +386,7 @@ export default function WorkflowDiagram({
               {strongestPattern && (
                 <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
                   <strong className="text-slate-900 dark:text-slate-100">
-                    {strongestPattern.label}
+                    {safeSequenceLabel(strongestPattern.sequence)}
                   </strong>{" "}
                   strongest pattern ({strongestPattern.count}x)
                 </div>
@@ -389,23 +407,13 @@ export default function WorkflowDiagram({
           </p>
         </div>
 
-        {hasDispatchDetails ? (
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-            {sortedDispatches.map(([desc, count]) => (
-              <div
-                key={desc}
-                className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/60"
-              >
-                <span className="min-w-0 text-xs font-medium text-slate-600 dark:text-slate-300">
-                  {desc}
-                </span>
-                <span className="shrink-0 font-mono text-[11px] text-slate-400">
-                  {count}x
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : hasDispatchSummary ? (
+        {/* Raw agent-dispatch descriptions can contain customer/repo/path
+            identifiers (see PR #4 which removed them from the extractor).
+            Any legacy reports that still have agentDispatches populated are
+            deliberately NOT rendered here — we only show the curated
+            agentDispatch.types/models summary below. */}
+
+        {hasDispatchSummary ? (
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-3">
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-800/60">

@@ -75,25 +75,27 @@ export const homepage = {
 
   // ── How It Works ──────────────────────────────────────────
   howItWorks: {
-    heading: "How It Works",
+    heading: "Three commands to a public profile",
+    subheading:
+      "Install once, run, upload. No accounts. No signup. /insight-harness is the command.",
     steps: [
       {
-        icon: "📊",
-        title: "Run /insights in Claude Code",
+        icon: "📦",
+        title: "Install /insight-harness",
         description:
-          "Generate a usage report covering your sessions, messages, commits, and workflow patterns. Takes just a few seconds.",
+          "One curl command drops the skill into your Claude Code setup. One-time step.",
       },
       {
         icon: "⚡",
-        title: "Run /insight-harness for a complete profile",
+        title: "Run /insight-harness",
         description:
-          "Get the full data dashboard — token usage, tool breakdowns, skills, hooks, plugins, and more on top of everything in /insights.",
+          "In any Claude Code session. Scans tokens, skills, plugins, workflows. Outputs a single HTML report in seconds.",
       },
       {
         icon: "🌐",
-        title: "Share your profile",
+        title: "Upload the report",
         description:
-          "Show your current usage and harness details. Upload the HTML report and get a public profile others can browse and learn from.",
+          "Drop the HTML here. Personal data is stripped before publish. You get a public profile others can browse.",
       },
     ],
   },

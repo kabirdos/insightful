@@ -1,0 +1,1447 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insight Harness Homepage UX Directions</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --bg: #f3f1ea;
+        --panel: #fffdf8;
+        --ink: #1e2230;
+        --muted: #667085;
+        --line: rgba(30, 34, 48, 0.12);
+        --nav: #12151d;
+        --nav-link: #a8c0ff;
+        --blue: #2a63ff;
+        --green: #0d7a5f;
+        --amber: #c7791a;
+        --shadow: 0 18px 50px rgba(17, 24, 39, 0.08);
+      }
+
+      body {
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(42, 99, 255, 0.08), transparent 24%),
+          radial-gradient(circle at top right, rgba(13, 122, 95, 0.08), transparent 20%),
+          var(--bg);
+        color: var(--ink);
+      }
+
+      body.viewport-mobile .mockup-section,
+      body.viewport-mobile .mockup-section.wide {
+        max-width: 640px;
+      }
+
+      body.viewport-desktop .mockup-section {
+        max-width: 980px;
+      }
+
+      body.viewport-desktop .mockup-section.wide {
+        max-width: 1240px;
+      }
+
+      .mockup-nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(18, 21, 29, 0.96);
+        backdrop-filter: blur(16px);
+        color: white;
+        padding: 12px 18px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        box-shadow: 0 2px 14px rgba(0, 0, 0, 0.18);
+      }
+
+      .mockup-nav .title {
+        font-size: 14px;
+        font-weight: 700;
+        margin-right: 10px;
+        white-space: nowrap;
+      }
+
+      .mockup-nav a {
+        color: var(--nav-link);
+        text-decoration: none;
+        font-size: 12px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+
+      .mockup-nav a:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .viewport-toggle {
+        display: flex;
+        gap: 2px;
+        margin-left: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 999px;
+        padding: 2px;
+      }
+
+      .viewport-toggle button {
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.55);
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .viewport-toggle button.active {
+        background: rgba(255, 255, 255, 0.14);
+        color: white;
+      }
+
+      .copy-all-btn {
+        margin-left: auto;
+        background: var(--blue);
+        color: white;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .copy-all-btn.copied {
+        background: #159947;
+      }
+
+      .mockup-section {
+        margin: 42px auto;
+        padding: 0 18px;
+      }
+
+      .section-label {
+        background: #141a24;
+        color: white;
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 12px;
+      }
+
+      .section-desc {
+        font-size: 14px;
+        color: var(--muted);
+        margin-bottom: 18px;
+        line-height: 1.65;
+        max-width: 860px;
+      }
+
+      .version {
+        display: block;
+      }
+
+      .feedback-area {
+        margin-top: 18px;
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 14px;
+        box-shadow: var(--shadow);
+      }
+
+      .feedback-area label {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      .feedback-area textarea {
+        width: 100%;
+        min-height: 92px;
+        border: 1px solid rgba(30, 34, 48, 0.14);
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-family: inherit;
+        font-size: 14px;
+        line-height: 1.55;
+        resize: vertical;
+      }
+
+      .feedback-area textarea:focus {
+        outline: none;
+        border-color: var(--blue);
+        box-shadow: 0 0 0 3px rgba(42, 99, 255, 0.1);
+      }
+
+      .char-count {
+        font-size: 11px;
+        color: #98a2b3;
+        text-align: right;
+        margin-top: 6px;
+      }
+
+      .viewport-badge {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 3px 7px;
+        border-radius: 999px;
+        background: #e8ebf4;
+        color: #667085;
+        margin-left: 6px;
+      }
+
+      .review-shell {
+        border-radius: 28px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        border: 1px solid rgba(18, 21, 29, 0.08);
+        background: white;
+      }
+
+      .brief {
+        background: linear-gradient(135deg, rgba(255, 253, 248, 0.98), rgba(242, 247, 255, 0.96));
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        padding: 28px;
+        box-shadow: var(--shadow);
+      }
+
+      .brief h1 {
+        font-family: "Iowan Old Style", "Palatino Linotype", serif;
+        font-size: clamp(2rem, 4vw, 3.3rem);
+        line-height: 1;
+        letter-spacing: -0.04em;
+        max-width: 900px;
+      }
+
+      .brief p {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.7;
+        max-width: 880px;
+      }
+
+      .brief-grid {
+        display: grid;
+        grid-template-columns: 1.3fr 1fr;
+        gap: 18px;
+        margin-top: 22px;
+      }
+
+      .brief-card {
+        background: rgba(255, 255, 255, 0.82);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 18px;
+      }
+
+      .brief-card h3 {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-bottom: 10px;
+      }
+
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .chip {
+        padding: 7px 11px;
+        border-radius: 999px;
+        background: #f0f4ff;
+        border: 1px solid rgba(42, 99, 255, 0.12);
+        font-size: 12px;
+        font-weight: 700;
+        color: #2a63ff;
+      }
+
+      .insight-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 6px;
+      }
+
+      .insight-list div {
+        padding: 11px 12px;
+        border-radius: 14px;
+        background: #fff;
+        border: 1px solid rgba(30, 34, 48, 0.08);
+        color: #48505f;
+        line-height: 1.5;
+      }
+
+      .option-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 18px;
+        margin-bottom: 16px;
+      }
+
+      .option-header h2 {
+        font-family: "Iowan Old Style", "Palatino Linotype", serif;
+        font-size: clamp(1.8rem, 3vw, 2.8rem);
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+
+      .option-meta {
+        max-width: 380px;
+        text-align: right;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .note-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .note-card {
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(30, 34, 48, 0.08);
+        border-radius: 18px;
+        padding: 14px;
+      }
+
+      .note-card h4 {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      .note-card p {
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .browser-chrome {
+        background: #1a1d26;
+        color: #d7deeb;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+      }
+
+      .browser-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.18);
+      }
+
+      .browser-url {
+        margin-left: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        color: #aeb7ca;
+      }
+
+      .site-frame {
+        background: white;
+      }
+
+      .hero-a,
+      .hero-b,
+      .hero-c,
+      .hero-d {
+        padding: 28px;
+      }
+
+      .hero-a {
+        background: linear-gradient(135deg, #0f1421 0%, #1f315b 58%, #dff1ff 58%, #f8fbff 100%);
+        color: white;
+      }
+
+      .hero-a-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.95fr;
+        gap: 18px;
+        align-items: stretch;
+      }
+
+      .hero-a h3,
+      .hero-b h3,
+      .hero-c h3,
+      .hero-d h3 {
+        font-size: clamp(2rem, 3vw, 3.1rem);
+        line-height: 0.96;
+        letter-spacing: -0.05em;
+        margin-bottom: 12px;
+      }
+
+      .hero-a p {
+        color: rgba(255, 255, 255, 0.78);
+        max-width: 520px;
+        line-height: 1.65;
+      }
+
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .btn-primary,
+      .btn-secondary {
+        border-radius: 999px;
+        padding: 10px 14px;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .btn-primary {
+        background: white;
+        color: #10203e;
+      }
+
+      .btn-secondary {
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+      }
+
+      .signal-panel {
+        background: rgba(255, 255, 255, 0.92);
+        color: #1f2430;
+        border-radius: 22px;
+        padding: 18px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .signal-panel h4 {
+        font-size: 12px;
+        color: #667085;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .stat-stack {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .stat-stack div {
+        padding: 12px;
+        border-radius: 16px;
+        background: #f5f8ff;
+      }
+
+      .stat-stack strong {
+        display: block;
+        font-size: 24px;
+        letter-spacing: -0.04em;
+      }
+
+      .profile-ribbon {
+        padding: 18px 22px 24px;
+        background: #f7f9fc;
+        display: grid;
+        grid-template-columns: 1.08fr 1fr;
+        gap: 18px;
+      }
+
+      .leaderboard,
+      .pattern-block,
+      .profile-column,
+      .cta-column,
+      .atlas-grid,
+      .builder-grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .profile-card-a,
+      .mini-card,
+      .story-card,
+      .atlas-card,
+      .builder-card,
+      .feed-card {
+        border-radius: 20px;
+        background: white;
+        border: 1px solid rgba(30, 34, 48, 0.08);
+        padding: 16px;
+      }
+
+      .profile-card-a.featured {
+        background: linear-gradient(135deg, #ffffff, #edf5ff);
+        border-color: rgba(42, 99, 255, 0.18);
+      }
+
+      .profile-card-a h5,
+      .story-card h5,
+      .atlas-card h5,
+      .builder-card h5,
+      .feed-card h5 {
+        font-size: 18px;
+        margin-bottom: 6px;
+      }
+
+      .kpis {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .kpi {
+        padding: 6px 9px;
+        border-radius: 999px;
+        background: #eef3ff;
+        color: #2858d7;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .hero-b {
+        background: linear-gradient(180deg, #f7efe2 0%, #fffaf2 100%);
+        color: #251f16;
+      }
+
+      .hero-b-grid {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 18px;
+      }
+
+      .eyebrow {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #8e5e26;
+        margin-bottom: 10px;
+        font-weight: 700;
+      }
+
+      .hero-b p {
+        max-width: 560px;
+        color: #635749;
+        line-height: 1.7;
+      }
+
+      .story-stack {
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(60, 47, 27, 0.08);
+        border-radius: 24px;
+        padding: 18px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .story-stat {
+        display: grid;
+        grid-template-columns: 78px 1fr;
+        gap: 12px;
+        align-items: start;
+      }
+
+      .story-stat strong {
+        font-size: 24px;
+        letter-spacing: -0.04em;
+      }
+
+      .editorial-grid {
+        padding: 22px;
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 18px;
+        background: #fffaf2;
+      }
+
+      .hero-c {
+        background: linear-gradient(140deg, #f4faff 0%, #e7fbf7 35%, #ffffff 100%);
+      }
+
+      .hero-c-grid {
+        display: grid;
+        grid-template-columns: 0.95fr 1.05fr;
+        gap: 18px;
+      }
+
+      .hero-c p {
+        color: #536070;
+        max-width: 540px;
+        line-height: 1.7;
+      }
+
+      .atlas-panel {
+        border-radius: 24px;
+        padding: 18px;
+        background: #ffffff;
+        border: 1px solid rgba(20, 107, 96, 0.1);
+        display: grid;
+        gap: 10px;
+      }
+
+      .atlas-band {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .atlas-band div {
+        border-radius: 16px;
+        padding: 14px;
+        background: linear-gradient(180deg, #edf9f6, #f6fbff);
+        min-height: 92px;
+      }
+
+      .atlas-grid-wrap {
+        padding: 22px;
+        background: #fbfffe;
+      }
+
+      .atlas-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .hero-d {
+        background: linear-gradient(135deg, #10181d 0%, #172f28 44%, #f7faf8 44%, #ffffff 100%);
+      }
+
+      .hero-d-grid {
+        display: grid;
+        grid-template-columns: 1.02fr 0.98fr;
+        gap: 18px;
+      }
+
+      .hero-d h3 {
+        color: white;
+      }
+
+      .hero-d p {
+        color: rgba(255, 255, 255, 0.78);
+        max-width: 520px;
+        line-height: 1.65;
+      }
+
+      .hero-d .btn-primary {
+        background: #d8ff8d;
+        color: #1d3226;
+      }
+
+      .proof-stack {
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.92);
+        padding: 18px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .builder-body {
+        padding: 22px;
+        background: #f8fcfa;
+      }
+
+      .builder-grid {
+        grid-template-columns: 0.92fr 1.08fr;
+      }
+
+      .compare-table {
+        display: grid;
+        gap: 8px;
+      }
+
+      .compare-row {
+        display: grid;
+        grid-template-columns: 1.3fr 90px 120px;
+        gap: 8px;
+        padding: 11px 12px;
+        border-radius: 14px;
+        background: white;
+        border: 1px solid rgba(30, 34, 48, 0.08);
+        font-size: 13px;
+      }
+
+      .compare-row strong {
+        color: #0d7a5f;
+      }
+
+      .site-footer {
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      @media (max-width: 920px) {
+        .brief-grid,
+        .hero-a-grid,
+        .hero-b-grid,
+        .hero-c-grid,
+        .hero-d-grid,
+        .profile-ribbon,
+        .editorial-grid,
+        .builder-grid,
+        .note-grid,
+        .atlas-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .option-header {
+          display: block;
+        }
+
+        .option-meta {
+          max-width: none;
+          text-align: left;
+          margin-top: 10px;
+        }
+
+        .atlas-band,
+        .stat-stack {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body class="viewport-desktop">
+    <nav class="mockup-nav">
+      <span class="title">Insight Harness Homepage UX Directions</span>
+      <a href="#brief">Brief</a>
+      <a href="#option-a">Option A</a>
+      <a href="#option-b">Option B</a>
+      <a href="#option-c">Option C</a>
+      <a href="#option-d">Option D</a>
+      <a href="#overall">Overall</a>
+      <div class="viewport-toggle">
+        <button data-viewport="mobile">Mobile</button>
+        <button data-viewport="desktop" class="active">Desktop</button>
+      </div>
+      <button class="copy-all-btn" onclick="copyAllFeedback()">
+        Copy Feedback
+      </button>
+    </nav>
+
+    <section
+      class="mockup-section wide"
+      id="brief"
+      data-section-id="brief"
+    >
+      <div class="section-label">Context</div>
+      <p class="section-desc">
+        The live homepage is clear and lightweight, but it mostly behaves like a
+        browse feed with an upgrade panel attached underneath. The richer
+        `insight-harness` data gives us enough signal to sell distinct developer
+        identities: tool mix, skills, plugins, models, subagent behavior,
+        prompt shape, file operation style, and runtime posture. These concepts
+        explore four different ways to make that visible.
+      </p>
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="brief">
+            <h1>
+              Four homepage directions for turning Insight Harness from a profile
+              list into a recognizable developer-signal product.
+            </h1>
+            <p>
+              Each option changes both the look and the information model. The
+              goal is not "prettier cards." The goal is to decide what the home
+              page is fundamentally for: ranking operators, telling stories,
+              mapping patterns, or converting visitors into participants.
+            </p>
+            <div class="brief-grid">
+              <div class="brief-card">
+                <h3>Live Homepage Read</h3>
+                <div class="insight-list">
+                  <div>
+                    The current page is clean, friendly, and legible, but it
+                    feels visually interchangeable with many early-stage SaaS
+                    galleries.
+                  </div>
+                  <div>
+                    Most of the page weight goes to profile cards, while the
+                    richer harness data is delayed until the upgrade block.
+                  </div>
+                  <div>
+                    The "why this is interesting" story is still mostly
+                    "browse profiles" rather than "see developer operating
+                    systems."
+                  </div>
+                </div>
+              </div>
+              <div class="brief-card">
+                <h3>Data We Can Actually Showcase</h3>
+                <div class="chip-row">
+                  <span class="chip">tool usage</span>
+                  <span class="chip">skills + plugins</span>
+                  <span class="chip">subagents</span>
+                  <span class="chip">models</span>
+                  <span class="chip">prompt patterns</span>
+                  <span class="chip">file operation style</span>
+                  <span class="chip">approval + sandbox modes</span>
+                  <span class="chip">project ecosystem</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="feedback-area">
+        <label for="feedback-brief"
+          >Context Feedback <span class="viewport-badge">desktop</span></label
+        >
+        <textarea
+          id="feedback-brief"
+          placeholder="Is this framing right? Is there anything important about the current homepage or the available data that these concepts should respond to more directly?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </section>
+
+    <section
+      class="mockup-section wide"
+      id="option-a"
+      data-section-id="option_a_signal_board"
+    >
+      <div class="section-label">Option A</div>
+      <p class="section-desc">
+        <strong>Signal Board</strong>. Make the homepage feel like a high-signal
+        operator index. The emotional promise is: "This is where you see how
+        serious builders actually run Claude Code." More leaderboard, more
+        scanning, more visible operational metrics above the fold.
+      </p>
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="option-header">
+            <h2>Signal Board</h2>
+            <div class="option-meta">
+              <strong>Look:</strong> dark command-center hero with bright metric
+              contrast.<br />
+              <strong>Feel:</strong> fast, comparative, competitive, browseable
+              in 15 seconds.<br />
+              <strong>Display logic:</strong> lead with category slices and
+              benchmark-style profile modules, not generic cards.
+            </div>
+          </div>
+          <div class="note-grid">
+            <div class="note-card">
+              <h4>What It Optimizes For</h4>
+              <p>Fast recognition of standout operators and repeatable patterns.</p>
+            </div>
+            <div class="note-card">
+              <h4>What Changes</h4>
+              <p>
+                Replace the soft browse-first hero with a scorecard and
+                segmented discovery rail.
+              </p>
+            </div>
+            <div class="note-card">
+              <h4>Best Use Of Harness Data</h4>
+              <p>Skills, subagents, tools, models, and file style become first-class chips.</p>
+            </div>
+          </div>
+          <div class="review-shell">
+            <div class="browser-chrome">
+              <span class="browser-dot"></span>
+              <span class="browser-dot"></span>
+              <span class="browser-dot"></span>
+              <span class="browser-url">insightharness.com</span>
+            </div>
+            <div class="site-frame">
+              <div class="hero-a">
+                <div class="hero-a-grid">
+                  <div>
+                    <div class="eyebrow" style="color: #7eb8ff">Developer signal, not vanity metrics</div>
+                    <h3>See the operating systems behind strong Claude Code work.</h3>
+                    <p>
+                      Browse real harnesses by skill density, tool discipline,
+                      subagent usage, prompt structure, and runtime posture. Not
+                      just who uploaded. How they actually work.
+                    </p>
+                    <div class="cta-row">
+                      <span class="btn-primary">Browse high-signal harnesses</span>
+                      <span class="btn-secondary">Upload your report</span>
+                    </div>
+                  </div>
+                  <div class="signal-panel">
+                    <h4>Today’s signal snapshot</h4>
+                    <div class="stat-stack">
+                      <div><strong>142</strong><span>shared harnesses</span></div>
+                      <div><strong>38</strong><span>custom-skill heavy</span></div>
+                      <div><strong>21</strong><span>subagent-forward</span></div>
+                    </div>
+                    <div class="mini-card">
+                      <strong style="display:block; margin-bottom: 6px">What you can sort by</strong>
+                      tool usage spread · MCP footprint · prompt structure · read-before-write discipline · plugin stack
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="profile-ribbon">
+                <div class="leaderboard">
+                  <div class="profile-card-a featured">
+                    <div class="eyebrow" style="color:#2858d7">Featured operator</div>
+                    <h5>Kalid Azad</h5>
+                    <p>Parallel agents, worktrees, subagents, hooks, custom skills.</p>
+                    <div class="kpis">
+                      <span class="kpi">135 sessions/wk</span>
+                      <span class="kpi">1.2K msgs/wk</span>
+                      <span class="kpi">high orchestration</span>
+                    </div>
+                  </div>
+                  <div class="feed-card">
+                    <h5>Browse by profile shape</h5>
+                    <p>
+                      Subagent-heavy · surgical editors · plugin-rich setups ·
+                      code-review centric · plan-mode operators
+                    </p>
+                  </div>
+                </div>
+                <div class="pattern-block">
+                  <div class="mini-card">
+                    <strong>Why this feels different</strong>
+                    <p style="margin-top:8px; color:#586274">
+                      The home page becomes a signal filter before it becomes a
+                      gallery. People arrive to discover operator archetypes.
+                    </p>
+                  </div>
+                  <div class="mini-card">
+                    <strong>Above-the-fold modules</strong>
+                    <p style="margin-top:8px; color:#586274">
+                      hero metric board · pattern facet pills · featured operator
+                      · "profile shapes" explorer
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="feedback-area">
+        <label for="feedback-a"
+          >Feedback for Option A <span class="viewport-badge">desktop</span></label
+        >
+        <textarea
+          id="feedback-a"
+          placeholder="Does the more data-forward, benchmark-style homepage feel right for Insight Harness? What lands? What feels too aggressive or too dense?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </section>
+
+    <section
+      class="mockup-section wide"
+      id="option-b"
+      data-section-id="option_b_field_notes"
+    >
+      <div class="section-label">Option B</div>
+      <p class="section-desc">
+        <strong>Field Notes</strong>. Shift the brand from "directory" to
+        "editorial review of developer systems." The emotional promise is:
+        "These are people with distinct working styles, and I can learn from
+        them." Less marketplace, more publication.
+      </p>
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="option-header">
+            <h2>Field Notes</h2>
+            <div class="option-meta">
+              <strong>Look:</strong> warm editorial palette, serif display,
+              calmer card rhythm.<br />
+              <strong>Feel:</strong> reflective, credible, human, learnable.<br />
+              <strong>Display logic:</strong> lead with stories, signatures, and
+              "what this harness says about the person."
+            </div>
+          </div>
+          <div class="note-grid">
+            <div class="note-card">
+              <h4>What It Optimizes For</h4>
+              <p>Making profiles feel memorable instead of interchangeable.</p>
+            </div>
+            <div class="note-card">
+              <h4>What Changes</h4>
+              <p>Replace the feed-first layout with an editorial hero and curated stories.</p>
+            </div>
+            <div class="note-card">
+              <h4>Best Use Of Harness Data</h4>
+              <p>Translate metrics into signatures: "planner," "tool minimalist," "review-heavy," "multi-agent builder."</p>
+            </div>
+          </div>
+          <div class="review-shell">
+            <div class="browser-chrome">
+              <span class="browser-dot"></span>
+              <span class="browser-dot"></span>
+              <span class="browser-dot"></span>
+              <span class="browser-url">insightharness.com</span>
+            </div>
+            <div class="site-frame">
+              <div class="hero-b">
+                <div class="hero-b-grid">
+                  <div>
+                    <div class="eyebrow">A public archive of developer operating styles</div>
+                    <h3>Read the harnesses behind the way people actually build.</h3>
+                    <p>
+                      Insight Harness becomes a place to study how developers
+                      structure work: who relies on hooks, who delegates to
+                      subagents, who writes long scaffolded prompts, and who
+                      keeps an ultra-surgical edit loop.
+                    </p>
+                    <div class="cta-row">
+                      <span class="btn-primary" style="background:#2b2b2b; color:white">Read featured harnesses</span>
+                      <span class="btn-secondary" style="border-color:rgba(43,43,43,0.16); color:#2b2b2b">Publish your setup</span>
+                    </div>
+                  </div>
+                  <div class="story-stack">
+                    <div class="story-stat">
+                      <strong>01</strong>
+                      <div>
+                        <div style="font-weight:700">The planner</div>
+                        <div style="color:#6d665b">High plan-mode usage, long prompts, strong read-before-write ratio.</div>
+                      </div>
+                    </div>
+                    <div class="story-stat">
+                      <strong>02</strong>
+                      <div>
+                        <div style="font-weight:700">The orchestrator</div>
+                        <div style="color:#6d665b">Subagents, plugin workflows, high command diversity, heavy synthesis.</div>
+                      </div>
+                    </div>
+                    <div class="story-stat">
+                      <strong>03</strong>
+                      <div>
+                        <div style="font-weight:700">The craftsperson</div>
+                        <div style="color:#6d665b">Edit-first file style, fewer tools, deliberate command patterns.</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="editorial-grid">
+                <div class="profile-column">
+                  <div class="story-card">
+                    <div class="eyebrow">Feature</div>
+                    <h5>Kalid Azad’s harness reads like an orchestration studio</h5>
+                    <p style="color:#655e54; line-height:1.7; margin-top:8px">
+                      Worktrees, subagents, hooks, and parallel-agent patterns
+                      show a setup optimized for branching inquiry and background
+                      work rather than one-shot prompting.
+                    </p>
+                  </div>
+                  <div class="story-card">
+                    <div class="eyebrow">New this week</div>
+                    <h5>Three setups where code review is a first-class behavior</h5>
+                    <p style="color:#655e54; line-height:1.7; margin-top:8px">
+                      A curated rail that groups people by review posture instead
+                      of by recency.
+                    </p>
+                  </div>
+                </div>
+                <div class="cta-column">
+                  <div class="story-card">
+                    <div class="eyebrow">Why upload</div>
+                    <h5>Publish a harness, not just a stats page</h5>
+                    <p style="color:#655e54; line-height:1.7; margin-top:8px">
+                      Your profile feels like a developer field note: signal,
+                      style, and operating philosophy.
+                    </p>
+                  </div>
+                  <div class="story-card">
+                    <div class="eyebrow">Structured reading</div>
+                    <p style="color:#655e54; line-height:1.7">
+                      Most-read signatures: custom-skill builders · plugin
+                      assemblers · planning-heavy soloists · model-tiering teams
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="feedback-area">
+        <label for="feedback-b"
+          >Feedback for Option B <span class="viewport-badge">desktop</span></label
+        >
+        <textarea
+          id="feedback-b"
+          placeholder="Does the more editorial and human framing make Insight Harness feel more valuable, or does it drift too far from product clarity?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </section>
+
+    <section
+      class="mockup-section wide"
+      id="option-c"
+      data-section-id="option_c_pattern_atlas"
+    >
+      <div class="section-label">Option C</div>
+      <p class="section-desc">
+        <strong>Pattern Atlas</strong>. Treat the homepage as a map of how people
+        use AI coding tools, not just a list of people. The emotional promise is:
+        "I can explore the space of workflows." This is the most data-native
+        option.
+      </p>
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="option-header">
+            <h2>Pattern Atlas</h2>
+            <div class="option-meta">
+              <strong>Look:</strong> bright systems-map UI with category tiles
+              and pattern bands.<br />
+              <strong>Feel:</strong> exploratory, analytical, modern, map-like.<br />
+              <strong>Display logic:</strong> visitors discover by workflow
+              pattern first, individual profile second.
+            </div>
+          </div>
+          <div class="note-grid">
+            <div class="note-card">
+              <h4>What It Optimizes For</h4>
+              <p>Teaching the shape of the ecosystem, not just surfacing examples.</p>
+            </div>
+            <div class="note-card">
+              <h4>What Changes</h4>
+              <p>The home page becomes a pattern browser with linked representative harnesses.</p>
+            </div>
+            <div class="note-card">
+              <h4>Best Use Of Harness Data</h4>
+              <p>Prompt structure, file style, tool mix, plugins, models, and environment posture all become browseable axes.</p>
+            </div>
+          </div>
+          <div class="review-shell">
+            <div class="browser-chrome">
+              <span class="browser-dot"></span>
+              <span class="browser-dot"></span>
+              <span class="browser-dot"></span>
+              <span class="browser-url">insightharness.com</span>
+            </div>
+            <div class="site-frame">
+              <div class="hero-c">
+                <div class="hero-c-grid">
+                  <div>
+                    <div class="eyebrow" style="color:#187a68">Workflow atlas</div>
+                    <h3>Map the ways developers actually use Claude Code.</h3>
+                    <p>
+                      Instead of starting from people, start from patterns:
+                      orchestration, review posture, prompt discipline, tool
+                      spread, sandbox configuration, model tiering, and plugin
+                      ecosystems.
+                    </p>
+                    <div class="cta-row">
+                      <span class="btn-primary" style="background:#187a68; color:white">Explore the pattern map</span>
+                      <span class="btn-secondary" style="border-color:rgba(24,122,104,0.16); color:#187a68">See examples</span>
+                    </div>
+                  </div>
+                  <div class="atlas-panel">
+                    <strong style="font-size:15px">Most active pattern bands</strong>
+                    <div class="atlas-band">
+                      <div><strong>Planning-heavy</strong><br /><span style="color:#607080">long prompts · structured asks · steady edits</span></div>
+                      <div><strong>Delegation-first</strong><br /><span style="color:#607080">subagents · synthesis · plugin use</span></div>
+                      <div><strong>Craft editing</strong><br /><span style="color:#607080">read-before-write · patch discipline</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="atlas-grid-wrap">
+                <div class="atlas-grid">
+                  <div class="atlas-card">
+                    <div class="eyebrow" style="color:#187a68">Prompt shape</div>
+                    <h5>Structured Prompts</h5>
+                    <p style="color:#607080; line-height:1.6">High heading + bullet usage, longer setup asks, plan-like scaffolds.</p>
+                  </div>
+                  <div class="atlas-card">
+                    <div class="eyebrow" style="color:#187a68">Execution style</div>
+                    <h5>Surgical Editors</h5>
+                    <p style="color:#607080; line-height:1.6">Strong read-before-write posture, patching over regeneration.</p>
+                  </div>
+                  <div class="atlas-card">
+                    <div class="eyebrow" style="color:#187a68">Runtime</div>
+                    <h5>Plugin-rich Setups</h5>
+                    <p style="color:#607080; line-height:1.6">GitHub, Gmail, Slack, MCP, and multi-surface workflows.</p>
+                  </div>
+                  <div class="atlas-card">
+                    <div class="eyebrow" style="color:#187a68">Autonomy</div>
+                    <h5>Directive Operators</h5>
+                    <p style="color:#607080; line-height:1.6">Short steering prompts with long assistant execution runs.</p>
+                  </div>
+                </div>
+                <div class="builder-card" style="margin-top:14px">
+                  <div class="eyebrow" style="color:#187a68">Representative harnesses</div>
+                  <p style="color:#536070; line-height:1.7">
+                    Each pattern tile expands into three representative public
+                    profiles, plus the metrics that caused the classification.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="feedback-area">
+        <label for="feedback-c"
+          >Feedback for Option C <span class="viewport-badge">desktop</span></label
+        >
+        <textarea
+          id="feedback-c"
+          placeholder="Does a pattern-map home page make the product feel smarter and more differentiated, or does it overcomplicate the front door?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </section>
+
+    <section
+      class="mockup-section wide"
+      id="option-d"
+      data-section-id="option_d_build_then_browse"
+    >
+      <div class="section-label">Option D</div>
+      <p class="section-desc">
+        <strong>Build Then Browse</strong>. Treat the home page as a conversion
+        engine for creating better public harnesses. The emotional promise is:
+        "I can understand the product, generate my own profile, and then explore
+        others." This is the most productized and funnel-aware direction.
+      </p>
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="option-header">
+            <h2>Build Then Browse</h2>
+            <div class="option-meta">
+              <strong>Look:</strong> sharp product marketing shell with a clear
+              utility gradient.<br />
+              <strong>Feel:</strong> actionable, guided, conversion-led.<br />
+              <strong>Display logic:</strong> home page is a two-track journey:
+              make yours, then discover others.
+            </div>
+          </div>
+          <div class="note-grid">
+            <div class="note-card">
+              <h4>What It Optimizes For</h4>
+              <p>Getting more people from curiosity to upload without losing browse value.</p>
+            </div>
+            <div class="note-card">
+              <h4>What Changes</h4>
+              <p>Promote the workflow and product proof higher than the profile feed.</p>
+            </div>
+            <div class="note-card">
+              <h4>Best Use Of Harness Data</h4>
+              <p>Turn the harness richness into reasons to upgrade and share: tools, skills, plugins, subagents, models, posture.</p>
+            </div>
+          </div>
+          <div class="review-shell">
+            <div class="browser-chrome">
+              <span class="browser-dot"></span>
+              <span class="browser-dot"></span>
+              <span class="browser-dot"></span>
+              <span class="browser-url">insightharness.com</span>
+            </div>
+            <div class="site-frame">
+              <div class="hero-d">
+                <div class="hero-d-grid">
+                  <div>
+                    <div class="eyebrow" style="color:#b8ffbd">Your workflow deserves a public profile</div>
+                    <h3>Turn your Claude Code setup into something people can actually learn from.</h3>
+                    <p>
+                      Share a profile that shows more than sessions and messages:
+                      tools, skills, plugins, models, prompt posture, file
+                      operation style, and how autonomous your workflow really
+                      is.
+                    </p>
+                    <div class="cta-row">
+                      <span class="btn-primary">Create your harness profile</span>
+                      <span class="btn-secondary">Browse examples</span>
+                    </div>
+                  </div>
+                  <div class="proof-stack">
+                    <strong style="font-size:15px">What makes a profile worth opening</strong>
+                    <div class="compare-table">
+                      <div class="compare-row">
+                        <span>Sessions and messages</span><span>basic</span><strong>expected</strong>
+                      </div>
+                      <div class="compare-row">
+                        <span>Tool and skill inventory</span><span>rare</span><strong>high-signal</strong>
+                      </div>
+                      <div class="compare-row">
+                        <span>Subagent + model posture</span><span>rare</span><strong>differentiating</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="builder-body">
+                <div class="builder-grid">
+                  <div class="builder-card">
+                    <div class="eyebrow" style="color:#0d7a5f">Track 1</div>
+                    <h5>Build your profile</h5>
+                    <p style="color:#566173; line-height:1.7; margin-top:8px">
+                      `/insights` for reflection. `/insight-harness` for the full
+                      public-facing operator profile. The page visually explains
+                      exactly what upgrades when you step up.
+                    </p>
+                  </div>
+                  <div class="builder-card">
+                    <div class="eyebrow" style="color:#0d7a5f">Track 2</div>
+                    <h5>Browse profiles by why they matter</h5>
+                    <p style="color:#566173; line-height:1.7; margin-top:8px">
+                      "Most disciplined editors," "plugin-heavy builders,"
+                      "multi-agent orchestrators," "review-centric setups."
+                    </p>
+                  </div>
+                </div>
+                <div class="builder-grid" style="margin-top:14px">
+                  <div class="feed-card">
+                    <div class="eyebrow" style="color:#0d7a5f">Upgrade framing</div>
+                    <p style="color:#566173; line-height:1.7">
+                      Keep the upgrade path, but move it higher and turn it into
+                      the main product story rather than a secondary explainer.
+                    </p>
+                  </div>
+                  <div class="feed-card">
+                    <div class="eyebrow" style="color:#0d7a5f">Proof rail</div>
+                    <p style="color:#566173; line-height:1.7">
+                      Three standout public profiles with one sentence each on
+                      why their setup is interesting.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="feedback-area">
+        <label for="feedback-d"
+          >Feedback for Option D <span class="viewport-badge">desktop</span></label
+        >
+        <textarea
+          id="feedback-d"
+          placeholder="Does the more conversion-aware product framing make the home page stronger, or does it make the product feel too much like a landing page?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </section>
+
+    <section
+      class="mockup-section"
+      id="overall"
+      data-section-id="overall_direction"
+    >
+      <div class="section-label">Overall</div>
+      <p class="section-desc">
+        Use this field if you want to rank the options, combine elements, or
+        tell me what direction to push next. The button in the top bar will copy
+        everything into one JSON object.
+      </p>
+      <div class="feedback-area">
+        <label for="feedback-overall"
+          >Overall Direction Feedback <span class="viewport-badge">desktop</span></label
+        >
+        <textarea
+          id="feedback-overall"
+          placeholder="Example: Winner = B for voice, steal A's above-the-fold metric board, keep D's upload framing, avoid C's complexity."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+      <p class="site-footer">
+        This mockup is a reconstruction and directional redesign based on the
+        current live homepage plus the richer Insight Harness data surface we
+        know the product can expose.
+      </p>
+    </section>
+
+    <div style="height: 80px"></div>
+
+    <script>
+      function initViewportToggle() {
+        const buttons = document.querySelectorAll(".viewport-toggle button");
+        buttons.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const viewport = btn.dataset.viewport;
+            buttons.forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            document.body.classList.remove("viewport-mobile", "viewport-desktop");
+            document.body.classList.add(`viewport-${viewport}`);
+            document.querySelectorAll(".viewport-badge").forEach((badge) => {
+              badge.textContent = viewport;
+            });
+          });
+        });
+      }
+
+      function copyAllFeedback() {
+        const currentViewport = document.body.classList.contains("viewport-mobile")
+          ? "mobile"
+          : "desktop";
+        const sections = {};
+
+        document.querySelectorAll(".mockup-section").forEach((section) => {
+          const textarea = section.querySelector("textarea");
+          if (!textarea) return;
+          const value = textarea.value.trim();
+          if (!value) return;
+          sections[section.dataset.sectionId] = {
+            feedback: value,
+            viewport: currentViewport,
+          };
+        });
+
+        if (Object.keys(sections).length === 0) {
+          alert("No feedback entered yet. Type in the text fields first.");
+          return;
+        }
+
+        const payload = {
+          mockup: document.title,
+          timestamp: new Date().toISOString(),
+          viewport: currentViewport,
+          sections,
+        };
+
+        navigator.clipboard.writeText(JSON.stringify(payload, null, 2)).then(() => {
+          const btn = document.querySelector(".copy-all-btn");
+          btn.textContent = "Copied!";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = "Copy Feedback";
+            btn.classList.remove("copied");
+          }, 1800);
+        });
+      }
+
+      document.querySelectorAll(".feedback-area textarea").forEach((ta) => {
+        const counter = ta.parentElement.querySelector(".char-count");
+        ta.addEventListener("input", () => {
+          counter.textContent = ta.value.length ? `${ta.value.length} chars` : "";
+        });
+      });
+
+      initViewportToggle();
+    </script>
+  </body>
+</html>
