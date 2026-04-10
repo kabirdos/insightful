@@ -10,6 +10,8 @@ import { useMermaid } from "@/hooks/useMermaid";
 import {
   getSafeCommandHighlights,
   getSafeSkillHighlights,
+  safeSequenceLabel,
+  safeSkillKeyLabel,
 } from "@/lib/privacy-safe-workflow";
 
 interface WorkflowDiagramProps {
@@ -71,12 +73,12 @@ function topEntries(
 
 function strongestWorkflowPattern(
   workflowPatterns: HarnessWorkflowData["workflowPatterns"],
-): { label: string; count: number } | null {
+): { sequence: string[]; count: number } | null {
   if (workflowPatterns.length === 0) return null;
   const strongest = [...workflowPatterns].sort((a, b) => b.count - a.count)[0];
   if (!strongest) return null;
   return {
-    label: strongest.sequence.join(" -> "),
+    sequence: strongest.sequence,
     count: strongest.count,
   };
 }
@@ -89,24 +91,34 @@ function buildWorkflowInsights(
 ): Array<{ title: string; body: string }> {
   const insights: Array<{ title: string; body: string }> = [];
   const topSkills = topEntries(workflowData.skillInvocations, 2);
-  const strongestPattern = strongestWorkflowPattern(workflowData.workflowPatterns);
-  const agentDispatches = topEntries(workflowData.agentDispatches, 3);
+  const strongestPattern = strongestWorkflowPattern(
+    workflowData.workflowPatterns,
+  );
+  // Deliberately NOT using workflowData.agentDispatches — those keys
+  // are raw descriptions that leak customer/repo/path identifiers in
+  // legacy reports. The curated agentDispatch.types is the privacy-safe
+  // categorization (see PR #4 removal).
   const topAgentTypes = topEntries(agentDispatch?.types ?? {}, 2);
 
   if (strongestPattern) {
+    // Sanitize each skill in the sequence so custom-skill paths/URLs/
+    // file paths don't leak into the public writeup.
+    const safeLabel = safeSequenceLabel(strongestPattern.sequence);
     insights.push({
       title: "Strongest Repeatable Path",
-      body: `${strongestPattern.label} is the clearest recurring chain in this report, repeating ${strongestPattern.count} times.`,
+      body: `${safeLabel} is the clearest recurring chain in this report, repeating ${strongestPattern.count} times.`,
     });
   }
 
   if (topSkills.length > 0) {
     const [primary, secondary] = topSkills;
+    const primaryLabel = safeSkillKeyLabel(primary[0]);
+    const secondaryLabel = secondary ? safeSkillKeyLabel(secondary[0]) : null;
     insights.push({
       title: "Most Invoked Skills",
       body: secondary
-        ? `${primary[0]} leads at ${primary[1]} uses, followed by ${secondary[0]} at ${secondary[1]}.`
-        : `${primary[0]} is the dominant skill in this report with ${primary[1]} uses.`,
+        ? `${primaryLabel} leads at ${primary[1]} uses, followed by ${secondaryLabel} at ${secondary[1]}.`
+        : `${primaryLabel} is the dominant skill in this report with ${primary[1]} uses.`,
     });
   }
 
@@ -124,15 +136,7 @@ function buildWorkflowInsights(
     });
   }
 
-  if (agentDispatches.length > 0) {
-    insights.push({
-      title: "Delegation Pattern",
-      body: `Agent handoffs cluster around ${agentDispatches
-        .map(([label]) => label)
-        .slice(0, 2)
-        .join(" and ")}, showing repeated delegation of parallelizable work.`,
-    });
-  } else if ((agentDispatch?.totalAgents ?? 0) > 0) {
+  if ((agentDispatch?.totalAgents ?? 0) > 0) {
     const typeSummary =
       topAgentTypes.length > 0
         ? ` Most runs use ${topAgentTypes
@@ -252,9 +256,11 @@ export default function WorkflowDiagram({
 
   if (error || !hasSkillData) return null;
 
-  const { phaseStats, phaseDistribution, agentDispatches } = workflowData;
+  const { phaseStats, phaseDistribution } = workflowData;
   const sortedSkills = topEntries(workflowData.skillInvocations, 10);
-  const sortedDispatches = topEntries(agentDispatches, 6);
+  // NOTE: workflowData.agentDispatches is intentionally not read —
+  // raw description keys leak customer/repo/path identifiers in
+  // legacy reports. Only the curated agentDispatch.types is rendered.
   const dispatchTypeEntries = topEntries(agentDispatch?.types ?? {}, 4);
   const dispatchModelEntries = topEntries(agentDispatch?.models ?? {}, 4);
   const safeSkills = getSafeSkillHighlights(skillInventory, 5);
@@ -267,7 +273,9 @@ export default function WorkflowDiagram({
   );
   const hasPhaseData = Object.keys(phaseDistribution).length > 0;
   const hasDispatchSummary = (agentDispatch?.totalAgents ?? 0) > 0;
-  const strongestPattern = strongestWorkflowPattern(workflowData.workflowPatterns);
+  const strongestPattern = strongestWorkflowPattern(
+    workflowData.workflowPatterns,
+  );
   const topSkill = topEntries(workflowData.skillInvocations, 1)[0];
 
   const pluginsPresent = Array.from(
@@ -302,11 +310,14 @@ export default function WorkflowDiagram({
 
       <div className="block sm:hidden">
         <ol className="list-decimal list-inside space-y-1 text-sm text-slate-600 dark:text-slate-400">
-          {sortedSkills.map(([name, count]) => {
-            const { plugin, shortName } = parseSkillSource(name);
+          {sortedSkills.map(([skillKey, count]) => {
+            const { plugin } = parseSkillSource(skillKey);
+            // Route custom skills through the risky-pattern check so
+            // identifiers like "POC-1234" or paths don't leak.
+            const safeName = safeSkillKeyLabel(skillKey);
             return (
-              <li key={name}>
-                <span className="font-mono text-xs">{shortName}</span>{" "}
+              <li key={skillKey}>
+                <span className="font-mono text-xs">{safeName}</span>{" "}
                 <span className="text-[10px] text-slate-400">[{plugin}]</span>{" "}
                 <span className="text-slate-400">({count}x)</span>
               </li>
@@ -341,38 +352,26 @@ export default function WorkflowDiagram({
         <div className="mt-2 flex flex-wrap gap-2 text-xs">
           {topSkill && (
             <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
-              Most used: {parseSkillSource(topSkill[0]).shortName} ({topSkill[1]}x)
+              Most used: {safeSkillKeyLabel(topSkill[0])} ({topSkill[1]}x)
             </span>
           )}
           {strongestPattern && (
             <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
-              Strongest path: {strongestPattern.label} ({strongestPattern.count}x)
+              Strongest path: {safeSequenceLabel(strongestPattern.sequence)} (
+              {strongestPattern.count}x)
             </span>
           )}
         </div>
       )}
 
       <div className="mt-3 space-y-3 border-t border-slate-100 pt-3 dark:border-slate-800">
-        {sortedDispatches.length > 0 && (
-          <div>
-            <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-              What {name} delegates to agents
-            </div>
-            <div className="space-y-0.5">
-              {sortedDispatches.map(([desc, count]) => (
-                <div
-                  key={desc}
-                  className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400"
-                >
-                  <span className="truncate font-mono">{desc}</span>
-                  <span className="ml-2 shrink-0 text-slate-400">{count}x</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Raw agent-dispatch descriptions can contain customer/repo/path
+            identifiers (see PR #4 which removed them from the extractor).
+            Any legacy reports that still have agentDispatches populated are
+            deliberately NOT rendered — we only show the curated
+            agentDispatch.types summary below. */}
 
-        {!sortedDispatches.length && hasDispatchSummary && (
+        {hasDispatchSummary && (
           <div className="space-y-3">
             <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">
               What {name} delegates to agents

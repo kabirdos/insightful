@@ -8,10 +8,25 @@ function unique<T>(items: T[]): T[] {
   return Array.from(new Set(items));
 }
 
+/**
+ * Parse a skill key of the form `plugin:shortname`. Returns
+ * `{ plugin: "custom", shortName: raw }` when there's no colon.
+ * Duplicated from WorkflowDiagram.tsx to avoid a circular dep.
+ */
+export function parseSkillKey(key: string): {
+  plugin: string;
+  shortName: string;
+} {
+  const colonIdx = key.indexOf(":");
+  if (colonIdx === -1) return { plugin: "custom", shortName: key };
+  return {
+    plugin: key.slice(0, colonIdx),
+    shortName: key.slice(colonIdx + 1),
+  };
+}
+
 function shortSkillName(name: string): string {
-  const colonIdx = name.indexOf(":");
-  if (colonIdx === -1) return name;
-  return name.slice(colonIdx + 1);
+  return parseSkillKey(name).shortName;
 }
 
 export function sanitizeWorkflowSkillName(
@@ -54,4 +69,26 @@ export function getSafeCommandHighlights(
       .sort((a, b) => b[1] - a[1])
       .map(([command]) => sanitizeWorkflowCommandName(command)),
   ).slice(0, limit);
+}
+
+/**
+ * Render a single `plugin:shortname` key as a privacy-safe label.
+ * Known plugin sources are trusted; custom skills are run through
+ * the risky-pattern check so file paths, URLs, ticket IDs, etc.
+ * are masked to `custom workflow skill`.
+ */
+export function safeSkillKeyLabel(key: string): string {
+  const { plugin } = parseSkillKey(key);
+  return sanitizeWorkflowSkillName(
+    key,
+    plugin === "custom" ? "unknown" : "plugin",
+  );
+}
+
+/**
+ * Join a workflow sequence using sanitized labels. Used for the
+ * "Strongest path" pill and insight copy in WorkflowDiagram.
+ */
+export function safeSequenceLabel(sequence: string[]): string {
+  return sequence.map(safeSkillKeyLabel).join(" → ");
 }

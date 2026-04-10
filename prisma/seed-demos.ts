@@ -7,6 +7,11 @@
  */
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
+import {
+  computeDefaultAgentDispatch,
+  computeDefaultBranchPrefixes,
+  computeDefaultHookFrequency,
+} from "./seed-helpers";
 
 const prisma = new PrismaClient();
 
@@ -277,11 +282,8 @@ function harnessReport(
       toolUsage: opts.toolUsage,
       skillInventory: opts.skillInventory,
       hookDefinitions: opts.hookDefs,
-      // hookFrequency: one fire per hook definition if not provided.
-      // Matches the event-count shape the harness extractor produces.
       hookFrequency:
-        opts.hookFrequency ??
-        Object.fromEntries(opts.hookDefs.map((h, i) => [h.event, 40 + i * 17])),
+        opts.hookFrequency ?? computeDefaultHookFrequency(opts.hookDefs),
       plugins: opts.plugins,
       harnessFiles: [
         "~/.claude/CLAUDE.md (42 lines)",
@@ -289,28 +291,14 @@ function harnessReport(
         "1 HANDOFF.md file",
       ],
       fileOpStyle: opts.fileOpStyle,
-      // Only populate agentDispatch for users who clearly use
-      // parallel agents / subagents, matching the real extractor.
+      // Helper auto-populates agentDispatch for users whose detectedSkills
+      // include parallel_agents or subagents — matches the real extractor.
       agentDispatch:
         opts.agentDispatch === undefined
-          ? (opts.detectedSkills ?? []).some((s) =>
-              ["parallel_agents", "subagents"].includes(s),
+          ? computeDefaultAgentDispatch(
+              opts.detectedSkills ?? [],
+              opts.sessions,
             )
-            ? {
-                totalAgents: Math.max(6, Math.round(opts.sessions * 0.12)),
-                types: {
-                  "general-purpose": Math.round(opts.sessions * 0.08),
-                  "code-reviewer": Math.round(opts.sessions * 0.03),
-                  explore: Math.round(opts.sessions * 0.02),
-                },
-                models: {
-                  sonnet: Math.round(opts.tokens * 0.6),
-                  opus: Math.round(opts.tokens * 0.4),
-                },
-                backgroundPct: 35,
-                customAgents: [],
-              }
-            : null
           : opts.agentDispatch,
       cliTools: opts.cliTools,
       languages: opts.languages,
@@ -321,11 +309,8 @@ function harnessReport(
         prCount: opts.prs,
         commitCount: opts.commits,
         linesAdded: `${(opts.linesAdded / 1000).toFixed(1)}K`,
-        branchPrefixes: opts.branchPrefixes ?? {
-          "feat/": Math.round(opts.commits * 0.4),
-          "fix/": Math.round(opts.commits * 0.25),
-          "chore/": Math.round(opts.commits * 0.15),
-        },
+        branchPrefixes:
+          opts.branchPrefixes ?? computeDefaultBranchPrefixes(opts.commits),
       },
       versions: ["1.0.16", "1.0.15"],
       writeupSections: [

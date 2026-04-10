@@ -33,12 +33,16 @@ type SortOption = "newest" | "most_voted" | "trending";
 
 // ── Data shape ──────────────────────────────────────────────
 // Narrow view of HarnessData the homepage card actually reads.
+// Mirrors the canonical shape in src/types/insights.ts#HarnessData —
+// `models` and `permissionModes` live at the TOP LEVEL, not under `stats`.
+// The old version of this type put `models` under `stats` by mistake,
+// which meant every card fell back to the default blended rate and
+// computed wrong api-cost/wk numbers for mixed-model profiles.
 interface HarnessStatsSlice {
   totalTokens?: number;
   durationHours?: number;
   sessionCount?: number;
   commitCount?: number;
-  models?: Record<string, number>;
 }
 
 interface HarnessPluginSlice {
@@ -57,6 +61,8 @@ interface HarnessSlice {
   skillInventory?: Array<{ name: string }>;
   plugins?: HarnessPluginSlice[];
   workflowData?: HarnessWorkflowSlice | null;
+  /** Top-level per-model token counts used for API cost estimation. */
+  models?: Record<string, number>;
 }
 
 interface InsightSummary {
@@ -360,12 +366,6 @@ function TokenHeatmap({
   variant?: "token" | "cost";
   size?: "sm" | "md";
 }) {
-  const cells: number[][] = [[], [], [], []];
-  for (let i = 0; i < data.length; i++) {
-    const row = Math.floor(i / 7);
-    if (row >= 4) break;
-    cells[row].push(data[i]);
-  }
   const levelFn = variant === "cost" ? costLevelClass : tokenLevelClass;
   const gap = size === "md" ? "gap-[3px]" : "gap-[2px]";
   // Cap width so cells stay small squares even when the outer column is wide.
@@ -506,7 +506,7 @@ function ProfileCard({
 
   // API cost: estimate total, then per-week slice
   const totalCost = estimateTotalCostUsd(
-    insight.harnessData?.stats?.models,
+    insight.harnessData?.models,
     effectiveTokens ?? 0,
   );
   const costWk = perWeek(totalCost, insight.dayCount);
@@ -787,7 +787,11 @@ export default function HomePage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/insights?sort=${sort}`)
+    // Fetch a wider window than we display so the client-side author
+    // dedupe (below) doesn't leave the "Recent Profiles" grid short
+    // when one author has multiple recent reports. 30 > default 20
+    // and comfortably covers 7 unique cards even if most are duplicates.
+    fetch(`/api/insights?sort=${sort}&limit=30`)
       .then((r) => r.json())
       .then((json) => {
         const reports = json.data || json.insights || [];
