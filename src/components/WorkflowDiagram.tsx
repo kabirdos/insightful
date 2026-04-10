@@ -1,18 +1,25 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { HarnessWorkflowData } from "@/types/insights";
+import type {
+  HarnessAgentDispatch,
+  HarnessSkillEntry,
+  HarnessWorkflowData,
+} from "@/types/insights";
 import { useMermaid } from "@/hooks/useMermaid";
+import {
+  getSafeCommandHighlights,
+  getSafeSkillHighlights,
+} from "@/lib/privacy-safe-workflow";
 
 interface WorkflowDiagramProps {
   workflowData: HarnessWorkflowData;
+  agentDispatch?: HarnessAgentDispatch | null;
+  skillInventory?: HarnessSkillEntry[];
+  cliTools?: Record<string, number>;
   authorHandle?: string;
 }
 
-/**
- * Parse a skill identifier into its plugin source and short name.
- * Skills are in the form "plugin-name:skill-name" or just "skill-name" (custom).
- */
 export function parseSkillSource(skill: string): {
   plugin: string;
   shortName: string;
@@ -27,7 +34,6 @@ export function parseSkillSource(skill: string): {
   };
 }
 
-// Mermaid fill/stroke colors per plugin source
 const PLUGIN_COLORS: Record<
   string,
   { fill: string; stroke: string; text: string }
@@ -49,11 +55,113 @@ function getPluginColor(plugin: string) {
   return PLUGIN_COLORS[plugin] || PLUGIN_COLORS.custom;
 }
 
-/**
- * Build a Mermaid flowchart from skill invocations and workflow patterns.
- * Nodes are skill names with invocation counts, color-coded by plugin source.
- * Edges show common transitions between skills.
- */
+function formatCount(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+  return `${n}`;
+}
+
+function topEntries(
+  data: Record<string, number>,
+  limit: number,
+): Array<[string, number]> {
+  return Object.entries(data)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit);
+}
+
+function strongestWorkflowPattern(
+  workflowPatterns: HarnessWorkflowData["workflowPatterns"],
+): { label: string; count: number } | null {
+  if (workflowPatterns.length === 0) return null;
+  const strongest = [...workflowPatterns].sort((a, b) => b.count - a.count)[0];
+  if (!strongest) return null;
+  return {
+    label: strongest.sequence.join(" -> "),
+    count: strongest.count,
+  };
+}
+
+function buildWorkflowInsights(
+  workflowData: HarnessWorkflowData,
+  agentDispatch?: HarnessAgentDispatch | null,
+  safeSkills: string[] = [],
+  safeCommands: string[] = [],
+): Array<{ title: string; body: string }> {
+  const insights: Array<{ title: string; body: string }> = [];
+  const topSkills = topEntries(workflowData.skillInvocations, 2);
+  const strongestPattern = strongestWorkflowPattern(workflowData.workflowPatterns);
+  const agentDispatches = topEntries(workflowData.agentDispatches, 3);
+  const topAgentTypes = topEntries(agentDispatch?.types ?? {}, 2);
+
+  if (strongestPattern) {
+    insights.push({
+      title: "Strongest Repeatable Path",
+      body: `${strongestPattern.label} is the clearest recurring chain in this report, repeating ${strongestPattern.count} times.`,
+    });
+  }
+
+  if (topSkills.length > 0) {
+    const [primary, secondary] = topSkills;
+    insights.push({
+      title: "Most Invoked Skills",
+      body: secondary
+        ? `${primary[0]} leads at ${primary[1]} uses, followed by ${secondary[0]} at ${secondary[1]}.`
+        : `${primary[0]} is the dominant skill in this report with ${primary[1]} uses.`,
+    });
+  }
+
+  if (workflowData.phaseStats.exploreBeforeImplPct > 0) {
+    insights.push({
+      title: "Exploration Before Execution",
+      body: `${workflowData.phaseStats.exploreBeforeImplPct}% of phased sessions explored before implementing, which suggests a planning-first development loop.`,
+    });
+  }
+
+  if (workflowData.phaseStats.testBeforeShipPct > 0) {
+    insights.push({
+      title: "Shipping Discipline",
+      body: `${workflowData.phaseStats.testBeforeShipPct}% of phased sessions tested before shipping, indicating a deliberate validation step before close-out.`,
+    });
+  }
+
+  if (agentDispatches.length > 0) {
+    insights.push({
+      title: "Delegation Pattern",
+      body: `Agent handoffs cluster around ${agentDispatches
+        .map(([label]) => label)
+        .slice(0, 2)
+        .join(" and ")}, showing repeated delegation of parallelizable work.`,
+    });
+  } else if ((agentDispatch?.totalAgents ?? 0) > 0) {
+    const typeSummary =
+      topAgentTypes.length > 0
+        ? ` Most runs use ${topAgentTypes
+            .map(([label, count]) => `${label} (${count})`)
+            .join(" and ")} agents.`
+        : "";
+    insights.push({
+      title: "Agent-Oriented Workflow",
+      body: `${agentDispatch?.totalAgents ?? 0} agents were dispatched in this report, with ${agentDispatch?.backgroundPct ?? 0}% running in the background.${typeSummary}`,
+    });
+  }
+
+  if (safeSkills.length > 0) {
+    insights.push({
+      title: "Skills In Rotation",
+      body: `The public workflow can still show useful skill context without raw task text, led here by ${safeSkills.slice(0, 3).join(", ")}.`,
+    });
+  }
+
+  if (safeCommands.length > 0) {
+    insights.push({
+      title: "Command Surface",
+      body: `The shell layer around this workflow stays readable through safe command shapes like ${safeCommands.slice(0, 3).join(", ")}.`,
+    });
+  }
+
+  return insights.slice(0, 4);
+}
+
 export function buildWorkflowDiagram(
   workflowData: HarnessWorkflowData,
 ): string {
@@ -64,17 +172,14 @@ export function buildWorkflowDiagram(
 
   const lines: string[] = ["flowchart TD"];
 
-  // Define nodes with plugin source in label
   for (const [skill, count] of Object.entries(skillInvocations)) {
     const id = skill.replace(/[^a-zA-Z0-9]/g, "_");
     const { plugin, shortName } = parseSkillSource(skill);
-    // Escape quotes in labels and use the short name
     const safeName = shortName.replace(/"/g, "'");
     const label = `${safeName}<br/><span style='font-size:9px;opacity:0.7'>${plugin}</span><br/>${count}×`;
     lines.push(`    ${id}["${label}"]`);
   }
 
-  // Build edge counts from workflow patterns
   const edgeCounts: Record<string, number> = {};
   for (const pattern of workflowPatterns) {
     const seq = pattern.sequence;
@@ -88,7 +193,6 @@ export function buildWorkflowDiagram(
     }
   }
 
-  // Add edges sorted by count
   const sortedEdges = Object.entries(edgeCounts).sort((a, b) => b[1] - a[1]);
   for (const [key, count] of sortedEdges) {
     const [from, to] = key.split("|||");
@@ -102,7 +206,6 @@ export function buildWorkflowDiagram(
     }
   }
 
-  // Apply color styles per node based on plugin source
   for (const skill of skills) {
     const id = skill.replace(/[^a-zA-Z0-9]/g, "_");
     const { plugin } = parseSkillSource(skill);
@@ -117,6 +220,9 @@ export function buildWorkflowDiagram(
 
 export default function WorkflowDiagram({
   workflowData,
+  agentDispatch,
+  skillInventory = [],
+  cliTools = {},
   authorHandle,
 }: WorkflowDiagramProps) {
   const name = authorHandle ? `@${authorHandle}` : "This developer";
@@ -125,7 +231,6 @@ export default function WorkflowDiagram({
   const hasSkillData = Object.keys(workflowData.skillInvocations).length > 0;
   const { ready, error, render } = useMermaid({ shouldLoad: hasSkillData });
 
-  // Render diagram when mermaid is ready
   useEffect(() => {
     if (!ready || !containerRef.current) return;
     let cancelled = false;
@@ -148,19 +253,23 @@ export default function WorkflowDiagram({
   if (error || !hasSkillData) return null;
 
   const { phaseStats, phaseDistribution, agentDispatches } = workflowData;
-
-  // Build mobile fallback list from skill invocations
-  const sortedSkills = Object.entries(workflowData.skillInvocations)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10);
-
-  const sortedDispatches = Object.entries(agentDispatches)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
-
+  const sortedSkills = topEntries(workflowData.skillInvocations, 10);
+  const sortedDispatches = topEntries(agentDispatches, 6);
+  const dispatchTypeEntries = topEntries(agentDispatch?.types ?? {}, 4);
+  const dispatchModelEntries = topEntries(agentDispatch?.models ?? {}, 4);
+  const safeSkills = getSafeSkillHighlights(skillInventory, 5);
+  const safeCommands = getSafeCommandHighlights(cliTools, 5);
+  const workflowInsights = buildWorkflowInsights(
+    workflowData,
+    agentDispatch,
+    safeSkills,
+    safeCommands,
+  );
   const hasPhaseData = Object.keys(phaseDistribution).length > 0;
+  const hasDispatchSummary = (agentDispatch?.totalAgents ?? 0) > 0;
+  const strongestPattern = strongestWorkflowPattern(workflowData.workflowPatterns);
+  const topSkill = topEntries(workflowData.skillInvocations, 1)[0];
 
-  // Unique plugin sources present
   const pluginsPresent = Array.from(
     new Set(
       Object.keys(workflowData.skillInvocations).map(
@@ -184,7 +293,6 @@ export default function WorkflowDiagram({
         </span>
       </div>
 
-      {/* Mermaid diagram container — hidden on mobile */}
       <div
         ref={containerRef}
         className="hidden sm:flex min-h-[200px] items-center justify-center overflow-x-auto [&_svg]:max-w-full"
@@ -192,7 +300,6 @@ export default function WorkflowDiagram({
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
       </div>
 
-      {/* Mobile fallback — ordered list of skills with plugin source */}
       <div className="block sm:hidden">
         <ol className="list-decimal list-inside space-y-1 text-sm text-slate-600 dark:text-slate-400">
           {sortedSkills.map(([name, count]) => {
@@ -208,7 +315,6 @@ export default function WorkflowDiagram({
         </ol>
       </div>
 
-      {/* Plugin source legend */}
       {pluginsPresent.length > 1 && (
         <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
           <span className="text-slate-500 dark:text-slate-400">Source:</span>
@@ -231,9 +337,22 @@ export default function WorkflowDiagram({
         </div>
       )}
 
-      {/* Supplementary info */}
+      {(topSkill || strongestPattern) && (
+        <div className="mt-2 flex flex-wrap gap-2 text-xs">
+          {topSkill && (
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
+              Most used: {parseSkillSource(topSkill[0]).shortName} ({topSkill[1]}x)
+            </span>
+          )}
+          {strongestPattern && (
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
+              Strongest path: {strongestPattern.label} ({strongestPattern.count}x)
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="mt-3 space-y-3 border-t border-slate-100 pt-3 dark:border-slate-800">
-        {/* Agent dispatches */}
         {sortedDispatches.length > 0 && (
           <div>
             <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -253,7 +372,122 @@ export default function WorkflowDiagram({
           </div>
         )}
 
-        {/* Phase stats */}
+        {!sortedDispatches.length && hasDispatchSummary && (
+          <div className="space-y-3">
+            <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+              What {name} delegates to agents
+            </div>
+
+            <div className="flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
+                {formatCount(agentDispatch?.totalAgents ?? 0)} agents total
+              </span>
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
+                {agentDispatch?.backgroundPct ?? 0}% in background
+              </span>
+            </div>
+
+            {dispatchTypeEntries.length > 0 && (
+              <div>
+                <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Agent Types
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {dispatchTypeEntries.map(([label, count]) => (
+                    <span
+                      key={label}
+                      className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300"
+                    >
+                      {label} ({count})
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {dispatchModelEntries.length > 0 && (
+              <div>
+                <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Models
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {dispatchModelEntries.map(([label, count]) => (
+                    <span
+                      key={label}
+                      className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300"
+                    >
+                      {label} ({count})
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(safeSkills.length > 0 || safeCommands.length > 0) && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {safeSkills.length > 0 && (
+                  <div>
+                    <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                      Relevant Skills
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {safeSkills.map((label) => (
+                        <span
+                          key={label}
+                          className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300"
+                        >
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {safeCommands.length > 0 && (
+                  <div>
+                    <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                      Relevant Commands
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {safeCommands.map((label) => (
+                        <span
+                          key={label}
+                          className="rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 font-mono text-xs text-teal-700 dark:border-teal-800 dark:bg-teal-950/30 dark:text-teal-300"
+                        >
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {workflowInsights.length > 0 && (
+          <div>
+            <div className="mb-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+              Workflow Insight
+            </div>
+            <div className="space-y-2">
+              {workflowInsights.map((insight) => (
+                <div
+                  key={insight.title}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs dark:border-slate-700 dark:bg-slate-800/50"
+                >
+                  <div className="font-semibold text-slate-700 dark:text-slate-200">
+                    {insight.title}
+                  </div>
+                  <p className="mt-1 leading-relaxed text-slate-600 dark:text-slate-400">
+                    {insight.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {hasPhaseData && (
           <div className="flex flex-wrap gap-4">
             <div className="text-xs text-slate-500 dark:text-slate-400">

@@ -403,6 +403,9 @@ export default function InsightDetailPage() {
             !(report.hiddenHarnessSections ?? []).includes("workflowData") && (
               <WorkflowDiagram
                 workflowData={report.harnessData.workflowData}
+                agentDispatch={report.harnessData.agentDispatch}
+                skillInventory={report.harnessData.skillInventory}
+                cliTools={report.harnessData.cliTools}
                 authorHandle={report.author.username}
               />
             )}

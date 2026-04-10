@@ -328,7 +328,12 @@ export default function EditReportPage() {
               </div>
               {!hiddenSections["workflowData"] && (
                 <>
-                  <WorkflowDiagram workflowData={harnessData.workflowData} />
+                  <WorkflowDiagram
+                    workflowData={harnessData.workflowData}
+                    agentDispatch={harnessData.agentDispatch}
+                    skillInventory={harnessData.skillInventory}
+                    cliTools={harnessData.cliTools}
+                  />
                 </>
               )}
             </div>
