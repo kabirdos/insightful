@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Eye, EyeOff, ArrowLeft, AlertTriangle } from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
+import EyeToggle from "@/components/EyeToggle";
 import type { HarnessData } from "@/types/insights";
 import { normalizeHarnessData } from "@/types/insights";
 import HeroStats from "@/components/HeroStats";
@@ -64,24 +65,6 @@ const SECTIONS = [
     label: "On the Horizon",
   },
 ] as const;
-
-function EyeToggle({
-  enabled,
-  onToggle,
-}: {
-  enabled: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      onClick={onToggle}
-      className="rounded p-1 text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
-      title={enabled ? "Hide this section" : "Show this section"}
-    >
-      {enabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-    </button>
-  );
-}
 
 export default function EditReportPage() {
   const { slug } = useParams<{ slug: string }>();
