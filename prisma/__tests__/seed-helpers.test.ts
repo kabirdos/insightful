@@ -3,6 +3,7 @@ import {
   computeDefaultAgentDispatch,
   computeDefaultBranchPrefixes,
   computeDefaultHookFrequency,
+  defaultProjectSeedFor,
 } from "../seed-helpers";
 
 describe("computeDefaultAgentDispatch", () => {
@@ -108,5 +109,55 @@ describe("computeDefaultBranchPrefixes", () => {
     expect(result["feat/"]).toBe(3); // 7 * 0.4 = 2.8 → 3
     expect(result["fix/"]).toBe(2); // 7 * 0.25 = 1.75 → 2
     expect(result["chore/"]).toBe(1); // 7 * 0.15 = 1.05 → 1
+  });
+});
+
+describe("defaultProjectSeedFor", () => {
+  it("returns a known library for each recognized demo user slug", () => {
+    for (const slug of ["mika", "jordan", "priya", "marcus", "elena", "sam"]) {
+      const result = defaultProjectSeedFor(slug);
+      expect(result.length).toBeGreaterThan(0);
+      for (const project of result) {
+        expect(project.name).toBeTruthy();
+        expect(project.description).toBeTruthy();
+        // Each project must have at least one of github or live URL
+        expect(Boolean(project.githubUrl) || Boolean(project.liveUrl)).toBe(
+          true,
+        );
+      }
+    }
+  });
+
+  it("accepts the full demo- prefixed githubId and strips it", () => {
+    const withPrefix = defaultProjectSeedFor("demo-jordan");
+    const withoutPrefix = defaultProjectSeedFor("jordan");
+    expect(withPrefix).toEqual(withoutPrefix);
+  });
+
+  it("accepts the full slug with trailing name and matches the prefix key", () => {
+    // defaultProjectSeedFor("jordan-reeves") should match the "jordan" key
+    const full = defaultProjectSeedFor("jordan-reeves");
+    const short = defaultProjectSeedFor("jordan");
+    expect(full).toEqual(short);
+  });
+
+  it("returns a generic fallback library for unknown user slugs", () => {
+    const result = defaultProjectSeedFor("unknown-user");
+    expect(result.length).toBeGreaterThan(0);
+    expect(result[0].name).toBeTruthy();
+  });
+
+  it("is deterministic — same input returns the same output across calls", () => {
+    const first = defaultProjectSeedFor("priya");
+    const second = defaultProjectSeedFor("priya");
+    expect(first).toEqual(second);
+  });
+
+  it("Jordan has three projects (the most in the library)", () => {
+    expect(defaultProjectSeedFor("jordan")).toHaveLength(3);
+  });
+
+  it("Sam has exactly one project (the junior dev)", () => {
+    expect(defaultProjectSeedFor("sam")).toHaveLength(1);
   });
 });

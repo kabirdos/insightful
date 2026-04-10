@@ -11,6 +11,7 @@ import {
   computeDefaultAgentDispatch,
   computeDefaultBranchPrefixes,
   computeDefaultHookFrequency,
+  defaultProjectSeedFor,
 } from "./seed-helpers";
 
 const prisma = new PrismaClient();
@@ -1764,6 +1765,86 @@ async function seed() {
     console.log(`  ✓ ${slug} (${data.reportType})`);
   }
 
+  console.log("\nCreating project libraries for demo users...");
+  // For each demo user, build a library of Projects and attach each
+  // library project to every report that user owns via the junction
+  // table. This gives demo profiles a realistic cross-report library
+  // that propagates retroactively on edit (Decision 1 in the spec).
+  for (const demoUser of DEMO_USERS) {
+    const userRow = users[demoUser.username];
+    const library = defaultProjectSeedFor(demoUser.githubId);
+    const createdProjects = [];
+    for (const seed of library) {
+      // Use upsert-by-composite so reruns don't duplicate. Since we
+      // have no natural unique constraint on (userId, name), we use
+      // findFirst + create to avoid adding a constraint for seed-only
+      // convenience.
+      const existing = await prisma.project.findFirst({
+        where: { userId: userRow.id, name: seed.name },
+      });
+      const project =
+        existing ??
+        (await prisma.project.create({
+          data: {
+            userId: userRow.id,
+            name: seed.name,
+            description: seed.description,
+            githubUrl: seed.githubUrl,
+            liveUrl: seed.liveUrl,
+          },
+        }));
+      createdProjects.push(project);
+    }
+
+    const userReports = await prisma.insightReport.findMany({
+      where: { authorId: userRow.id },
+      select: { id: true },
+    });
+    for (const report of userReports) {
+      for (let i = 0; i < createdProjects.length; i++) {
+        const project = createdProjects[i];
+        // Upsert the junction row by the unique (reportId, projectId)
+        await prisma.reportProject.upsert({
+          where: {
+            reportId_projectId: {
+              reportId: report.id,
+              projectId: project.id,
+            },
+          },
+          update: {},
+          create: {
+            reportId: report.id,
+            projectId: project.id,
+            position: i,
+          },
+        });
+      }
+      // Transitional ProjectLink seeding — during the migration window
+      // (Units 1-3) the read path still reads ProjectLink rows. Remove
+      // this block in Unit 4 when the read path switches over.
+      const existingLinks = await prisma.projectLink.findMany({
+        where: { reportId: report.id },
+        select: { name: true },
+      });
+      const existingLinkNames = new Set(existingLinks.map((l) => l.name));
+      for (const project of createdProjects) {
+        if (existingLinkNames.has(project.name)) continue;
+        await prisma.projectLink.create({
+          data: {
+            reportId: report.id,
+            name: project.name,
+            githubUrl: project.githubUrl,
+            liveUrl: project.liveUrl,
+            description: project.description,
+          },
+        });
+      }
+    }
+    console.log(
+      `  ✓ @${demoUser.username}: ${createdProjects.length} projects, ${userReports.length} reports linked`,
+    );
+  }
+
   console.log(
     `\nDone! Created ${DEMO_USERS.length} users and ${reports.length} reports.`,
   );
@@ -1804,6 +1885,12 @@ async function cleanup() {
       where: { reportId: { in: rids } },
     });
     await prisma.projectLink.deleteMany({ where: { reportId: { in: rids } } });
+    // Junction rows for the new persistent-projects model. Note the
+    // Project rows themselves are removed below via the User cascade
+    // (Project.userId → User onDelete: Cascade).
+    await prisma.reportProject.deleteMany({
+      where: { reportId: { in: rids } },
+    });
   }
 
   const delReports = await prisma.insightReport.deleteMany({
