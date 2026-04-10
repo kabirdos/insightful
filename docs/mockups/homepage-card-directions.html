@@ -1,0 +1,4903 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insightful — 5 Homepage + Profile Card Directions</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Archivo+Black&family=Archivo:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ═══════════════════════════════════════════════════════
+         SHELL — nav, viewport, feedback, version nav
+         ═══════════════════════════════════════════════════════ */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #efede6;
+        color: #222;
+      }
+
+      .mockup-nav {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: #0a0b0d;
+        color: #fff;
+        padding: 10px 18px;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        align-items: center;
+        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.25);
+        border-bottom: 1px solid #222;
+      }
+      .mockup-nav .title {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        font-weight: 700;
+        margin-right: 14px;
+        white-space: nowrap;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .mockup-nav a {
+        color: #a8c8ff;
+        text-decoration: none;
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        transition: background 0.15s;
+        font-family: "JetBrains Mono", monospace;
+      }
+      .mockup-nav a:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .viewport-toggle {
+        display: flex;
+        gap: 2px;
+        margin-left: 10px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 6px;
+        padding: 2px;
+      }
+      .viewport-toggle button {
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.5);
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: "JetBrains Mono", monospace;
+        transition: all 0.15s;
+      }
+      .viewport-toggle button:hover {
+        color: rgba(255, 255, 255, 0.85);
+      }
+      .viewport-toggle button.active {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+      }
+
+      .copy-all-btn {
+        margin-left: auto;
+        background: #2563eb;
+        color: #fff;
+        border: none;
+        padding: 7px 14px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: "JetBrains Mono", monospace;
+        transition: background 0.15s;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .copy-all-btn:hover {
+        background: #1d4ed8;
+      }
+      .copy-all-btn.copied {
+        background: #16a34a;
+      }
+
+      .mockup-section {
+        max-width: 900px;
+        margin: 48px auto;
+        padding: 0 20px;
+      }
+      .mockup-section.wide {
+        max-width: 1280px;
+      }
+      body.viewport-mobile .mockup-section,
+      body.viewport-mobile .mockup-section.wide {
+        max-width: 600px;
+      }
+      body.viewport-desktop .mockup-section {
+        max-width: 900px;
+      }
+      body.viewport-desktop .mockup-section.wide {
+        max-width: 1280px;
+      }
+
+      .section-label {
+        background: #0a0b0d;
+        color: #fff;
+        display: inline-block;
+        padding: 5px 14px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+        font-family: "JetBrains Mono", monospace;
+      }
+      .section-desc {
+        font-size: 14px;
+        color: #555;
+        margin-bottom: 22px;
+        line-height: 1.55;
+        max-width: 780px;
+        font-family: "Inter", sans-serif;
+      }
+      .section-desc strong {
+        color: #111;
+      }
+
+      .version-container {
+        position: relative;
+      }
+      .version {
+        display: none;
+      }
+      .version.active {
+        display: block;
+      }
+
+      .version-nav {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 16px;
+        padding: 8px;
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+      }
+      .version-nav.visible {
+        display: flex;
+      }
+      .version-nav button {
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-size: 12px;
+        cursor: pointer;
+        color: #374151;
+      }
+      .version-nav button:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+
+      .feedback-area {
+        margin-top: 20px;
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 10px;
+        padding: 14px;
+      }
+      .feedback-area label {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #888;
+        margin-bottom: 8px;
+        font-family: "JetBrains Mono", monospace;
+      }
+      .feedback-area textarea {
+        width: 100%;
+        min-height: 80px;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        padding: 10px;
+        font-family: inherit;
+        font-size: 14px;
+        line-height: 1.5;
+        resize: vertical;
+      }
+      .feedback-area textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .feedback-area .char-count {
+        font-size: 11px;
+        color: #aaa;
+        text-align: right;
+        margin-top: 4px;
+      }
+      .feedback-area .viewport-badge {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 2px 6px;
+        border-radius: 3px;
+        background: #e5e7eb;
+        color: #6b7280;
+        margin-left: 6px;
+      }
+
+      .design-note {
+        background: #fffbeb;
+        border: 1px solid #fcd34d;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin: 14px 0;
+        font-size: 13px;
+        color: #92400e;
+        line-height: 1.55;
+      }
+      .design-note.info {
+        background: #f0fdf4;
+        border-color: #86efac;
+        color: #166534;
+      }
+      .design-note.blue {
+        background: #eff6ff;
+        border-color: #93c5fd;
+        color: #1e40af;
+      }
+
+      .thesis-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin: 18px 0 24px;
+      }
+      .thesis-cell {
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 10px;
+        padding: 14px 16px;
+      }
+      .thesis-cell .thesis-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #999;
+        margin-bottom: 6px;
+      }
+      .thesis-cell .thesis-text {
+        font-size: 13px;
+        color: #222;
+        line-height: 1.5;
+        font-family: "Inter", sans-serif;
+      }
+      body.viewport-mobile .thesis-row {
+        grid-template-columns: 1fr;
+      }
+
+      .section-divider {
+        height: 1px;
+        background: linear-gradient(
+          to right,
+          transparent,
+          #c4c0b5,
+          transparent
+        );
+        margin: 56px 0;
+      }
+
+      /* ═══════════════════════════════════════════════════════
+         DIRECTION 1 — FIELD JOURNAL
+         Warm editorial ivory + Fraunces serif
+         ═══════════════════════════════════════════════════════ */
+      .d1-shell {
+        background: #f6f0e0;
+        color: #1d170e;
+        font-family: "Fraunces", Georgia, serif;
+        border-radius: 6px;
+        border: 1px solid #c9bfa5;
+        overflow: hidden;
+        box-shadow:
+          0 2px 0 rgba(201, 191, 165, 0.4),
+          0 30px 60px -20px rgba(80, 60, 20, 0.2);
+      }
+      .d1-masthead {
+        padding: 42px 52px 30px;
+        border-bottom: 2px solid #1d170e;
+        position: relative;
+      }
+      .d1-masthead::after {
+        content: "";
+        position: absolute;
+        bottom: -8px;
+        left: 52px;
+        right: 52px;
+        height: 1px;
+        background: #1d170e;
+      }
+      .d1-masthead-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        font-family: "Inter", sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: #6b5a3b;
+        margin-bottom: 20px;
+      }
+      .d1-masthead-title {
+        font-family: "Fraunces", serif;
+        font-weight: 400;
+        font-style: italic;
+        font-size: 72px;
+        line-height: 0.95;
+        letter-spacing: -0.02em;
+        color: #1d170e;
+        margin-bottom: 14px;
+      }
+      .d1-masthead-title strong {
+        font-weight: 700;
+        font-style: normal;
+        display: block;
+      }
+      .d1-masthead-sub {
+        font-family: "Inter", sans-serif;
+        font-size: 15px;
+        line-height: 1.55;
+        color: #55412a;
+        max-width: 560px;
+      }
+      .d1-dek {
+        padding: 26px 52px;
+        display: flex;
+        gap: 40px;
+        border-bottom: 1px solid #c9bfa5;
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+      }
+      .d1-dek-item strong {
+        display: block;
+        font-size: 22px;
+        font-family: "Fraunces", serif;
+        color: #1d170e;
+        font-weight: 700;
+        margin-bottom: 2px;
+      }
+      .d1-dek-item span {
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #6b5a3b;
+        font-size: 10px;
+        font-weight: 600;
+      }
+      .d1-toc {
+        padding: 18px 52px;
+        background: #efe7d0;
+        font-family: "Inter", sans-serif;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #6b5a3b;
+        font-weight: 600;
+        border-bottom: 1px solid #c9bfa5;
+      }
+      .d1-toc span {
+        color: #9a6a00;
+        font-weight: 700;
+      }
+
+      .d1-feed {
+        padding: 40px 52px;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+
+      .d1-card {
+        display: grid;
+        grid-template-columns: 1fr 260px;
+        gap: 40px;
+        padding: 36px 0;
+        border-bottom: 1px solid #c9bfa5;
+      }
+      .d1-card:last-child {
+        border-bottom: none;
+      }
+      .d1-card-byline {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: "Inter", sans-serif;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: #9a6a00;
+        margin-bottom: 8px;
+      }
+      .d1-card-byline::before {
+        content: "";
+        width: 16px;
+        height: 1px;
+        background: #9a6a00;
+      }
+      .d1-card-headline {
+        font-family: "Fraunces", serif;
+        font-weight: 700;
+        font-size: 30px;
+        line-height: 1.15;
+        letter-spacing: -0.015em;
+        color: #1d170e;
+        margin-bottom: 10px;
+      }
+      .d1-card-handle {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: #6b5a3b;
+        margin-bottom: 16px;
+      }
+      .d1-card-lede {
+        font-family: "Fraunces", serif;
+        font-size: 16px;
+        line-height: 1.55;
+        font-style: italic;
+        color: #3d2e17;
+        max-width: 520px;
+        margin-bottom: 18px;
+      }
+      .d1-card-dek {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 22px 28px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(29, 23, 14, 0.15);
+        font-family: "Inter", sans-serif;
+      }
+      .d1-card-dek .d-stat strong {
+        display: block;
+        font-family: "Fraunces", serif;
+        font-size: 26px;
+        font-weight: 700;
+        color: #1d170e;
+        line-height: 1;
+      }
+      .d1-card-dek .d-stat span {
+        display: block;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #6b5a3b;
+        font-weight: 600;
+        margin-top: 3px;
+      }
+
+      .d1-card-skills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 18px;
+      }
+      .d1-skill-chip {
+        font-family: "Inter", sans-serif;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 4px 10px;
+        background: transparent;
+        border: 1px solid #1d170e;
+        color: #1d170e;
+        border-radius: 40px;
+      }
+      .d1-skill-chip.on {
+        background: #1d170e;
+        color: #f6f0e0;
+      }
+      .d1-plugin-row {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        margin-top: 14px;
+        font-family: "Inter", sans-serif;
+        font-size: 10px;
+        color: #6b5a3b;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+      }
+      .d1-plugin-dot {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .d1-plugin-dot i {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+
+      .d1-card-viz {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .d1-heatmap-row {
+        font-family: "Inter", sans-serif;
+      }
+      .d1-heatmap-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 5px;
+      }
+      .d1-heatmap-label span.name {
+        color: #1d170e;
+      }
+      .d1-heatmap-label span.val {
+        color: #9a6a00;
+        font-family: "JetBrains Mono", monospace;
+      }
+      .d1-heatmap {
+        display: grid;
+        grid-template-columns: repeat(28, 1fr);
+        gap: 2px;
+      }
+      .d1-heatmap i {
+        display: block;
+        height: 9px;
+        border-radius: 1px;
+      }
+
+      /* Portrait placeholder */
+      .d1-portrait {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: #1d170e;
+        color: #f6f0e0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Fraunces", serif;
+        font-weight: 700;
+        font-size: 22px;
+        margin-right: 14px;
+        flex-shrink: 0;
+      }
+      .d1-card-head {
+        display: flex;
+        align-items: flex-start;
+      }
+      .d1-card-head-text {
+        flex: 1;
+      }
+
+      .d1-footer {
+        padding: 26px 52px 36px;
+        background: #efe7d0;
+        border-top: 2px solid #1d170e;
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-size: 14px;
+        color: #55412a;
+        text-align: center;
+      }
+      .d1-footer strong {
+        color: #1d170e;
+        font-style: normal;
+        font-weight: 700;
+      }
+
+      body.viewport-mobile .d1-masthead {
+        padding: 28px 24px 20px;
+      }
+      body.viewport-mobile .d1-masthead-title {
+        font-size: 44px;
+      }
+      body.viewport-mobile .d1-feed {
+        padding: 24px 24px;
+      }
+      body.viewport-mobile .d1-card {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        padding: 26px 0;
+      }
+      body.viewport-mobile .d1-dek {
+        padding: 20px 24px;
+        gap: 22px;
+        flex-wrap: wrap;
+      }
+      body.viewport-mobile .d1-toc {
+        padding: 14px 24px;
+      }
+      body.viewport-mobile .d1-footer {
+        padding: 20px 24px 28px;
+      }
+
+      /* ═══════════════════════════════════════════════════════
+         DIRECTION 2 — OPERATOR HUD
+         Dark tactical terminal
+         ═══════════════════════════════════════════════════════ */
+      .d2-shell {
+        background: #05090f;
+        color: #e6eefb;
+        font-family: "JetBrains Mono", monospace;
+        border-radius: 2px;
+        border: 1px solid #1a2a3c;
+        overflow: hidden;
+        box-shadow:
+          inset 0 0 120px rgba(34, 211, 238, 0.04),
+          0 30px 80px -20px rgba(0, 0, 0, 0.6);
+      }
+      .d2-statusbar {
+        background: #0a1320;
+        border-bottom: 1px solid #1a2a3c;
+        padding: 10px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      .d2-statusbar .on {
+        color: #22d3ee;
+      }
+      .d2-statusbar .warn {
+        color: #f59e0b;
+      }
+      .d2-statusbar .seg {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        margin-right: 18px;
+      }
+      .d2-statusbar .seg::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #22d3ee;
+        box-shadow: 0 0 6px #22d3ee;
+      }
+      .d2-statusbar .seg.warn::before {
+        background: #f59e0b;
+        box-shadow: 0 0 6px #f59e0b;
+      }
+      .d2-hero {
+        padding: 38px 40px 24px;
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 40px;
+        border-bottom: 1px solid #1a2a3c;
+      }
+      .d2-hero h1 {
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 800;
+        font-size: 34px;
+        line-height: 1.05;
+        color: #e6eefb;
+        margin-bottom: 14px;
+        letter-spacing: -0.01em;
+      }
+      .d2-hero h1 span {
+        color: #22d3ee;
+      }
+      .d2-hero p {
+        font-size: 12px;
+        color: #7d93b0;
+        line-height: 1.65;
+        max-width: 460px;
+      }
+      .d2-hero .d2-cta {
+        display: inline-flex;
+        gap: 10px;
+        margin-top: 22px;
+      }
+      .d2-btn {
+        background: #22d3ee;
+        color: #05090f;
+        padding: 10px 18px;
+        border: 1px solid #22d3ee;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        cursor: pointer;
+      }
+      .d2-btn.ghost {
+        background: transparent;
+        color: #22d3ee;
+      }
+      .d2-readout {
+        border: 1px solid #1a2a3c;
+        padding: 16px 18px;
+        background: #0a1320;
+      }
+      .d2-readout-title {
+        font-size: 9px;
+        font-weight: 700;
+        color: #f59e0b;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+      }
+      .d2-readout-title span {
+        color: #475569;
+      }
+      .d2-readout-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        font-size: 11px;
+        border-bottom: 1px dashed #1a2a3c;
+      }
+      .d2-readout-row:last-child {
+        border-bottom: none;
+      }
+      .d2-readout-row .label {
+        color: #7d93b0;
+      }
+      .d2-readout-row .value {
+        color: #e6eefb;
+        font-weight: 700;
+      }
+      .d2-readout-row .value.cyan {
+        color: #22d3ee;
+      }
+
+      .d2-filter {
+        padding: 14px 40px;
+        border-bottom: 1px solid #1a2a3c;
+        background: #060c15;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        font-size: 10px;
+      }
+      .d2-filter-label {
+        color: #f59e0b;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-right: 8px;
+      }
+      .d2-chip {
+        border: 1px solid #1a2a3c;
+        padding: 5px 12px;
+        color: #7d93b0;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
+      .d2-chip.on {
+        background: #22d3ee;
+        color: #05090f;
+        border-color: #22d3ee;
+      }
+
+      .d2-grid {
+        padding: 28px 40px 40px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+      }
+
+      .d2-card {
+        border: 1px solid #1a2a3c;
+        background: linear-gradient(180deg, #0a1320 0%, #060c15 100%);
+        padding: 22px 22px 20px;
+        position: relative;
+      }
+      .d2-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 40px;
+        height: 2px;
+        background: #22d3ee;
+      }
+      .d2-card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 18px;
+      }
+      .d2-card-handle {
+        font-size: 15px;
+        font-weight: 800;
+        color: #e6eefb;
+        letter-spacing: -0.01em;
+      }
+      .d2-card-handle small {
+        display: block;
+        font-size: 10px;
+        font-weight: 500;
+        color: #475569;
+        margin-top: 2px;
+      }
+      .d2-card-class {
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        padding: 4px 10px;
+        background: rgba(34, 211, 238, 0.08);
+        color: #22d3ee;
+        border: 1px solid rgba(34, 211, 238, 0.3);
+      }
+      .d2-card-class.amber {
+        background: rgba(245, 158, 11, 0.08);
+        color: #f59e0b;
+        border-color: rgba(245, 158, 11, 0.3);
+      }
+      .d2-card-class.magenta {
+        background: rgba(236, 72, 153, 0.08);
+        color: #f472b6;
+        border-color: rgba(236, 72, 153, 0.3);
+      }
+
+      .d2-kpi-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0;
+        border-top: 1px solid #1a2a3c;
+        border-bottom: 1px solid #1a2a3c;
+        margin-bottom: 18px;
+      }
+      .d2-kpi {
+        padding: 14px 0 12px;
+        border-right: 1px dashed #1a2a3c;
+      }
+      .d2-kpi:last-child {
+        border-right: none;
+      }
+      .d2-kpi strong {
+        display: block;
+        font-size: 22px;
+        font-weight: 800;
+        color: #e6eefb;
+        line-height: 1;
+      }
+      .d2-kpi strong.cyan {
+        color: #22d3ee;
+      }
+      .d2-kpi span {
+        display: block;
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #475569;
+        margin-top: 5px;
+      }
+
+      .d2-heatmap-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #475569;
+        margin: 10px 0 5px;
+      }
+      .d2-heatmap-label .val {
+        color: #e6eefb;
+      }
+      .d2-heatmap {
+        display: grid;
+        grid-template-columns: repeat(28, 1fr);
+        gap: 2px;
+      }
+      .d2-heatmap i {
+        display: block;
+        height: 7px;
+      }
+
+      .d2-flow {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px dashed #1a2a3c;
+      }
+      .d2-flow-label {
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #f59e0b;
+        margin-right: 4px;
+      }
+      .d2-flow-node {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 4px 9px;
+        border: 1px solid;
+        color: #e6eefb;
+      }
+      .d2-flow-arrow {
+        color: #475569;
+        font-size: 10px;
+        font-weight: 800;
+      }
+      .d2-flow-node.sp {
+        border-color: #3b82f6;
+        color: #60a5fa;
+        background: rgba(59, 130, 246, 0.1);
+      }
+      .d2-flow-node.ce {
+        border-color: #8b5cf6;
+        color: #a78bfa;
+        background: rgba(139, 92, 246, 0.1);
+      }
+      .d2-flow-node.pr {
+        border-color: #f59e0b;
+        color: #fbbf24;
+        background: rgba(245, 158, 11, 0.1);
+      }
+      .d2-flow-node.cc {
+        border-color: #22c55e;
+        color: #4ade80;
+        background: rgba(34, 197, 94, 0.1);
+      }
+      .d2-flow-node.an {
+        border-color: #06b6d4;
+        color: #22d3ee;
+        background: rgba(6, 182, 212, 0.1);
+      }
+
+      .d2-footer {
+        padding: 14px 40px;
+        background: #060c15;
+        border-top: 1px solid #1a2a3c;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 10px;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+
+      body.viewport-mobile .d2-hero {
+        grid-template-columns: 1fr;
+        padding: 28px 22px 20px;
+        gap: 22px;
+      }
+      body.viewport-mobile .d2-hero h1 {
+        font-size: 24px;
+      }
+      body.viewport-mobile .d2-filter {
+        padding: 12px 22px;
+      }
+      body.viewport-mobile .d2-grid {
+        grid-template-columns: 1fr;
+        padding: 22px 22px 30px;
+      }
+      body.viewport-mobile .d2-footer {
+        padding: 12px 22px;
+      }
+
+      /* ═══════════════════════════════════════════════════════
+         DIRECTION 3 — TRADING CARD VAULT
+         Collectible portrait cards, gradient headers
+         ═══════════════════════════════════════════════════════ */
+      .d3-shell {
+        background:
+          radial-gradient(
+            ellipse at 25% 10%,
+            rgba(139, 92, 246, 0.14),
+            transparent 45%
+          ),
+          radial-gradient(
+            ellipse at 80% 60%,
+            rgba(236, 72, 153, 0.12),
+            transparent 50%
+          ),
+          linear-gradient(180deg, #1b1530 0%, #0e0920 100%);
+        color: #f3e8ff;
+        font-family: "Space Grotesk", sans-serif;
+        border-radius: 18px;
+        border: 1px solid #2b1d52;
+        overflow: hidden;
+        box-shadow: 0 40px 100px -20px rgba(30, 0, 60, 0.5);
+      }
+      .d3-hero {
+        padding: 50px 48px 36px;
+        text-align: center;
+        position: relative;
+      }
+      .d3-hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at 50% 0%,
+          rgba(255, 255, 255, 0.1),
+          transparent 60%
+        );
+        pointer-events: none;
+      }
+      .d3-hero-eyebrow {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 14px;
+        letter-spacing: 0.3em;
+        color: #c4b5fd;
+        margin-bottom: 16px;
+      }
+      .d3-hero h1 {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 88px;
+        line-height: 0.88;
+        color: #fff;
+        letter-spacing: 0.01em;
+        margin-bottom: 14px;
+        text-shadow: 0 4px 24px rgba(139, 92, 246, 0.4);
+      }
+      .d3-hero h1 span {
+        color: #f472b6;
+        font-style: italic;
+      }
+      .d3-hero p {
+        font-size: 14px;
+        color: #c4b5fd;
+        max-width: 520px;
+        margin: 0 auto;
+        line-height: 1.55;
+      }
+      .d3-legend {
+        margin-top: 22px;
+        display: inline-flex;
+        gap: 18px;
+        padding: 8px 20px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(196, 181, 253, 0.2);
+        border-radius: 40px;
+      }
+      .d3-legend-item {
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #c4b5fd;
+      }
+      .d3-legend-item i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+
+      .d3-grid {
+        padding: 0 40px 50px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 26px;
+      }
+      body.viewport-desktop .d3-grid {
+        padding: 0 40px 50px;
+      }
+      body.viewport-mobile .d3-grid {
+        grid-template-columns: 1fr;
+        gap: 22px;
+        padding: 0 22px 40px;
+      }
+
+      .d3-card {
+        aspect-ratio: 3 / 4.2;
+        background: #fefaef;
+        color: #1f1638;
+        border-radius: 14px;
+        padding: 3px;
+        position: relative;
+        transform: rotate(-1deg);
+        transition: transform 0.25s;
+        box-shadow:
+          0 2px 0 rgba(0, 0, 0, 0.1),
+          0 20px 40px -15px rgba(0, 0, 0, 0.5);
+      }
+      .d3-card:nth-child(2) {
+        transform: rotate(0.8deg);
+      }
+      .d3-card:nth-child(3) {
+        transform: rotate(-0.4deg);
+      }
+      .d3-card:nth-child(4) {
+        transform: rotate(1.2deg);
+      }
+      .d3-card:nth-child(5) {
+        transform: rotate(-1.3deg);
+      }
+      .d3-card:nth-child(6) {
+        transform: rotate(0.3deg);
+      }
+      .d3-card:hover {
+        transform: rotate(0) translateY(-4px);
+      }
+
+      .d3-card-inner {
+        background: #fefaef;
+        border-radius: 11px;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        border: 1px solid rgba(31, 22, 56, 0.1);
+      }
+      .d3-card.rare .d3-card-inner {
+        box-shadow: inset 0 0 0 2px #f59e0b;
+      }
+      .d3-card.legendary .d3-card-inner {
+        box-shadow: inset 0 0 0 2px #8b5cf6;
+      }
+
+      .d3-card-header {
+        padding: 20px 20px 16px;
+        background: linear-gradient(
+          135deg,
+          #fdba74 0%,
+          #ec4899 60%,
+          #8b5cf6 100%
+        );
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+      }
+      .d3-card.rare .d3-card-header {
+        background: linear-gradient(
+          135deg,
+          #fcd34d 0%,
+          #f59e0b 60%,
+          #d97706 100%
+        );
+      }
+      .d3-card.legendary .d3-card-header {
+        background: linear-gradient(
+          135deg,
+          #c084fc 0%,
+          #8b5cf6 60%,
+          #4c1d95 100%
+        );
+      }
+      .d3-card.common .d3-card-header {
+        background: linear-gradient(
+          135deg,
+          #6ee7b7 0%,
+          #10b981 60%,
+          #065f46 100%
+        );
+      }
+      .d3-card-header::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+          45deg,
+          transparent 0px,
+          transparent 18px,
+          rgba(255, 255, 255, 0.08) 18px,
+          rgba(255, 255, 255, 0.08) 19px
+        );
+        pointer-events: none;
+      }
+      .d3-card-rarity {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 11px;
+        letter-spacing: 0.16em;
+        color: rgba(255, 255, 255, 0.9);
+        z-index: 1;
+      }
+      .d3-card-portrait {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.95);
+        color: #1f1638;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 30px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        z-index: 1;
+        position: relative;
+      }
+      .d3-card-name {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 26px;
+        line-height: 1;
+        letter-spacing: 0.02em;
+        color: #fff;
+        z-index: 1;
+        position: relative;
+      }
+      .d3-card-class {
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: rgba(255, 255, 255, 0.85);
+        margin-top: 4px;
+        z-index: 1;
+        position: relative;
+      }
+
+      .d3-card-body {
+        flex: 1;
+        padding: 16px 18px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .d3-card-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 4px;
+        border: 1.5px solid rgba(31, 22, 56, 0.1);
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .d3-card-stat {
+        padding: 8px 10px;
+        background: rgba(31, 22, 56, 0.03);
+        border: 0.5px solid rgba(31, 22, 56, 0.06);
+      }
+      .d3-card-stat strong {
+        display: block;
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 22px;
+        color: #1f1638;
+        line-height: 1;
+      }
+      .d3-card-stat span {
+        display: block;
+        font-size: 9px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #6b5a8e;
+        margin-top: 3px;
+      }
+
+      .d3-card-heatmap-wrap {
+        padding: 10px;
+        background: rgba(31, 22, 56, 0.04);
+        border-radius: 6px;
+      }
+      .d3-card-heatmap-label {
+        font-size: 8px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #6b5a8e;
+        margin-bottom: 5px;
+      }
+      .d3-card-heatmap {
+        display: grid;
+        grid-template-columns: repeat(14, 1fr);
+        gap: 2px;
+      }
+      .d3-card-heatmap i {
+        display: block;
+        height: 6px;
+        border-radius: 1px;
+      }
+
+      .d3-card-skills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      .d3-card-skill {
+        font-size: 9px;
+        font-weight: 700;
+        padding: 3px 7px;
+        border-radius: 40px;
+        background: #1f1638;
+        color: #fefaef;
+      }
+      .d3-card-skill.s-blue {
+        background: #3b82f6;
+      }
+      .d3-card-skill.s-violet {
+        background: #8b5cf6;
+      }
+      .d3-card-skill.s-amber {
+        background: #f59e0b;
+      }
+      .d3-card-skill.s-pink {
+        background: #ec4899;
+      }
+      .d3-card-skill.s-emerald {
+        background: #10b981;
+      }
+      .d3-card-skill.s-slate {
+        background: #64748b;
+      }
+
+      .d3-card-footer {
+        padding: 8px 18px 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 9px;
+        color: #6b5a8e;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        border-top: 1px dashed rgba(31, 22, 56, 0.15);
+      }
+
+      body.viewport-mobile .d3-hero {
+        padding: 34px 22px 24px;
+      }
+      body.viewport-mobile .d3-hero h1 {
+        font-size: 52px;
+      }
+
+      /* ═══════════════════════════════════════════════════════
+         DIRECTION 4 — SIGNAL SHEET
+         Clinical dense Bloomberg-grade white
+         ═══════════════════════════════════════════════════════ */
+      .d4-shell {
+        background: #fdfdfd;
+        color: #0c0d10;
+        font-family: "IBM Plex Sans", sans-serif;
+        border-radius: 2px;
+        border: 1px solid #0c0d10;
+        overflow: hidden;
+      }
+      .d4-top {
+        padding: 16px 28px;
+        border-bottom: 2px solid #0c0d10;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #0c0d10;
+        color: #fdfdfd;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      .d4-top .live {
+        color: #ff2b65;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .d4-top .live::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        background: #ff2b65;
+        display: inline-block;
+        border-radius: 50%;
+        box-shadow: 0 0 8px #ff2b65;
+      }
+
+      .d4-header {
+        padding: 30px 28px 20px;
+        border-bottom: 1px solid #e4e5e8;
+      }
+      .d4-header-small {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: #ff2b65;
+        font-weight: 700;
+        margin-bottom: 10px;
+      }
+      .d4-header h1 {
+        font-family: "IBM Plex Sans", sans-serif;
+        font-size: 38px;
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.015em;
+        color: #0c0d10;
+        max-width: 680px;
+        margin-bottom: 10px;
+      }
+      .d4-header p {
+        font-size: 13px;
+        color: #4d5460;
+        max-width: 620px;
+        line-height: 1.55;
+      }
+
+      .d4-meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        padding: 10px 28px;
+        border-bottom: 1px solid #e4e5e8;
+        background: #f7f7f8;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        gap: 28px;
+      }
+      .d4-meta-row .k {
+        color: #8e95a3;
+      }
+      .d4-meta-row .v {
+        color: #0c0d10;
+        font-weight: 700;
+        margin-left: 6px;
+      }
+      .d4-meta-row .v.pink {
+        color: #ff2b65;
+      }
+
+      .d4-table {
+        display: flex;
+        flex-direction: column;
+      }
+      .d4-row {
+        display: grid;
+        grid-template-columns: 64px 1.7fr 1fr 1fr 1.2fr 1fr;
+        gap: 16px;
+        padding: 18px 28px;
+        border-bottom: 1px solid #e4e5e8;
+        align-items: center;
+        font-size: 12px;
+        transition: background 0.15s;
+      }
+      .d4-row:hover {
+        background: #fef1f4;
+      }
+      .d4-row.header {
+        background: #0c0d10;
+        color: #fdfdfd;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        font-weight: 700;
+        padding: 10px 28px;
+      }
+      .d4-row.header:hover {
+        background: #0c0d10;
+      }
+
+      .d4-obs {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+        font-weight: 700;
+        color: #ff2b65;
+      }
+      .d4-sub-name {
+        font-family: "IBM Plex Sans", sans-serif;
+        font-size: 15px;
+        font-weight: 700;
+        color: #0c0d10;
+        margin-bottom: 3px;
+      }
+      .d4-sub-meta {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 10px;
+        color: #8e95a3;
+        display: flex;
+        gap: 10px;
+      }
+
+      .d4-stat-cell {
+        font-family: "IBM Plex Mono", monospace;
+      }
+      .d4-stat-big {
+        font-size: 18px;
+        font-weight: 700;
+        color: #0c0d10;
+        line-height: 1;
+      }
+      .d4-stat-label {
+        font-size: 9px;
+        color: #8e95a3;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-top: 2px;
+      }
+
+      .d4-mini-heatmap {
+        display: grid;
+        grid-template-columns: repeat(14, 1fr);
+        gap: 1.5px;
+        max-width: 170px;
+      }
+      .d4-mini-heatmap i {
+        display: block;
+        height: 6px;
+      }
+
+      .d4-flow-cell {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        flex-wrap: wrap;
+      }
+      .d4-flow-node {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 8px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border: 1px solid;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .d4-flow-node.sp {
+        border-color: #3b82f6;
+        color: #1e40af;
+        background: #dbeafe;
+      }
+      .d4-flow-node.ce {
+        border-color: #8b5cf6;
+        color: #6b21a8;
+        background: #f3e8ff;
+      }
+      .d4-flow-node.pr {
+        border-color: #f59e0b;
+        color: #92400e;
+        background: #fef3c7;
+      }
+      .d4-flow-node.cc {
+        border-color: #22c55e;
+        color: #166534;
+        background: #dcfce7;
+      }
+      .d4-flow-node.an {
+        border-color: #06b6d4;
+        color: #155e75;
+        background: #cffafe;
+      }
+      .d4-flow-cell .arrow {
+        color: #8e95a3;
+        font-size: 9px;
+      }
+
+      .d4-skills-cell {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
+      }
+      .d4-skill-tag {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 8px;
+        font-weight: 700;
+        padding: 2px 5px;
+        background: #fce7f0;
+        color: #ff2b65;
+        text-transform: uppercase;
+      }
+
+      .d4-footer {
+        padding: 16px 28px;
+        background: #0c0d10;
+        color: #8e95a3;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      .d4-footer .cta {
+        color: #ff2b65;
+        font-weight: 700;
+      }
+
+      body.viewport-mobile .d4-header h1 {
+        font-size: 26px;
+      }
+      body.viewport-mobile .d4-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 16px 20px;
+      }
+      body.viewport-mobile .d4-row.header {
+        display: none;
+      }
+      body.viewport-mobile .d4-top,
+      body.viewport-mobile .d4-header,
+      body.viewport-mobile .d4-meta-row,
+      body.viewport-mobile .d4-footer {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      /* ═══════════════════════════════════════════════════════
+         DIRECTION 5 — POSTER WALL
+         Swiss maximalist typography
+         ═══════════════════════════════════════════════════════ */
+      .d5-shell {
+        background: #f1eadc;
+        color: #0c0b08;
+        font-family: "Archivo", sans-serif;
+        border-radius: 2px;
+        border: 1px solid #0c0b08;
+        overflow: hidden;
+      }
+      .d5-hero {
+        padding: 56px 48px 40px;
+        border-bottom: 2px solid #0c0b08;
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 40px;
+        align-items: end;
+      }
+      .d5-hero-mark {
+        font-family: "Archivo Black", sans-serif;
+        font-size: 12px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #0c0b08;
+        margin-bottom: 14px;
+      }
+      .d5-hero h1 {
+        font-family: "Archivo Black", sans-serif;
+        font-size: 108px;
+        line-height: 0.88;
+        letter-spacing: -0.03em;
+        color: #0c0b08;
+      }
+      .d5-hero h1 em {
+        font-style: normal;
+        color: #dc2626;
+      }
+      .d5-hero-right {
+        font-size: 14px;
+        color: #3f3a2e;
+        line-height: 1.55;
+        max-width: 300px;
+        border-left: 2px solid #0c0b08;
+        padding-left: 20px;
+      }
+      .d5-hero-right strong {
+        display: block;
+        font-weight: 900;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #0c0b08;
+        margin-bottom: 8px;
+      }
+
+      .d5-strip {
+        padding: 14px 48px;
+        background: #0c0b08;
+        color: #f1eadc;
+        display: flex;
+        gap: 40px;
+        align-items: center;
+        font-family: "Archivo Black", sans-serif;
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      .d5-strip .divider {
+        color: #594f36;
+      }
+
+      .d5-wall {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr 1fr;
+        grid-auto-rows: minmax(320px, auto);
+        gap: 0;
+      }
+      .d5-card {
+        padding: 28px 26px 24px;
+        border-right: 2px solid #0c0b08;
+        border-bottom: 2px solid #0c0b08;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        overflow: hidden;
+      }
+      .d5-card:nth-child(3n) {
+        border-right: none;
+      }
+
+      .d5-card.red {
+        background: #fee2e2;
+      }
+      .d5-card.red .d5-giant {
+        color: #dc2626;
+      }
+      .d5-card.blue {
+        background: #dbeafe;
+      }
+      .d5-card.blue .d5-giant {
+        color: #1d4ed8;
+      }
+      .d5-card.yellow {
+        background: #fef08a;
+      }
+      .d5-card.yellow .d5-giant {
+        color: #a16207;
+      }
+      .d5-card.green {
+        background: #d1fae5;
+      }
+      .d5-card.green .d5-giant {
+        color: #047857;
+      }
+      .d5-card.purple {
+        background: #ede9fe;
+      }
+      .d5-card.purple .d5-giant {
+        color: #6d28d9;
+      }
+      .d5-card.black {
+        background: #0c0b08;
+        color: #f1eadc;
+      }
+      .d5-card.black .d5-giant {
+        color: #f1eadc;
+      }
+      .d5-card.black .d5-card-name,
+      .d5-card.black .d5-card-meta,
+      .d5-card.black .d5-giant-label {
+        color: #f1eadc;
+      }
+      .d5-card.black .d5-heatmap-strip i.off {
+        background: #2a2720;
+      }
+
+      .d5-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 18px;
+      }
+      .d5-card-eyebrow {
+        font-family: "Archivo Black", sans-serif;
+        font-size: 9px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      .d5-card-num {
+        font-family: "Archivo Black", sans-serif;
+        font-size: 11px;
+      }
+      .d5-giant {
+        font-family: "Archivo Black", sans-serif;
+        font-size: 108px;
+        line-height: 0.82;
+        letter-spacing: -0.05em;
+        margin-bottom: 6px;
+      }
+      .d5-giant.small {
+        font-size: 84px;
+      }
+      .d5-giant-label {
+        font-size: 10px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #0c0b08;
+        margin-bottom: 18px;
+      }
+      .d5-card-name {
+        font-family: "Archivo Black", sans-serif;
+        font-size: 22px;
+        line-height: 1;
+        color: #0c0b08;
+        margin-top: auto;
+        margin-bottom: 4px;
+      }
+      .d5-card-meta {
+        font-family: "Archivo", sans-serif;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        color: #3f3a2e;
+        margin-bottom: 14px;
+      }
+      .d5-heatmap-strip {
+        display: grid;
+        grid-template-columns: repeat(28, 1fr);
+        gap: 2px;
+        margin-bottom: 14px;
+      }
+      .d5-heatmap-strip i {
+        display: block;
+        height: 6px;
+        background: rgba(12, 11, 8, 0.1);
+      }
+      .d5-heatmap-strip i.l1 {
+        background: rgba(12, 11, 8, 0.25);
+      }
+      .d5-heatmap-strip i.l2 {
+        background: rgba(12, 11, 8, 0.45);
+      }
+      .d5-heatmap-strip i.l3 {
+        background: rgba(12, 11, 8, 0.7);
+      }
+      .d5-heatmap-strip i.l4 {
+        background: rgba(12, 11, 8, 0.95);
+      }
+
+      .d5-flow-dots {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        padding-top: 12px;
+        border-top: 2px solid #0c0b08;
+      }
+      .d5-card.black .d5-flow-dots {
+        border-top-color: #f1eadc;
+      }
+      .d5-flow-dots i {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      .d5-flow-dots i.sp {
+        background: #3b82f6;
+      }
+      .d5-flow-dots i.ce {
+        background: #8b5cf6;
+      }
+      .d5-flow-dots i.pr {
+        background: #f59e0b;
+      }
+      .d5-flow-dots i.cc {
+        background: #22c55e;
+      }
+      .d5-flow-dots i.an {
+        background: #06b6d4;
+      }
+      .d5-flow-dots span {
+        font-family: "Archivo Black", sans-serif;
+        font-size: 8px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        margin-left: auto;
+      }
+
+      .d5-footer {
+        padding: 22px 48px;
+        background: #f1eadc;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 0;
+        font-family: "Archivo Black", sans-serif;
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      body.viewport-mobile .d5-hero {
+        grid-template-columns: 1fr;
+        padding: 32px 22px 24px;
+      }
+      body.viewport-mobile .d5-hero h1 {
+        font-size: 58px;
+      }
+      body.viewport-mobile .d5-strip {
+        padding: 12px 22px;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+      body.viewport-mobile .d5-wall {
+        grid-template-columns: 1fr;
+      }
+      body.viewport-mobile .d5-card {
+        border-right: none;
+      }
+      body.viewport-mobile .d5-giant {
+        font-size: 72px;
+      }
+      body.viewport-mobile .d5-footer {
+        padding: 18px 22px;
+      }
+
+      /* ═══════════════════════════════════════════════════════
+         DETAIL CARD ZOOMS — show the card blown up
+         ═══════════════════════════════════════════════════════ */
+      .zoom-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: #888;
+        margin: 20px 0 10px;
+      }
+      .zoom-wrap {
+        margin-bottom: 26px;
+        padding: 24px;
+        background: rgba(255, 255, 255, 0.5);
+        border: 1px dashed #c9bfa5;
+        border-radius: 6px;
+      }
+      .d3-zoom {
+        background: linear-gradient(180deg, #1b1530 0%, #0e0920 100%);
+      }
+      .d3-zoom .d3-card {
+        max-width: 320px;
+        margin: 0 auto;
+        transform: rotate(0);
+      }
+    </style>
+  </head>
+  <body class="viewport-desktop">
+    <nav class="mockup-nav">
+      <span class="title">HOMEPAGE × CARD DIRECTIONS</span>
+      <a href="#intro">brief</a>
+      <a href="#d1">1 · field journal</a>
+      <a href="#d2">2 · operator hud</a>
+      <a href="#d3">3 · trading vault</a>
+      <a href="#d4">4 · signal sheet</a>
+      <a href="#d5">5 · poster wall</a>
+
+      <div class="viewport-toggle">
+        <button data-viewport="mobile" title="Mobile (600px)">Mobile</button>
+        <button data-viewport="desktop" class="active" title="Desktop (full)">
+          Desktop
+        </button>
+      </div>
+      <button class="copy-all-btn" onclick="copyAllFeedback()">
+        Copy All Feedback
+      </button>
+    </nav>
+
+    <!-- ══════════════════ INTRO ══════════════════ -->
+    <section class="mockup-section wide" id="intro" data-section-id="intro">
+      <div class="section-label">Brief</div>
+      <h2
+        style="
+          font-family: &quot;Fraunces&quot;, serif;
+          font-size: 32px;
+          font-weight: 700;
+          color: #0c0b08;
+          margin-bottom: 10px;
+          letter-spacing: -0.01em;
+        "
+      >
+        Five homepage directions, built around new profile cards.
+      </h2>
+      <p class="section-desc">
+        The live profile page now carries a lot more signal than the homepage
+        cards can express. These five directions each start from
+        <strong>a new profile card design</strong> that uses the new data — then
+        build a homepage <em>around</em> that card's aesthetic logic. Same three
+        sample operators in each direction so you can compare apples to apples.
+      </p>
+
+      <div class="thesis-row">
+        <div class="thesis-cell">
+          <div class="thesis-label">New data in every card</div>
+          <div class="thesis-text">
+            3 activity heatmaps (sessions · tokens · est. cost),
+            plugin-source-colored workflow nodes, skill chips with icons, hero
+            per-week stats, autonomy class, model split.
+          </div>
+        </div>
+        <div class="thesis-cell">
+          <div class="thesis-label">Shared operators</div>
+          <div class="thesis-text">
+            Kalid (orchestrator) · Julia (craftsperson) · Marcus (automator).
+            Same numbers, same skills, rendered five different ways.
+          </div>
+        </div>
+        <div class="thesis-cell">
+          <div class="thesis-label">Directions</div>
+          <div class="thesis-text">
+            1 editorial · 2 tactical · 3 collectible · 4 dense · 5 poster. Each
+            homepage's layout follows from its card's visual logic.
+          </div>
+        </div>
+      </div>
+
+      <div class="design-note blue">
+        <strong>Note:</strong> Each direction shows a <em>detail zoom</em> of
+        the card first, then the full homepage containing that card style.
+        Feedback textareas are at the bottom of every direction.
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ══════════════════ DIRECTION 1 — FIELD JOURNAL ══════════════════ -->
+    <section
+      class="mockup-section wide"
+      id="d1"
+      data-section-id="direction_1_field_journal"
+    >
+      <div class="section-label">Direction 1</div>
+      <h2
+        style="
+          font-family: &quot;Fraunces&quot;, serif;
+          font-size: 38px;
+          font-weight: 700;
+          color: #0c0b08;
+          margin-bottom: 6px;
+          letter-spacing: -0.015em;
+          font-style: italic;
+        "
+      >
+        Field Journal
+      </h2>
+      <p class="section-desc">
+        <strong>Mood:</strong> warm ivory paper, naturalist field notes,
+        Fraunces display serif, small caps captions. Feels like a printed issue
+        of a developer journal — the homepage is a table of contents, the card
+        is an essay hook. <strong>Best if:</strong> you want the product to feel
+        credible, editorial, and slow-built.
+      </p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="zoom-label">Card detail</div>
+          <div class="zoom-wrap">
+            <div class="d1-shell">
+              <div class="d1-feed" style="padding: 14px 36px">
+                <!-- single card zoom -->
+                <div
+                  class="d1-card"
+                  style="border-bottom: none; padding: 20px 0"
+                >
+                  <div>
+                    <div class="d1-card-byline">Profile · no. 042</div>
+                    <div class="d1-card-head">
+                      <span class="d1-portrait">K</span>
+                      <div class="d1-card-head-text">
+                        <div class="d1-card-headline">
+                          The parallel-agent orchestrator.
+                        </div>
+                        <div class="d1-card-handle">
+                          kalid_azad · mar 12 – apr 8, 2026
+                        </div>
+                      </div>
+                    </div>
+                    <p class="d1-card-lede">
+                      Kalid runs Claude Code like a film crew — branches,
+                      worktrees, subagents dispatched to independent corners of
+                      the repo while plan mode holds the main thread. Hooks keep
+                      the set lit.
+                    </p>
+                    <div class="d1-card-dek">
+                      <div class="d-stat">
+                        <strong>7.1M</strong><span>tokens / wk</span>
+                      </div>
+                      <div class="d-stat">
+                        <strong>135</strong><span>sessions / wk</span>
+                      </div>
+                      <div class="d-stat">
+                        <strong>1,201</strong><span>messages / wk</span>
+                      </div>
+                      <div class="d-stat">
+                        <strong>$189</strong><span>est. cost / wk</span>
+                      </div>
+                    </div>
+                    <div class="d1-card-skills">
+                      <span class="d1-skill-chip on">Parallel Agents</span>
+                      <span class="d1-skill-chip on">Worktrees</span>
+                      <span class="d1-skill-chip">Custom Skills</span>
+                      <span class="d1-skill-chip">Subagents</span>
+                      <span class="d1-skill-chip">Plan Mode</span>
+                      <span class="d1-skill-chip">Hooks</span>
+                    </div>
+                    <div class="d1-plugin-row">
+                      <span>Plugin sources</span>
+                      <span class="d1-plugin-dot"
+                        ><i style="background: #3b82f6"></i> superpowers</span
+                      >
+                      <span class="d1-plugin-dot"
+                        ><i style="background: #8b5cf6"></i>
+                        compound-engineering</span
+                      >
+                      <span class="d1-plugin-dot"
+                        ><i style="background: #f59e0b"></i>
+                        pr-review-toolkit</span
+                      >
+                    </div>
+                  </div>
+                  <div class="d1-card-viz">
+                    <div class="d1-heatmap-row">
+                      <div class="d1-heatmap-label">
+                        <span class="name">Sessions</span
+                        ><span class="val">135/wk</span>
+                      </div>
+                      <div class="d1-heatmap">
+                        <i style="background: #dbeafe"></i
+                        ><i style="background: #93c5fd"></i
+                        ><i style="background: #60a5fa"></i
+                        ><i style="background: #3b82f6"></i
+                        ><i style="background: #2563eb"></i
+                        ><i style="background: #1d4ed8"></i
+                        ><i style="background: #dbeafe"></i>
+                        <i style="background: #60a5fa"></i
+                        ><i style="background: #3b82f6"></i
+                        ><i style="background: #93c5fd"></i
+                        ><i style="background: #2563eb"></i
+                        ><i style="background: #1d4ed8"></i
+                        ><i style="background: #3b82f6"></i
+                        ><i style="background: #dbeafe"></i>
+                        <i style="background: #93c5fd"></i
+                        ><i style="background: #3b82f6"></i
+                        ><i style="background: #2563eb"></i
+                        ><i style="background: #1d4ed8"></i
+                        ><i style="background: #60a5fa"></i
+                        ><i style="background: #3b82f6"></i
+                        ><i style="background: #dbeafe"></i>
+                        <i style="background: #2563eb"></i
+                        ><i style="background: #1d4ed8"></i
+                        ><i style="background: #3b82f6"></i
+                        ><i style="background: #60a5fa"></i
+                        ><i style="background: #2563eb"></i
+                        ><i style="background: #1d4ed8"></i
+                        ><i style="background: #dbeafe"></i>
+                      </div>
+                    </div>
+                    <div class="d1-heatmap-row">
+                      <div class="d1-heatmap-label">
+                        <span class="name">Tokens</span
+                        ><span class="val">7.1M/wk</span>
+                      </div>
+                      <div class="d1-heatmap">
+                        <i style="background: #d1fae5"></i
+                        ><i style="background: #6ee7b7"></i
+                        ><i style="background: #34d399"></i
+                        ><i style="background: #10b981"></i
+                        ><i style="background: #059669"></i
+                        ><i style="background: #047857"></i
+                        ><i style="background: #d1fae5"></i>
+                        <i style="background: #34d399"></i
+                        ><i style="background: #10b981"></i
+                        ><i style="background: #6ee7b7"></i
+                        ><i style="background: #059669"></i
+                        ><i style="background: #047857"></i
+                        ><i style="background: #10b981"></i
+                        ><i style="background: #d1fae5"></i>
+                        <i style="background: #6ee7b7"></i
+                        ><i style="background: #10b981"></i
+                        ><i style="background: #059669"></i
+                        ><i style="background: #047857"></i
+                        ><i style="background: #34d399"></i
+                        ><i style="background: #10b981"></i
+                        ><i style="background: #d1fae5"></i>
+                        <i style="background: #059669"></i
+                        ><i style="background: #047857"></i
+                        ><i style="background: #10b981"></i
+                        ><i style="background: #34d399"></i
+                        ><i style="background: #059669"></i
+                        ><i style="background: #047857"></i
+                        ><i style="background: #d1fae5"></i>
+                      </div>
+                    </div>
+                    <div class="d1-heatmap-row">
+                      <div class="d1-heatmap-label">
+                        <span class="name">Est. cost</span
+                        ><span class="val">$189/wk</span>
+                      </div>
+                      <div class="d1-heatmap">
+                        <i style="background: #fef3c7"></i
+                        ><i style="background: #fde68a"></i
+                        ><i style="background: #fcd34d"></i
+                        ><i style="background: #fbbf24"></i
+                        ><i style="background: #f59e0b"></i
+                        ><i style="background: #d97706"></i
+                        ><i style="background: #fef3c7"></i>
+                        <i style="background: #fcd34d"></i
+                        ><i style="background: #fbbf24"></i
+                        ><i style="background: #fde68a"></i
+                        ><i style="background: #f59e0b"></i
+                        ><i style="background: #d97706"></i
+                        ><i style="background: #fbbf24"></i
+                        ><i style="background: #fef3c7"></i>
+                        <i style="background: #fde68a"></i
+                        ><i style="background: #fbbf24"></i
+                        ><i style="background: #f59e0b"></i
+                        ><i style="background: #d97706"></i
+                        ><i style="background: #fcd34d"></i
+                        ><i style="background: #fbbf24"></i
+                        ><i style="background: #fef3c7"></i>
+                        <i style="background: #f59e0b"></i
+                        ><i style="background: #d97706"></i
+                        ><i style="background: #fbbf24"></i
+                        ><i style="background: #fcd34d"></i
+                        ><i style="background: #f59e0b"></i
+                        ><i style="background: #d97706"></i
+                        ><i style="background: #fef3c7"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="zoom-label">Full homepage composition</div>
+          <div class="d1-shell">
+            <div class="d1-masthead">
+              <div class="d1-masthead-top">
+                <span>Insightful · Volume 4 · Issue 2</span>
+                <span>April 2026</span>
+              </div>
+              <div class="d1-masthead-title">
+                The Developer<br /><strong>Field Journal.</strong>
+              </div>
+              <p class="d1-masthead-sub">
+                A public archive of how developers actually run Claude Code.
+                Each profile is a harness — tools, skills, plugins, workflow —
+                written up so you can learn from people whose operating style is
+                nothing like your own.
+              </p>
+            </div>
+            <div class="d1-dek">
+              <div class="d1-dek-item">
+                <strong>142</strong><span>published harnesses</span>
+              </div>
+              <div class="d1-dek-item">
+                <strong>38</strong><span>custom-skill heavy</span>
+              </div>
+              <div class="d1-dek-item">
+                <strong>21</strong><span>subagent forward</span>
+              </div>
+              <div class="d1-dek-item">
+                <strong>17</strong><span>plugin rich</span>
+              </div>
+              <div class="d1-dek-item">
+                <strong>new / day</strong><span>apr 9 update</span>
+              </div>
+            </div>
+            <div class="d1-toc">
+              <strong>This issue</strong> &nbsp;·&nbsp; profiles
+              <span>042</span>, <span>043</span>, <span>044</span> &nbsp;·&nbsp;
+              pattern: <span>parallel work</span>
+            </div>
+            <div class="d1-feed">
+              <!-- card 1 -->
+              <div class="d1-card">
+                <div>
+                  <div class="d1-card-byline">Profile · no. 042</div>
+                  <div class="d1-card-head">
+                    <span class="d1-portrait">K</span>
+                    <div class="d1-card-head-text">
+                      <div class="d1-card-headline">
+                        The parallel-agent orchestrator.
+                      </div>
+                      <div class="d1-card-handle">
+                        kalid_azad · mar 12 – apr 8, 2026
+                      </div>
+                    </div>
+                  </div>
+                  <p class="d1-card-lede">
+                    Worktrees, subagents, hooks, plan mode. A film-crew
+                    operating style where background branches keep working while
+                    the main thread negotiates strategy.
+                  </p>
+                  <div class="d1-card-dek">
+                    <div class="d-stat">
+                      <strong>7.1M</strong><span>tokens / wk</span>
+                    </div>
+                    <div class="d-stat">
+                      <strong>135</strong><span>sessions / wk</span>
+                    </div>
+                    <div class="d-stat">
+                      <strong>$189</strong><span>est. cost / wk</span>
+                    </div>
+                  </div>
+                  <div class="d1-card-skills">
+                    <span class="d1-skill-chip on">Parallel Agents</span>
+                    <span class="d1-skill-chip on">Worktrees</span>
+                    <span class="d1-skill-chip">Subagents</span>
+                    <span class="d1-skill-chip">Plan Mode</span>
+                    <span class="d1-skill-chip">Hooks</span>
+                  </div>
+                  <div class="d1-plugin-row">
+                    <span class="d1-plugin-dot"
+                      ><i style="background: #3b82f6"></i> superpowers</span
+                    >
+                    <span class="d1-plugin-dot"
+                      ><i style="background: #8b5cf6"></i>
+                      compound-engineering</span
+                    >
+                    <span class="d1-plugin-dot"
+                      ><i style="background: #f59e0b"></i>
+                      pr-review-toolkit</span
+                    >
+                  </div>
+                </div>
+                <div class="d1-card-viz">
+                  <div class="d1-heatmap-row">
+                    <div class="d1-heatmap-label">
+                      <span class="name">Sessions</span
+                      ><span class="val">135/wk</span>
+                    </div>
+                    <div class="d1-heatmap">
+                      <i style="background: #dbeafe"></i
+                      ><i style="background: #93c5fd"></i
+                      ><i style="background: #60a5fa"></i
+                      ><i style="background: #3b82f6"></i
+                      ><i style="background: #2563eb"></i
+                      ><i style="background: #1d4ed8"></i
+                      ><i style="background: #dbeafe"></i>
+                      <i style="background: #60a5fa"></i
+                      ><i style="background: #3b82f6"></i
+                      ><i style="background: #93c5fd"></i
+                      ><i style="background: #2563eb"></i
+                      ><i style="background: #1d4ed8"></i
+                      ><i style="background: #3b82f6"></i
+                      ><i style="background: #dbeafe"></i>
+                      <i style="background: #93c5fd"></i
+                      ><i style="background: #3b82f6"></i
+                      ><i style="background: #2563eb"></i
+                      ><i style="background: #1d4ed8"></i
+                      ><i style="background: #60a5fa"></i
+                      ><i style="background: #3b82f6"></i
+                      ><i style="background: #dbeafe"></i>
+                      <i style="background: #2563eb"></i
+                      ><i style="background: #1d4ed8"></i
+                      ><i style="background: #3b82f6"></i
+                      ><i style="background: #60a5fa"></i
+                      ><i style="background: #2563eb"></i
+                      ><i style="background: #1d4ed8"></i
+                      ><i style="background: #dbeafe"></i>
+                    </div>
+                  </div>
+                  <div class="d1-heatmap-row">
+                    <div class="d1-heatmap-label">
+                      <span class="name">Tokens</span
+                      ><span class="val">7.1M/wk</span>
+                    </div>
+                    <div class="d1-heatmap">
+                      <i style="background: #d1fae5"></i
+                      ><i style="background: #6ee7b7"></i
+                      ><i style="background: #34d399"></i
+                      ><i style="background: #10b981"></i
+                      ><i style="background: #059669"></i
+                      ><i style="background: #047857"></i
+                      ><i style="background: #d1fae5"></i>
+                      <i style="background: #34d399"></i
+                      ><i style="background: #10b981"></i
+                      ><i style="background: #6ee7b7"></i
+                      ><i style="background: #059669"></i
+                      ><i style="background: #047857"></i
+                      ><i style="background: #10b981"></i
+                      ><i style="background: #d1fae5"></i>
+                      <i style="background: #6ee7b7"></i
+                      ><i style="background: #10b981"></i
+                      ><i style="background: #059669"></i
+                      ><i style="background: #047857"></i
+                      ><i style="background: #34d399"></i
+                      ><i style="background: #10b981"></i
+                      ><i style="background: #d1fae5"></i>
+                      <i style="background: #059669"></i
+                      ><i style="background: #047857"></i
+                      ><i style="background: #10b981"></i
+                      ><i style="background: #34d399"></i
+                      ><i style="background: #059669"></i
+                      ><i style="background: #047857"></i
+                      ><i style="background: #d1fae5"></i>
+                    </div>
+                  </div>
+                  <div class="d1-heatmap-row">
+                    <div class="d1-heatmap-label">
+                      <span class="name">Est. cost</span
+                      ><span class="val">$189/wk</span>
+                    </div>
+                    <div class="d1-heatmap">
+                      <i style="background: #fef3c7"></i
+                      ><i style="background: #fde68a"></i
+                      ><i style="background: #fcd34d"></i
+                      ><i style="background: #fbbf24"></i
+                      ><i style="background: #f59e0b"></i
+                      ><i style="background: #d97706"></i
+                      ><i style="background: #fef3c7"></i>
+                      <i style="background: #fcd34d"></i
+                      ><i style="background: #fbbf24"></i
+                      ><i style="background: #fde68a"></i
+                      ><i style="background: #f59e0b"></i
+                      ><i style="background: #d97706"></i
+                      ><i style="background: #fbbf24"></i
+                      ><i style="background: #fef3c7"></i>
+                      <i style="background: #fde68a"></i
+                      ><i style="background: #fbbf24"></i
+                      ><i style="background: #f59e0b"></i
+                      ><i style="background: #d97706"></i
+                      ><i style="background: #fcd34d"></i
+                      ><i style="background: #fbbf24"></i
+                      ><i style="background: #fef3c7"></i>
+                      <i style="background: #f59e0b"></i
+                      ><i style="background: #d97706"></i
+                      ><i style="background: #fbbf24"></i
+                      ><i style="background: #fcd34d"></i
+                      ><i style="background: #f59e0b"></i
+                      ><i style="background: #d97706"></i
+                      ><i style="background: #fef3c7"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- card 2 -->
+              <div class="d1-card">
+                <div>
+                  <div class="d1-card-byline">Profile · no. 043</div>
+                  <div class="d1-card-head">
+                    <span class="d1-portrait" style="background: #9a6a00"
+                      >J</span
+                    >
+                    <div class="d1-card-head-text">
+                      <div class="d1-card-headline">
+                        A craftsperson who plans first.
+                      </div>
+                      <div class="d1-card-handle">
+                        julia_chen · mar 18 – apr 8, 2026
+                      </div>
+                    </div>
+                  </div>
+                  <p class="d1-card-lede">
+                    Julia spends more time in plan mode than anyone else in this
+                    issue. Playwright for verification, code-review as a
+                    first-class behavior, small high-precision commits.
+                  </p>
+                  <div class="d1-card-dek">
+                    <div class="d-stat">
+                      <strong>2.1M</strong><span>tokens / wk</span>
+                    </div>
+                    <div class="d-stat">
+                      <strong>42</strong><span>sessions / wk</span>
+                    </div>
+                    <div class="d-stat">
+                      <strong>$58</strong><span>est. cost / wk</span>
+                    </div>
+                  </div>
+                  <div class="d1-card-skills">
+                    <span class="d1-skill-chip on">Plan Mode</span>
+                    <span class="d1-skill-chip on">Code Review</span>
+                    <span class="d1-skill-chip">MCP Servers</span>
+                    <span class="d1-skill-chip">Playwright</span>
+                    <span class="d1-skill-chip">Custom Skills</span>
+                  </div>
+                  <div class="d1-plugin-row">
+                    <span class="d1-plugin-dot"
+                      ><i style="background: #8b5cf6"></i>
+                      compound-engineering</span
+                    >
+                    <span class="d1-plugin-dot"
+                      ><i style="background: #f59e0b"></i>
+                      pr-review-toolkit</span
+                    >
+                    <span class="d1-plugin-dot"
+                      ><i style="background: #06b6d4"></i> anthropics</span
+                    >
+                  </div>
+                </div>
+                <div class="d1-card-viz">
+                  <div class="d1-heatmap-row">
+                    <div class="d1-heatmap-label">
+                      <span class="name">Sessions</span
+                      ><span class="val">42/wk</span>
+                    </div>
+                    <div class="d1-heatmap">
+                      <i style="background: #dbeafe"></i
+                      ><i style="background: #dbeafe"></i
+                      ><i style="background: #93c5fd"></i
+                      ><i style="background: #60a5fa"></i
+                      ><i style="background: #dbeafe"></i
+                      ><i style="background: #dbeafe"></i
+                      ><i style="background: #dbeafe"></i>
+                      <i style="background: #dbeafe"></i
+                      ><i style="background: #93c5fd"></i
+                      ><i style="background: #60a5fa"></i
+                      ><i style="background: #3b82f6"></i
+                      ><i style="background: #93c5fd"></i
+                      ><i style="background: #dbeafe"></i
+                      ><i style="background: #dbeafe"></i>
+                      <i style="background: #dbeafe"></i
+                      ><i style="background: #60a5fa"></i
+                      ><i style="background: #3b82f6"></i
+                      ><i style="background: #2563eb"></i
+                      ><i style="background: #60a5fa"></i
+                      ><i style="background: #dbeafe"></i
+                      ><i style="background: #dbeafe"></i>
+                      <i style="background: #93c5fd"></i
+                      ><i style="background: #60a5fa"></i
+                      ><i style="background: #3b82f6"></i
+                      ><i style="background: #93c5fd"></i
+                      ><i style="background: #60a5fa"></i
+                      ><i style="background: #dbeafe"></i
+                      ><i style="background: #dbeafe"></i>
+                    </div>
+                  </div>
+                  <div class="d1-heatmap-row">
+                    <div class="d1-heatmap-label">
+                      <span class="name">Tokens</span
+                      ><span class="val">2.1M/wk</span>
+                    </div>
+                    <div class="d1-heatmap">
+                      <i style="background: #d1fae5"></i
+                      ><i style="background: #d1fae5"></i
+                      ><i style="background: #6ee7b7"></i
+                      ><i style="background: #34d399"></i
+                      ><i style="background: #d1fae5"></i
+                      ><i style="background: #d1fae5"></i
+                      ><i style="background: #d1fae5"></i>
+                      <i style="background: #d1fae5"></i
+                      ><i style="background: #6ee7b7"></i
+                      ><i style="background: #34d399"></i
+                      ><i style="background: #10b981"></i
+                      ><i style="background: #6ee7b7"></i
+                      ><i style="background: #d1fae5"></i
+                      ><i style="background: #d1fae5"></i>
+                      <i style="background: #d1fae5"></i
+                      ><i style="background: #34d399"></i
+                      ><i style="background: #10b981"></i
+                      ><i style="background: #059669"></i
+                      ><i style="background: #34d399"></i
+                      ><i style="background: #d1fae5"></i
+                      ><i style="background: #d1fae5"></i>
+                      <i style="background: #6ee7b7"></i
+                      ><i style="background: #34d399"></i
+                      ><i style="background: #10b981"></i
+                      ><i style="background: #6ee7b7"></i
+                      ><i style="background: #34d399"></i
+                      ><i style="background: #d1fae5"></i
+                      ><i style="background: #d1fae5"></i>
+                    </div>
+                  </div>
+                  <div class="d1-heatmap-row">
+                    <div class="d1-heatmap-label">
+                      <span class="name">Est. cost</span
+                      ><span class="val">$58/wk</span>
+                    </div>
+                    <div class="d1-heatmap">
+                      <i style="background: #fef3c7"></i
+                      ><i style="background: #fef3c7"></i
+                      ><i style="background: #fde68a"></i
+                      ><i style="background: #fcd34d"></i
+                      ><i style="background: #fef3c7"></i
+                      ><i style="background: #fef3c7"></i
+                      ><i style="background: #fef3c7"></i>
+                      <i style="background: #fef3c7"></i
+                      ><i style="background: #fde68a"></i
+                      ><i style="background: #fcd34d"></i
+                      ><i style="background: #fbbf24"></i
+                      ><i style="background: #fde68a"></i
+                      ><i style="background: #fef3c7"></i
+                      ><i style="background: #fef3c7"></i>
+                      <i style="background: #fef3c7"></i
+                      ><i style="background: #fcd34d"></i
+                      ><i style="background: #fbbf24"></i
+                      ><i style="background: #f59e0b"></i
+                      ><i style="background: #fcd34d"></i
+                      ><i style="background: #fef3c7"></i
+                      ><i style="background: #fef3c7"></i>
+                      <i style="background: #fde68a"></i
+                      ><i style="background: #fcd34d"></i
+                      ><i style="background: #fbbf24"></i
+                      ><i style="background: #fde68a"></i
+                      ><i style="background: #fcd34d"></i
+                      ><i style="background: #fef3c7"></i
+                      ><i style="background: #fef3c7"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- card 3 -->
+              <div class="d1-card">
+                <div>
+                  <div class="d1-card-byline">Profile · no. 044</div>
+                  <div class="d1-card-head">
+                    <span class="d1-portrait" style="background: #3b82f6"
+                      >M</span
+                    >
+                    <div class="d1-card-head-text">
+                      <div class="d1-card-headline">
+                        An automator who runs it headless.
+                      </div>
+                      <div class="d1-card-handle">
+                        marcus_okafor · mar 22 – apr 8, 2026
+                      </div>
+                    </div>
+                  </div>
+                  <p class="d1-card-lede">
+                    Subagents, hooks, and headless mode. Marcus's setup is tuned
+                    for unattended pipelines — fewer commits, more automated
+                    check runs.
+                  </p>
+                  <div class="d1-card-dek">
+                    <div class="d-stat">
+                      <strong>4.3M</strong><span>tokens / wk</span>
+                    </div>
+                    <div class="d-stat">
+                      <strong>89</strong><span>sessions / wk</span>
+                    </div>
+                    <div class="d-stat">
+                      <strong>$112</strong><span>est. cost / wk</span>
+                    </div>
+                  </div>
+                  <div class="d1-card-skills">
+                    <span class="d1-skill-chip on">Subagents</span>
+                    <span class="d1-skill-chip on">Hooks</span>
+                    <span class="d1-skill-chip on">Headless Mode</span>
+                    <span class="d1-skill-chip">Parallel Agents</span>
+                    <span class="d1-skill-chip">MCP Servers</span>
+                  </div>
+                  <div class="d1-plugin-row">
+                    <span class="d1-plugin-dot"
+                      ><i style="background: #3b82f6"></i> superpowers</span
+                    >
+                    <span class="d1-plugin-dot"
+                      ><i style="background: #22c55e"></i> commit-commands</span
+                    >
+                    <span class="d1-plugin-dot"
+                      ><i style="background: #06b6d4"></i> anthropics</span
+                    >
+                  </div>
+                </div>
+                <div class="d1-card-viz">
+                  <div class="d1-heatmap-row">
+                    <div class="d1-heatmap-label">
+                      <span class="name">Sessions</span
+                      ><span class="val">89/wk</span>
+                    </div>
+                    <div class="d1-heatmap">
+                      <i style="background: #dbeafe"></i
+                      ><i style="background: #60a5fa"></i
+                      ><i style="background: #3b82f6"></i
+                      ><i style="background: #60a5fa"></i
+                      ><i style="background: #93c5fd"></i
+                      ><i style="background: #2563eb"></i
+                      ><i style="background: #dbeafe"></i>
+                      <i style="background: #3b82f6"></i
+                      ><i style="background: #2563eb"></i
+                      ><i style="background: #60a5fa"></i
+                      ><i style="background: #1d4ed8"></i
+                      ><i style="background: #3b82f6"></i
+                      ><i style="background: #93c5fd"></i
+                      ><i style="background: #dbeafe"></i>
+                      <i style="background: #60a5fa"></i
+                      ><i style="background: #3b82f6"></i
+                      ><i style="background: #2563eb"></i
+                      ><i style="background: #60a5fa"></i
+                      ><i style="background: #1d4ed8"></i
+                      ><i style="background: #3b82f6"></i
+                      ><i style="background: #dbeafe"></i>
+                      <i style="background: #3b82f6"></i
+                      ><i style="background: #60a5fa"></i
+                      ><i style="background: #2563eb"></i
+                      ><i style="background: #93c5fd"></i
+                      ><i style="background: #3b82f6"></i
+                      ><i style="background: #60a5fa"></i
+                      ><i style="background: #dbeafe"></i>
+                    </div>
+                  </div>
+                  <div class="d1-heatmap-row">
+                    <div class="d1-heatmap-label">
+                      <span class="name">Tokens</span
+                      ><span class="val">4.3M/wk</span>
+                    </div>
+                    <div class="d1-heatmap">
+                      <i style="background: #d1fae5"></i
+                      ><i style="background: #34d399"></i
+                      ><i style="background: #10b981"></i
+                      ><i style="background: #34d399"></i
+                      ><i style="background: #6ee7b7"></i
+                      ><i style="background: #059669"></i
+                      ><i style="background: #d1fae5"></i>
+                      <i style="background: #10b981"></i
+                      ><i style="background: #059669"></i
+                      ><i style="background: #34d399"></i
+                      ><i style="background: #047857"></i
+                      ><i style="background: #10b981"></i
+                      ><i style="background: #6ee7b7"></i
+                      ><i style="background: #d1fae5"></i>
+                      <i style="background: #34d399"></i
+                      ><i style="background: #10b981"></i
+                      ><i style="background: #059669"></i
+                      ><i style="background: #34d399"></i
+                      ><i style="background: #047857"></i
+                      ><i style="background: #10b981"></i
+                      ><i style="background: #d1fae5"></i>
+                      <i style="background: #10b981"></i
+                      ><i style="background: #34d399"></i
+                      ><i style="background: #059669"></i
+                      ><i style="background: #6ee7b7"></i
+                      ><i style="background: #10b981"></i
+                      ><i style="background: #34d399"></i
+                      ><i style="background: #d1fae5"></i>
+                    </div>
+                  </div>
+                  <div class="d1-heatmap-row">
+                    <div class="d1-heatmap-label">
+                      <span class="name">Est. cost</span
+                      ><span class="val">$112/wk</span>
+                    </div>
+                    <div class="d1-heatmap">
+                      <i style="background: #fef3c7"></i
+                      ><i style="background: #fcd34d"></i
+                      ><i style="background: #fbbf24"></i
+                      ><i style="background: #fcd34d"></i
+                      ><i style="background: #fde68a"></i
+                      ><i style="background: #f59e0b"></i
+                      ><i style="background: #fef3c7"></i>
+                      <i style="background: #fbbf24"></i
+                      ><i style="background: #f59e0b"></i
+                      ><i style="background: #fcd34d"></i
+                      ><i style="background: #d97706"></i
+                      ><i style="background: #fbbf24"></i
+                      ><i style="background: #fde68a"></i
+                      ><i style="background: #fef3c7"></i>
+                      <i style="background: #fcd34d"></i
+                      ><i style="background: #fbbf24"></i
+                      ><i style="background: #f59e0b"></i
+                      ><i style="background: #fcd34d"></i
+                      ><i style="background: #d97706"></i
+                      ><i style="background: #fbbf24"></i
+                      ><i style="background: #fef3c7"></i>
+                      <i style="background: #fbbf24"></i
+                      ><i style="background: #fcd34d"></i
+                      ><i style="background: #f59e0b"></i
+                      ><i style="background: #fde68a"></i
+                      ><i style="background: #fbbf24"></i
+                      ><i style="background: #fcd34d"></i
+                      ><i style="background: #fef3c7"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="d1-footer">
+              <strong>To submit your harness:</strong> run
+              <code
+                style="
+                  font-family: &quot;JetBrains Mono&quot;, monospace;
+                  background: #1d170e;
+                  color: #f6f0e0;
+                  padding: 2px 8px;
+                  border-radius: 2px;
+                  font-size: 12px;
+                "
+                >/insight-harness</code
+              >
+              and publish the result at insightharness.com.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feedback-area">
+        <label
+          >Feedback — Direction 1 · Field Journal
+          <span class="viewport-badge">desktop</span></label
+        >
+        <textarea
+          placeholder="Does the editorial framing feel credible? Is the card showing the right info at the right size? Is the homepage too quiet?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ══════════════════ DIRECTION 2 — OPERATOR HUD ══════════════════ -->
+    <section
+      class="mockup-section wide"
+      id="d2"
+      data-section-id="direction_2_operator_hud"
+    >
+      <div class="section-label">Direction 2</div>
+      <h2
+        style="
+          font-family: &quot;JetBrains Mono&quot;, monospace;
+          font-size: 34px;
+          font-weight: 800;
+          color: #0c0b08;
+          margin-bottom: 6px;
+          letter-spacing: -0.015em;
+        "
+      >
+        OPERATOR.HUD
+      </h2>
+      <p class="section-desc">
+        <strong>Mood:</strong> dark tactical terminal, JetBrains Mono
+        throughout, cyan + amber accents on deep navy. Every card is a status
+        readout. <strong>Best if:</strong> you want the product to feel serious,
+        competitive, and technical — a place engineers go to benchmark their
+        setups.
+      </p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="zoom-label">Card detail</div>
+          <div
+            class="zoom-wrap"
+            style="background: #05090f; border-color: #1a2a3c"
+          >
+            <div class="d2-shell" style="max-width: 520px; margin: 0 auto">
+              <div class="d2-statusbar">
+                <span
+                  ><span class="seg">operator · online</span
+                  ><span class="seg warn">signal · high</span></span
+                >
+                <span>0x042 · readout</span>
+              </div>
+              <div
+                class="d2-grid"
+                style="grid-template-columns: 1fr; padding: 22px 22px 26px"
+              >
+                <div class="d2-card">
+                  <div class="d2-card-head">
+                    <div class="d2-card-handle">
+                      @kalid_azad<small>mar 12 – apr 8 · 28d</small>
+                    </div>
+                    <div class="d2-card-class">orchestrator</div>
+                  </div>
+                  <div class="d2-kpi-row">
+                    <div class="d2-kpi">
+                      <strong class="cyan">7.1M</strong><span>tok/wk</span>
+                    </div>
+                    <div class="d2-kpi">
+                      <strong>135</strong><span>ses/wk</span>
+                    </div>
+                    <div class="d2-kpi">
+                      <strong>1.2K</strong><span>msg/wk</span>
+                    </div>
+                    <div class="d2-kpi">
+                      <strong>$189</strong><span>cost/wk</span>
+                    </div>
+                  </div>
+
+                  <div class="d2-heatmap-label">
+                    <span>sessions · 28d</span><span class="val">135/wk</span>
+                  </div>
+                  <div class="d2-heatmap">
+                    <i style="background: #0e1f35"></i
+                    ><i style="background: #1e40af"></i
+                    ><i style="background: #2563eb"></i
+                    ><i style="background: #3b82f6"></i
+                    ><i style="background: #60a5fa"></i
+                    ><i style="background: #22d3ee"></i
+                    ><i style="background: #0e1f35"></i>
+                    <i style="background: #2563eb"></i
+                    ><i style="background: #3b82f6"></i
+                    ><i style="background: #1e40af"></i
+                    ><i style="background: #60a5fa"></i
+                    ><i style="background: #22d3ee"></i
+                    ><i style="background: #3b82f6"></i
+                    ><i style="background: #0e1f35"></i>
+                    <i style="background: #1e40af"></i
+                    ><i style="background: #3b82f6"></i
+                    ><i style="background: #60a5fa"></i
+                    ><i style="background: #22d3ee"></i
+                    ><i style="background: #2563eb"></i
+                    ><i style="background: #3b82f6"></i
+                    ><i style="background: #0e1f35"></i>
+                    <i style="background: #60a5fa"></i
+                    ><i style="background: #22d3ee"></i
+                    ><i style="background: #3b82f6"></i
+                    ><i style="background: #2563eb"></i
+                    ><i style="background: #60a5fa"></i
+                    ><i style="background: #22d3ee"></i
+                    ><i style="background: #0e1f35"></i>
+                  </div>
+                  <div class="d2-heatmap-label">
+                    <span>tokens · 28d</span><span class="val">7.1M/wk</span>
+                  </div>
+                  <div class="d2-heatmap">
+                    <i style="background: #0e2a1d"></i
+                    ><i style="background: #15803d"></i
+                    ><i style="background: #16a34a"></i
+                    ><i style="background: #22c55e"></i
+                    ><i style="background: #4ade80"></i
+                    ><i style="background: #86efac"></i
+                    ><i style="background: #0e2a1d"></i>
+                    <i style="background: #16a34a"></i
+                    ><i style="background: #22c55e"></i
+                    ><i style="background: #15803d"></i
+                    ><i style="background: #4ade80"></i
+                    ><i style="background: #86efac"></i
+                    ><i style="background: #22c55e"></i
+                    ><i style="background: #0e2a1d"></i>
+                    <i style="background: #15803d"></i
+                    ><i style="background: #22c55e"></i
+                    ><i style="background: #4ade80"></i
+                    ><i style="background: #86efac"></i
+                    ><i style="background: #16a34a"></i
+                    ><i style="background: #22c55e"></i
+                    ><i style="background: #0e2a1d"></i>
+                    <i style="background: #4ade80"></i
+                    ><i style="background: #86efac"></i
+                    ><i style="background: #22c55e"></i
+                    ><i style="background: #16a34a"></i
+                    ><i style="background: #4ade80"></i
+                    ><i style="background: #86efac"></i
+                    ><i style="background: #0e2a1d"></i>
+                  </div>
+                  <div class="d2-heatmap-label">
+                    <span>est. cost · 28d</span><span class="val">$189/wk</span>
+                  </div>
+                  <div class="d2-heatmap">
+                    <i style="background: #2a1f0a"></i
+                    ><i style="background: #92400e"></i
+                    ><i style="background: #b45309"></i
+                    ><i style="background: #d97706"></i
+                    ><i style="background: #f59e0b"></i
+                    ><i style="background: #fbbf24"></i
+                    ><i style="background: #2a1f0a"></i>
+                    <i style="background: #b45309"></i
+                    ><i style="background: #d97706"></i
+                    ><i style="background: #92400e"></i
+                    ><i style="background: #f59e0b"></i
+                    ><i style="background: #fbbf24"></i
+                    ><i style="background: #d97706"></i
+                    ><i style="background: #2a1f0a"></i>
+                    <i style="background: #92400e"></i
+                    ><i style="background: #d97706"></i
+                    ><i style="background: #f59e0b"></i
+                    ><i style="background: #fbbf24"></i
+                    ><i style="background: #b45309"></i
+                    ><i style="background: #d97706"></i
+                    ><i style="background: #2a1f0a"></i>
+                    <i style="background: #f59e0b"></i
+                    ><i style="background: #fbbf24"></i
+                    ><i style="background: #d97706"></i
+                    ><i style="background: #b45309"></i
+                    ><i style="background: #f59e0b"></i
+                    ><i style="background: #fbbf24"></i
+                    ><i style="background: #2a1f0a"></i>
+                  </div>
+
+                  <div class="d2-flow">
+                    <span class="d2-flow-label">workflow ·</span>
+                    <span class="d2-flow-node ce">brainstorm</span>
+                    <span class="d2-flow-arrow">→</span>
+                    <span class="d2-flow-node sp">plan</span>
+                    <span class="d2-flow-arrow">→</span>
+                    <span class="d2-flow-node sp">execute</span>
+                    <span class="d2-flow-arrow">→</span>
+                    <span class="d2-flow-node pr">review</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="zoom-label">Full homepage composition</div>
+          <div class="d2-shell">
+            <div class="d2-statusbar">
+              <span>
+                <span class="seg">signal · online</span>
+                <span class="seg">142 operators</span>
+                <span class="seg warn">feed · live</span>
+              </span>
+              <span
+                >insightharness.sys &nbsp;·&nbsp; apr 9 2026 &nbsp;·&nbsp; 14:22
+                utc</span
+              >
+            </div>
+            <div class="d2-hero">
+              <div>
+                <h1>
+                  See the <span>operating systems</span><br />behind strong
+                  Claude Code work.
+                </h1>
+                <p>
+                  Browse public harnesses by tokens burned, sessions run, skill
+                  mix, plugin stack, and workflow shape. Every card is a readout
+                  of how a real developer runs the tool.
+                </p>
+                <div class="d2-cta">
+                  <button class="d2-btn">&gt; browse feed</button>
+                  <button class="d2-btn ghost">&gt; upload report</button>
+                </div>
+              </div>
+              <div class="d2-readout">
+                <div class="d2-readout-title">
+                  <span>today · signal snapshot</span><span>v2.1</span>
+                </div>
+                <div class="d2-readout-row">
+                  <span class="label">published</span
+                  ><span class="value cyan">142</span>
+                </div>
+                <div class="d2-readout-row">
+                  <span class="label">custom-skill heavy</span
+                  ><span class="value">38</span>
+                </div>
+                <div class="d2-readout-row">
+                  <span class="label">subagent forward</span
+                  ><span class="value">21</span>
+                </div>
+                <div class="d2-readout-row">
+                  <span class="label">plugin rich</span
+                  ><span class="value">17</span>
+                </div>
+                <div class="d2-readout-row">
+                  <span class="label">new today</span
+                  ><span class="value cyan">4</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="d2-filter">
+              <span class="d2-filter-label">filter ::</span>
+              <span class="d2-chip on">all</span>
+              <span class="d2-chip">orchestrators</span>
+              <span class="d2-chip">craftspeople</span>
+              <span class="d2-chip">automators</span>
+              <span class="d2-chip">plan-mode</span>
+              <span class="d2-chip">plugin-rich</span>
+              <span class="d2-chip">subagent-heavy</span>
+            </div>
+
+            <div class="d2-grid">
+              <!-- Card 1: Kalid -->
+              <div class="d2-card">
+                <div class="d2-card-head">
+                  <div class="d2-card-handle">
+                    @kalid_azad<small>mar 12 – apr 8 · 28d</small>
+                  </div>
+                  <div class="d2-card-class">orchestrator</div>
+                </div>
+                <div class="d2-kpi-row">
+                  <div class="d2-kpi">
+                    <strong class="cyan">7.1M</strong><span>tok/wk</span>
+                  </div>
+                  <div class="d2-kpi">
+                    <strong>135</strong><span>ses/wk</span>
+                  </div>
+                  <div class="d2-kpi">
+                    <strong>1.2K</strong><span>msg/wk</span>
+                  </div>
+                  <div class="d2-kpi">
+                    <strong>$189</strong><span>cost/wk</span>
+                  </div>
+                </div>
+                <div class="d2-heatmap-label">
+                  <span>sessions</span><span class="val">135/wk</span>
+                </div>
+                <div class="d2-heatmap">
+                  <i style="background: #0e1f35"></i
+                  ><i style="background: #1e40af"></i
+                  ><i style="background: #2563eb"></i
+                  ><i style="background: #3b82f6"></i
+                  ><i style="background: #60a5fa"></i
+                  ><i style="background: #22d3ee"></i
+                  ><i style="background: #0e1f35"></i>
+                  <i style="background: #2563eb"></i
+                  ><i style="background: #3b82f6"></i
+                  ><i style="background: #1e40af"></i
+                  ><i style="background: #60a5fa"></i
+                  ><i style="background: #22d3ee"></i
+                  ><i style="background: #3b82f6"></i
+                  ><i style="background: #0e1f35"></i>
+                  <i style="background: #1e40af"></i
+                  ><i style="background: #3b82f6"></i
+                  ><i style="background: #60a5fa"></i
+                  ><i style="background: #22d3ee"></i
+                  ><i style="background: #2563eb"></i
+                  ><i style="background: #3b82f6"></i
+                  ><i style="background: #0e1f35"></i>
+                  <i style="background: #60a5fa"></i
+                  ><i style="background: #22d3ee"></i
+                  ><i style="background: #3b82f6"></i
+                  ><i style="background: #2563eb"></i
+                  ><i style="background: #60a5fa"></i
+                  ><i style="background: #22d3ee"></i
+                  ><i style="background: #0e1f35"></i>
+                </div>
+                <div class="d2-heatmap-label">
+                  <span>tokens</span><span class="val">7.1M/wk</span>
+                </div>
+                <div class="d2-heatmap">
+                  <i style="background: #0e2a1d"></i
+                  ><i style="background: #15803d"></i
+                  ><i style="background: #16a34a"></i
+                  ><i style="background: #22c55e"></i
+                  ><i style="background: #4ade80"></i
+                  ><i style="background: #86efac"></i
+                  ><i style="background: #0e2a1d"></i>
+                  <i style="background: #16a34a"></i
+                  ><i style="background: #22c55e"></i
+                  ><i style="background: #15803d"></i
+                  ><i style="background: #4ade80"></i
+                  ><i style="background: #86efac"></i
+                  ><i style="background: #22c55e"></i
+                  ><i style="background: #0e2a1d"></i>
+                  <i style="background: #15803d"></i
+                  ><i style="background: #22c55e"></i
+                  ><i style="background: #4ade80"></i
+                  ><i style="background: #86efac"></i
+                  ><i style="background: #16a34a"></i
+                  ><i style="background: #22c55e"></i
+                  ><i style="background: #0e2a1d"></i>
+                  <i style="background: #4ade80"></i
+                  ><i style="background: #86efac"></i
+                  ><i style="background: #22c55e"></i
+                  ><i style="background: #16a34a"></i
+                  ><i style="background: #4ade80"></i
+                  ><i style="background: #86efac"></i
+                  ><i style="background: #0e2a1d"></i>
+                </div>
+                <div class="d2-heatmap-label">
+                  <span>est. cost</span><span class="val">$189/wk</span>
+                </div>
+                <div class="d2-heatmap">
+                  <i style="background: #2a1f0a"></i
+                  ><i style="background: #92400e"></i
+                  ><i style="background: #b45309"></i
+                  ><i style="background: #d97706"></i
+                  ><i style="background: #f59e0b"></i
+                  ><i style="background: #fbbf24"></i
+                  ><i style="background: #2a1f0a"></i>
+                  <i style="background: #b45309"></i
+                  ><i style="background: #d97706"></i
+                  ><i style="background: #92400e"></i
+                  ><i style="background: #f59e0b"></i
+                  ><i style="background: #fbbf24"></i
+                  ><i style="background: #d97706"></i
+                  ><i style="background: #2a1f0a"></i>
+                  <i style="background: #92400e"></i
+                  ><i style="background: #d97706"></i
+                  ><i style="background: #f59e0b"></i
+                  ><i style="background: #fbbf24"></i
+                  ><i style="background: #b45309"></i
+                  ><i style="background: #d97706"></i
+                  ><i style="background: #2a1f0a"></i>
+                  <i style="background: #f59e0b"></i
+                  ><i style="background: #fbbf24"></i
+                  ><i style="background: #d97706"></i
+                  ><i style="background: #b45309"></i
+                  ><i style="background: #f59e0b"></i
+                  ><i style="background: #fbbf24"></i
+                  ><i style="background: #2a1f0a"></i>
+                </div>
+                <div class="d2-flow">
+                  <span class="d2-flow-label">flow</span>
+                  <span class="d2-flow-node ce">brainstorm</span>
+                  <span class="d2-flow-arrow">→</span>
+                  <span class="d2-flow-node sp">plan</span>
+                  <span class="d2-flow-arrow">→</span>
+                  <span class="d2-flow-node sp">execute</span>
+                  <span class="d2-flow-arrow">→</span>
+                  <span class="d2-flow-node pr">review</span>
+                </div>
+              </div>
+
+              <!-- Card 2: Julia -->
+              <div class="d2-card">
+                <div class="d2-card-head">
+                  <div class="d2-card-handle">
+                    @julia_chen<small>mar 18 – apr 8 · 21d</small>
+                  </div>
+                  <div class="d2-card-class amber">craftsperson</div>
+                </div>
+                <div class="d2-kpi-row">
+                  <div class="d2-kpi">
+                    <strong class="cyan">2.1M</strong><span>tok/wk</span>
+                  </div>
+                  <div class="d2-kpi">
+                    <strong>42</strong><span>ses/wk</span>
+                  </div>
+                  <div class="d2-kpi">
+                    <strong>380</strong><span>msg/wk</span>
+                  </div>
+                  <div class="d2-kpi">
+                    <strong>$58</strong><span>cost/wk</span>
+                  </div>
+                </div>
+                <div class="d2-heatmap-label">
+                  <span>sessions</span><span class="val">42/wk</span>
+                </div>
+                <div class="d2-heatmap">
+                  <i style="background: #0e1f35"></i
+                  ><i style="background: #0e1f35"></i
+                  ><i style="background: #1e40af"></i
+                  ><i style="background: #2563eb"></i
+                  ><i style="background: #0e1f35"></i
+                  ><i style="background: #0e1f35"></i
+                  ><i style="background: #0e1f35"></i>
+                  <i style="background: #0e1f35"></i
+                  ><i style="background: #1e40af"></i
+                  ><i style="background: #2563eb"></i
+                  ><i style="background: #3b82f6"></i
+                  ><i style="background: #1e40af"></i
+                  ><i style="background: #0e1f35"></i
+                  ><i style="background: #0e1f35"></i>
+                  <i style="background: #0e1f35"></i
+                  ><i style="background: #2563eb"></i
+                  ><i style="background: #3b82f6"></i
+                  ><i style="background: #60a5fa"></i
+                  ><i style="background: #2563eb"></i
+                  ><i style="background: #0e1f35"></i
+                  ><i style="background: #0e1f35"></i>
+                  <i style="background: #1e40af"></i
+                  ><i style="background: #2563eb"></i
+                  ><i style="background: #3b82f6"></i
+                  ><i style="background: #1e40af"></i
+                  ><i style="background: #2563eb"></i
+                  ><i style="background: #0e1f35"></i
+                  ><i style="background: #0e1f35"></i>
+                </div>
+                <div class="d2-heatmap-label">
+                  <span>tokens</span><span class="val">2.1M/wk</span>
+                </div>
+                <div class="d2-heatmap">
+                  <i style="background: #0e2a1d"></i
+                  ><i style="background: #0e2a1d"></i
+                  ><i style="background: #15803d"></i
+                  ><i style="background: #16a34a"></i
+                  ><i style="background: #0e2a1d"></i
+                  ><i style="background: #0e2a1d"></i
+                  ><i style="background: #0e2a1d"></i>
+                  <i style="background: #0e2a1d"></i
+                  ><i style="background: #15803d"></i
+                  ><i style="background: #16a34a"></i
+                  ><i style="background: #22c55e"></i
+                  ><i style="background: #15803d"></i
+                  ><i style="background: #0e2a1d"></i
+                  ><i style="background: #0e2a1d"></i>
+                  <i style="background: #0e2a1d"></i
+                  ><i style="background: #16a34a"></i
+                  ><i style="background: #22c55e"></i
+                  ><i style="background: #4ade80"></i
+                  ><i style="background: #16a34a"></i
+                  ><i style="background: #0e2a1d"></i
+                  ><i style="background: #0e2a1d"></i>
+                  <i style="background: #15803d"></i
+                  ><i style="background: #16a34a"></i
+                  ><i style="background: #22c55e"></i
+                  ><i style="background: #15803d"></i
+                  ><i style="background: #16a34a"></i
+                  ><i style="background: #0e2a1d"></i
+                  ><i style="background: #0e2a1d"></i>
+                </div>
+                <div class="d2-heatmap-label">
+                  <span>est. cost</span><span class="val">$58/wk</span>
+                </div>
+                <div class="d2-heatmap">
+                  <i style="background: #2a1f0a"></i
+                  ><i style="background: #2a1f0a"></i
+                  ><i style="background: #92400e"></i
+                  ><i style="background: #b45309"></i
+                  ><i style="background: #2a1f0a"></i
+                  ><i style="background: #2a1f0a"></i
+                  ><i style="background: #2a1f0a"></i>
+                  <i style="background: #2a1f0a"></i
+                  ><i style="background: #92400e"></i
+                  ><i style="background: #b45309"></i
+                  ><i style="background: #d97706"></i
+                  ><i style="background: #92400e"></i
+                  ><i style="background: #2a1f0a"></i
+                  ><i style="background: #2a1f0a"></i>
+                  <i style="background: #2a1f0a"></i
+                  ><i style="background: #b45309"></i
+                  ><i style="background: #d97706"></i
+                  ><i style="background: #f59e0b"></i
+                  ><i style="background: #b45309"></i
+                  ><i style="background: #2a1f0a"></i
+                  ><i style="background: #2a1f0a"></i>
+                  <i style="background: #92400e"></i
+                  ><i style="background: #b45309"></i
+                  ><i style="background: #d97706"></i
+                  ><i style="background: #92400e"></i
+                  ><i style="background: #b45309"></i
+                  ><i style="background: #2a1f0a"></i
+                  ><i style="background: #2a1f0a"></i>
+                </div>
+                <div class="d2-flow">
+                  <span class="d2-flow-label">flow</span>
+                  <span class="d2-flow-node pr">plan-review</span>
+                  <span class="d2-flow-arrow">→</span>
+                  <span class="d2-flow-node sp">tdd</span>
+                  <span class="d2-flow-arrow">→</span>
+                  <span class="d2-flow-node pr">code-review</span>
+                </div>
+              </div>
+
+              <!-- Card 3: Marcus -->
+              <div class="d2-card">
+                <div class="d2-card-head">
+                  <div class="d2-card-handle">
+                    @marcus_okafor<small>mar 22 – apr 8 · 17d</small>
+                  </div>
+                  <div class="d2-card-class magenta">automator</div>
+                </div>
+                <div class="d2-kpi-row">
+                  <div class="d2-kpi">
+                    <strong class="cyan">4.3M</strong><span>tok/wk</span>
+                  </div>
+                  <div class="d2-kpi">
+                    <strong>89</strong><span>ses/wk</span>
+                  </div>
+                  <div class="d2-kpi">
+                    <strong>650</strong><span>msg/wk</span>
+                  </div>
+                  <div class="d2-kpi">
+                    <strong>$112</strong><span>cost/wk</span>
+                  </div>
+                </div>
+                <div class="d2-heatmap-label">
+                  <span>sessions</span><span class="val">89/wk</span>
+                </div>
+                <div class="d2-heatmap">
+                  <i style="background: #0e1f35"></i
+                  ><i style="background: #60a5fa"></i
+                  ><i style="background: #3b82f6"></i
+                  ><i style="background: #60a5fa"></i
+                  ><i style="background: #1e40af"></i
+                  ><i style="background: #22d3ee"></i
+                  ><i style="background: #0e1f35"></i>
+                  <i style="background: #3b82f6"></i
+                  ><i style="background: #22d3ee"></i
+                  ><i style="background: #60a5fa"></i
+                  ><i style="background: #2563eb"></i
+                  ><i style="background: #3b82f6"></i
+                  ><i style="background: #1e40af"></i
+                  ><i style="background: #0e1f35"></i>
+                  <i style="background: #60a5fa"></i
+                  ><i style="background: #3b82f6"></i
+                  ><i style="background: #22d3ee"></i
+                  ><i style="background: #60a5fa"></i
+                  ><i style="background: #2563eb"></i
+                  ><i style="background: #3b82f6"></i
+                  ><i style="background: #0e1f35"></i>
+                  <i style="background: #3b82f6"></i
+                  ><i style="background: #60a5fa"></i
+                  ><i style="background: #22d3ee"></i
+                  ><i style="background: #1e40af"></i
+                  ><i style="background: #3b82f6"></i
+                  ><i style="background: #60a5fa"></i
+                  ><i style="background: #0e1f35"></i>
+                </div>
+                <div class="d2-heatmap-label">
+                  <span>tokens</span><span class="val">4.3M/wk</span>
+                </div>
+                <div class="d2-heatmap">
+                  <i style="background: #0e2a1d"></i
+                  ><i style="background: #4ade80"></i
+                  ><i style="background: #22c55e"></i
+                  ><i style="background: #4ade80"></i
+                  ><i style="background: #15803d"></i
+                  ><i style="background: #86efac"></i
+                  ><i style="background: #0e2a1d"></i>
+                  <i style="background: #22c55e"></i
+                  ><i style="background: #86efac"></i
+                  ><i style="background: #4ade80"></i
+                  ><i style="background: #16a34a"></i
+                  ><i style="background: #22c55e"></i
+                  ><i style="background: #15803d"></i
+                  ><i style="background: #0e2a1d"></i>
+                  <i style="background: #4ade80"></i
+                  ><i style="background: #22c55e"></i
+                  ><i style="background: #86efac"></i
+                  ><i style="background: #4ade80"></i
+                  ><i style="background: #16a34a"></i
+                  ><i style="background: #22c55e"></i
+                  ><i style="background: #0e2a1d"></i>
+                  <i style="background: #22c55e"></i
+                  ><i style="background: #4ade80"></i
+                  ><i style="background: #86efac"></i
+                  ><i style="background: #15803d"></i
+                  ><i style="background: #22c55e"></i
+                  ><i style="background: #4ade80"></i
+                  ><i style="background: #0e2a1d"></i>
+                </div>
+                <div class="d2-heatmap-label">
+                  <span>est. cost</span><span class="val">$112/wk</span>
+                </div>
+                <div class="d2-heatmap">
+                  <i style="background: #2a1f0a"></i
+                  ><i style="background: #f59e0b"></i
+                  ><i style="background: #d97706"></i
+                  ><i style="background: #f59e0b"></i
+                  ><i style="background: #92400e"></i
+                  ><i style="background: #fbbf24"></i
+                  ><i style="background: #2a1f0a"></i>
+                  <i style="background: #d97706"></i
+                  ><i style="background: #fbbf24"></i
+                  ><i style="background: #f59e0b"></i
+                  ><i style="background: #b45309"></i
+                  ><i style="background: #d97706"></i
+                  ><i style="background: #92400e"></i
+                  ><i style="background: #2a1f0a"></i>
+                  <i style="background: #f59e0b"></i
+                  ><i style="background: #d97706"></i
+                  ><i style="background: #fbbf24"></i
+                  ><i style="background: #f59e0b"></i
+                  ><i style="background: #b45309"></i
+                  ><i style="background: #d97706"></i
+                  ><i style="background: #2a1f0a"></i>
+                  <i style="background: #d97706"></i
+                  ><i style="background: #f59e0b"></i
+                  ><i style="background: #fbbf24"></i
+                  ><i style="background: #92400e"></i
+                  ><i style="background: #d97706"></i
+                  ><i style="background: #f59e0b"></i
+                  ><i style="background: #2a1f0a"></i>
+                </div>
+                <div class="d2-flow">
+                  <span class="d2-flow-label">flow</span>
+                  <span class="d2-flow-node sp">parallel</span>
+                  <span class="d2-flow-arrow">→</span>
+                  <span class="d2-flow-node sp">execute</span>
+                  <span class="d2-flow-arrow">→</span>
+                  <span class="d2-flow-node cc">commit</span>
+                </div>
+              </div>
+
+              <!-- Card 4: placeholder/teaser -->
+              <div
+                class="d2-card"
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: center;
+                  align-items: center;
+                  text-align: center;
+                  padding: 40px 22px;
+                "
+              >
+                <div
+                  class="d2-filter-label"
+                  style="color: #22d3ee; margin-bottom: 10px"
+                >
+                  &gt; 139 more operators
+                </div>
+                <p
+                  style="
+                    color: #7d93b0;
+                    font-size: 11px;
+                    line-height: 1.65;
+                    max-width: 240px;
+                  "
+                >
+                  Browse by tokens burned, skills used, plugin stack, or
+                  autonomy class. Each card is a full readout.
+                </p>
+                <button class="d2-btn" style="margin-top: 16px">
+                  &gt; view all
+                </button>
+              </div>
+            </div>
+
+            <div class="d2-footer">
+              <span>insightharness.sys · v2.1</span>
+              <span>priv · all harnesses redacted before publish</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feedback-area">
+        <label
+          >Feedback — Direction 2 · Operator HUD
+          <span class="viewport-badge">desktop</span></label
+        >
+        <textarea
+          placeholder="Does the tactical dark feel right for this audience? Is the density helping or suffocating? Do the workflow nodes read clearly?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ══════════════════ DIRECTION 3 — TRADING CARD VAULT ══════════════════ -->
+    <section
+      class="mockup-section wide"
+      id="d3"
+      data-section-id="direction_3_trading_card"
+    >
+      <div class="section-label">Direction 3</div>
+      <h2
+        style="
+          font-family: &quot;Bebas Neue&quot;, sans-serif;
+          font-size: 56px;
+          font-weight: 400;
+          color: #0c0b08;
+          margin-bottom: 6px;
+          letter-spacing: 0.02em;
+        "
+      >
+        THE HARNESS COLLECTION
+      </h2>
+      <p class="section-desc">
+        <strong>Mood:</strong> collectible trading cards, gradient tops, rarity
+        frames, slight tilt. Feels playful and game-like. Each operator gets a
+        "class" — The Orchestrator, The Craftsperson — and a rarity that
+        reflects how unusual their setup is. <strong>Best if:</strong> you want
+        the product to feel playful, memorable, and hook first-time visitors.
+      </p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="zoom-label">Card detail</div>
+          <div class="zoom-wrap d3-zoom">
+            <div class="d3-card legendary">
+              <div class="d3-card-inner">
+                <div class="d3-card-header">
+                  <div class="d3-card-rarity">★★★ LEGENDARY</div>
+                  <div class="d3-card-portrait">K</div>
+                  <div class="d3-card-name">KALID AZAD</div>
+                  <div class="d3-card-class">The Orchestrator</div>
+                </div>
+                <div class="d3-card-body">
+                  <div class="d3-card-stat-grid">
+                    <div class="d3-card-stat">
+                      <strong>7.1M</strong><span>tokens / wk</span>
+                    </div>
+                    <div class="d3-card-stat">
+                      <strong>135</strong><span>sessions / wk</span>
+                    </div>
+                    <div class="d3-card-stat">
+                      <strong>1,201</strong><span>messages / wk</span>
+                    </div>
+                    <div class="d3-card-stat">
+                      <strong>$189</strong><span>cost / wk</span>
+                    </div>
+                  </div>
+                  <div class="d3-card-heatmap-wrap">
+                    <div class="d3-card-heatmap-label">
+                      Activity · last 4 weeks
+                    </div>
+                    <div class="d3-card-heatmap">
+                      <i style="background: #ede9fe"></i
+                      ><i style="background: #c4b5fd"></i
+                      ><i style="background: #a78bfa"></i
+                      ><i style="background: #8b5cf6"></i
+                      ><i style="background: #7c3aed"></i
+                      ><i style="background: #6d28d9"></i
+                      ><i style="background: #ede9fe"></i>
+                      <i style="background: #a78bfa"></i
+                      ><i style="background: #8b5cf6"></i
+                      ><i style="background: #c4b5fd"></i
+                      ><i style="background: #7c3aed"></i
+                      ><i style="background: #6d28d9"></i
+                      ><i style="background: #8b5cf6"></i
+                      ><i style="background: #ede9fe"></i>
+                    </div>
+                  </div>
+                  <div class="d3-card-skills">
+                    <span class="d3-card-skill s-violet">PARALLEL</span>
+                    <span class="d3-card-skill s-emerald">WORKTREES</span>
+                    <span class="d3-card-skill s-amber">CUSTOM</span>
+                    <span class="d3-card-skill s-blue">SUBAGENTS</span>
+                    <span class="d3-card-skill s-pink">HOOKS</span>
+                  </div>
+                </div>
+                <div class="d3-card-footer">
+                  <span>· 28d · opus</span>
+                  <span>#042</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="zoom-label">Full homepage composition</div>
+          <div class="d3-shell">
+            <div class="d3-hero">
+              <div class="d3-hero-eyebrow">INSIGHTFUL · EST. 2026</div>
+              <h1>The Harness <span>Collection</span></h1>
+              <p>
+                A catalog of developer operating systems. Every published
+                profile is a collectible card — stats, skills, workflow, and a
+                class that reflects how they actually run the tool.
+              </p>
+              <div class="d3-legend">
+                <div class="d3-legend-item">
+                  <i style="background: #10b981"></i> Common
+                </div>
+                <div class="d3-legend-item">
+                  <i style="background: #f59e0b"></i> Rare
+                </div>
+                <div class="d3-legend-item">
+                  <i style="background: #8b5cf6"></i> Legendary
+                </div>
+              </div>
+            </div>
+
+            <div class="d3-grid">
+              <!-- Kalid - Legendary -->
+              <div class="d3-card legendary">
+                <div class="d3-card-inner">
+                  <div class="d3-card-header">
+                    <div class="d3-card-rarity">★★★ LEGENDARY</div>
+                    <div class="d3-card-portrait">K</div>
+                    <div class="d3-card-name">KALID AZAD</div>
+                    <div class="d3-card-class">The Orchestrator</div>
+                  </div>
+                  <div class="d3-card-body">
+                    <div class="d3-card-stat-grid">
+                      <div class="d3-card-stat">
+                        <strong>7.1M</strong><span>tokens/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>135</strong><span>sessions/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>1.2K</strong><span>msgs/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>$189</strong><span>cost/wk</span>
+                      </div>
+                    </div>
+                    <div class="d3-card-heatmap-wrap">
+                      <div class="d3-card-heatmap-label">Activity</div>
+                      <div class="d3-card-heatmap">
+                        <i style="background: #ede9fe"></i
+                        ><i style="background: #c4b5fd"></i
+                        ><i style="background: #a78bfa"></i
+                        ><i style="background: #8b5cf6"></i
+                        ><i style="background: #7c3aed"></i
+                        ><i style="background: #6d28d9"></i
+                        ><i style="background: #ede9fe"></i>
+                        <i style="background: #a78bfa"></i
+                        ><i style="background: #8b5cf6"></i
+                        ><i style="background: #c4b5fd"></i
+                        ><i style="background: #7c3aed"></i
+                        ><i style="background: #6d28d9"></i
+                        ><i style="background: #8b5cf6"></i
+                        ><i style="background: #ede9fe"></i>
+                      </div>
+                    </div>
+                    <div class="d3-card-skills">
+                      <span class="d3-card-skill s-violet">PARALLEL</span>
+                      <span class="d3-card-skill s-emerald">WORKTREES</span>
+                      <span class="d3-card-skill s-blue">SUBAGENTS</span>
+                      <span class="d3-card-skill s-pink">HOOKS</span>
+                    </div>
+                  </div>
+                  <div class="d3-card-footer">
+                    <span>28d · opus</span>
+                    <span>#042</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Julia - Rare -->
+              <div class="d3-card rare">
+                <div class="d3-card-inner">
+                  <div class="d3-card-header">
+                    <div class="d3-card-rarity">★★ RARE</div>
+                    <div class="d3-card-portrait">J</div>
+                    <div class="d3-card-name">JULIA CHEN</div>
+                    <div class="d3-card-class">The Craftsperson</div>
+                  </div>
+                  <div class="d3-card-body">
+                    <div class="d3-card-stat-grid">
+                      <div class="d3-card-stat">
+                        <strong>2.1M</strong><span>tokens/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>42</strong><span>sessions/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>380</strong><span>msgs/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>$58</strong><span>cost/wk</span>
+                      </div>
+                    </div>
+                    <div class="d3-card-heatmap-wrap">
+                      <div class="d3-card-heatmap-label">Activity</div>
+                      <div class="d3-card-heatmap">
+                        <i style="background: #fef3c7"></i
+                        ><i style="background: #fef3c7"></i
+                        ><i style="background: #fde68a"></i
+                        ><i style="background: #fcd34d"></i
+                        ><i style="background: #fef3c7"></i
+                        ><i style="background: #fef3c7"></i
+                        ><i style="background: #fef3c7"></i>
+                        <i style="background: #fef3c7"></i
+                        ><i style="background: #fde68a"></i
+                        ><i style="background: #fcd34d"></i
+                        ><i style="background: #fbbf24"></i
+                        ><i style="background: #fde68a"></i
+                        ><i style="background: #fef3c7"></i
+                        ><i style="background: #fef3c7"></i>
+                      </div>
+                    </div>
+                    <div class="d3-card-skills">
+                      <span class="d3-card-skill s-emerald">PLAN</span>
+                      <span class="d3-card-skill s-pink">REVIEW</span>
+                      <span class="d3-card-skill s-slate">MCP</span>
+                      <span class="d3-card-skill s-amber">PLAYWRIGHT</span>
+                    </div>
+                  </div>
+                  <div class="d3-card-footer">
+                    <span>21d · sonnet</span>
+                    <span>#043</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Marcus - Rare -->
+              <div class="d3-card rare">
+                <div class="d3-card-inner">
+                  <div class="d3-card-header">
+                    <div class="d3-card-rarity">★★ RARE</div>
+                    <div class="d3-card-portrait">M</div>
+                    <div class="d3-card-name">MARCUS OKAFOR</div>
+                    <div class="d3-card-class">The Automator</div>
+                  </div>
+                  <div class="d3-card-body">
+                    <div class="d3-card-stat-grid">
+                      <div class="d3-card-stat">
+                        <strong>4.3M</strong><span>tokens/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>89</strong><span>sessions/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>650</strong><span>msgs/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>$112</strong><span>cost/wk</span>
+                      </div>
+                    </div>
+                    <div class="d3-card-heatmap-wrap">
+                      <div class="d3-card-heatmap-label">Activity</div>
+                      <div class="d3-card-heatmap">
+                        <i style="background: #dbeafe"></i
+                        ><i style="background: #60a5fa"></i
+                        ><i style="background: #3b82f6"></i
+                        ><i style="background: #60a5fa"></i
+                        ><i style="background: #2563eb"></i
+                        ><i style="background: #22d3ee"></i
+                        ><i style="background: #dbeafe"></i>
+                        <i style="background: #3b82f6"></i
+                        ><i style="background: #2563eb"></i
+                        ><i style="background: #60a5fa"></i
+                        ><i style="background: #1d4ed8"></i
+                        ><i style="background: #3b82f6"></i
+                        ><i style="background: #93c5fd"></i
+                        ><i style="background: #dbeafe"></i>
+                      </div>
+                    </div>
+                    <div class="d3-card-skills">
+                      <span class="d3-card-skill s-blue">SUBAGENTS</span>
+                      <span class="d3-card-skill s-pink">HOOKS</span>
+                      <span class="d3-card-skill s-violet">HEADLESS</span>
+                      <span class="d3-card-skill s-slate">MCP</span>
+                    </div>
+                  </div>
+                  <div class="d3-card-footer">
+                    <span>17d · opus</span>
+                    <span>#044</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Common cards to fill grid -->
+              <div class="d3-card common">
+                <div class="d3-card-inner">
+                  <div class="d3-card-header">
+                    <div class="d3-card-rarity">★ COMMON</div>
+                    <div class="d3-card-portrait">A</div>
+                    <div class="d3-card-name">ANNA KIM</div>
+                    <div class="d3-card-class">The Surgeon</div>
+                  </div>
+                  <div class="d3-card-body">
+                    <div class="d3-card-stat-grid">
+                      <div class="d3-card-stat">
+                        <strong>820K</strong><span>tokens/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>24</strong><span>sessions/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>210</strong><span>msgs/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>$22</strong><span>cost/wk</span>
+                      </div>
+                    </div>
+                    <div class="d3-card-heatmap-wrap">
+                      <div class="d3-card-heatmap-label">Activity</div>
+                      <div class="d3-card-heatmap">
+                        <i style="background: #d1fae5"></i
+                        ><i style="background: #d1fae5"></i
+                        ><i style="background: #6ee7b7"></i
+                        ><i style="background: #d1fae5"></i
+                        ><i style="background: #34d399"></i
+                        ><i style="background: #d1fae5"></i
+                        ><i style="background: #d1fae5"></i>
+                        <i style="background: #d1fae5"></i
+                        ><i style="background: #6ee7b7"></i
+                        ><i style="background: #34d399"></i
+                        ><i style="background: #10b981"></i
+                        ><i style="background: #34d399"></i
+                        ><i style="background: #d1fae5"></i
+                        ><i style="background: #d1fae5"></i>
+                      </div>
+                    </div>
+                    <div class="d3-card-skills">
+                      <span class="d3-card-skill s-emerald">PLAN</span>
+                      <span class="d3-card-skill s-pink">REVIEW</span>
+                      <span class="d3-card-skill s-amber">CUSTOM</span>
+                    </div>
+                  </div>
+                  <div class="d3-card-footer">
+                    <span>14d · sonnet</span>
+                    <span>#045</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d3-card common">
+                <div class="d3-card-inner">
+                  <div class="d3-card-header">
+                    <div class="d3-card-rarity">★ COMMON</div>
+                    <div class="d3-card-portrait">R</div>
+                    <div class="d3-card-name">RAUL SANTOS</div>
+                    <div class="d3-card-class">The Explorer</div>
+                  </div>
+                  <div class="d3-card-body">
+                    <div class="d3-card-stat-grid">
+                      <div class="d3-card-stat">
+                        <strong>1.4M</strong><span>tokens/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>56</strong><span>sessions/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>490</strong><span>msgs/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>$38</strong><span>cost/wk</span>
+                      </div>
+                    </div>
+                    <div class="d3-card-heatmap-wrap">
+                      <div class="d3-card-heatmap-label">Activity</div>
+                      <div class="d3-card-heatmap">
+                        <i style="background: #d1fae5"></i
+                        ><i style="background: #34d399"></i
+                        ><i style="background: #6ee7b7"></i
+                        ><i style="background: #10b981"></i
+                        ><i style="background: #34d399"></i
+                        ><i style="background: #6ee7b7"></i
+                        ><i style="background: #d1fae5"></i>
+                        <i style="background: #34d399"></i
+                        ><i style="background: #10b981"></i
+                        ><i style="background: #6ee7b7"></i
+                        ><i style="background: #059669"></i
+                        ><i style="background: #10b981"></i
+                        ><i style="background: #34d399"></i
+                        ><i style="background: #d1fae5"></i>
+                      </div>
+                    </div>
+                    <div class="d3-card-skills">
+                      <span class="d3-card-skill s-blue">PARALLEL</span>
+                      <span class="d3-card-skill s-amber">CUSTOM</span>
+                      <span class="d3-card-skill s-slate">MCP</span>
+                    </div>
+                  </div>
+                  <div class="d3-card-footer">
+                    <span>10d · sonnet</span>
+                    <span>#046</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d3-card rare">
+                <div class="d3-card-inner">
+                  <div class="d3-card-header">
+                    <div class="d3-card-rarity">★★ RARE</div>
+                    <div class="d3-card-portrait">P</div>
+                    <div class="d3-card-name">PRIYA PATEL</div>
+                    <div class="d3-card-class">The Reviewer</div>
+                  </div>
+                  <div class="d3-card-body">
+                    <div class="d3-card-stat-grid">
+                      <div class="d3-card-stat">
+                        <strong>3.2M</strong><span>tokens/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>68</strong><span>sessions/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>910</strong><span>msgs/wk</span>
+                      </div>
+                      <div class="d3-card-stat">
+                        <strong>$86</strong><span>cost/wk</span>
+                      </div>
+                    </div>
+                    <div class="d3-card-heatmap-wrap">
+                      <div class="d3-card-heatmap-label">Activity</div>
+                      <div class="d3-card-heatmap">
+                        <i style="background: #fef3c7"></i
+                        ><i style="background: #fcd34d"></i
+                        ><i style="background: #fde68a"></i
+                        ><i style="background: #fbbf24"></i
+                        ><i style="background: #fcd34d"></i
+                        ><i style="background: #fef3c7"></i
+                        ><i style="background: #fde68a"></i>
+                        <i style="background: #fcd34d"></i
+                        ><i style="background: #fbbf24"></i
+                        ><i style="background: #f59e0b"></i
+                        ><i style="background: #d97706"></i
+                        ><i style="background: #fbbf24"></i
+                        ><i style="background: #fcd34d"></i
+                        ><i style="background: #fef3c7"></i>
+                      </div>
+                    </div>
+                    <div class="d3-card-skills">
+                      <span class="d3-card-skill s-pink">REVIEW</span>
+                      <span class="d3-card-skill s-emerald">PLAN</span>
+                      <span class="d3-card-skill s-amber">CUSTOM</span>
+                      <span class="d3-card-skill s-violet">HOOKS</span>
+                    </div>
+                  </div>
+                  <div class="d3-card-footer">
+                    <span>22d · opus</span>
+                    <span>#047</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feedback-area">
+        <label
+          >Feedback — Direction 3 · Trading Card Vault
+          <span class="viewport-badge">desktop</span></label
+        >
+        <textarea
+          placeholder="Does the collectible framing feel fun or childish? Do the class labels read as earned or arbitrary? Is the rarity concept working?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ══════════════════ DIRECTION 4 — SIGNAL SHEET ══════════════════ -->
+    <section
+      class="mockup-section wide"
+      id="d4"
+      data-section-id="direction_4_signal_sheet"
+    >
+      <div class="section-label">Direction 4</div>
+      <h2
+        style="
+          font-family: &quot;IBM Plex Sans&quot;, sans-serif;
+          font-size: 38px;
+          font-weight: 700;
+          color: #0c0b08;
+          margin-bottom: 6px;
+          letter-spacing: -0.015em;
+        "
+      >
+        Signal Sheet
+      </h2>
+      <p class="section-desc">
+        <strong>Mood:</strong> Bloomberg terminal on white paper — clinical,
+        dense, zero wasted space. IBM Plex throughout, hot-pink accent for data
+        that matters, rows instead of cards. <strong>Best if:</strong> you want
+        the product to feel like a real reference tool for people already
+        shipping a lot.
+      </p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="zoom-label">Row detail</div>
+          <div class="zoom-wrap" style="background: #fdfdfd">
+            <div class="d4-shell">
+              <div class="d4-row">
+                <div class="d4-obs">#042</div>
+                <div>
+                  <div class="d4-sub-name">Kalid Azad</div>
+                  <div class="d4-sub-meta">
+                    <span>@kalid</span>
+                    <span>mar 12 – apr 8</span>
+                    <span>orchestrator</span>
+                  </div>
+                </div>
+                <div class="d4-stat-cell">
+                  <div class="d4-stat-big">7.1M</div>
+                  <div class="d4-stat-label">tok/wk</div>
+                </div>
+                <div class="d4-stat-cell">
+                  <div class="d4-stat-big">135</div>
+                  <div class="d4-stat-label">ses/wk</div>
+                </div>
+                <div>
+                  <div class="d4-stat-label" style="margin-bottom: 4px">
+                    activity · 28d
+                  </div>
+                  <div class="d4-mini-heatmap">
+                    <i style="background: #fce7f0"></i
+                    ><i style="background: #fbbfd2"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #ff2b65"></i
+                    ><i style="background: #c01e4a"></i
+                    ><i style="background: #fbbfd2"></i
+                    ><i style="background: #f783ac"></i>
+                    <i style="background: #ff2b65"></i
+                    ><i style="background: #c01e4a"></i
+                    ><i style="background: #fbbfd2"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #ff2b65"></i
+                    ><i style="background: #c01e4a"></i
+                    ><i style="background: #fce7f0"></i>
+                  </div>
+                </div>
+                <div class="d4-flow-cell">
+                  <span class="d4-flow-node ce">BRAINSTORM</span>
+                  <span class="arrow">→</span>
+                  <span class="d4-flow-node sp">PLAN</span>
+                  <span class="arrow">→</span>
+                  <span class="d4-flow-node sp">EXEC</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="zoom-label">Full homepage composition</div>
+          <div class="d4-shell">
+            <div class="d4-top">
+              <span>INSIGHTFUL :: PUBLIC HARNESS INDEX</span>
+              <span>
+                <span class="live">LIVE</span>
+                &nbsp; APR 9 2026 · 14:22 UTC
+              </span>
+            </div>
+            <div class="d4-header">
+              <div class="d4-header-small">
+                142 OBSERVATIONS · SORTED BY SIGNAL
+              </div>
+              <h1>How developers actually run Claude Code.</h1>
+              <p>
+                Every row is a published harness — tool mix, skill stack,
+                workflow shape, cost curve. Browse by pattern, scan by number,
+                open for depth.
+              </p>
+            </div>
+            <div class="d4-meta-row">
+              <span
+                ><span class="k">sorted</span
+                ><span class="v pink">tokens/wk ↓</span></span
+              >
+              <span
+                ><span class="k">range</span><span class="v">28d</span></span
+              >
+              <span
+                ><span class="k">showing</span
+                ><span class="v">1–6 of 142</span></span
+              >
+              <span
+                ><span class="k">filters</span
+                ><span class="v">all patterns</span></span
+              >
+            </div>
+            <div class="d4-table">
+              <div class="d4-row header">
+                <span>OBS</span>
+                <span>OPERATOR</span>
+                <span>TOKENS</span>
+                <span>SESSIONS</span>
+                <span>ACTIVITY · 28D</span>
+                <span>WORKFLOW</span>
+              </div>
+
+              <!-- Kalid -->
+              <div class="d4-row">
+                <div class="d4-obs">#042</div>
+                <div>
+                  <div class="d4-sub-name">Kalid Azad</div>
+                  <div class="d4-sub-meta">
+                    <span>@kalid</span>
+                    <span>orchestrator</span>
+                    <span>opus</span>
+                  </div>
+                  <div class="d4-skills-cell" style="margin-top: 6px">
+                    <span class="d4-skill-tag">PARALLEL</span>
+                    <span class="d4-skill-tag">WORKTREES</span>
+                    <span class="d4-skill-tag">SUBAGENTS</span>
+                    <span class="d4-skill-tag">HOOKS</span>
+                  </div>
+                </div>
+                <div class="d4-stat-cell">
+                  <div class="d4-stat-big">7.1M</div>
+                  <div class="d4-stat-label">tok/wk</div>
+                </div>
+                <div class="d4-stat-cell">
+                  <div class="d4-stat-big">135</div>
+                  <div class="d4-stat-label">ses/wk · $189/wk</div>
+                </div>
+                <div>
+                  <div class="d4-mini-heatmap">
+                    <i style="background: #fce7f0"></i
+                    ><i style="background: #fbbfd2"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #ff2b65"></i
+                    ><i style="background: #c01e4a"></i
+                    ><i style="background: #fbbfd2"></i
+                    ><i style="background: #f783ac"></i>
+                    <i style="background: #ff2b65"></i
+                    ><i style="background: #c01e4a"></i
+                    ><i style="background: #fbbfd2"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #ff2b65"></i
+                    ><i style="background: #c01e4a"></i
+                    ><i style="background: #fce7f0"></i>
+                  </div>
+                </div>
+                <div class="d4-flow-cell">
+                  <span class="d4-flow-node ce">BRAINSTORM</span>
+                  <span class="arrow">→</span>
+                  <span class="d4-flow-node sp">PLAN</span>
+                  <span class="arrow">→</span>
+                  <span class="d4-flow-node sp">EXEC</span>
+                  <span class="arrow">→</span>
+                  <span class="d4-flow-node pr">REVIEW</span>
+                </div>
+              </div>
+
+              <!-- Marcus -->
+              <div class="d4-row">
+                <div class="d4-obs">#044</div>
+                <div>
+                  <div class="d4-sub-name">Marcus Okafor</div>
+                  <div class="d4-sub-meta">
+                    <span>@marcus</span>
+                    <span>automator</span>
+                    <span>opus</span>
+                  </div>
+                  <div class="d4-skills-cell" style="margin-top: 6px">
+                    <span class="d4-skill-tag">SUBAGENTS</span>
+                    <span class="d4-skill-tag">HOOKS</span>
+                    <span class="d4-skill-tag">HEADLESS</span>
+                    <span class="d4-skill-tag">MCP</span>
+                  </div>
+                </div>
+                <div class="d4-stat-cell">
+                  <div class="d4-stat-big">4.3M</div>
+                  <div class="d4-stat-label">tok/wk</div>
+                </div>
+                <div class="d4-stat-cell">
+                  <div class="d4-stat-big">89</div>
+                  <div class="d4-stat-label">ses/wk · $112/wk</div>
+                </div>
+                <div>
+                  <div class="d4-mini-heatmap">
+                    <i style="background: #fce7f0"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #ff2b65"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #fbbfd2"></i
+                    ><i style="background: #c01e4a"></i
+                    ><i style="background: #fce7f0"></i>
+                    <i style="background: #ff2b65"></i
+                    ><i style="background: #c01e4a"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #fbbfd2"></i
+                    ><i style="background: #ff2b65"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #fce7f0"></i>
+                  </div>
+                </div>
+                <div class="d4-flow-cell">
+                  <span class="d4-flow-node sp">PARALLEL</span>
+                  <span class="arrow">→</span>
+                  <span class="d4-flow-node sp">EXEC</span>
+                  <span class="arrow">→</span>
+                  <span class="d4-flow-node cc">COMMIT</span>
+                </div>
+              </div>
+
+              <!-- Priya -->
+              <div class="d4-row">
+                <div class="d4-obs">#047</div>
+                <div>
+                  <div class="d4-sub-name">Priya Patel</div>
+                  <div class="d4-sub-meta">
+                    <span>@priya</span>
+                    <span>reviewer</span>
+                    <span>opus</span>
+                  </div>
+                  <div class="d4-skills-cell" style="margin-top: 6px">
+                    <span class="d4-skill-tag">REVIEW</span>
+                    <span class="d4-skill-tag">PLAN</span>
+                    <span class="d4-skill-tag">CUSTOM</span>
+                    <span class="d4-skill-tag">HOOKS</span>
+                  </div>
+                </div>
+                <div class="d4-stat-cell">
+                  <div class="d4-stat-big">3.2M</div>
+                  <div class="d4-stat-label">tok/wk</div>
+                </div>
+                <div class="d4-stat-cell">
+                  <div class="d4-stat-big">68</div>
+                  <div class="d4-stat-label">ses/wk · $86/wk</div>
+                </div>
+                <div>
+                  <div class="d4-mini-heatmap">
+                    <i style="background: #fce7f0"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #fbbfd2"></i
+                    ><i style="background: #ff2b65"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #fce7f0"></i
+                    ><i style="background: #fbbfd2"></i>
+                    <i style="background: #f783ac"></i
+                    ><i style="background: #ff2b65"></i
+                    ><i style="background: #c01e4a"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #ff2b65"></i
+                    ><i style="background: #fbbfd2"></i
+                    ><i style="background: #fce7f0"></i>
+                  </div>
+                </div>
+                <div class="d4-flow-cell">
+                  <span class="d4-flow-node pr">PLAN-REV</span>
+                  <span class="arrow">→</span>
+                  <span class="d4-flow-node pr">REVIEW</span>
+                </div>
+              </div>
+
+              <!-- Julia -->
+              <div class="d4-row">
+                <div class="d4-obs">#043</div>
+                <div>
+                  <div class="d4-sub-name">Julia Chen</div>
+                  <div class="d4-sub-meta">
+                    <span>@julia</span>
+                    <span>craftsperson</span>
+                    <span>sonnet</span>
+                  </div>
+                  <div class="d4-skills-cell" style="margin-top: 6px">
+                    <span class="d4-skill-tag">PLAN</span>
+                    <span class="d4-skill-tag">REVIEW</span>
+                    <span class="d4-skill-tag">MCP</span>
+                    <span class="d4-skill-tag">PLAYWRIGHT</span>
+                  </div>
+                </div>
+                <div class="d4-stat-cell">
+                  <div class="d4-stat-big">2.1M</div>
+                  <div class="d4-stat-label">tok/wk</div>
+                </div>
+                <div class="d4-stat-cell">
+                  <div class="d4-stat-big">42</div>
+                  <div class="d4-stat-label">ses/wk · $58/wk</div>
+                </div>
+                <div>
+                  <div class="d4-mini-heatmap">
+                    <i style="background: #fce7f0"></i
+                    ><i style="background: #fce7f0"></i
+                    ><i style="background: #fbbfd2"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #fce7f0"></i
+                    ><i style="background: #fce7f0"></i
+                    ><i style="background: #fce7f0"></i>
+                    <i style="background: #fce7f0"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #ff2b65"></i
+                    ><i style="background: #c01e4a"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #fbbfd2"></i
+                    ><i style="background: #fce7f0"></i>
+                  </div>
+                </div>
+                <div class="d4-flow-cell">
+                  <span class="d4-flow-node pr">PLAN-REV</span>
+                  <span class="arrow">→</span>
+                  <span class="d4-flow-node sp">TDD</span>
+                  <span class="arrow">→</span>
+                  <span class="d4-flow-node pr">REVIEW</span>
+                </div>
+              </div>
+
+              <!-- Raul -->
+              <div class="d4-row">
+                <div class="d4-obs">#046</div>
+                <div>
+                  <div class="d4-sub-name">Raul Santos</div>
+                  <div class="d4-sub-meta">
+                    <span>@raul</span>
+                    <span>explorer</span>
+                    <span>sonnet</span>
+                  </div>
+                  <div class="d4-skills-cell" style="margin-top: 6px">
+                    <span class="d4-skill-tag">PARALLEL</span>
+                    <span class="d4-skill-tag">CUSTOM</span>
+                    <span class="d4-skill-tag">MCP</span>
+                  </div>
+                </div>
+                <div class="d4-stat-cell">
+                  <div class="d4-stat-big">1.4M</div>
+                  <div class="d4-stat-label">tok/wk</div>
+                </div>
+                <div class="d4-stat-cell">
+                  <div class="d4-stat-big">56</div>
+                  <div class="d4-stat-label">ses/wk · $38/wk</div>
+                </div>
+                <div>
+                  <div class="d4-mini-heatmap">
+                    <i style="background: #fce7f0"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #fbbfd2"></i
+                    ><i style="background: #ff2b65"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #fbbfd2"></i
+                    ><i style="background: #fce7f0"></i>
+                    <i style="background: #f783ac"></i
+                    ><i style="background: #ff2b65"></i
+                    ><i style="background: #fbbfd2"></i
+                    ><i style="background: #c01e4a"></i
+                    ><i style="background: #ff2b65"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #fce7f0"></i>
+                  </div>
+                </div>
+                <div class="d4-flow-cell">
+                  <span class="d4-flow-node ce">BRAINSTORM</span>
+                  <span class="arrow">→</span>
+                  <span class="d4-flow-node sp">PLAN</span>
+                </div>
+              </div>
+
+              <!-- Anna -->
+              <div class="d4-row">
+                <div class="d4-obs">#045</div>
+                <div>
+                  <div class="d4-sub-name">Anna Kim</div>
+                  <div class="d4-sub-meta">
+                    <span>@anna</span>
+                    <span>surgeon</span>
+                    <span>sonnet</span>
+                  </div>
+                  <div class="d4-skills-cell" style="margin-top: 6px">
+                    <span class="d4-skill-tag">PLAN</span>
+                    <span class="d4-skill-tag">REVIEW</span>
+                    <span class="d4-skill-tag">CUSTOM</span>
+                  </div>
+                </div>
+                <div class="d4-stat-cell">
+                  <div class="d4-stat-big">820K</div>
+                  <div class="d4-stat-label">tok/wk</div>
+                </div>
+                <div class="d4-stat-cell">
+                  <div class="d4-stat-big">24</div>
+                  <div class="d4-stat-label">ses/wk · $22/wk</div>
+                </div>
+                <div>
+                  <div class="d4-mini-heatmap">
+                    <i style="background: #fce7f0"></i
+                    ><i style="background: #fce7f0"></i
+                    ><i style="background: #fbbfd2"></i
+                    ><i style="background: #fce7f0"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #fce7f0"></i
+                    ><i style="background: #fce7f0"></i>
+                    <i style="background: #fce7f0"></i
+                    ><i style="background: #fbbfd2"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #ff2b65"></i
+                    ><i style="background: #f783ac"></i
+                    ><i style="background: #fce7f0"></i
+                    ><i style="background: #fce7f0"></i>
+                  </div>
+                </div>
+                <div class="d4-flow-cell">
+                  <span class="d4-flow-node pr">PLAN-REV</span>
+                  <span class="arrow">→</span>
+                  <span class="d4-flow-node pr">REVIEW</span>
+                </div>
+              </div>
+            </div>
+            <div class="d4-footer">
+              <span>136 more observations ↓</span>
+              <span class="cta"
+                >&gt; PUBLISH YOUR HARNESS &nbsp;·&nbsp; /insight-harness</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feedback-area">
+        <label
+          >Feedback — Direction 4 · Signal Sheet
+          <span class="viewport-badge">desktop</span></label
+        >
+        <textarea
+          placeholder="Is the density helping or killing you? Does the hot pink accent land? Can you scan rows and understand them?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ══════════════════ DIRECTION 5 — POSTER WALL ══════════════════ -->
+    <section
+      class="mockup-section wide"
+      id="d5"
+      data-section-id="direction_5_poster_wall"
+    >
+      <div class="section-label">Direction 5</div>
+      <h2
+        style="
+          font-family: &quot;Archivo Black&quot;, sans-serif;
+          font-size: 50px;
+          font-weight: 900;
+          color: #0c0b08;
+          margin-bottom: 6px;
+          letter-spacing: -0.025em;
+          line-height: 0.95;
+        "
+      >
+        THE POSTER WALL
+      </h2>
+      <p class="section-desc">
+        <strong>Mood:</strong> Swiss maximalist design — one huge stat per card
+        dominating the composition, rotating accent colors, Archivo Black
+        display. Each card feels like its own mini-poster in a gallery wall.
+        <strong>Best if:</strong> you want the product to feel bold, memorable,
+        and unlike any other developer tool site.
+      </p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="zoom-label">Card detail</div>
+          <div class="zoom-wrap">
+            <div class="d5-shell" style="max-width: 400px; margin: 0 auto">
+              <div class="d5-wall" style="grid-template-columns: 1fr">
+                <div
+                  class="d5-card red"
+                  style="border-right: none; border-bottom: none"
+                >
+                  <div class="d5-card-header">
+                    <div class="d5-card-eyebrow">#042 · ORCHESTRATOR</div>
+                    <div class="d5-card-num">OPUS 4.6</div>
+                  </div>
+                  <div class="d5-giant">7.1M</div>
+                  <div class="d5-giant-label">TOKENS / WEEK</div>
+                  <div class="d5-heatmap-strip">
+                    <i class="l1"></i><i class="l2"></i><i class="l3"></i
+                    ><i class="l4"></i><i class="l3"></i><i class="l4"></i
+                    ><i></i> <i class="l2"></i><i class="l3"></i
+                    ><i class="l1"></i><i class="l4"></i><i class="l4"></i
+                    ><i class="l3"></i><i></i> <i class="l1"></i
+                    ><i class="l3"></i><i class="l4"></i><i class="l4"></i
+                    ><i class="l2"></i><i class="l3"></i><i></i>
+                    <i class="l4"></i><i class="l4"></i><i class="l3"></i
+                    ><i class="l2"></i><i class="l4"></i><i class="l4"></i
+                    ><i></i>
+                  </div>
+                  <div class="d5-card-name">KALID AZAD</div>
+                  <div class="d5-card-meta">
+                    @kalid · 135 ses/wk · 1.2K msg/wk · $189/wk
+                  </div>
+                  <div class="d5-flow-dots">
+                    <i class="ce"></i><i class="sp"></i><i class="sp"></i
+                    ><i class="pr"></i>
+                    <span>BRAIN→PLAN→EXEC→REVIEW</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="zoom-label">Full homepage composition</div>
+          <div class="d5-shell">
+            <div class="d5-hero">
+              <div>
+                <div class="d5-hero-mark">INSIGHTFUL · 01</div>
+                <h1>HOW<br />THEY<br />REALLY<br /><em>WORK.</em></h1>
+              </div>
+              <div class="d5-hero-right">
+                <strong>A Wall of Developer Harnesses</strong>
+                Every card is one published profile. One huge number on each —
+                the stat that defines how they run Claude Code. Tokens,
+                sessions, commits. Click a poster to read the whole setup.
+              </div>
+            </div>
+            <div class="d5-strip">
+              <span>142 POSTERS</span>
+              <span class="divider">//</span>
+              <span>UPDATED DAILY</span>
+              <span class="divider">//</span>
+              <span>APRIL 2026</span>
+              <span class="divider">//</span>
+              <span>PUBLISH YOURS → /INSIGHT-HARNESS</span>
+            </div>
+
+            <div class="d5-wall">
+              <!-- Kalid — RED, tokens as hero -->
+              <div class="d5-card red">
+                <div class="d5-card-header">
+                  <div class="d5-card-eyebrow">#042 · ORCHESTRATOR</div>
+                  <div class="d5-card-num">28D · OPUS</div>
+                </div>
+                <div class="d5-giant">7.1M</div>
+                <div class="d5-giant-label">TOKENS / WEEK</div>
+                <div class="d5-heatmap-strip">
+                  <i class="l1"></i><i class="l2"></i><i class="l3"></i
+                  ><i class="l4"></i><i class="l3"></i><i class="l4"></i><i></i>
+                  <i class="l2"></i><i class="l3"></i><i class="l1"></i
+                  ><i class="l4"></i><i class="l4"></i><i class="l3"></i><i></i>
+                  <i class="l1"></i><i class="l3"></i><i class="l4"></i
+                  ><i class="l4"></i><i class="l2"></i><i class="l3"></i><i></i>
+                  <i class="l4"></i><i class="l4"></i><i class="l3"></i
+                  ><i class="l2"></i><i class="l4"></i><i class="l4"></i><i></i>
+                </div>
+                <div class="d5-card-name">KALID AZAD</div>
+                <div class="d5-card-meta">
+                  @kalid · 135 ses · 1.2K msg · $189 cost · 28d
+                </div>
+                <div class="d5-flow-dots">
+                  <i class="ce"></i><i class="sp"></i><i class="sp"></i
+                  ><i class="pr"></i>
+                  <span>BRAINSTORM→PLAN→EXEC→REVIEW</span>
+                </div>
+              </div>
+
+              <!-- Julia — YELLOW, sessions as hero -->
+              <div class="d5-card yellow">
+                <div class="d5-card-header">
+                  <div class="d5-card-eyebrow">#043 · CRAFTSPERSON</div>
+                  <div class="d5-card-num">21D · SONNET</div>
+                </div>
+                <div class="d5-giant small">42</div>
+                <div class="d5-giant-label">SESSIONS / WEEK</div>
+                <div class="d5-heatmap-strip">
+                  <i></i><i></i><i class="l1"></i><i class="l2"></i><i></i
+                  ><i></i><i></i> <i></i><i class="l1"></i><i class="l2"></i
+                  ><i class="l3"></i><i class="l1"></i><i></i><i></i> <i></i
+                  ><i class="l2"></i><i class="l3"></i><i class="l4"></i
+                  ><i class="l2"></i><i></i><i></i> <i class="l1"></i
+                  ><i class="l2"></i><i class="l3"></i><i class="l1"></i
+                  ><i class="l2"></i><i></i><i></i>
+                </div>
+                <div class="d5-card-name">JULIA CHEN</div>
+                <div class="d5-card-meta">
+                  @julia · 2.1M tok · 380 msg · $58 cost · 21d
+                </div>
+                <div class="d5-flow-dots">
+                  <i class="pr"></i><i class="sp"></i><i class="pr"></i>
+                  <span>PLAN→TDD→REVIEW</span>
+                </div>
+              </div>
+
+              <!-- Marcus — BLUE, commits as hero -->
+              <div class="d5-card blue">
+                <div class="d5-card-header">
+                  <div class="d5-card-eyebrow">#044 · AUTOMATOR</div>
+                  <div class="d5-card-num">17D · OPUS</div>
+                </div>
+                <div class="d5-giant">89</div>
+                <div class="d5-giant-label">SESSIONS / WEEK</div>
+                <div class="d5-heatmap-strip">
+                  <i></i><i class="l3"></i><i class="l2"></i><i class="l3"></i
+                  ><i class="l1"></i><i class="l4"></i><i></i> <i class="l2"></i
+                  ><i class="l4"></i><i class="l3"></i><i class="l2"></i
+                  ><i class="l2"></i><i class="l1"></i><i></i> <i class="l3"></i
+                  ><i class="l2"></i><i class="l4"></i><i class="l3"></i
+                  ><i class="l2"></i><i class="l2"></i><i></i> <i class="l2"></i
+                  ><i class="l3"></i><i class="l4"></i><i class="l1"></i
+                  ><i class="l2"></i><i class="l3"></i><i></i>
+                </div>
+                <div class="d5-card-name">MARCUS OKAFOR</div>
+                <div class="d5-card-meta">
+                  @marcus · 4.3M tok · 650 msg · $112 cost · 17d
+                </div>
+                <div class="d5-flow-dots">
+                  <i class="sp"></i><i class="sp"></i><i class="cc"></i>
+                  <span>PARALLEL→EXEC→COMMIT</span>
+                </div>
+              </div>
+
+              <!-- Priya — PURPLE, messages as hero -->
+              <div class="d5-card purple">
+                <div class="d5-card-header">
+                  <div class="d5-card-eyebrow">#047 · REVIEWER</div>
+                  <div class="d5-card-num">22D · OPUS</div>
+                </div>
+                <div class="d5-giant small">910</div>
+                <div class="d5-giant-label">MESSAGES / WEEK</div>
+                <div class="d5-heatmap-strip">
+                  <i></i><i class="l2"></i><i class="l1"></i><i class="l3"></i
+                  ><i class="l2"></i><i></i><i class="l1"></i> <i class="l2"></i
+                  ><i class="l3"></i><i class="l4"></i><i class="l2"></i
+                  ><i class="l3"></i><i class="l1"></i><i></i> <i class="l1"></i
+                  ><i class="l3"></i><i class="l4"></i><i class="l4"></i
+                  ><i class="l2"></i><i class="l3"></i><i></i> <i class="l3"></i
+                  ><i class="l4"></i><i class="l4"></i><i class="l2"></i
+                  ><i class="l3"></i><i class="l2"></i><i></i>
+                </div>
+                <div class="d5-card-name">PRIYA PATEL</div>
+                <div class="d5-card-meta">
+                  @priya · 3.2M tok · 68 ses · $86 cost · 22d
+                </div>
+                <div class="d5-flow-dots">
+                  <i class="pr"></i><i class="pr"></i>
+                  <span>PLAN-REV→CODE-REV</span>
+                </div>
+              </div>
+
+              <!-- Anna — GREEN, cost as hero (low) -->
+              <div class="d5-card green">
+                <div class="d5-card-header">
+                  <div class="d5-card-eyebrow">#045 · SURGEON</div>
+                  <div class="d5-card-num">14D · SONNET</div>
+                </div>
+                <div class="d5-giant">$22</div>
+                <div class="d5-giant-label">EST. COST / WEEK</div>
+                <div class="d5-heatmap-strip">
+                  <i></i><i></i><i class="l1"></i><i></i><i class="l2"></i
+                  ><i></i><i></i> <i></i><i class="l1"></i><i class="l2"></i
+                  ><i class="l3"></i><i class="l2"></i><i></i><i></i>
+                  <i class="l1"></i><i class="l2"></i><i class="l3"></i
+                  ><i class="l2"></i><i class="l1"></i><i></i><i></i>
+                  <i class="l2"></i><i class="l1"></i><i class="l3"></i
+                  ><i class="l1"></i><i class="l2"></i><i></i><i></i>
+                </div>
+                <div class="d5-card-name">ANNA KIM</div>
+                <div class="d5-card-meta">
+                  @anna · 820K tok · 24 ses · 210 msg · 14d
+                </div>
+                <div class="d5-flow-dots">
+                  <i class="pr"></i><i class="pr"></i>
+                  <span>PLAN→REVIEW</span>
+                </div>
+              </div>
+
+              <!-- Raul — BLACK, tokens as hero -->
+              <div class="d5-card black">
+                <div class="d5-card-header">
+                  <div class="d5-card-eyebrow">#046 · EXPLORER</div>
+                  <div class="d5-card-num">10D · SONNET</div>
+                </div>
+                <div class="d5-giant">1.4M</div>
+                <div class="d5-giant-label">TOKENS / WEEK</div>
+                <div class="d5-heatmap-strip">
+                  <i class="off"></i><i class="l2"></i><i class="l3"></i
+                  ><i class="l2"></i><i class="l1"></i><i class="l3"></i
+                  ><i class="off"></i> <i class="l3"></i><i class="l4"></i
+                  ><i class="l2"></i><i class="l3"></i><i class="l2"></i
+                  ><i class="l3"></i><i class="off"></i> <i class="l2"></i
+                  ><i class="l3"></i><i class="l4"></i><i class="l2"></i
+                  ><i class="l4"></i><i class="l3"></i><i class="off"></i>
+                  <i class="l3"></i><i class="l2"></i><i class="l3"></i
+                  ><i class="l4"></i><i class="l2"></i><i class="l3"></i
+                  ><i class="off"></i>
+                </div>
+                <div class="d5-card-name">RAUL SANTOS</div>
+                <div class="d5-card-meta">
+                  @raul · 56 ses · 490 msg · $38 cost · 10d
+                </div>
+                <div class="d5-flow-dots">
+                  <i class="ce"></i><i class="sp"></i><i class="sp"></i>
+                  <span>BRAINSTORM→PLAN→EXEC</span>
+                </div>
+              </div>
+            </div>
+            <div class="d5-footer">
+              <span>↓ 136 MORE POSTERS</span>
+              <span>/ INSIGHT-HARNESS</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feedback-area">
+        <label
+          >Feedback — Direction 5 · Poster Wall
+          <span class="viewport-badge">desktop</span></label
+        >
+        <textarea
+          placeholder="Is the one-giant-stat approach working? Does it feel too loud, or does it finally feel distinctive? Are the rotating colors fighting or helping?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ══════════════════ OVERALL ══════════════════ -->
+    <section
+      class="mockup-section wide"
+      id="overall"
+      data-section-id="overall_pick"
+    >
+      <div class="section-label">Overall</div>
+      <h2
+        style="
+          font-family: &quot;Inter&quot;, sans-serif;
+          font-size: 24px;
+          font-weight: 700;
+          color: #0c0b08;
+          margin-bottom: 10px;
+        "
+      >
+        Pick one, or tell me how to combine them.
+      </h2>
+      <p class="section-desc">
+        You can rank them, pick a winner, or say "take the card from 2 but the
+        homepage layout from 5." I'll iterate on whatever you pick in-place (v2
+        of the winning direction, old version preserved for comparison).
+      </p>
+      <div class="feedback-area">
+        <label
+          >Overall direction <span class="viewport-badge">desktop</span></label
+        >
+        <textarea
+          placeholder="Example: winner = 2 for the card, 5 for the homepage vibe. Kill 3. Take the heatmap-per-row idea from 1 and bolt it onto 4."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </section>
+
+    <div style="height: 120px"></div>
+
+    <script>
+      function initViewportToggle() {
+        const buttons = document.querySelectorAll(".viewport-toggle button");
+        buttons.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const viewport = btn.dataset.viewport;
+            buttons.forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            document.body.classList.remove(
+              "viewport-mobile",
+              "viewport-desktop",
+            );
+            document.body.classList.add(`viewport-${viewport}`);
+            document.querySelectorAll(".viewport-badge").forEach((badge) => {
+              badge.textContent = viewport;
+            });
+          });
+        });
+      }
+
+      function initVersionNav() {
+        document.querySelectorAll(".mockup-section").forEach((section) => {
+          const versions = section.querySelectorAll(".version");
+          const nav = section.querySelector(".version-nav");
+          if (!nav || versions.length <= 1) return;
+          nav.classList.add("visible");
+          const label = nav.querySelector(".version-label");
+          const prevBtn = nav.querySelector('[data-dir="prev"]');
+          const nextBtn = nav.querySelector('[data-dir="next"]');
+          let current = versions.length;
+          function show(idx) {
+            versions.forEach((v) => v.classList.remove("active"));
+            versions[idx - 1].classList.add("active");
+            current = idx;
+            if (label) label.textContent = `v${idx} of ${versions.length}`;
+            prevBtn.disabled = idx <= 1;
+            nextBtn.disabled = idx >= versions.length;
+          }
+          prevBtn.addEventListener("click", () => {
+            if (current > 1) show(current - 1);
+          });
+          nextBtn.addEventListener("click", () => {
+            if (current < versions.length) show(current + 1);
+          });
+          show(versions.length);
+        });
+      }
+
+      function copyAllFeedback() {
+        const feedback = {};
+        const currentViewport = document.body.classList.contains(
+          "viewport-mobile",
+        )
+          ? "mobile"
+          : "desktop";
+        document.querySelectorAll(".mockup-section").forEach((section) => {
+          const id = section.dataset.sectionId;
+          const textarea = section.querySelector("textarea");
+          if (textarea && textarea.value.trim()) {
+            const versions = section.querySelectorAll(".version");
+            const activeVersion = section.querySelector(".version.active");
+            const versionNum = activeVersion
+              ? activeVersion.dataset.version
+              : "1";
+            feedback[id] = {
+              feedback: textarea.value.trim(),
+              viewing_version: parseInt(versionNum),
+              total_versions: versions.length,
+              viewport: currentViewport,
+            };
+          }
+        });
+        if (Object.keys(feedback).length === 0) {
+          alert("No feedback entered yet. Type in the text areas first.");
+          return;
+        }
+        const json = JSON.stringify(
+          {
+            mockup: document.title,
+            timestamp: new Date().toISOString(),
+            viewport: currentViewport,
+            sections: feedback,
+          },
+          null,
+          2,
+        );
+        navigator.clipboard.writeText(json).then(() => {
+          const btn = document.querySelector(".copy-all-btn");
+          btn.textContent = "Copied!";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = "Copy All Feedback";
+            btn.classList.remove("copied");
+          }, 2000);
+        });
+      }
+
+      document.querySelectorAll(".feedback-area textarea").forEach((ta) => {
+        const counter = ta.parentElement.querySelector(".char-count");
+        if (!counter) return;
+        ta.addEventListener("input", () => {
+          counter.textContent = ta.value.length
+            ? `${ta.value.length} chars`
+            : "";
+        });
+      });
+
+      initViewportToggle();
+      initVersionNav();
+    </script>
+  </body>
+</html>
