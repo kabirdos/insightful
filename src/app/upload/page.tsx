@@ -14,7 +14,6 @@ import {
   ClipboardCheck,
   Link as LinkIcon,
   Plus,
-  Trash2,
   Sparkles,
   ShieldCheck,
   ChevronDown,
@@ -51,12 +50,35 @@ import WorkflowDiagram from "@/components/WorkflowDiagram";
 
 type Step = "upload" | "projects" | "review";
 
-interface ProjectLinkInput {
+/** Library Project as returned by GET /api/projects. */
+interface LibraryProject {
+  id: string;
+  name: string;
+  description: string | null;
+  githubUrl: string | null;
+  liveUrl: string | null;
+  ogImage: string | null;
+  ogTitle: string | null;
+  ogDescription: string | null;
+  favicon: string | null;
+  siteName: string | null;
+  metadataFetchedAt: string | null;
+}
+
+/** Input shape for the add/edit form. */
+interface ProjectFormInput {
   name: string;
   githubUrl: string;
   liveUrl: string;
   description: string;
 }
+
+const EMPTY_FORM: ProjectFormInput = {
+  name: "",
+  githubUrl: "",
+  liveUrl: "",
+  description: "",
+};
 
 const INSIGHTS_PATH = "~/.claude/usage-data/report.html";
 const HARNESS_PATH = "~/.claude/usage-data/insight-harness.html";
@@ -353,19 +375,113 @@ const SECTION_OPTIONS: {
   },
 ];
 
+/**
+ * Shared inline form for adding OR editing a library Project.
+ * Used in Step 2 of the upload flow. Shows a "Fetching preview…"
+ * loading state while the POST/PATCH is in flight because the
+ * server synchronously fetches OG metadata before responding
+ * (can take up to ~4 seconds).
+ */
+function ProjectForm({
+  formInput,
+  setFormInput,
+  formSaving,
+  formError,
+  onSave,
+  onCancel,
+  saveLabel,
+}: {
+  formInput: ProjectFormInput;
+  setFormInput: (value: ProjectFormInput) => void;
+  formSaving: boolean;
+  formError: string | null;
+  onSave: () => void;
+  onCancel: () => void;
+  saveLabel: string;
+}) {
+  const inputClass =
+    "rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-400 focus:outline-none";
+
+  return (
+    <div className="grid gap-3">
+      <input
+        placeholder="Project name"
+        value={formInput.name}
+        disabled={formSaving}
+        onChange={(e) => setFormInput({ ...formInput, name: e.target.value })}
+        className={inputClass}
+      />
+      <input
+        placeholder="GitHub URL (optional)"
+        value={formInput.githubUrl}
+        disabled={formSaving}
+        onChange={(e) =>
+          setFormInput({ ...formInput, githubUrl: e.target.value })
+        }
+        className={inputClass}
+      />
+      <input
+        placeholder="Live URL (optional)"
+        value={formInput.liveUrl}
+        disabled={formSaving}
+        onChange={(e) =>
+          setFormInput({ ...formInput, liveUrl: e.target.value })
+        }
+        className={inputClass}
+      />
+      <input
+        placeholder="Short description (optional)"
+        value={formInput.description}
+        disabled={formSaving}
+        onChange={(e) =>
+          setFormInput({ ...formInput, description: e.target.value })
+        }
+        className={inputClass}
+      />
+      {formError && (
+        <p className="text-xs text-red-600 dark:text-red-400">{formError}</p>
+      )}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={formSaving || !formInput.name.trim()}
+          className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:bg-slate-300 disabled:dark:bg-slate-700"
+        >
+          {formSaving ? "Fetching preview…" : saveLabel}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={formSaving}
+          className="rounded-lg px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function UploadPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const [step, setStep] = useState<Step>("upload");
   const [parsed, setParsed] = useState<ParsedInsightsReport | null>(null);
   const [redactions, setRedactions] = useState<RedactionItem[]>([]);
-  const [projectLinks, setProjectLinks] = useState<ProjectLinkInput[]>([]);
-  const [newLink, setNewLink] = useState<ProjectLinkInput>({
-    name: "",
-    githubUrl: "",
-    liveUrl: "",
-    description: "",
-  });
+
+  // Library picker state (Unit 7). `library` is the user's current
+  // Project library as loaded from GET /api/projects. `selectedIds`
+  // tracks which library projects will be attached to this report on
+  // publish. `formInput` powers both "add new" and inline edit.
+  const [library, setLibrary] = useState<LibraryProject[]>([]);
+  const [libraryLoading, setLibraryLoading] = useState(false);
+  const [libraryError, setLibraryError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [formMode, setFormMode] = useState<"none" | "add" | string>("none"); // "none" | "add" | <projectId>
+  const [formInput, setFormInput] = useState<ProjectFormInput>(EMPTY_FORM);
+  const [formSaving, setFormSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [disabledSections, setDisabledSections] = useState<
     Record<string, boolean>
   >({});
@@ -403,10 +519,133 @@ export default function UploadPage() {
       setParsed(data);
       setRedactions(data.detectedRedactions || []);
       setStep("projects");
+      // Kick off a library fetch so the picker is ready when the
+      // user lands on Step 2.
+      void loadLibrary();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to parse file");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadLibrary = async () => {
+    setLibraryLoading(true);
+    setLibraryError(null);
+    try {
+      const res = await fetch("/api/projects");
+      if (!res.ok) {
+        throw new Error("Failed to load your project library");
+      }
+      const body = await res.json();
+      const items: LibraryProject[] = body.data ?? [];
+      // Race-safety: if the user added or edited a project while
+      // this GET was in flight, the local state already contains
+      // newer data for those rows. Merge by id — the functional
+      // update sees the CURRENT state so local saves are never
+      // clobbered by this stale fetch.
+      setLibrary((prev) => {
+        const byId = new Map<string, LibraryProject>();
+        // Start with the fetched items (baseline)
+        for (const item of items) byId.set(item.id, item);
+        // Overwrite with any locally-known rows (newer) and also
+        // add rows that don't exist in the fetch at all (freshly
+        // created since the fetch started).
+        for (const local of prev) byId.set(local.id, local);
+        // Preserve a stable order: newest-first. Rows present in
+        // `prev` stay at the top because their updatedAt is newer
+        // than the stale fetch.
+        return [...byId.values()];
+      });
+    } catch (err) {
+      setLibraryError(
+        err instanceof Error ? err.message : "Failed to load library",
+      );
+    } finally {
+      setLibraryLoading(false);
+    }
+  };
+
+  const toggleProjectSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const beginAddProject = () => {
+    setFormMode("add");
+    setFormInput(EMPTY_FORM);
+    setFormError(null);
+  };
+
+  const beginEditProject = (project: LibraryProject) => {
+    setFormMode(project.id);
+    setFormInput({
+      name: project.name,
+      githubUrl: project.githubUrl ?? "",
+      liveUrl: project.liveUrl ?? "",
+      description: project.description ?? "",
+    });
+    setFormError(null);
+  };
+
+  const cancelForm = () => {
+    setFormMode("none");
+    setFormInput(EMPTY_FORM);
+    setFormError(null);
+  };
+
+  const saveProjectForm = async () => {
+    if (!formInput.name.trim()) {
+      setFormError("Project name is required");
+      return;
+    }
+    setFormSaving(true);
+    setFormError(null);
+    try {
+      const payload = {
+        name: formInput.name.trim(),
+        description: formInput.description.trim() || null,
+        githubUrl: formInput.githubUrl.trim() || null,
+        liveUrl: formInput.liveUrl.trim() || null,
+      };
+      const isEdit = formMode !== "add" && formMode !== "none";
+      const res = await fetch(
+        isEdit ? `/api/projects/${formMode}` : "/api/projects",
+        {
+          method: isEdit ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+      const body = await res.json();
+      if (!res.ok) {
+        throw new Error(body.error || "Failed to save project");
+      }
+      const saved: LibraryProject = body.data;
+
+      setLibrary((prev) => {
+        const without = prev.filter((p) => p.id !== saved.id);
+        return [saved, ...without];
+      });
+      if (!isEdit) {
+        // Auto-select newly created projects.
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          next.add(saved.id);
+          return next;
+        });
+      }
+      cancelForm();
+    } catch (err) {
+      setFormError(
+        err instanceof Error ? err.message : "Failed to save project",
+      );
+    } finally {
+      setFormSaving(false);
     }
   };
 
@@ -446,17 +685,6 @@ export default function UploadPage() {
       setRedactions(parsed.detectedRedactions || []);
       setDisabledSections({});
     }
-  };
-
-  const addProjectLink = () => {
-    if (newLink.name) {
-      setProjectLinks((prev) => [...prev, { ...newLink }]);
-      setNewLink({ name: "", githubUrl: "", liveUrl: "", description: "" });
-    }
-  };
-
-  const removeProjectLink = (index: number) => {
-    setProjectLinks((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handlePublish = async () => {
@@ -534,7 +762,7 @@ export default function UploadPage() {
           dayCount: parsed.stats.dayCount ?? null,
           msgsPerDay: parsed.stats.msgsPerDay ?? null,
           ...sectionFields,
-          projectLinks,
+          projectIds: Array.from(selectedIds),
           chartData: parsed.chartData,
           detectedSkills: parsed.detectedSkills,
           // v3: Harness fields
@@ -657,7 +885,7 @@ export default function UploadPage() {
           {step === "review" ? (
             <button
               onClick={handlePublish}
-              disabled={publishing}
+              disabled={publishing || formSaving}
               className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:bg-slate-300 disabled:dark:bg-slate-700"
             >
               {publishing ? "Publishing..." : "Publish Insights"}
@@ -665,7 +893,14 @@ export default function UploadPage() {
           ) : (
             <button
               onClick={() => setStep(steps[stepIndex + 1]?.key || "review")}
-              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              // Block Next while a project add/edit is saving so the
+              // user can't navigate past Step 2 (and then publish)
+              // before the just-added project is in selectedIds.
+              disabled={formSaving}
+              title={
+                formSaving ? "Finish saving your project first" : undefined
+              }
+              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:dark:bg-slate-700"
             >
               Next
               <ArrowRight className="h-4 w-4" />
@@ -978,83 +1213,114 @@ export default function UploadPage() {
         </div>
       )}
 
-      {/* Step 2: Project Links */}
+      {/* Step 2: Project Library Picker */}
       {step === "projects" && (
         <div>
           <h2 className="mb-2 text-lg font-semibold text-slate-900 dark:text-white">
-            Add Project Links (Optional)
+            Projects to Include (Optional)
           </h2>
           <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
-            Link projects you&apos;re building to showcase them alongside your
-            insights.
+            Pick projects from your library to showcase alongside this report.
+            Edits propagate to every report that references the project.
           </p>
 
-          {projectLinks.map((link, i) => (
-            <div
-              key={i}
-              className="mb-3 flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3"
-            >
-              <div className="flex-1">
-                <p className="font-medium text-slate-900 dark:text-white">
-                  {link.name}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {link.githubUrl || link.liveUrl || "No URL"}
-                </p>
-              </div>
-              <button
-                onClick={() => removeProjectLink(i)}
-                className="text-slate-400 hover:text-red-500"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+          {libraryLoading && (
+            <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
+              Loading your library…
+            </p>
+          )}
+          {libraryError && (
+            <div className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+              {libraryError}
             </div>
-          ))}
+          )}
 
-          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-            <div className="grid gap-3">
-              <input
-                placeholder="Project name"
-                value={newLink.name}
-                onChange={(e) =>
-                  setNewLink({ ...newLink, name: e.target.value })
-                }
-                className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-400 focus:outline-none"
+          {/* Library project list */}
+          <div className="mb-4 space-y-2">
+            {library.map((project) => {
+              const checked = selectedIds.has(project.id);
+              const isEditing = formMode === project.id;
+              return (
+                <div
+                  key={project.id}
+                  className={clsx(
+                    "rounded-lg border bg-white p-3 transition-colors dark:bg-slate-900",
+                    checked
+                      ? "border-blue-400 dark:border-blue-500"
+                      : "border-slate-200 dark:border-slate-700",
+                  )}
+                >
+                  {!isEditing ? (
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleProjectSelected(project.id)}
+                        className="mt-1 h-4 w-4 cursor-pointer"
+                        aria-label={`Include ${project.name}`}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-slate-900 dark:text-white">
+                          {project.name}
+                        </p>
+                        {project.description && (
+                          <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                            {project.description}
+                          </p>
+                        )}
+                        <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                          {project.githubUrl || project.liveUrl || "No URL"}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => beginEditProject(project)}
+                        className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  ) : (
+                    <ProjectForm
+                      formInput={formInput}
+                      setFormInput={setFormInput}
+                      formSaving={formSaving}
+                      formError={formError}
+                      onSave={saveProjectForm}
+                      onCancel={cancelForm}
+                      saveLabel="Save changes"
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Add-new form OR "Add new project" trigger */}
+          {formMode === "add" ? (
+            <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+              <ProjectForm
+                formInput={formInput}
+                setFormInput={setFormInput}
+                formSaving={formSaving}
+                formError={formError}
+                onSave={saveProjectForm}
+                onCancel={cancelForm}
+                saveLabel="Add to library"
               />
-              <input
-                placeholder="GitHub URL (optional)"
-                value={newLink.githubUrl}
-                onChange={(e) =>
-                  setNewLink({ ...newLink, githubUrl: e.target.value })
-                }
-                className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-400 focus:outline-none"
-              />
-              <input
-                placeholder="Live URL (optional)"
-                value={newLink.liveUrl}
-                onChange={(e) =>
-                  setNewLink({ ...newLink, liveUrl: e.target.value })
-                }
-                className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-400 focus:outline-none"
-              />
-              <input
-                placeholder="Short description (optional)"
-                value={newLink.description}
-                onChange={(e) =>
-                  setNewLink({ ...newLink, description: e.target.value })
-                }
-                className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-400 focus:outline-none"
-              />
+            </div>
+          ) : (
+            formMode === "none" && (
               <button
-                onClick={addProjectLink}
-                disabled={!newLink.name}
-                className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:bg-slate-300 disabled:dark:bg-slate-700"
+                type="button"
+                onClick={beginAddProject}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:border-blue-400 hover:text-blue-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
               >
                 <Plus className="h-4 w-4" />
-                Add Project
+                Add a new project
               </button>
-            </div>
-          </div>
+            )
+          )}
         </div>
       )}
 
@@ -1466,7 +1732,7 @@ export default function UploadPage() {
           <div className="mt-8 flex justify-end">
             <button
               onClick={handlePublish}
-              disabled={publishing}
+              disabled={publishing || formSaving}
               className="rounded-lg bg-blue-600 px-8 py-3 font-medium text-white transition-colors hover:bg-blue-700 disabled:bg-slate-300 disabled:dark:bg-slate-700"
             >
               {publishing ? "Publishing..." : "Publish Insights"}
