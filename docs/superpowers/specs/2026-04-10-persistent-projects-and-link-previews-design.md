@@ -114,7 +114,7 @@ model ReportProject {
 |---|---|---|
 | `GET` | `/api/projects` | List current user's Projects |
 | `POST` | `/api/projects` | Create Project; synchronously fetch metadata before responding |
-| `PATCH` | `/api/projects/[id]` | Edit fields; re-fetch metadata if `liveUrl` or `githubUrl` changed |
+| `PATCH` | `/api/projects/[id]` | Edit fields; if `liveUrl` changed, atomically clear all cached metadata fields (`ogImage`, `ogTitle`, `ogDescription`, `favicon`, `siteName`, `metadataFetchedAt`) before re-fetching so a failed fetch can't leave stale data from the old URL |
 | `DELETE` | `/api/projects/[id]` | Delete from library (cascades to all junctions) |
 | `POST` | `/api/projects/[id]/refresh-metadata` | Manual metadata refresh |
 
@@ -143,11 +143,14 @@ async function fetchLinkPreview(url: string): Promise<LinkPreview | null>;
 ```
 
 - Uses `unfurl.js` (no Puppeteer, just HTML parsing)
+- **SSRF guard (mandatory):** before fetching, resolve the hostname and reject if the resolved IP is in any private range (RFC1918), loopback (`127.0.0.0/8`, `::1`), link-local (`169.254.0.0/16`, `fe80::/10`), cloud metadata (`169.254.169.254`), or `0.0.0.0`. Reject non-http(s) schemes outright. Reject redirects to any of the above.
+- **Content-Type guard:** reject responses whose `Content-Type` is not `text/html` or `application/xhtml+xml`
+- **Response size cap:** abort streaming response bytes once >2MB have been read, treat as failure
 - 4-second timeout via `AbortController`
-- Any error (timeout, HTTP non-2xx, malformed HTML) → returns `null`; Project still saves with null metadata
+- Any error (timeout, HTTP non-2xx, malformed HTML, SSRF rejection, content-type mismatch, size cap exceeded) → returns `null`; Project still saves with null metadata
 - Called only for `liveUrl`; `githubUrl` is skipped in v1
 - If a Project has only `githubUrl` (no `liveUrl`), no fetch is attempted at all — all metadata fields stay null and the card renders text-only
-- Server logs failures for observability
+- Server logs failures with the URL and error reason for observability
 
 ## UI Changes
 
@@ -156,8 +159,8 @@ async function fetchLinkPreview(url: string): Promise<LinkPreview | null>;
 1. On mount, fetch `GET /api/projects` to load user's library
 2. Render a **picker**: each library Project as a selectable card (checkbox)
 3. Checked projects will be attached when the report publishes
-4. **"Add new project"** inline form below the picker → creates a new library Project, auto-checks it
-5. Each library card has an inline **Edit** button that expands the card into an inline edit form (no modal) → `PATCH /api/projects/[id]` + refresh list on save
+4. **"Add new project"** inline form below the picker → creates a new library Project, auto-checks it. While the `POST /api/projects` request is in flight (including synchronous metadata fetch, up to ~4s), the form shows a "Fetching preview…" loading state with the save button disabled, so the user isn't left wondering whether it hung.
+5. Each library card has an inline **Edit** button that expands the card into an inline edit form (no modal) → `PATCH /api/projects/[id]` + refresh list on save. Same "Fetching preview…" loading state applies when `liveUrl` has changed and the PATCH triggers a re-fetch.
 6. No delete option in the upload flow (deletion lives on the report edit page only in v1)
 7. On publish, API receives `projectIds: string[]` and creates junction rows in order
 
@@ -194,22 +197,63 @@ Rewrite for stacked layout:
 
 - Server-side query filters out `hidden` junction rows and sorts by `position ASC`
 - Graceful fallback: no `ogImage` → image block hidden; card looks like today's minus icons
+- **Runtime image-failure fallback:** the `<img>` has an `onError` handler that hides the image container if the `ogImage` URL 404s or otherwise fails to load client-side (handles the case where a valid URL at fetch time becomes invalid later)
+- OG metadata fields (`ogTitle`, `ogDescription`, `siteName`) are rendered as plain React text only — **never** via `dangerouslySetInnerHTML`. React's default escaping is the XSS defense.
 - Card inside the existing 2-col responsive grid (no change to grid)
+
+## Security
+
+Server-side metadata fetching is the main new attack surface. All of the following are **mandatory** for the `fetchLinkPreview` implementation:
+
+**SSRF protection:**
+
+- Parse and reject any URL whose scheme is not `http` or `https`
+- Resolve the hostname via DNS before fetching; reject if any resolved A/AAAA record is in a private, loopback, link-local, or cloud-metadata range
+- Explicitly block `169.254.169.254` (AWS/GCP/Azure metadata), `127.0.0.0/8`, `::1`, `169.254.0.0/16`, `fe80::/10`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `0.0.0.0`
+- Reject redirects whose Location header resolves to any blocked range (follow redirects manually, re-validating at each hop, or use `fetch` with `redirect: "manual"` and resolve/validate between hops)
+- Cap redirects at 3
+
+**Denial-of-service protection:**
+
+- Reject responses whose `Content-Type` is not `text/html` or `application/xhtml+xml`
+- Stream the response and abort once >2MB has been read
+- 4-second total timeout via `AbortController`
+
+**XSS protection:**
+
+- OG metadata fields are rendered as plain React text nodes only — never via `dangerouslySetInnerHTML`
+- `ogImage` and `favicon` URLs are rendered via `<img src>` (browser handles escaping)
+- No template interpolation that could reach an HTML sink
+
+**Ownership:**
+
+- All project routes require an authenticated session
+- `PATCH`/`DELETE` on a Project verify `project.userId === session.user.id`
+- `PATCH` on the report junction verifies the report's author is the session user
 
 ## Error Handling
 
-- **Metadata fetch failure** → save Project anyway with null metadata. User can retry via refresh button. Server logs the failure with URL + error.
+- **Metadata fetch failure** (any reason — timeout, SSRF reject, size cap, parse failure) → save Project anyway with null metadata. User can retry via refresh button. Server logs the failure with URL + error reason.
 - **Invalid URL on create** → zod validation rejects before fetch attempt (no 500).
 - **Duplicate attach** → unique constraint `[reportId, projectId]` catches it, API returns 409.
 - **Delete project attached to published reports** → cascading delete succeeds; those reports simply render fewer cards. No extra confirmation nag.
 - **Hide toggle on a project the user doesn't own** → 403 via ownership check in route handler.
 
+## Known Limitations (accepted)
+
+These follow from design decisions and are called out explicitly so no one re-litigates them during implementation or review:
+
+- **No per-report description overrides.** Because edits propagate retroactively (Decision 1), a user cannot show "V1 using Redux" on an older report and "V2 using Server Components" on a newer one for the same Project. Workaround: create a second Project row in the library. We accept this cost as simpler than a snapshot model.
+- **No "detach from report but keep in library" action.** See Decision 4 / the note in API Routes. Users either hide the card on the specific report or delete from the library entirely.
+- **No reorder within a report.** `position` preserves insertion order only; reordering is future work.
+- **No OG image caching.** We store the URL. If the target deletes the image, the card falls back to text-only via the `onError` handler. Revisit if image breakage becomes a real problem.
+
 ## Tests
 
 New/extended vitest coverage:
 
-- `src/lib/__tests__/link-preview.test.ts` — mock `fetch`; cover success, 404, timeout (AbortController), malformed HTML, explicit null-on-error path
-- `src/app/api/projects/__tests__/route.test.ts` — CRUD with auth guards; assert metadata fetcher is called on create and on update when URL changes; assert it is NOT called when URL unchanged
+- `src/lib/__tests__/link-preview.test.ts` — mock `fetch` and DNS; cover success, 404, timeout (AbortController), malformed HTML, explicit null-on-error path, **SSRF cases** (loopback, RFC1918, cloud metadata IP, non-http scheme, redirect-to-loopback), **content-type mismatch**, **oversized response aborted at 2MB**
+- `src/app/api/projects/__tests__/route.test.ts` — CRUD with auth guards; assert metadata fetcher is called on create and on update when `liveUrl` changes; **assert old metadata fields are cleared before re-fetch**; assert it is NOT called when URL unchanged
 - `src/app/api/insights/[slug]/projects/__tests__/route.test.ts` — attach / hide / ownership
 - `src/components/__tests__/ProjectLinks.test.tsx` — renders with ogImage, without ogImage, without liveUrl
 - `prisma/__tests__/seed-helpers.test.ts` — extend for Project/ReportProject seed helpers
