@@ -371,6 +371,16 @@ export default function InsightDetailPage() {
             />
           )}
 
+          {/* Project Links — rich stacked cards with OG metadata.
+              Rendered directly under the activity card per issue #27. */}
+          {report.reportProjects.length > 0 && (
+            <div className="mb-6">
+              <ProjectLinks
+                links={report.reportProjects.map((rp) => rp.project)}
+              />
+            </div>
+          )}
+
           {/* How I Work cluster: Autonomy + Model Donut + File Ops */}
           {!isHarnessSectionHidden(hiddenHarnessSections, "howIWork") && (
             <HowIWorkCluster harnessData={report.harnessData} />
@@ -659,15 +669,6 @@ export default function InsightDetailPage() {
             </CollapsibleSection>
           )}
 
-          {/* Project Links — rich stacked cards with OG metadata. */}
-          {report.reportProjects.length > 0 && (
-            <div className="mb-6">
-              <ProjectLinks
-                links={report.reportProjects.map((rp) => rp.project)}
-              />
-            </div>
-          )}
-
           {/* Narrative Sections */}
           <div className="space-y-4">
             {SECTIONS.map((section) => {
@@ -720,6 +721,16 @@ export default function InsightDetailPage() {
               projectAreas={report.projectAreas}
             />
           </div>
+
+          {/* Project Links — rich stacked cards with OG metadata.
+              Rendered directly under the activity/snapshot card per issue #27. */}
+          {report.reportProjects.length > 0 && (
+            <div className="mb-6">
+              <ProjectLinks
+                links={report.reportProjects.map((rp) => rp.project)}
+              />
+            </div>
+          )}
 
           {/* Chart Data Visualizations (wire up orphaned chartData) */}
           {report.chartData && (
@@ -834,15 +845,6 @@ export default function InsightDetailPage() {
                     />
                   </div>
                 )}
-            </div>
-          )}
-
-          {/* Project Links — rich stacked cards with OG metadata. */}
-          {report.reportProjects.length > 0 && (
-            <div className="mb-6">
-              <ProjectLinks
-                links={report.reportProjects.map((rp) => rp.project)}
-              />
             </div>
           )}
 

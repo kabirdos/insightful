@@ -108,10 +108,28 @@ function ProjectCard({ link }: { link: ProjectCardData }) {
   const showImage = Boolean(safeOgImage) && !imageFailed;
   const showSiteRow = Boolean(link.siteName) || Boolean(safeFavicon);
 
+  // Whole card becomes a link. Prefer liveUrl, fall back to githubUrl.
+  // If neither exists the overlay anchor is omitted entirely so the
+  // card stays non-clickable but visually consistent.
+  const cardHref = link.liveUrl || link.githubUrl || null;
+
+  // We use the "stretched link" pattern: the outer card is a plain
+  // <div class="relative">, a full-card <a> overlays it with ::after
+  // via `absolute inset-0`, and the inner icon buttons render as real
+  // <a> siblings with a higher z-index so they remain valid HTML (no
+  // interactive content nested inside an anchor) and stay keyboard-
+  // and screen-reader-navigable.
+  const hoverClass = cardHref ? "hover:shadow-lg" : "";
+
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800/50">
+    <div
+      className={clsx(
+        "group relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow dark:border-slate-700 dark:bg-slate-800/50",
+        hoverClass,
+      )}
+    >
       {showImage && safeOgImage && (
-        <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100 dark:bg-slate-900">
+        <div className="relative aspect-[16/7] w-full overflow-hidden bg-slate-100 dark:bg-slate-900">
           {/* Plain <img> on purpose — OG images come from arbitrary
               third-party hosts and next/image would require wildcard
               remotePatterns in next.config.ts. URL has been gated by
@@ -127,15 +145,15 @@ function ProjectCard({ link }: { link: ProjectCardData }) {
           />
         </div>
       )}
-      <div className="p-4">
+      <div className="p-3">
         {showSiteRow && (
-          <div className="mb-1.5 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+          <div className="mb-1 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
             {safeFavicon && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={safeFavicon}
                 alt=""
-                className="h-4 w-4 rounded-sm"
+                className="h-3.5 w-3.5 rounded-sm"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).style.display = "none";
                 }}
@@ -146,24 +164,24 @@ function ProjectCard({ link }: { link: ProjectCardData }) {
             {link.siteName && <span className="truncate">{link.siteName}</span>}
           </div>
         )}
-        <h4 className="truncate font-medium text-slate-900 dark:text-slate-100">
+        <h4 className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
           {link.name}
         </h4>
         {link.description && (
-          <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-0.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
             {link.description}
           </p>
         )}
-        <div className="mt-3 flex items-center gap-1.5">
+        <div className="relative z-10 mt-2 flex items-center gap-1">
           {link.githubUrl && (
             <a
               href={link.githubUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+              className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-300"
               aria-label={`${link.name} on GitHub`}
             >
-              <GitFork className="h-4 w-4" />
+              <GitFork className="h-3.5 w-3.5" />
             </a>
           )}
           {link.liveUrl && (
@@ -171,19 +189,30 @@ function ProjectCard({ link }: { link: ProjectCardData }) {
               href={link.liveUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+              className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-300"
               aria-label={`Visit ${link.name}`}
             >
-              <ExternalLink className="h-4 w-4" />
+              <ExternalLink className="h-3.5 w-3.5" />
             </a>
           )}
           {!link.githubUrl && !link.liveUrl && (
-            <div className="rounded-lg p-2 text-slate-300 dark:text-slate-600">
-              <Globe className="h-4 w-4" />
+            <div className="rounded-lg p-1.5 text-slate-300 dark:text-slate-600">
+              <Globe className="h-3.5 w-3.5" />
             </div>
           )}
         </div>
       </div>
+      {cardHref && (
+        <a
+          href={cardHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={link.name}
+          className="absolute inset-0 z-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        >
+          <span className="sr-only">{`Open ${link.name}`}</span>
+        </a>
+      )}
     </div>
   );
 }
