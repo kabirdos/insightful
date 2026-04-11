@@ -270,7 +270,7 @@ export default function InsightDetailPage() {
   const hiddenHarnessSections = report.hiddenHarnessSections ?? [];
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
       {/* Author bar */}
       <div className="mb-6 flex items-center gap-4 border-b border-slate-200 pb-6 dark:border-slate-700">
         <Link href={`/u/${report.author.username}`}>
