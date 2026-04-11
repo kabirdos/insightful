@@ -794,8 +794,10 @@ export default function HomePage() {
   const [sort, setSort] = useState<SortOption>("newest");
   const [loading, setLoading] = useState(true);
 
+  // Loading is flipped true in the sort-change handler below; the initial
+  // render already starts with loading=true, so the effect never needs to
+  // set it synchronously (which would trip react-hooks/set-state-in-effect).
   useEffect(() => {
-    setLoading(true);
     // Fetch a wider window than we display so the client-side author
     // dedupe (below) doesn't leave the "Recent Profiles" grid short
     // when one author has multiple recent reports. 30 > default 20
@@ -880,7 +882,11 @@ export default function HomePage() {
             {sortOptions.map(({ value, label, icon: Icon }) => (
               <button
                 key={value}
-                onClick={() => setSort(value)}
+                onClick={() => {
+                  if (value === sort) return;
+                  setLoading(true);
+                  setSort(value);
+                }}
                 className={clsx(
                   "flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all",
                   sort === value
