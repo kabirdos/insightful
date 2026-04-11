@@ -20,6 +20,7 @@ import {
   type HarnessData,
 } from "@/types/insights";
 import { normalizeChartData } from "@/lib/chart-parser";
+import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 
 // New redesigned components for harness reports
 import HeroStats from "@/components/HeroStats";
@@ -347,8 +348,16 @@ export default function InsightDetailPage() {
                 report.harnessData?.stats?.sessionCount ||
                 0
               }
-              linesAdded={report.linesAdded ?? null}
-              linesRemoved={report.linesRemoved ?? null}
+              linesAdded={resolveLinesAdded({
+                linesAdded: report.linesAdded,
+                linesRemoved: report.linesRemoved,
+                harnessData: report.harnessData,
+              })}
+              linesRemoved={resolveLinesRemoved({
+                linesAdded: report.linesAdded,
+                linesRemoved: report.linesRemoved,
+                harnessData: report.harnessData,
+              })}
             />
           )}
 

@@ -157,8 +157,12 @@ export default function HeroStats({
   // Null-safe: only render the lines pill when we have at least one
   // positive value. Zero / null / undefined all hide the metric cleanly
   // per issue #24 ("reports missing these values hide the metric cleanly").
+  // Real harness reports (#35) only ship additions via the gitPatterns
+  // fallback — removed stays null — so we track "present vs missing"
+  // distinctly from "zero" and hide the `-X` half when removed is null.
   const added = linesAdded ?? 0;
   const removed = linesRemoved ?? 0;
+  const removedPresent = linesRemoved != null;
   const showLines = added > 0 || removed > 0;
 
   return (
@@ -205,10 +209,14 @@ export default function HeroStats({
           <span className="font-bold text-green-600 dark:text-green-400">
             +{formatLines(added)}
           </span>
-          <span className="text-slate-300 dark:text-slate-600">/</span>
-          <span className="font-bold text-red-600 dark:text-red-400">
-            -{formatLines(removed)}
-          </span>
+          {removedPresent && (
+            <>
+              <span className="text-slate-300 dark:text-slate-600">/</span>
+              <span className="font-bold text-red-600 dark:text-red-400">
+                -{formatLines(removed)}
+              </span>
+            </>
+          )}
         </div>
       )}
     </div>

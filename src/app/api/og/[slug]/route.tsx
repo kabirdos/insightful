@@ -1,5 +1,9 @@
 import { ImageResponse } from "next/og";
 import { prisma } from "@/lib/db";
+import {
+  resolveLinesAdded,
+  resolveLinesRemoved,
+} from "@/lib/lines-of-code";
 import { normalizeHarnessData, type HarnessData } from "@/types/insights";
 
 export const runtime = "nodejs";
@@ -45,27 +49,6 @@ function formatLines(n: number): string {
   if (n >= 100_000) return `${Math.round(n / 1_000)}k`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
   return Math.round(n).toLocaleString();
-}
-
-// Parse the harness gitPatterns.linesAdded string ("44.0K", "1.2M",
-// "1,234") into a number. Harness reports historically only encode total
-// additions in this field as a display string, so we use it as a fallback
-// when the scalar columns are null.
-function parseHarnessLinesString(value: unknown): number {
-  if (typeof value !== "string") return 0;
-  const trimmed = value.trim().replace(/,/g, "");
-  if (!trimmed) return 0;
-  const match = trimmed.match(/^([\d.]+)\s*([KkMm])?$/);
-  if (!match) {
-    const n = parseFloat(trimmed);
-    return Number.isFinite(n) ? n : 0;
-  }
-  const base = parseFloat(match[1]);
-  if (!Number.isFinite(base)) return 0;
-  const suffix = match[2]?.toLowerCase();
-  if (suffix === "k") return base * 1_000;
-  if (suffix === "m") return base * 1_000_000;
-  return base;
 }
 
 function formatDuration(hours: number): string {
@@ -191,14 +174,22 @@ export async function GET(
       // the harness `gitPatterns.linesAdded` display string when scalars
       // are null. Without this fallback the LINES/WK cell rendered `0` for
       // every harness report whose scalar columns weren't populated by
-      // upload — see issue #29.
-      const scalarAdded = report.linesAdded ?? 0;
-      const scalarRemoved = report.linesRemoved ?? 0;
-      const fallbackAdded =
-        scalarAdded === 0 && scalarRemoved === 0
-          ? parseHarnessLinesString(h.gitPatterns?.linesAdded)
-          : 0;
-      const totalLines = scalarAdded + scalarRemoved + fallbackAdded;
+      // upload — see issues #29 / #35. Shared resolver lives in
+      // src/lib/lines-of-code.ts so ProfileCard and HeroStats get the same
+      // fallback.
+      const resolvedAdded = resolveLinesAdded({
+        linesAdded: report.linesAdded,
+        linesRemoved: report.linesRemoved,
+        harnessData: h,
+      });
+      const resolvedRemoved = resolveLinesRemoved({
+        linesAdded: report.linesAdded,
+        linesRemoved: report.linesRemoved,
+        harnessData: h,
+      });
+      const scalarAdded = resolvedAdded ?? 0;
+      const scalarRemoved = resolvedRemoved ?? 0;
+      const totalLines = scalarAdded + scalarRemoved;
       const hasLinesData = totalLines > 0;
       const hasSplit = scalarAdded > 0 && scalarRemoved > 0;
 
@@ -261,9 +252,22 @@ export async function GET(
       });
       // Same null-safe LOC handling as the harness branch: only render the
       // cell when there is real data, prefer split format when both
-      // additions and removals are populated.
-      const insightsAdded = report.linesAdded ?? 0;
-      const insightsRemoved = report.linesRemoved ?? 0;
+      // additions and removals are populated. Shared resolver is still
+      // used here even though `insights` reports have no harnessData
+      // fallback — it keeps the read path symmetrical with the harness
+      // branch and demo reports.
+      const insightsAdded =
+        resolveLinesAdded({
+          linesAdded: report.linesAdded,
+          linesRemoved: report.linesRemoved,
+          harnessData: null,
+        }) ?? 0;
+      const insightsRemoved =
+        resolveLinesRemoved({
+          linesAdded: report.linesAdded,
+          linesRemoved: report.linesRemoved,
+          harnessData: null,
+        }) ?? 0;
       const insightsTotal = insightsAdded + insightsRemoved;
       if (insightsTotal > 0) {
         const hasSplit = insightsAdded > 0 && insightsRemoved > 0;
