@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
+import { estimateApiCostUsd } from "@/lib/api-cost";
 
 interface DailyData {
   date: string;
@@ -171,51 +172,9 @@ function formatCost(n: number): string {
   return `$${n.toFixed(2)}`;
 }
 
-// Rough blended USD / 1M tokens, no input/output split available.
-// These are estimates — labeled "Est." in UI.
-const MODEL_BLENDED_RATE_PER_M: Array<{ match: RegExp; rate: number }> = [
-  { match: /opus(?:\s|[-_.])?4/i, rate: 45 },
-  { match: /opus/i, rate: 30 },
-  { match: /haiku(?:\s|[-_.])?4/i, rate: 3 },
-  { match: /haiku/i, rate: 1.6 },
-  { match: /sonnet(?:\s|[-_.])?4/i, rate: 9 },
-  { match: /sonnet/i, rate: 6 },
-];
-const DEFAULT_RATE_PER_M = 6; // fall back to Sonnet-blended
-
-function normalizeModelTokenUsage(
-  models?: Record<string, number>,
-  totalTokens?: number,
-): Array<[string, number]> {
-  if (!models || Object.keys(models).length === 0) return [];
-
-  const entries = Object.entries(models).filter(([, tokens]) => tokens > 0);
-  if (entries.length === 0) return [];
-
-  const sum = entries.reduce((acc, [, value]) => acc + value, 0);
-  if (totalTokens && sum > 0 && sum <= 100.5) {
-    return entries.map(([name, share]) => [name, (share / sum) * totalTokens]);
-  }
-
-  return entries;
-}
-
-function estimateTotalCostUsd(
-  models?: Record<string, number>,
-  totalTokens?: number,
-): number {
-  const modelUsage = normalizeModelTokenUsage(models, totalTokens);
-  if (modelUsage.length === 0) return 0;
-
-  let total = 0;
-  for (const [name, tokens] of modelUsage) {
-    if (!tokens || tokens <= 0) continue;
-    const entry = MODEL_BLENDED_RATE_PER_M.find((m) => m.match.test(name));
-    const rate = entry ? entry.rate : DEFAULT_RATE_PER_M;
-    total += (tokens / 1_000_000) * rate;
-  }
-  return total;
-}
+// Cost estimation now lives in src/lib/api-cost.ts so it can be shared
+// across the homepage ProfileCard, the activity card, and the report
+// detail page (issue #26).
 
 function GridHeatmap({
   title,
@@ -365,16 +324,10 @@ export default function ActivityHeatmap({
   const costDaily = useMemo<number[] | null>(() => {
     if (!tokensDaily) return null;
     const totalTokenCount = totalTokens ?? tokensDaily.reduce((a, b) => a + b, 0);
-    const totalCost = estimateTotalCostUsd(models, totalTokenCount);
-    if (totalCost <= 0) {
-      // Fallback: still derive from totalTokens using default blended rate
-      const fallbackTotal =
-        totalTokenCount *
-        (DEFAULT_RATE_PER_M / 1_000_000);
-      if (fallbackTotal <= 0) return tokensDaily.map(() => 0);
-      const tokenSum = tokensDaily.reduce((a, b) => a + b, 0) || 1;
-      return tokensDaily.map((t) => (t / tokenSum) * fallbackTotal);
-    }
+    // Shared helper handles per-model rate lookup AND the missing-
+    // breakdown fallback (Sonnet 4.6 blended rate over total tokens).
+    const totalCost = estimateApiCostUsd(models, totalTokenCount);
+    if (totalCost <= 0) return tokensDaily.map(() => 0);
     const tokenSum = tokensDaily.reduce((a, b) => a + b, 0) || 1;
     return tokensDaily.map((t) => (t / tokenSum) * totalCost);
   }, [tokensDaily, models, totalTokens]);
