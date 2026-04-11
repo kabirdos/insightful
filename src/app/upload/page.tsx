@@ -1360,16 +1360,23 @@ export default function UploadPage() {
             {totalSensitive > 0 && (
               <div className="ml-auto flex gap-2">
                 <button
-                  onClick={applyAllRedactions}
+                  type="button"
+                  onClick={() => {
+                    const target = document.getElementById(
+                      "sensitive-data-review",
+                    );
+                    if (!target) return;
+                    target.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    });
+                    // Move focus into the target so keyboard/screen-reader
+                    // users land in the section after scrolling.
+                    target.focus({ preventScroll: true });
+                  }}
                   className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-900 transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-slate-900 dark:text-amber-200 dark:hover:bg-amber-950/40"
                 >
-                  Redact all sensitive items
-                </button>
-                <button
-                  onClick={resetRedactions}
-                  className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-900 transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-slate-900 dark:text-amber-200 dark:hover:bg-amber-950/40"
-                >
-                  Reset to defaults
+                  Review sensitive items
                 </button>
               </div>
             )}
@@ -2004,10 +2011,32 @@ export default function UploadPage() {
 
           {/* ── Inline Sensitive Data Controls ── */}
           {redactions.length > 0 && (
-            <div className="mb-6">
-              <h3 className="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">
-                Sensitive Data Review
-              </h3>
+            <div
+              id="sensitive-data-review"
+              tabIndex={-1}
+              className="mb-6 scroll-mt-24 focus:outline-none"
+            >
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                  Sensitive Data Review
+                </h3>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={applyAllRedactions}
+                    className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-900 transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-slate-900 dark:text-amber-200 dark:hover:bg-amber-950/40"
+                  >
+                    Redact all sensitive items
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetRedactions}
+                    className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-900 transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-slate-900 dark:text-amber-200 dark:hover:bg-amber-950/40"
+                  >
+                    Reset to defaults
+                  </button>
+                </div>
+              </div>
               <div className="mb-3 flex flex-wrap gap-2 text-xs">
                 <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/20 dark:text-amber-300">
                   Redact: removes the text entirely
