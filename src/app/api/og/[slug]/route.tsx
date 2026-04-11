@@ -37,6 +37,37 @@ function formatNumber(n: number): string {
   return n.toLocaleString();
 }
 
+// Compact lines-of-code formatter mirroring HeroStats: "18.4k" above 1000,
+// rounded number below. Used for the OG card LINES/WK cell so the format
+// stays consistent with the detail page.
+function formatLines(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 100_000) return `${Math.round(n / 1_000)}k`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return Math.round(n).toLocaleString();
+}
+
+// Parse the harness gitPatterns.linesAdded string ("44.0K", "1.2M",
+// "1,234") into a number. Harness reports historically only encode total
+// additions in this field as a display string, so we use it as a fallback
+// when the scalar columns are null.
+function parseHarnessLinesString(value: unknown): number {
+  if (typeof value !== "string") return 0;
+  const trimmed = value.trim().replace(/,/g, "");
+  if (!trimmed) return 0;
+  const match = trimmed.match(/^([\d.]+)\s*([KkMm])?$/);
+  if (!match) {
+    const n = parseFloat(trimmed);
+    return Number.isFinite(n) ? n : 0;
+  }
+  const base = parseFloat(match[1]);
+  if (!Number.isFinite(base)) return 0;
+  const suffix = match[2]?.toLowerCase();
+  if (suffix === "k") return base * 1_000;
+  if (suffix === "m") return base * 1_000_000;
+  return base;
+}
+
 function formatDuration(hours: number): string {
   if (hours >= 100) return `${Math.round(hours)}h`;
   if (hours >= 10) return `${hours.toFixed(0)}h`;
@@ -105,6 +136,10 @@ interface StatItem {
   value: string;
   label: string;
   color: string;
+  // Optional override so the LINES/WK cell can shrink slightly to fit the
+  // wider "+18.4k/-9.2k" string while the rest of the row stays visually
+  // dominant.
+  fontSize?: number;
 }
 
 export async function GET(
@@ -149,8 +184,23 @@ export async function GET(
       const totalTokens = h.stats.totalTokens || report.totalTokens || 0;
       const sessions = report.sessionCount || h.stats.sessionCount || 0;
       const commits = report.commitCount ?? h.stats.commitCount ?? 0;
-      const lines = (report.linesAdded ?? 0) + (report.linesRemoved ?? 0);
       const duration = h.stats.durationHours || report.durationHours || 0;
+
+      // Lines of code: prefer scalar columns (populated for `insights`
+      // reports and any harness reports that carry them), and fall back to
+      // the harness `gitPatterns.linesAdded` display string when scalars
+      // are null. Without this fallback the LINES/WK cell rendered `0` for
+      // every harness report whose scalar columns weren't populated by
+      // upload — see issue #29.
+      const scalarAdded = report.linesAdded ?? 0;
+      const scalarRemoved = report.linesRemoved ?? 0;
+      const fallbackAdded =
+        scalarAdded === 0 && scalarRemoved === 0
+          ? parseHarnessLinesString(h.gitPatterns?.linesAdded)
+          : 0;
+      const totalLines = scalarAdded + scalarRemoved + fallbackAdded;
+      const hasLinesData = totalLines > 0;
+      const hasSplit = scalarAdded > 0 && scalarRemoved > 0;
 
       stats.push({
         value: perWeek(totalTokens, dayCount),
@@ -167,18 +217,33 @@ export async function GET(
         label: "commits/wk",
         color: "#7c3aed",
       });
-      stats.push({
-        value: perWeek(lines, dayCount),
-        label: "lines/wk",
-        color: "#d97706",
-      });
+      // Only render the LINES/WK cell when we have real data — never
+      // render `0`, which falsely implies the user wrote no code.
+      if (hasLinesData) {
+        const linesValue = hasSplit
+          ? // Split format mirrors HeroStats: per-week additions and
+            // removals shown side-by-side. Compact, no spaces, so the
+            // string fits the cell at the slightly reduced font size.
+            `+${formatLines(scalarAdded / weeks)}/-${formatLines(scalarRemoved / weeks)}`
+          : // Single combined value when only the harness fallback (or
+            // only one of the two scalars) is available.
+            formatLines(totalLines / weeks);
+        stats.push({
+          value: linesValue,
+          label: "lines/wk",
+          color: "#d97706",
+          // Shrink only this cell so the wider split string fits on one
+          // line in monospace without truncating the rest of the row.
+          fontSize: hasSplit ? 38 : 56,
+        });
+      }
       stats.push({
         value: formatDuration(duration / weeks),
         label: "duration/wk",
         color: "#0891b2",
       });
     } else {
-      // Standard report fallback
+      // Standard insights-report fallback
       stats.push({
         value: formatNumber(report.sessionCount ?? 0),
         label: "sessions",
@@ -194,26 +259,22 @@ export async function GET(
         label: "commits",
         color: "#7c3aed",
       });
-      const lines = (report.linesAdded ?? 0) + (report.linesRemoved ?? 0);
-      stats.push({
-        value: formatNumber(lines),
-        label: "lines",
-        color: "#d97706",
-      });
-    }
-
-    // Skills (top 5)
-    const skills: string[] = [];
-    if (isHarness && harnessData) {
-      const h = harnessData as HarnessData;
-      for (const s of h.skillInventory.slice(0, 5)) {
-        skills.push(s.name);
-      }
-    }
-    if (skills.length === 0 && report.detectedSkills) {
-      const ds = report.detectedSkills as string[];
-      for (const s of ds.slice(0, 5)) {
-        skills.push(s.replace(/_/g, " "));
+      // Same null-safe LOC handling as the harness branch: only render the
+      // cell when there is real data, prefer split format when both
+      // additions and removals are populated.
+      const insightsAdded = report.linesAdded ?? 0;
+      const insightsRemoved = report.linesRemoved ?? 0;
+      const insightsTotal = insightsAdded + insightsRemoved;
+      if (insightsTotal > 0) {
+        const hasSplit = insightsAdded > 0 && insightsRemoved > 0;
+        stats.push({
+          value: hasSplit
+            ? `+${formatLines(insightsAdded)}/-${formatLines(insightsRemoved)}`
+            : formatLines(insightsTotal),
+          label: "lines",
+          color: "#d97706",
+          fontSize: hasSplit ? 38 : 56,
+        });
       }
     }
 
@@ -363,12 +424,16 @@ export async function GET(
             </div>
           </div>
 
-          {/* Stats row — big monospace numbers */}
+          {/* Stats row — big monospace numbers. Numbers dominate the
+              card; unit labels stay small. The optional per-stat
+              fontSize override lets the LINES/WK split-format cell shrink
+              slightly so its wider value still fits on one line. */}
           <div
             style={{
               display: "flex",
-              gap: "32px",
-              marginBottom: "28px",
+              gap: "36px",
+              marginBottom: "32px",
+              alignItems: "flex-end",
             }}
           >
             {stats.map((s) => (
@@ -383,7 +448,7 @@ export async function GET(
                 <span
                   style={{
                     fontFamily: "JetBrains Mono, monospace",
-                    fontSize: "40px",
+                    fontSize: `${s.fontSize ?? 56}px`,
                     fontWeight: 700,
                     color: s.color,
                     lineHeight: 1,
@@ -393,9 +458,9 @@ export async function GET(
                 </span>
                 <span
                   style={{
-                    fontSize: "13px",
+                    fontSize: "14px",
                     color: "#94a3b8",
-                    marginTop: "4px",
+                    marginTop: "8px",
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
                   }}
@@ -406,7 +471,9 @@ export async function GET(
             ))}
           </div>
 
-          {/* Middle row: heatmap + skills */}
+          {/* Middle row: 28-day activity heatmap (skills section removed
+              per issue #29 — the reclaimed space serves as visual
+              breathing room for the larger stats row above). */}
           <div
             style={{
               display: "flex",
@@ -493,50 +560,6 @@ export async function GET(
               </div>
             )}
 
-            {/* Skills badges */}
-            {skills.length > 0 && (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "#94a3b8",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    marginBottom: "8px",
-                  }}
-                >
-                  Skills
-                </span>
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "6px",
-                  }}
-                >
-                  {skills.map((s) => (
-                    <span
-                      key={s}
-                      style={{
-                        fontSize: "13px",
-                        color: "#475569",
-                        backgroundColor: "#f1f5f9",
-                        borderRadius: "12px",
-                        padding: "4px 12px",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
