@@ -74,12 +74,22 @@ interface ReportData {
     displayName: string | null;
     avatarUrl: string | null;
   };
-  projectLinks: Array<{
+  reportProjects: Array<{
     id: string;
-    name: string;
-    githubUrl: string | null;
-    liveUrl: string | null;
-    description: string | null;
+    hidden: boolean;
+    position: number;
+    project: {
+      id: string;
+      name: string;
+      githubUrl: string | null;
+      liveUrl: string | null;
+      description: string | null;
+      ogImage: string | null;
+      ogTitle: string | null;
+      ogDescription: string | null;
+      favicon: string | null;
+      siteName: string | null;
+    };
   }>;
   annotations: Array<{
     sectionKey: string;
@@ -647,10 +657,12 @@ export default function InsightDetailPage() {
             </CollapsibleSection>
           )}
 
-          {/* Project Links */}
-          {report.projectLinks.length > 0 && (
+          {/* Project Links — rich stacked cards with OG metadata. */}
+          {report.reportProjects.length > 0 && (
             <div className="mb-6">
-              <ProjectLinks links={report.projectLinks} />
+              <ProjectLinks
+                links={report.reportProjects.map((rp) => rp.project)}
+              />
             </div>
           )}
 
@@ -823,10 +835,12 @@ export default function InsightDetailPage() {
             </div>
           )}
 
-          {/* Project Links */}
-          {report.projectLinks.length > 0 && (
+          {/* Project Links — rich stacked cards with OG metadata. */}
+          {report.reportProjects.length > 0 && (
             <div className="mb-6">
-              <ProjectLinks links={report.projectLinks} />
+              <ProjectLinks
+                links={report.reportProjects.map((rp) => rp.project)}
+              />
             </div>
           )}
 

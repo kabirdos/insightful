@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Eye, EyeOff, ArrowLeft, AlertTriangle } from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
+import EyeToggle from "@/components/EyeToggle";
 import type { HarnessData } from "@/types/insights";
 import { normalizeHarnessData } from "@/types/insights";
 import HeroStats from "@/components/HeroStats";
@@ -16,12 +17,33 @@ import CliToolsDonut from "@/components/CliToolsDonut";
 import GitPatternsDisplay from "@/components/GitPatternsDisplay";
 import PermissionModeDisplay from "@/components/PermissionModeDisplay";
 import HooksSafetyTable from "@/components/HooksSafetyTable";
-import ProjectLinks from "@/components/ProjectLinks";
 import MiniBarChart from "@/components/MiniBarChart";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import SectionRenderer from "@/components/SectionRenderer";
 import Link from "next/link";
+import clsx from "clsx";
 import { getHiddenHarnessSections } from "@/lib/harness-section-visibility";
+
+interface EditProject {
+  id: string;
+  name: string;
+  description: string | null;
+  githubUrl: string | null;
+  liveUrl: string | null;
+  ogImage: string | null;
+  ogTitle: string | null;
+  ogDescription: string | null;
+  favicon: string | null;
+  siteName: string | null;
+  metadataFetchedAt: string | null;
+}
+
+interface EditReportProject {
+  id: string;
+  hidden: boolean;
+  position: number;
+  project: EditProject;
+}
 
 interface ReportData {
   id: string;
@@ -44,14 +66,8 @@ interface ReportData {
   frictionAnalysis: unknown;
   suggestions: unknown;
   onTheHorizon: unknown;
+  reportProjects: EditReportProject[];
   author: { id: string; username: string; displayName: string | null };
-  projectLinks: Array<{
-    id: string;
-    name: string;
-    githubUrl: string | null;
-    liveUrl: string | null;
-    description: string | null;
-  }>;
 }
 
 // Section config for narrative sections
@@ -80,24 +96,9 @@ const SECTIONS = [
   },
 ] as const;
 
-function EyeToggle({
-  enabled,
-  onToggle,
-}: {
-  enabled: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      onClick={onToggle}
-      className="rounded p-1 text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
-      title={enabled ? "Hide this section" : "Show this section"}
-    >
-      {enabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-    </button>
-  );
-}
-
+// HideableCard wraps a piece of content with the shared EyeToggle
+// component. Used throughout the edit page to give narrative and
+// harness subsections a consistent hide/show affordance.
 function HideableCard({
   title,
   hidden,
@@ -116,7 +117,9 @@ function HideableCard({
         <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
           {title}
         </span>
-        {hidden && <span className="text-xs text-red-500">Will be removed</span>}
+        {hidden && (
+          <span className="text-xs text-red-500">Will be removed</span>
+        )}
       </div>
       {!hidden && children}
     </div>
@@ -141,7 +144,10 @@ export default function EditReportPage() {
   > | null>(null);
 
   useEffect(() => {
-    fetch(`/api/insights/${slug}`)
+    // includeHidden=true surfaces per-report hidden junction rows so
+    // the owner can toggle them back on. The server enforces
+    // ownership before honoring the flag.
+    fetch(`/api/insights/${slug}?includeHidden=true`)
       .then((r) => r.json())
       .then((data) => {
         if (data.error) {
@@ -151,6 +157,9 @@ export default function EditReportPage() {
           r.harnessData = r.harnessData
             ? normalizeHarnessData(r.harnessData)
             : null;
+          if (!Array.isArray(r.reportProjects)) {
+            r.reportProjects = [];
+          }
           setReport(r);
           setHiddenSections(
             Object.fromEntries(
@@ -165,6 +174,125 @@ export default function EditReportPage() {
         setLoading(false);
       });
   }, [slug]);
+
+  // ── Project actions ────────────────────────────────────────────
+  // Flip a ReportProject.hidden via PATCH. Updates local state
+  // optimistically; on failure we revert and show the error.
+  // All three async handlers use functional setReport(prev => ...)
+  // updates so concurrent actions don't clobber each other. If the
+  // user fires a second action while the first is in flight, each
+  // handler reads the LATEST state at the moment of the update, not
+  // a stale closure snapshot from the original click.
+
+  const toggleProjectHidden = async (projectId: string) => {
+    const current = report?.reportProjects.find(
+      (rp) => rp.project.id === projectId,
+    );
+    if (!current) return;
+    const nextHidden = !current.hidden;
+
+    // Optimistic update
+    setReport((prev) =>
+      prev
+        ? {
+            ...prev,
+            reportProjects: prev.reportProjects.map((rp) =>
+              rp.project.id === projectId ? { ...rp, hidden: nextHidden } : rp,
+            ),
+          }
+        : prev,
+    );
+
+    try {
+      const res = await fetch(`/api/insights/${slug}/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hidden: nextHidden }),
+      });
+      if (!res.ok) throw new Error("Failed to update project visibility");
+    } catch (err) {
+      // Revert on failure via functional update.
+      setReport((prev) =>
+        prev
+          ? {
+              ...prev,
+              reportProjects: prev.reportProjects.map((rp) =>
+                rp.project.id === projectId
+                  ? { ...rp, hidden: current.hidden }
+                  : rp,
+              ),
+            }
+          : prev,
+      );
+      setError(err instanceof Error ? err.message : "Failed to update project");
+    }
+  };
+
+  const deleteProjectFromLibrary = async (projectId: string) => {
+    if (!report) return;
+    if (
+      !confirm(
+        "Delete this project from your library? It will be removed from every report that references it. This cannot be undone.",
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to delete project");
+      }
+      // Remove from local state via functional update so a
+      // concurrent toggle/refresh on another project isn't lost.
+      setReport((prev) =>
+        prev
+          ? {
+              ...prev,
+              reportProjects: prev.reportProjects.filter(
+                (rp) => rp.project.id !== projectId,
+              ),
+            }
+          : prev,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete project");
+    }
+  };
+
+  const refreshProjectMetadata = async (projectId: string) => {
+    if (!report) return;
+    try {
+      const res = await fetch(`/api/projects/${projectId}/refresh-metadata`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to refresh metadata");
+      }
+      const body = await res.json();
+      const updated: EditProject = body.data;
+      // Functional update: if a concurrent delete removed the row,
+      // the map leaves prev untouched and this refresh is a no-op.
+      setReport((prev) =>
+        prev
+          ? {
+              ...prev,
+              reportProjects: prev.reportProjects.map((rp) =>
+                rp.project.id === projectId ? { ...rp, project: updated } : rp,
+              ),
+            }
+          : prev,
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to refresh metadata",
+      );
+    }
+  };
 
   const toggleSection = (key: string) => {
     setHiddenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -358,7 +486,9 @@ export default function EditReportPage() {
           >
             <ActivityHeatmap
               totalSessions={
-                report.sessionCount ?? harnessData.stats.sessionCount ?? undefined
+                report.sessionCount ??
+                harnessData.stats.sessionCount ??
+                undefined
               }
               totalTokens={harnessData.stats.totalTokens ?? undefined}
               dayCount={report.dayCount ?? undefined}
@@ -493,57 +623,60 @@ export default function EditReportPage() {
             </HideableCard>
           )}
 
-          {harnessData.agentDispatch && harnessData.agentDispatch.totalAgents > 0 && (
-            <HideableCard
-              title="Agent Dispatch"
-              hidden={!!hiddenSections["agentDispatch"]}
-              onToggle={() => toggleSection("agentDispatch")}
-            >
-              <CollapsibleSection
-                icon="🤖"
-                iconBgClass="bg-indigo-100 dark:bg-indigo-900/30"
-                title={`Agent Dispatch (${harnessData.agentDispatch.totalAgents} agents)`}
-                defaultOpen={false}
+          {harnessData.agentDispatch &&
+            harnessData.agentDispatch.totalAgents > 0 && (
+              <HideableCard
+                title="Agent Dispatch"
+                hidden={!!hiddenSections["agentDispatch"]}
+                onToggle={() => toggleSection("agentDispatch")}
               >
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {Object.keys(harnessData.agentDispatch.types).length > 0 && (
-                    <div>
-                      <h4 className="mb-2 text-xs font-semibold text-slate-500">
-                        Agent Types
-                      </h4>
-                      <MiniBarChart
-                        data={Object.entries(harnessData.agentDispatch.types).map(
-                          ([label, value]) => ({ label, value }),
+                <CollapsibleSection
+                  icon="🤖"
+                  iconBgClass="bg-indigo-100 dark:bg-indigo-900/30"
+                  title={`Agent Dispatch (${harnessData.agentDispatch.totalAgents} agents)`}
+                  defaultOpen={false}
+                >
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {Object.keys(harnessData.agentDispatch.types).length >
+                      0 && (
+                      <div>
+                        <h4 className="mb-2 text-xs font-semibold text-slate-500">
+                          Agent Types
+                        </h4>
+                        <MiniBarChart
+                          data={Object.entries(
+                            harnessData.agentDispatch.types,
+                          ).map(([label, value]) => ({ label, value }))}
+                          title=""
+                          color="bg-indigo-500"
+                        />
+                      </div>
+                    )}
+                    {Object.keys(harnessData.agentDispatch.models).length >
+                      0 && (
+                      <div>
+                        <h4 className="mb-2 text-xs font-semibold text-slate-500">
+                          Model Tiering
+                        </h4>
+                        <MiniBarChart
+                          data={Object.entries(
+                            harnessData.agentDispatch.models,
+                          ).map(([label, value]) => ({ label, value }))}
+                          title=""
+                          color="bg-purple-500"
+                        />
+                        {harnessData.agentDispatch.backgroundPct > 0 && (
+                          <p className="mt-1 text-xs text-slate-400">
+                            {harnessData.agentDispatch.backgroundPct}% run in
+                            background
+                          </p>
                         )}
-                        title=""
-                        color="bg-indigo-500"
-                      />
-                    </div>
-                  )}
-                  {Object.keys(harnessData.agentDispatch.models).length > 0 && (
-                    <div>
-                      <h4 className="mb-2 text-xs font-semibold text-slate-500">
-                        Model Tiering
-                      </h4>
-                      <MiniBarChart
-                        data={Object.entries(harnessData.agentDispatch.models).map(
-                          ([label, value]) => ({ label, value }),
-                        )}
-                        title=""
-                        color="bg-purple-500"
-                      />
-                      {harnessData.agentDispatch.backgroundPct > 0 && (
-                        <p className="mt-1 text-xs text-slate-400">
-                          {harnessData.agentDispatch.backgroundPct}% run in
-                          background
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </CollapsibleSection>
-            </HideableCard>
-          )}
+                      </div>
+                    )}
+                  </div>
+                </CollapsibleSection>
+              </HideableCard>
+            )}
 
           {Object.keys(harnessData.languages).length > 0 && (
             <HideableCard
@@ -648,7 +781,9 @@ export default function EditReportPage() {
                       </h4>
                       <div
                         className="prose prose-sm max-w-none text-slate-600 dark:text-slate-400 [&_p]:mb-2 [&_li]:mb-1"
-                        dangerouslySetInnerHTML={{ __html: section.contentHtml }}
+                        dangerouslySetInnerHTML={{
+                          __html: section.contentHtml,
+                        }}
                       />
                     </div>
                   ))}
@@ -682,13 +817,69 @@ export default function EditReportPage() {
               </CollapsibleSection>
             </HideableCard>
           )}
-
-          {report.projectLinks.length > 0 && (
-            <div className="mb-6">
-              <ProjectLinks links={report.projectLinks} />
-            </div>
-          )}
         </>
+      )}
+
+      {/* Projects attached to this report */}
+      {report.reportProjects.length > 0 && (
+        <div className="mt-6">
+          <h3 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+            Projects
+          </h3>
+          <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
+            Hide a project from this report, or delete it from your library
+            (which removes it from every report).
+          </p>
+          <div className="space-y-2">
+            {report.reportProjects.map((rp) => (
+              <div
+                key={rp.id}
+                className={clsx(
+                  "flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900",
+                  rp.hidden && "opacity-50",
+                )}
+              >
+                <div className="pt-0.5">
+                  <EyeToggle
+                    enabled={!rp.hidden}
+                    onToggle={() => toggleProjectHidden(rp.project.id)}
+                    showLabel="Show on this report"
+                    hideLabel="Hide from this report"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-slate-900 dark:text-white">
+                    {rp.project.name}
+                  </p>
+                  {rp.project.description && (
+                    <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                      {rp.project.description}
+                    </p>
+                  )}
+                  <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                    {rp.project.githubUrl || rp.project.liveUrl || "No URL"}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <button
+                    type="button"
+                    onClick={() => refreshProjectMetadata(rp.project.id)}
+                    className="rounded-md px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                  >
+                    Refresh preview
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteProjectFromLibrary(rp.project.id)}
+                    className="rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                  >
+                    Delete from library
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Narrative sections with eye toggles */}

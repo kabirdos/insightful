@@ -602,24 +602,39 @@ async function main() {
     },
   });
 
-  // Add project links
-  await prisma.projectLink.create({
+  // Add projects to each demo user's library and attach them to the
+  // report via the ReportProject junction.
+  const aliceCliProject = await prisma.project.create({
     data: {
-      reportId: report1.id,
+      userId: alice.id,
       name: "CLI Scaffolding Tool",
       githubUrl: "https://github.com/demo/cli-scaffold",
       description:
         "The open source CLI tool mentioned in the insights — project scaffolding with templates and plugins.",
     },
   });
-
-  await prisma.projectLink.create({
+  await prisma.reportProject.create({
     data: {
-      reportId: report3.id,
+      reportId: report1.id,
+      projectId: aliceCliProject.id,
+      position: 0,
+    },
+  });
+
+  const carolPortfolioProject = await prisma.project.create({
+    data: {
+      userId: carol.id,
       name: "Personal Portfolio",
       liveUrl: "https://example.com",
       description:
         "The portfolio site built during these sessions — multiple redesigns to find the right look.",
+    },
+  });
+  await prisma.reportProject.create({
+    data: {
+      reportId: report3.id,
+      projectId: carolPortfolioProject.id,
+      position: 0,
     },
   });
 

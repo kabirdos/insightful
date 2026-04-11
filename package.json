@@ -27,7 +27,8 @@
     "prisma": "^6.19.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "slugify": "^1.6.9"
+    "slugify": "^1.6.9",
+    "unfurl.js": "^6.4.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -76,3 +76,145 @@ export function computeDefaultBranchPrefixes(
     "chore/": Math.round(commits * 0.15),
   };
 }
+
+export interface DefaultProjectSeed {
+  name: string;
+  description: string;
+  githubUrl: string | null;
+  liveUrl: string | null;
+}
+
+/**
+ * Deterministic demo Projects keyed by the user's slug (githubId without
+ * the "demo-" prefix). Used by the demo seed script to populate each
+ * demo user's project library with a small, plausible set.
+ *
+ * Returns an array so we can seed multiple projects per user. Order is
+ * stable so reruns produce the same Project rows.
+ *
+ * A generic two-project fallback is returned for unknown slugs so the
+ * helper never throws — seed scripts just need something to work with.
+ */
+export function defaultProjectSeedFor(userSlug: string): DefaultProjectSeed[] {
+  const libraries: Record<string, DefaultProjectSeed[]> = {
+    mika: [
+      {
+        name: "Payments Dashboard",
+        description:
+          "Internal Stripe admin UI — refunds, dispute triage, and revenue charts for the ops team.",
+        githubUrl: "https://github.com/mika-tanaka/payments-dashboard",
+        liveUrl: null,
+      },
+      {
+        name: "Type-Safe Feature Flags",
+        description:
+          "Open-source TypeScript feature flag client with compile-time flag-key safety.",
+        githubUrl: "https://github.com/mika-tanaka/ts-flags",
+        liveUrl: "https://ts-flags.dev",
+      },
+    ],
+    jordan: [
+      {
+        name: "Indie Launchpad",
+        description:
+          "Opinionated SaaS starter — auth, billing, email, and dashboard in one repo.",
+        githubUrl: "https://github.com/jordan-reeves/indie-launchpad",
+        liveUrl: "https://indielaunchpad.io",
+      },
+      {
+        name: "Quiet Focus",
+        description:
+          "Pomodoro timer with ambient soundscapes. Ships on the App Store and the web.",
+        githubUrl: null,
+        liveUrl: "https://quietfocus.app",
+      },
+      {
+        name: "Changelog Studio",
+        description:
+          "Tiny marketing site generator for product changelogs with MDX and OG images.",
+        githubUrl: "https://github.com/jordan-reeves/changelog-studio",
+        liveUrl: null,
+      },
+    ],
+    priya: [
+      {
+        name: "Agent Router",
+        description:
+          "Custom skill that routes prompts to the right sub-agent based on detected intent.",
+        githubUrl: "https://github.com/priya-sharma/agent-router",
+        liveUrl: null,
+      },
+      {
+        name: "Embedding Playground",
+        description:
+          "FastAPI service for comparing embedding models side-by-side with live visualisations.",
+        githubUrl: "https://github.com/priya-sharma/embedding-playground",
+        liveUrl: "https://embeddings.priya.dev",
+      },
+    ],
+    marcus: [
+      {
+        name: "IncidentKit",
+        description:
+          "On-call runbook generator that turns Terraform modules into first-responder playbooks.",
+        githubUrl: "https://github.com/marcus-chen/incidentkit",
+        liveUrl: null,
+      },
+      {
+        name: "Cluster Lens",
+        description:
+          "Read-only K8s dashboard tuned for incident triage, not cluster administration.",
+        githubUrl: "https://github.com/marcus-chen/cluster-lens",
+        liveUrl: "https://clusterlens.dev",
+      },
+    ],
+    elena: [
+      {
+        name: "Studio Invoices",
+        description:
+          "Rails app for client invoicing, time tracking, and Stripe payouts. Handles multi-currency.",
+        githubUrl: null,
+        liveUrl: "https://studio-invoices.com",
+      },
+      {
+        name: "Component Kitchen",
+        description:
+          "React component library used across Elena's freelance clients — Tailwind-styled, accessible.",
+        githubUrl: "https://github.com/elena-volkov/component-kitchen",
+        liveUrl: null,
+      },
+    ],
+    sam: [
+      {
+        name: "My First Blog",
+        description:
+          "Personal blog built during my first months learning Claude Code. Lots of lessons captured here.",
+        githubUrl: "https://github.com/sam-okafor/blog",
+        liveUrl: "https://samokafor.dev",
+      },
+    ],
+  };
+
+  // Strip "demo-" prefix if someone passes the full githubId.
+  const key = userSlug
+    .replace(/^demo-/, "")
+    .split("-")[0]
+    .toLowerCase();
+
+  return (
+    libraries[key] ?? [
+      {
+        name: "Example Project",
+        description: "A placeholder demo project.",
+        githubUrl: "https://github.com/example/example",
+        liveUrl: null,
+      },
+      {
+        name: "Second Example",
+        description: "Another placeholder with a live URL.",
+        githubUrl: null,
+        liveUrl: "https://example.com",
+      },
+    ]
+  );
+}

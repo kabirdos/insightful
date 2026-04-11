@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   User,
   Heart,
@@ -499,18 +500,36 @@ export default function UserProfilePage() {
                 sectionTags={report.sectionTags}
               />
               {isOwnProfile && (
-                <button
-                  onClick={() => handleDelete(report.slug)}
-                  disabled={deleting === report.slug}
-                  className="absolute right-3 top-3 rounded-lg border border-slate-200 bg-white/90 p-1.5 text-slate-400 opacity-0 transition-all hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-700 dark:hover:bg-red-950/50 dark:hover:text-red-400 group-hover:opacity-100 [div:hover>&]:opacity-100 dark:border-slate-700 dark:bg-slate-900/90"
-                  title="Delete report"
-                >
-                  {deleting === report.slug ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-400 border-t-transparent" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                </button>
+                <>
+                  <Link
+                    href={`/insights/${report.slug}/edit`}
+                    // Always visible on touch devices (md:opacity-0
+                    // hides it on desktop where hover-reveal works).
+                    // Without the mobile-visible class, touch users
+                    // have no way to reach the edit page from the
+                    // profile — which is the whole point of this
+                    // button.
+                    className="absolute right-12 top-3 rounded-lg border border-slate-200 bg-white/90 p-1.5 text-slate-400 opacity-100 transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 md:opacity-0 group-hover:md:opacity-100 dark:border-slate-700 dark:bg-slate-900/90 dark:hover:border-blue-700 dark:hover:bg-blue-950/50 dark:hover:text-blue-400 [div:hover>&]:md:opacity-100"
+                    title="Edit report"
+                    aria-label="Edit report"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(report.slug)}
+                    disabled={deleting === report.slug}
+                    // Same mobile-visible treatment for consistency
+                    // with the new Edit button.
+                    className="absolute right-3 top-3 rounded-lg border border-slate-200 bg-white/90 p-1.5 text-slate-400 opacity-100 transition-all hover:border-red-300 hover:bg-red-50 hover:text-red-600 md:opacity-0 group-hover:md:opacity-100 dark:border-slate-700 dark:bg-slate-900/90 dark:hover:border-red-700 dark:hover:bg-red-950/50 dark:hover:text-red-400 [div:hover>&]:md:opacity-100"
+                    title="Delete report"
+                  >
+                    {deleting === report.slug ? (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-400 border-t-transparent" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </button>
+                </>
               )}
             </div>
           ))}

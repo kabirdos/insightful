@@ -27,6 +27,7 @@ model User {
   votes      SectionVote[]
   highlights SectionHighlight[]
   comments   Comment[]
+  projects   Project[]
 }
 
 model InsightReport {
@@ -37,61 +38,96 @@ model InsightReport {
   publishedAt DateTime @default(now())
 
   // Stats
-  sessionCount  Int?
-  messageCount  Int?
-  commitCount   Int?
+  sessionCount   Int?
+  messageCount   Int?
+  commitCount    Int?
   dateRangeStart String?
   dateRangeEnd   String?
-  linesAdded    Int?
-  linesRemoved  Int?
-  fileCount     Int?
-  dayCount      Int?
-  msgsPerDay    Float?
+  linesAdded     Int?
+  linesRemoved   Int?
+  fileCount      Int?
+  dayCount       Int?
+  msgsPerDay     Float?
 
   // v2 additions
-  chartData       Json?
-  detectedSkills  String[]   @default([])
+  chartData      Json?
+  detectedSkills String[] @default([])
 
   // v3: Harness report fields
-  reportType        String   @default("insights")
-  totalTokens       Int?
-  durationHours     Int?
-  avgSessionMinutes Float?
-  prCount           Int?
-  autonomyLabel     String?
-  harnessData              Json?
-  hiddenHarnessSections    String[]   @default([])
+  reportType            String   @default("insights")
+  totalTokens           Int?
+  durationHours         Int?
+  avgSessionMinutes     Float?
+  prCount               Int?
+  autonomyLabel         String?
+  harnessData           Json?
+  hiddenHarnessSections String[] @default([])
 
   // Content sections (stored as redacted JSON)
-  atAGlance          Json?
-  interactionStyle   Json?
-  projectAreas       Json?
+  atAGlance           Json?
+  interactionStyle    Json?
+  projectAreas        Json?
   impressiveWorkflows Json?
-  frictionAnalysis   Json?
-  suggestions        Json?
-  onTheHorizon       Json?
-  funEnding          Json?
+  frictionAnalysis    Json?
+  suggestions         Json?
+  onTheHorizon        Json?
+  funEnding           Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  author       User               @relation(fields: [authorId], references: [id])
-  projectLinks ProjectLink[]
-  votes        SectionVote[]
-  highlights   SectionHighlight[]
-  comments     Comment[]
-  annotations  AuthorAnnotation[]
+  author         User               @relation(fields: [authorId], references: [id])
+  reportProjects ReportProject[]
+  votes          SectionVote[]
+  highlights     SectionHighlight[]
+  comments       Comment[]
+  annotations    AuthorAnnotation[]
 }
 
-model ProjectLink {
+/// User-owned project in the library. Persists across reports.
+/// Edits propagate retroactively to every report that references it.
+model Project {
   id          String  @id @default(cuid())
-  reportId    String
+  userId      String
   name        String
+  description String?
   githubUrl   String?
   liveUrl     String?
-  description String?
 
-  report InsightReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  // Cached Open Graph metadata for the liveUrl. All nullable.
+  // Absence = either not fetched yet, or fetch failed.
+  ogImage           String?
+  ogTitle           String?
+  ogDescription     String?
+  favicon           String?
+  siteName          String?
+  metadataFetchedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reportProjects ReportProject[]
+
+  @@index([userId])
+}
+
+/// Junction table attaching a Project to a Report.
+/// `hidden` is per-report (hide from this report without removing from the library).
+/// `position` is a non-unique ordering hint; lower position renders first.
+model ReportProject {
+  id        String  @id @default(cuid())
+  reportId  String
+  projectId String
+  hidden    Boolean @default(false)
+  position  Int     @default(0)
+
+  report  InsightReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  project Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([reportId, projectId])
+  @@index([reportId])
+  @@index([projectId])
 }
 
 model SectionVote {
