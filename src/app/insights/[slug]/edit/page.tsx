@@ -23,6 +23,7 @@ import SectionRenderer from "@/components/SectionRenderer";
 import Link from "next/link";
 import clsx from "clsx";
 import { getHiddenHarnessSections } from "@/lib/harness-section-visibility";
+import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 
 interface EditProject {
   id: string;
@@ -478,8 +479,16 @@ export default function EditReportPage() {
               sessionCount={
                 report.sessionCount || harnessData.stats?.sessionCount || 0
               }
-              linesAdded={report.linesAdded ?? null}
-              linesRemoved={report.linesRemoved ?? null}
+              linesAdded={resolveLinesAdded({
+                linesAdded: report.linesAdded,
+                linesRemoved: report.linesRemoved,
+                harnessData,
+              })}
+              linesRemoved={resolveLinesRemoved({
+                linesAdded: report.linesAdded,
+                linesRemoved: report.linesRemoved,
+                harnessData,
+              })}
             />
           </HideableCard>
 

@@ -12,6 +12,7 @@ import {
 } from "@/types/insights";
 import { homepage as copy } from "@/content/homepage";
 import { estimateApiCostUsd } from "@/lib/api-cost";
+import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 
 // Parse a skill identifier into its plugin source and short name.
 // Skills are in the form "plugin-name:skill-name" or just "skill-name" (custom).
@@ -64,6 +65,15 @@ interface HarnessSlice {
   workflowData?: HarnessWorkflowSlice | null;
   /** Top-level per-model token counts used for API cost estimation. */
   models?: Record<string, number>;
+  /**
+   * Git patterns slice — used by the lines-of-code resolver when the
+   * scalar `linesAdded` / `linesRemoved` columns on the report are null
+   * (real harness uploads today). See src/lib/lines-of-code.ts and #35.
+   */
+  gitPatterns?: {
+    linesAdded?: string | number | null;
+    linesRemoved?: string | number | null;
+  } | null;
 }
 
 interface InsightSummary {
@@ -664,25 +674,55 @@ function ProfileCard({
               {pluginsCount === 1 ? "plugin" : "plugins"}
             </span>
           </div>
-          {((insight.linesAdded ?? 0) > 0 ||
-            (insight.linesRemoved ?? 0) > 0) && (
-            <div className="flex flex-1 flex-col border-l border-slate-100 px-3 last:pr-0 dark:border-slate-800">
-              <span className="whitespace-nowrap text-[15px] font-bold leading-none">
-                <span className="text-green-600 dark:text-green-400">
-                  +{formatLines(insight.linesAdded ?? 0)}
+          {(() => {
+            // Lines-of-code: prefer the scalar columns, fall back to the
+            // harness JSON string (see src/lib/lines-of-code.ts, #35).
+            // Real harness uploads leave the scalars null, so reading
+            // `insight.linesAdded` directly used to hide this cell for
+            // every user-uploaded report. #29 fixed this in the OG card
+            // only; #35 extends the fix to ProfileCard.
+            const resolvedAdded = resolveLinesAdded({
+              linesAdded: insight.linesAdded,
+              linesRemoved: insight.linesRemoved,
+              harnessData: insight.harnessData,
+            });
+            const resolvedRemoved = resolveLinesRemoved({
+              linesAdded: insight.linesAdded,
+              linesRemoved: insight.linesRemoved,
+              harnessData: insight.harnessData,
+            });
+            const addedDisplay = resolvedAdded ?? 0;
+            const removedDisplay = resolvedRemoved ?? 0;
+            const hasLines = addedDisplay > 0 || removedDisplay > 0;
+            // Harness reports carry only additions in gitPatterns — when
+            // the scalar removed is null and only the additions fallback
+            // resolved, hide the "/ -0" half so we don't claim zero
+            // deletions we can't actually verify.
+            const showRemoved = resolvedRemoved != null;
+            if (!hasLines) return null;
+            return (
+              <div className="flex flex-1 flex-col border-l border-slate-100 px-3 last:pr-0 dark:border-slate-800">
+                <span className="whitespace-nowrap text-[15px] font-bold leading-none">
+                  <span className="text-green-600 dark:text-green-400">
+                    +{formatLines(addedDisplay)}
+                  </span>
+                  {showRemoved && (
+                    <>
+                      <span className="text-slate-300 dark:text-slate-600">
+                        {" / "}
+                      </span>
+                      <span className="text-red-600 dark:text-red-400">
+                        -{formatLines(removedDisplay)}
+                      </span>
+                    </>
+                  )}
                 </span>
-                <span className="text-slate-300 dark:text-slate-600">
-                  {" / "}
+                <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-slate-400">
+                  lines
                 </span>
-                <span className="text-red-600 dark:text-red-400">
-                  -{formatLines(insight.linesRemoved ?? 0)}
-                </span>
-              </span>
-              <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-slate-400">
-                lines
-              </span>
-            </div>
-          )}
+              </div>
+            );
+          })()}
           {featured && commitsWk != null && commitsWk > 0 && (
             <div className="flex flex-1 flex-col border-l border-slate-100 px-3 dark:border-slate-800">
               <span className="text-[15px] font-bold leading-none text-cyan-600 dark:text-cyan-400">

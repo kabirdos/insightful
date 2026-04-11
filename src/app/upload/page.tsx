@@ -50,6 +50,7 @@ import {
   getHiddenHarnessSections,
   stripHiddenHarnessData,
 } from "@/lib/harness-section-visibility";
+import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 
 type Step = "upload" | "projects" | "review";
 
@@ -1399,8 +1400,16 @@ export default function UploadPage() {
                     parsed.harnessData.stats.sessionCount ??
                     0
                   }
-                  linesAdded={parsed.stats.linesAdded ?? null}
-                  linesRemoved={parsed.stats.linesRemoved ?? null}
+                  linesAdded={resolveLinesAdded({
+                    linesAdded: parsed.stats.linesAdded ?? null,
+                    linesRemoved: parsed.stats.linesRemoved ?? null,
+                    harnessData: parsed.harnessData,
+                  })}
+                  linesRemoved={resolveLinesRemoved({
+                    linesAdded: parsed.stats.linesAdded ?? null,
+                    linesRemoved: parsed.stats.linesRemoved ?? null,
+                    harnessData: parsed.harnessData,
+                  })}
                 />
               </RedactableSection>
 
