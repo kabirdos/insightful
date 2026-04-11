@@ -178,63 +178,76 @@ function formatCost(n: number): string {
 
 function GridHeatmap({
   title,
-  summary,
+  bigNumber,
+  bigNumberLabel,
   scale,
   data,
   formatValue,
+  ariaValueLabel,
 }: {
   title: string;
-  summary: string;
+  /** Large vanity number rendered above the heat map (e.g. "101"). */
+  bigNumber: string;
+  /** Smaller label under the vanity number (e.g. "total sessions"). */
+  bigNumberLabel: string;
   scale: ColorScale;
   data: number[]; // length CELL_COUNT
   formatValue: (n: number) => string;
+  /** Accessible suffix used in per-cell title attributes (e.g. "sessions"). */
+  ariaValueLabel: string;
 }) {
   const max = Math.max(...data, 1);
   const nonZero = data.filter((v) => v > 0);
   const min = nonZero.length > 0 ? Math.min(...nonZero) : 0;
-  const longestCellValue = data.reduce((longest, value) => {
-    const label = formatValue(value);
-    return label.length > longest ? label.length : longest;
-  }, 0);
-  const minCellWidth =
-    longestCellValue >= 7 ? 64 : longestCellValue >= 5 ? 56 : 44;
-  const minCellHeight =
-    longestCellValue >= 7 ? 44 : longestCellValue >= 5 ? 40 : 34;
 
   return (
     <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/20">
-      <div className="mb-3 flex min-h-[2.5rem] items-start justify-between gap-3">
-        <div
-          className={`text-xs font-bold uppercase tracking-wider ${TITLE_COLORS[scale]}`}
-        >
-          {title}
+      {/* Title chip */}
+      <div
+        className={`mb-2 text-[11px] font-bold uppercase tracking-wider ${TITLE_COLORS[scale]}`}
+      >
+        {title}
+      </div>
+
+      {/* Big vanity number */}
+      <div className="mb-4">
+        <div className="text-4xl font-extrabold leading-none tracking-tight text-slate-900 dark:text-slate-50 sm:text-5xl">
+          {bigNumber}
         </div>
-        <div className="text-right text-sm font-semibold text-slate-700 dark:text-slate-200">
-          {summary}
+        <div className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+          {bigNumberLabel}
         </div>
       </div>
 
-      <div className="overflow-x-auto pb-1">
-        <div
-          className="grid min-w-max gap-[4px]"
-          style={{
-            gridTemplateColumns: `repeat(${DAYS_PER_WEEK}, minmax(${minCellWidth}px, 1fr))`,
-          }}
-        >
-          {data.map((value, i) => {
-            const level = getLevel(scale, value, max);
-            return (
-              <div
-                key={i}
-                title={formatValue(value)}
-                className={`flex items-center justify-center rounded px-1.5 text-center text-[10px] font-semibold leading-tight ${level.bg} ${level.text} ${level.border ?? ""}`}
-                style={{ minHeight: `${minCellHeight}px` }}
-              >
-                {formatValue(value)}
-              </div>
-            );
-          })}
-        </div>
+      {/* Heat map — 7 columns (one per day of the week) with aspect-square
+          cells that shrink to fit the container. Using a 7-col grid
+          preserves the week-over-week visual chronology regardless of
+          container width. Cells stay perfectly square via aspect-square. */}
+      <div
+        className="grid gap-1"
+        style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}
+        role="list"
+        aria-label={`${title} daily activity`}
+      >
+        {data.map((value, i) => {
+          const level = getLevel(scale, value, max);
+          const displayValue = formatValue(value);
+          const titleAttr =
+            value > 0
+              ? `${displayValue} ${ariaValueLabel}`
+              : `No ${ariaValueLabel}`;
+          return (
+            <div
+              key={i}
+              role="listitem"
+              title={titleAttr}
+              aria-label={titleAttr}
+              className={`flex aspect-square min-w-0 items-center justify-center rounded text-center text-[10px] font-semibold leading-tight ${level.bg} ${level.text} ${level.border ?? ""}`}
+            >
+              {displayValue}
+            </div>
+          );
+        })}
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3 text-[10px] text-slate-500 dark:text-slate-400">
@@ -334,6 +347,8 @@ export default function ActivityHeatmap({
 
   if (!sessionsDaily || !tokensDaily || !costDaily) return null;
 
+  const totalSessionsSum = sessionsDaily.reduce((a, b) => a + b, 0);
+  const totalTokensSum = tokensDaily.reduce((a, b) => a + b, 0);
   const totalCostEstimate = costDaily.reduce((a, b) => a + b, 0);
 
   return (
@@ -344,24 +359,30 @@ export default function ActivityHeatmap({
       <div className="grid gap-6 lg:grid-cols-2 2xl:grid-cols-3">
         <GridHeatmap
           title="Sessions"
-          summary={`${sessionsDaily.reduce((a, b) => a + b, 0)} total`}
+          bigNumber={totalSessionsSum.toLocaleString()}
+          bigNumberLabel="total sessions"
           scale="blue"
           data={sessionsDaily}
           formatValue={(n) => (n > 0 ? n.toString() : "")}
+          ariaValueLabel="sessions"
         />
         <GridHeatmap
           title="Tokens"
-          summary={`${formatTokens(tokensDaily.reduce((a, b) => a + b, 0))} total`}
+          bigNumber={formatTokens(totalTokensSum)}
+          bigNumberLabel="total tokens"
           scale="green"
           data={tokensDaily}
           formatValue={(n) => (n > 0 ? formatTokens(n) : "")}
+          ariaValueLabel="tokens"
         />
         <GridHeatmap
           title="Est. API Cost"
-          summary={`~${formatCost(totalCostEstimate)} total`}
+          bigNumber={formatCost(totalCostEstimate)}
+          bigNumberLabel="estimated API cost"
           scale="amber"
           data={costDaily}
           formatValue={(n) => (n > 0 ? formatCost(n) : "")}
+          ariaValueLabel="dollars estimated"
         />
       </div>
     </div>
