@@ -347,6 +347,8 @@ export default function InsightDetailPage() {
                 report.harnessData?.stats?.sessionCount ||
                 0
               }
+              linesAdded={report.linesAdded ?? null}
+              linesRemoved={report.linesRemoved ?? null}
             />
           )}
 

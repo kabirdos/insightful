@@ -6,12 +6,24 @@ interface HeroStatsProps {
   stats: HarnessStats;
   dayCount: number | null;
   sessionCount: number | null;
+  linesAdded?: number | null;
+  linesRemoved?: number | null;
 }
 
 function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
   return n.toLocaleString();
+}
+
+// Compact lines-of-code formatter: "18.4k" above a thousand, raw number
+// below. Mirrors the helper used on the homepage ProfileCard so the
+// two surfaces show consistent magnitudes.
+function formatLines(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 100_000) return `${Math.round(n / 1_000)}k`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return Math.round(n).toLocaleString();
 }
 
 function perWeek(value: number, dayCount: number | null): string | null {
@@ -138,42 +150,66 @@ export default function HeroStats({
   stats,
   dayCount,
   sessionCount,
+  linesAdded,
+  linesRemoved,
 }: HeroStatsProps) {
   const sessions = sessionCount || stats.sessionCount || 0;
+  // Null-safe: only render the lines pill when we have at least one
+  // positive value. Zero / null / undefined all hide the metric cleanly
+  // per issue #24 ("reports missing these values hide the metric cleanly").
+  const added = linesAdded ?? 0;
+  const removed = linesRemoved ?? 0;
+  const showLines = added > 0 || removed > 0;
 
   return (
-    <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-      {stats.totalTokens > 0 && (
-        <StatCard
-          value={formatNumber(stats.totalTokens)}
-          label="Tokens"
-          rate={perWeek(stats.totalTokens, dayCount)}
-          numericSeed={stats.totalTokens}
-        />
-      )}
-      {sessions > 0 && (
-        <StatCard
-          value={sessions.toString()}
-          label="Sessions"
-          rate={perWeek(sessions, dayCount)}
-          numericSeed={sessions * 7}
-        />
-      )}
-      {stats.durationHours > 0 && (
-        <StatCard
-          value={`${stats.durationHours}h`}
-          label="Active Time"
-          rate={perWeek(stats.durationHours, dayCount)}
-          numericSeed={stats.durationHours * 13}
-        />
-      )}
-      {stats.skillsUsedCount > 0 && (
-        <StatCard
-          value={stats.skillsUsedCount.toString()}
-          label="Skills"
-          rate={null}
-          numericSeed={stats.skillsUsedCount * 31}
-        />
+    <div className="mb-8">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {stats.totalTokens > 0 && (
+          <StatCard
+            value={formatNumber(stats.totalTokens)}
+            label="Tokens"
+            rate={perWeek(stats.totalTokens, dayCount)}
+            numericSeed={stats.totalTokens}
+          />
+        )}
+        {sessions > 0 && (
+          <StatCard
+            value={sessions.toString()}
+            label="Sessions"
+            rate={perWeek(sessions, dayCount)}
+            numericSeed={sessions * 7}
+          />
+        )}
+        {stats.durationHours > 0 && (
+          <StatCard
+            value={`${stats.durationHours}h`}
+            label="Active Time"
+            rate={perWeek(stats.durationHours, dayCount)}
+            numericSeed={stats.durationHours * 13}
+          />
+        )}
+        {stats.skillsUsedCount > 0 && (
+          <StatCard
+            value={stats.skillsUsedCount.toString()}
+            label="Skills"
+            rate={null}
+            numericSeed={stats.skillsUsedCount * 31}
+          />
+        )}
+      </div>
+      {showLines && (
+        <div className="mt-3 flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 font-mono text-sm dark:border-slate-700 dark:bg-slate-900/50">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+            Lines of code
+          </span>
+          <span className="font-bold text-green-600 dark:text-green-400">
+            +{formatLines(added)}
+          </span>
+          <span className="text-slate-300 dark:text-slate-600">/</span>
+          <span className="font-bold text-red-600 dark:text-red-400">
+            -{formatLines(removed)}
+          </span>
+        </div>
       )}
     </div>
   );

@@ -1399,6 +1399,8 @@ export default function UploadPage() {
                     parsed.harnessData.stats.sessionCount ??
                     0
                   }
+                  linesAdded={parsed.stats.linesAdded ?? null}
+                  linesRemoved={parsed.stats.linesRemoved ?? null}
                 />
               </RedactableSection>
 
