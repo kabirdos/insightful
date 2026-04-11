@@ -219,11 +219,13 @@ function GridHeatmap({
         </div>
       </div>
 
-      {/* Heat map — flex-wrap so cells reflow onto a second row if the
-          container is narrow. aspect-square keeps every cell a perfect
-          square regardless of the label length inside it. */}
+      {/* Heat map — 7 columns (one per day of the week) with aspect-square
+          cells that shrink to fit the container. Using a 7-col grid
+          preserves the week-over-week visual chronology regardless of
+          container width. Cells stay perfectly square via aspect-square. */}
       <div
-        className="flex flex-wrap gap-1"
+        className="grid gap-1"
+        style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}
         role="list"
         aria-label={`${title} daily activity`}
       >
@@ -240,7 +242,7 @@ function GridHeatmap({
               role="listitem"
               title={titleAttr}
               aria-label={titleAttr}
-              className={`flex aspect-square h-9 w-9 shrink-0 items-center justify-center rounded text-center text-[10px] font-semibold leading-tight sm:h-10 sm:w-10 md:h-11 md:w-11 ${level.bg} ${level.text} ${level.border ?? ""}`}
+              className={`flex aspect-square min-w-0 items-center justify-center rounded text-center text-[10px] font-semibold leading-tight ${level.bg} ${level.text} ${level.border ?? ""}`}
             >
               {displayValue}
             </div>
