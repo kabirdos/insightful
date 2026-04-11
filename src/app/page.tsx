@@ -11,6 +11,7 @@ import {
   type SkillKey,
 } from "@/types/insights";
 import { homepage as copy } from "@/content/homepage";
+import { estimateApiCostUsd } from "@/lib/api-cost";
 
 // Parse a skill identifier into its plugin source and short name.
 // Skills are in the form "plugin-name:skill-name" or just "skill-name" (custom).
@@ -149,34 +150,11 @@ function formatDateRange(
 }
 
 // ── Helpers: cost estimation ────────────────────────────────
-// Blended USD / 1M tokens (input+output mixed). Matches ActivityHeatmap.tsx.
-const MODEL_BLENDED_RATE_PER_M: Array<{ match: RegExp; rate: number }> = [
-  { match: /opus/i, rate: 30 },
-  { match: /haiku/i, rate: 1.6 },
-  { match: /sonnet/i, rate: 6 },
-];
-const DEFAULT_RATE_PER_M = 6;
-
-function estimateTotalCostUsd(
-  models: Record<string, number> | undefined,
-  fallbackTokens: number = 0,
-): number {
-  if (models && Object.keys(models).length > 0) {
-    let total = 0;
-    for (const [name, tokens] of Object.entries(models)) {
-      if (!tokens || tokens <= 0) continue;
-      const entry = MODEL_BLENDED_RATE_PER_M.find((m) => m.match.test(name));
-      const rate = entry ? entry.rate : DEFAULT_RATE_PER_M;
-      total += (tokens / 1_000_000) * rate;
-    }
-    if (total > 0) return total;
-  }
-  // Fall back to blended default rate on raw tokens if no model split
-  if (fallbackTokens > 0) {
-    return (fallbackTokens / 1_000_000) * DEFAULT_RATE_PER_M;
-  }
-  return 0;
-}
+// API cost estimation now lives in src/lib/api-cost.ts. The
+// `estimateApiCostUsd` helper applies per-model rates against the
+// per-model token breakdown shipped in harnessData.models, with a
+// Sonnet 4.6 blended fallback when no breakdown is available
+// (issue #26).
 
 // ── Helpers: heatmap data (seeded PRNG) ─────────────────────
 const HEATMAP_CELLS = 28; // 4 weeks × 7 days
@@ -517,7 +495,7 @@ function ProfileCard({
   const commitsWk = perWeek(insight.commitCount, insight.dayCount);
 
   // API cost: estimate total, then per-week slice
-  const totalCost = estimateTotalCostUsd(
+  const totalCost = estimateApiCostUsd(
     insight.harnessData?.models,
     effectiveTokens ?? 0,
   );
