@@ -50,15 +50,25 @@ export function useMermaid(options: UseMermaidOptions = {}): UseMermaidReturn {
               mermaidInstance.initialize({
                 startOnLoad: false,
                 theme: "neutral",
-                securityLevel: "strict",
+                // "loose" allows inline style attributes in htmlLabels, which
+                // we rely on for per-line font sizing inside node labels.
+                // The label content is derived from privacy-sanitized data —
+                // see src/lib/privacy-safe-workflow.ts.
+                securityLevel: "loose",
                 themeVariables: {
-                  fontSize: "16px",
+                  fontSize: "24px",
+                  fontFamily:
+                    'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+                  primaryColor: "#ffffff",
+                  primaryBorderColor: "#cbd5e1",
+                  lineColor: "#94a3b8",
                 },
                 flowchart: {
-                  useMaxWidth: false,
+                  useMaxWidth: true,
                   htmlLabels: true,
-                  nodeSpacing: 40,
-                  rankSpacing: 56,
+                  nodeSpacing: 60,
+                  rankSpacing: 80,
+                  padding: 18,
                 },
               });
             })();
