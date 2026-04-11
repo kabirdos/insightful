@@ -202,8 +202,10 @@ function TopPageContent() {
     [sort, reportType, skill, q],
   );
 
+  // Loading starts true on first render; subsequent param changes keep
+  // existing rows visible while the new fetch runs (no content flash).
+  // Avoids the react-hooks/set-state-in-effect cascade.
   useEffect(() => {
-    setLoading(true);
     const params = new URLSearchParams();
     if (sort) params.set("sort", sort);
     if (reportType) params.set("reportType", reportType);

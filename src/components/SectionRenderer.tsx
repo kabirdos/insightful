@@ -100,7 +100,7 @@ function AnnotationCallout({ body }: { body: string }) {
       <div className="flex items-center gap-2 mb-1.5">
         <MessageCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
         <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-          Author's Note
+          Author&apos;s Note
         </span>
       </div>
       <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
