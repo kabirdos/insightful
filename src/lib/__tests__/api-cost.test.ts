@@ -153,8 +153,8 @@ describe("estimateApiCostUsd", () => {
 
   it("rescales percentage-encoded breakdowns to token counts", () => {
     // Some legacy seed data ships models as percent-of-total instead
-    // of raw token counts. If sum is roughly 100 and totalTokens is
-    // available, treat as percentages.
+    // of raw token counts. If the sum is far smaller than the known
+    // total tokens, treat as proportions.
     const cost = estimateApiCostUsd(
       { "claude-sonnet-4-6": 70, "claude-opus-4-6": 30 },
       1_000_000,
@@ -166,9 +166,49 @@ describe("estimateApiCostUsd", () => {
     expect(cost).toBeCloseTo(7.92, 5);
   });
 
-  it("treats large summed values as raw token counts, NOT percentages", () => {
-    // If models sums to far more than 100, it's clearly raw token
-    // counts and should not be rescaled.
+  it("rescales dispatch-count shaped breakdowns (seed-demos regression)", () => {
+    // Some seeded demo reports ship models as small integer dispatch
+    // counts (e.g. {sonnet: 890, opus: 240, haiku: 120}) while the
+    // real totalTokens is in the millions. Codex flagged this as a
+    // path that previously returned \$0.02 instead of tens of dollars.
+    const cost = estimateApiCostUsd(
+      {
+        "claude-sonnet-4-6": 890,
+        "claude-opus-4-6": 240,
+        "claude-haiku-4-5": 120,
+      },
+      4_200_000,
+    );
+    // Sum = 1250, total tokens = 4.2M → 1250/4.2M ≈ 0.03% → rescale.
+    // sonnet share 0.712, opus share 0.192, haiku share 0.096
+    //
+    // Sonnet tokens ≈ 2,990,400 × 6.6/M = 19.74
+    // Opus    tokens ≈ 806,400   × 11 /M =  8.87
+    // Haiku   tokens ≈ 403,200   × 2.2/M =  0.89
+    // Total ≈ 29.50
+    expect(cost).toBeGreaterThan(20);
+    expect(cost).toBeLessThan(80);
+  });
+
+  it("1.7M token mix shaped as counts (850/510/340) with fallbackTotalTokens still hits \\$20-\\$80", () => {
+    // Same ratio as Craig's realistic mix, but expressed as small
+    // count-shaped values that have to be rescaled against the
+    // declared 1.7M total tokens.
+    const cost = estimateApiCostUsd(
+      {
+        "claude-sonnet-4-6": 850,
+        "claude-opus-4-6": 510,
+        "claude-opus-4-20250514": 340,
+      },
+      1_700_000,
+    );
+    expect(cost).toBeGreaterThan(20);
+    expect(cost).toBeLessThan(80);
+  });
+
+  it("treats large summed values as raw token counts, NOT proportions", () => {
+    // If models sums to a plausible fraction of totalTokens, treat
+    // as raw token counts.
     const cost = estimateApiCostUsd(
       { "claude-sonnet-4-6": 800_000, "claude-opus-4-6": 200_000 },
       1_000_000,

@@ -226,16 +226,27 @@ export function estimateApiCostUsd(
         tokens > 0,
     );
 
-    // Detect the percentage-encoded shape: if every value is small and
-    // they sum to ~100, treat them as percent-of-total and rescale to
-    // tokens using fallbackTotalTokens. This matches the legacy
-    // `normalizeModelTokenUsage` heuristic from ActivityHeatmap.tsx.
+    // Detect when the `models` map isn't really per-model token counts:
+    //
+    //   a) Percentage-encoded: values sum to ~100.
+    //   b) Dispatch-count / proportion-encoded: values are small
+    //      integers (e.g. {sonnet: 890, opus: 240, haiku: 120}) while
+    //      the real totalTokens is in the millions. Some seeded demo
+    //      reports ship this shape — see prisma/seed-demos.ts.
+    //
+    // In both cases we treat the values as PROPORTIONS and rescale to
+    // `fallbackTotalTokens`. The threshold: if the sum is less than
+    // 10% of the known total tokens, the map can't possibly be raw
+    // token counts, so treat it as proportional. This is the heuristic
+    // that prevents a $0.02 answer when the breakdown is count-shaped.
     if (entries.length > 0) {
       const sum = entries.reduce((acc, [, v]) => acc + v, 0);
-      const looksLikePercent =
-        fallbackTotalTokens > 0 && sum > 0 && sum <= 100.5 && sum >= 50;
+      const looksLikeProportion =
+        fallbackTotalTokens > 0 &&
+        sum > 0 &&
+        sum < fallbackTotalTokens * 0.1;
 
-      const scaled: Array<[string, number]> = looksLikePercent
+      const scaled: Array<[string, number]> = looksLikeProportion
         ? entries.map(([name, share]) => [
             name,
             (share / sum) * fallbackTotalTokens,
