@@ -2,115 +2,74 @@
 
 ## Date
 
-2026-04-06
+2026-04-11
 
 ## Branch
 
-feat/insightful-mvp
+main
 
 ## Git Status
 
-Clean working tree on feat/insightful-mvp. Untracked: docs/mockups/ (15 HTML mockup files), docs/research/.
+```
+ M .gitignore
+ M agent/HANDOFF.md
+ M agent/MEMORY.md
+ M docs/superpowers/plans/2026-04-08-mermaid-workflow-diagrams.md
+```
 
 ## Summary
 
-Massive session covering PR #2 through PR #7. Executed mockup review fixes, built profile edit page with social links, fixed JWT username resolution, added upload path helper, redesigned homepage with Gallery Light layout, renamed project to "Insight Harness", built upgrade path UX with comparison table, renamed skill from harness-profile to insight-harness, made insight-harness a superset of /insights by embedding the report, added integrity hash, and extracted all homepage copy to src/content/homepage.ts.
+Fixed a structural git/infra mistake: `feat/insightful-mvp` had become the de-facto trunk (GitHub default + Vercel production branch). Renamed it to `main`, added branch protection, flipped Vercel, created a new `.worktrees/fix/pre-launch-bugs` worktree for upcoming bug work, and added PR & branch hygiene rules to the global `~/.claude/CLAUDE.md`.
 
 ## What Was Done
 
-### PR #2 — UX Fixes (MERGED)
-
-- Per-week stats, date ranges, styled upload previews, mockup review fixes
-
-### PR #3 — Profile Edit Page (MERGED)
-
-- Profile page with inline edit and social links (GitHub, LinkedIn, X)
-- Custom SVGs for social icons (Lucide-react doesn't export Github/Linkedin)
-
-### PR #4 — JWT Username Fix (MERGED)
-
-- Resolved username from DB for existing JWT sessions that predate the username token field
-
-### PR #5 — Upload Path Helper (MERGED)
-
-- Copy-path helper and Finder Cmd+Shift+G tip on upload drop zone
-- Browser file pickers can't set default directory — guided UX workaround
-
-### PR #6 — Homepage Redesign (MERGED)
-
-- Gallery Light layout, renamed to "Insight Harness"
-- Full homepage redesign with new branding
-
-### PR #7 — Upgrade Path UX (MERGED)
-
-- Comparison table showing /insights vs /insight-harness capabilities
-- Copy prompts for installing the skill, dual upload paths
-
-### Skill Rename & Enhancement
-
-- Renamed /harness-profile to /insight-harness across codebase
-- insight-harness now embeds /insights report as a third tab (true superset)
-- Added integrity manifest: SHA-256 hash of key stats for tamper detection
-
-### Content Extraction
-
-- All homepage copy extracted to src/content/homepage.ts
-- Updated install command and GitHub link for insight-harness skill
+- Pushed 3 unpushed local docs commits (persistent-projects design + plan); rebased onto Kabir's PR #19 which had landed in the meantime
+- Pulled Kabir's PR #20 (`feat/persistent-projects`) into primary clone via `git pull --rebase --autostash`
+- Created `main` branch on GitHub via `gh api -X POST .../git/refs` as a copy of `feat/insightful-mvp` HEAD (`013ebca`)
+- Craig manually flipped Vercel production branch in the dashboard (Settings → Environments → Production → Branch Tracking) — public API cannot do this
+- Changed GitHub default branch to `main` via `gh api -X PATCH repos/kabirdos/insightful -f default_branch=main`
+- Deleted `feat/insightful-mvp` on GitHub via `gh api -X DELETE`
+- Locally renamed: `git fetch --prune origin && git branch -m feat/insightful-mvp main && git branch -u origin/main main`. Verified site live (insightharness.com → HTTP 200)
+- Added branch protection to `main` (blocks force-push and deletion; admins NOT bypassed; PR reviews NOT required to preserve solo iteration speed)
+- Saved reference memory `~/.claude/projects/-Users-craigdossantos-Coding-insightful/memory/reference_vercel_production_branch.md` documenting the dashboard path and the fact that the Vercel public API rejects every productionBranch field variant
+- Added "PR & Branch Hygiene" section to `~/.claude/CLAUDE.md` (6 bullets: one atomic change per PR, bundling exceptions, short-lived branches, squash-merge, no "release PR" anti-pattern, bug-sprint workflow)
+- Cleaned up stale worktree `.worktrees/fix/bugfix-worktree` (was holding a commit already shipped via PR #19); deleted local branch and origin ref
+- Created new worktree `.worktrees/fix/pre-launch-bugs` on new branch `fix/pre-launch-bugs` (branched from `main@013ebca`, no upstream yet)
+- Opened UX mockups and identified where the "lines of code" vanity metric lived before the homepage redesign lost it
 
 ## What Remains
 
-1. **Parse insight-harness HTML on upload** — extract tokens, tool usage, skills inventory, hooks, agent patterns, models from the new format
-2. **Display richer harness data** — new sections in profile detail pages for tokens, tools, skills
-3. **Update Prisma schema** — store additional harness data fields (tokens, tool stats, skill inventory)
-4. **HMAC signing with server-side key** — discussed but not implemented; currently using client-side SHA-256 integrity hash
-5. **Fresh /insights data** — the /insights report embedded in insight-harness is from Apr 1; user should run fresh /insights before /insight-harness
-6. **Domain publishing** — insightharness.com domain, currently deploying to Vercel on feat/insightful-mvp branch
+- Relay the migration command to Kabir so his local clone can move from `feat/insightful-mvp` to `main`: `git fetch --prune origin && git branch -m feat/insightful-mvp main && git branch -u origin/main main`
+- Triage the 9 open issues (#21–#29) filed from user feedback and start picking off per-bug branches cut from main (`fix/<slug>`) under the new hygiene rules — includes the "lines of code" metric restoration and API cost calculation off-by-~1000x among others
+- (Optional) Clean up stale `.worktrees/feat/persistent-projects` worktree now that PR #20 is merged
 
 ## Known Issues
 
-- Untracked docs/mockups/ directory with 15 HTML mockup files — consider adding to .gitignore or committing
-- Playwright QA CI check may still be failing (env vars in CI)
+- Kabir's local clone still on `feat/insightful-mvp` — needs migration commands relayed (won't fetch or pull until renamed locally)
+- Git history has two versions of the persistent-projects docs commits (`5d5d302/405c205/1c8fc94` on top of PR #19, plus duplicates `96392f1/7a62a34/8a234a6` preserved via PR #20's merge). Artifact of cross-worktree branching before the rebase — harmless but messy
+- Pre-existing uncommitted files in primary clone (`.gitignore`, `agent/MEMORY.md`, `docs/superpowers/plans/2026-04-08-mermaid-workflow-diagrams.md`) are Craig's prior in-progress work — unrelated to this session, preserve as-is
 
-## Key Files
+## Key Decisions
 
-### Content & Marketing
+- **Branch-rename sequence**: used "create parallel branch first, then flip Vercel, then change GitHub default, then delete old branch" instead of GitHub's native rename API — because Vercel validates the target branch exists before accepting a production-branch change, so the new branch must exist first
+- **Branch protection**: minimal config (block force-push + deletion, no PR review requirement) — keeps solo iteration fast for the pre-launch sprint. Can tighten after launch
+- **New worktree name**: `fix/pre-launch-bugs` accepted despite the plural-scope anti-pattern warning. Craig was advised to treat it as a triage workspace and cut per-bug branches (`fix/<slug>`) from it rather than accumulating unrelated fixes on one branch
+- **Global CLAUDE.md edit**: codified the PR/branch hygiene discussion as durable rules rather than leaving it as one-off session advice
 
-- src/content/homepage.ts — all homepage copy, single source of truth
+## Relevant Files
 
-### Parser & Types
-
-- src/lib/parser.ts — HTML parser for uploaded reports (needs extension for insight-harness format)
-- src/types/insights.ts — type definitions (needs new fields for harness data)
-
-### Pages
-
-- src/app/page.tsx — homepage (Gallery Light layout)
-- src/app/insights/[slug]/page.tsx — detail page
-- src/app/upload/page.tsx — upload flow with dual path (insights vs insight-harness)
-- src/app/profile/page.tsx — profile edit page with social links
-
-### Skill
-
-- ~/.claude/skills/insight-harness/ — local installed skill
-- ~/Coding/claude-toolkit/skills/insight-harness/ — published skill repo
-
-### Components
-
-- src/components/SnapshotCard.tsx, ContributorRow.tsx, CollapsibleSection.tsx
-- src/components/SkillBadges.tsx, ToolUsageChart.tsx
-
-### API & Auth
-
-- src/app/api/insights/route.ts, src/app/api/insights/[slug]/route.ts
-- Auth: NextAuth v5 beta, edge-compatible auth.config.ts
+- `~/.claude/CLAUDE.md` — added "PR & Branch Hygiene" section
+- `~/.claude/projects/-Users-craigdossantos-Coding-insightful/memory/reference_vercel_production_branch.md` — new reference memory
+- `~/.claude/projects/-Users-craigdossantos-Coding-insightful/memory/MEMORY.md` — index entry added for the Vercel reference
+- `.worktrees/fix/pre-launch-bugs/` — new worktree on branch `fix/pre-launch-bugs` (empty, no upstream)
+- `docs/mockups/review-screen-redesign.html` — has the "lines of code" stat card to restore (+18.4k / -6.2k)
+- `docs/mockups/homepage-redesign.html` — has the `+/-k` pattern
+- No committed code changes to the repo this session — all changes were git/infra (branch rename, branch protection, worktree cleanup, global instructions)
 
 ## Context for Next Session
 
-Primary focus should be extending the parser (src/lib/parser.ts) to handle the insight-harness HTML format, which contains richer data than plain /insights reports — token breakdowns, tool usage stats, skill inventories, hooks, and agent patterns. After parsing works, update the Prisma schema and detail page to display the new data. The upgrade path UX is already built so users can upload either format.
+The big structural mistake of using `feat/insightful-mvp` as the de-facto trunk is now fixed. `main` is the real trunk, with branch protection, and Vercel deploys from it. The site is verified live at insightharness.com.
 
-Key environment notes:
+Kabir (on another Claude instance on this same machine) still has `feat/insightful-mvp` locally and needs to run the 3-command migration above — relay this before he next tries to fetch or pull.
 
-- Supabase DB: aws-1-us-east-1.pooler.supabase.com with pgbouncer=true
-- Use `prisma db push` instead of `prisma migrate dev` if migration history diverges
-- Vercel: auto-deploys from feat/insightful-mvp (default branch)
-- 55+ tests passing
+Next work session should pick up pre-launch bugs. There are 9 open issues (#21–#29) filed from user feedback covering: sensitive-items button redesign, activity card heatmap fixes (no scroll, keep squares, big vanity numbers above), restore lines-of-code metric in 3 places, mermaid workflow diagram redesign, fix API cost calculation (off by ~1000x), project tiles clickable/smaller/repositioned, per-item eye toggle granularity, and OG sharing card fixes. Under the new hygiene rules each becomes its own `fix/<slug>` branch cut from main. The `.worktrees/fix/pre-launch-bugs` worktree is available as a triage/command-center workspace but individual fixes should land on per-bug branches.
