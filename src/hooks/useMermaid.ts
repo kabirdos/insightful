@@ -51,7 +51,15 @@ export function useMermaid(options: UseMermaidOptions = {}): UseMermaidReturn {
                 startOnLoad: false,
                 theme: "neutral",
                 securityLevel: "strict",
-                flowchart: { useMaxWidth: true },
+                themeVariables: {
+                  fontSize: "16px",
+                },
+                flowchart: {
+                  useMaxWidth: false,
+                  htmlLabels: true,
+                  nodeSpacing: 40,
+                  rankSpacing: 56,
+                },
               });
             })();
           }
