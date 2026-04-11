@@ -57,6 +57,8 @@ interface ReportData {
   dayCount: number | null;
   totalTokens: number | null;
   durationHours: number | null;
+  linesAdded: number | null;
+  linesRemoved: number | null;
   harnessData: HarnessData | null;
   hiddenHarnessSections: string[];
   atAGlance: unknown;
@@ -476,6 +478,8 @@ export default function EditReportPage() {
               sessionCount={
                 report.sessionCount || harnessData.stats?.sessionCount || 0
               }
+              linesAdded={report.linesAdded ?? null}
+              linesRemoved={report.linesRemoved ?? null}
             />
           </HideableCard>
 

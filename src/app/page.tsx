@@ -77,6 +77,8 @@ interface InsightSummary {
   commitCount: number | null;
   totalTokens: number | null;
   durationHours: number | null;
+  linesAdded: number | null;
+  linesRemoved: number | null;
   detectedSkills: SkillKey[];
   harnessData: HarnessSlice | null;
   author: {
@@ -105,6 +107,16 @@ function formatHours(n: number): string {
   if (n >= 100) return `${Math.round(n)}h`;
   if (n >= 10) return `${n.toFixed(0)}h`;
   return `${n.toFixed(1)}h`;
+}
+
+// Compact formatter for lines-of-code counts. Keeps one decimal in the
+// k-range so values like 18,400 render as "18.4k" (matching the format
+// called out in issue #24) and stay readable in the narrow vanity strip.
+function formatLines(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 100_000) return `${Math.round(n / 1_000)}k`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return Math.round(n).toLocaleString();
 }
 
 function perWeek(
@@ -674,6 +686,25 @@ function ProfileCard({
               {pluginsCount === 1 ? "plugin" : "plugins"}
             </span>
           </div>
+          {((insight.linesAdded ?? 0) > 0 ||
+            (insight.linesRemoved ?? 0) > 0) && (
+            <div className="flex flex-1 flex-col border-l border-slate-100 px-3 last:pr-0 dark:border-slate-800">
+              <span className="whitespace-nowrap text-[15px] font-bold leading-none">
+                <span className="text-green-600 dark:text-green-400">
+                  +{formatLines(insight.linesAdded ?? 0)}
+                </span>
+                <span className="text-slate-300 dark:text-slate-600">
+                  {" / "}
+                </span>
+                <span className="text-red-600 dark:text-red-400">
+                  -{formatLines(insight.linesRemoved ?? 0)}
+                </span>
+              </span>
+              <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-slate-400">
+                lines
+              </span>
+            </div>
+          )}
           {featured && commitsWk != null && commitsWk > 0 && (
             <div className="flex flex-1 flex-col border-l border-slate-100 px-3 dark:border-slate-800">
               <span className="text-[15px] font-bold leading-none text-cyan-600 dark:text-cyan-400">
@@ -808,6 +839,8 @@ export default function HomePage() {
             commitCount: (r.commitCount as number) ?? null,
             totalTokens: (r.totalTokens as number) ?? null,
             durationHours: (r.durationHours as number) ?? null,
+            linesAdded: (r.linesAdded as number) ?? null,
+            linesRemoved: (r.linesRemoved as number) ?? null,
             detectedSkills: normalizeSkills(r.detectedSkills),
             harnessData: (r.harnessData as HarnessSlice) ?? null,
             author: r.author as InsightSummary["author"],
