@@ -20,9 +20,37 @@
  * estimate, not a billable invoice.
  */
 
+import pricingSnapshot from "./pricing-snapshot.json";
+
 /** Fraction of tokens assumed to be input vs output for the blended rate. */
 const INPUT_RATIO = 0.7;
 const OUTPUT_RATIO = 1 - INPUT_RATIO; // 0.3
+
+/**
+ * Snapshot of Anthropic pricing pulled from LiteLLM's community price
+ * table. Regenerate with `pnpm pricing:update` — see
+ * scripts/update-pricing.ts. Numeric rates below are overlaid onto the
+ * hardcoded MODEL_RATES at module load, keyed by the `label` field.
+ *
+ * The hardcoded table stays the fallback: it carries the regex patterns
+ * and covers older models (Sonnet 3.5, Haiku 3.5) that LiteLLM no longer
+ * lists as Anthropic-native.
+ */
+interface PricingSnapshot {
+  pricingAsOf: string;
+  source: string;
+  rates: Record<
+    string,
+    { inputUsdPerMTok: number; outputUsdPerMTok: number; source?: string }
+  >;
+}
+
+const SNAPSHOT = pricingSnapshot as PricingSnapshot;
+
+/** Date the in-tree pricing snapshot was last refreshed (YYYY-MM-DD). */
+export function getPricingAsOf(): string {
+  return SNAPSHOT.pricingAsOf;
+}
 
 /** Rate per 1M tokens, in USD, split by input and output. */
 interface ModelRate {
@@ -51,7 +79,7 @@ interface ModelRate {
  * "claude-3-5-haiku-20241022"). Patterns below are written to handle
  * both shapes.
  */
-const MODEL_RATES: ModelRate[] = [
+const HARDCODED_MODEL_RATES: ModelRate[] = [
   // ── Current generation (4.6 / 4.5) ───────────────────────────
   {
     match: /opus[-_.\s]?4[-_.\s]?6/i,
@@ -169,6 +197,33 @@ const MODEL_RATES: ModelRate[] = [
     label: "Haiku (generic)",
   },
 ];
+
+/**
+ * Final rate table: snapshot values overlaid onto the hardcoded
+ * patterns by label. Any label missing from the snapshot (e.g. legacy
+ * Sonnet/Haiku 3.5, or the generic "Opus (generic)" catch-alls) keeps
+ * its hardcoded numbers.
+ */
+const MODEL_RATES: ModelRate[] = HARDCODED_MODEL_RATES.map((rate) => {
+  const override = SNAPSHOT.rates?.[rate.label];
+  // Reject malformed snapshot entries — a non-finite or non-positive
+  // rate would silently poison downstream cost math. Fall back to the
+  // hardcoded value rather than trust a broken snapshot.
+  if (
+    !override ||
+    !Number.isFinite(override.inputUsdPerMTok) ||
+    !Number.isFinite(override.outputUsdPerMTok) ||
+    override.inputUsdPerMTok <= 0 ||
+    override.outputUsdPerMTok <= 0
+  ) {
+    return rate;
+  }
+  return {
+    ...rate,
+    inputUsdPerMTok: override.inputUsdPerMTok,
+    outputUsdPerMTok: override.outputUsdPerMTok,
+  };
+});
 
 /**
  * Default fallback rate when no model name matches and no breakdown

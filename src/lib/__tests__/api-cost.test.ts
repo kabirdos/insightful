@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   estimateApiCostUsd,
+  getPricingAsOf,
   lookupModelRate,
   __testing__,
 } from "../api-cost";
@@ -247,5 +248,11 @@ describe("estimateApiCostUsd", () => {
     // Sonnet 4.6: 6.6
     expect(haikuCost).toBeCloseTo(2.2, 5);
     expect(haikuCost).toBeLessThan(sonnetCost);
+  });
+});
+
+describe("getPricingAsOf", () => {
+  it("returns an ISO date (YYYY-MM-DD) from the pricing snapshot", () => {
+    expect(getPricingAsOf()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });
