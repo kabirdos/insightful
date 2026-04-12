@@ -149,31 +149,68 @@ function buildWorkflowInsights(
   return insights.slice(0, 4);
 }
 
+export interface BuildWorkflowDiagramOptions {
+  /** Flowchart layout direction. `"LR"` for desktop, `"TD"` for narrow. */
+  direction?: "LR" | "TD";
+  /** Font size (px) for the skill short-name line in each node label. */
+  nameSize?: number;
+  /** Font size (px) for the plugin + "N× used" meta lines in each node label. */
+  metaSize?: number;
+}
+
 export function buildWorkflowDiagram(
   workflowData: HarnessWorkflowData,
+  options: BuildWorkflowDiagramOptions = {},
 ): string {
   const { skillInvocations, workflowPatterns } = workflowData;
+  const { direction = "LR", nameSize = 24, metaSize = 18 } = options;
 
-  const skills = Object.keys(skillInvocations);
+  // Only render skills that actually participate in a workflow pattern.
+  // This drops isolated nodes (skills used without transitioning to/from
+  // anything else) which would otherwise clutter the graph without adding
+  // information — the current-use counts for those are still surfaced in
+  // the pill row above the diagram. Falls back to all skills when no
+  // patterns exist at all, so a very sparse report still shows something.
+  const patternSkillSet = new Set<string>();
+  for (const pattern of workflowPatterns) {
+    for (const skill of pattern.sequence) patternSkillSet.add(skill);
+  }
+  const allSkills = Object.keys(skillInvocations);
+  const skills =
+    patternSkillSet.size > 0
+      ? allSkills.filter((s) => patternSkillSet.has(s))
+      : allSkills;
+
   if (skills.length === 0) return "";
 
-  const lines: string[] = ["flowchart TD"];
+  const lines: string[] = [`flowchart ${direction}`];
 
-  for (const [skill, count] of Object.entries(skillInvocations)) {
+  for (const skill of skills) {
+    const count = skillInvocations[skill] ?? 0;
     const id = skill.replace(/[^a-zA-Z0-9]/g, "_");
     const { plugin, shortName } = parseSkillSource(skill);
     const safeName = shortName.replace(/"/g, "'");
-    const label = `${safeName}<br/><span style='font-size:12px;opacity:0.72'>${plugin}</span><br/><span style='font-size:13px;font-weight:700'>${count}×</span>`;
+    // Three stacked lines, each with its own explicit inline font-size so
+    // Mermaid's theme defaults can't shrink them. htmlLabels render these
+    // as raw HTML inside a foreignObject, which means:
+    //   - `<span style=...>` wins against any CSS cascade
+    //   - securityLevel must be "loose" (see useMermaid.ts) or the style
+    //     attribute gets stripped by DOMPurify
+    const label =
+      `<span style='font-size:${nameSize}px;font-weight:700;line-height:1.15;display:block'>${safeName}</span>` +
+      `<span style='font-size:${metaSize}px;font-weight:500;opacity:0.72;line-height:1.1;display:block;margin-top:4px'>${plugin}</span>` +
+      `<span style='font-size:${metaSize + 1}px;font-weight:700;line-height:1.1;display:block;margin-top:3px'>${count}× used</span>`;
     lines.push(`    ${id}["${label}"]`);
   }
 
+  const renderedSkills = new Set(skills);
   const edgeCounts: Record<string, number> = {};
   for (const pattern of workflowPatterns) {
     const seq = pattern.sequence;
     for (let i = 0; i < seq.length - 1; i++) {
       const from = seq[i];
       const to = seq[i + 1];
-      if (from && to) {
+      if (from && to && renderedSkills.has(from) && renderedSkills.has(to)) {
         const key = `${from}|||${to}`;
         edgeCounts[key] = (edgeCounts[key] || 0) + pattern.count;
       }
@@ -198,11 +235,34 @@ export function buildWorkflowDiagram(
     const { plugin } = parseSkillSource(skill);
     const color = getPluginColor(plugin);
     lines.push(
-      `    style ${id} fill:${color.fill},stroke:${color.stroke},color:${color.text}`,
+      `    style ${id} fill:${color.fill},stroke:${color.stroke},color:${color.text},stroke-width:2px`,
     );
   }
 
   return lines.join("\n");
+}
+
+/**
+ * Force the rendered Mermaid SVG to fill 100% of its container width.
+ *
+ * Mermaid's `useMaxWidth: true` only sets `max-width:100%`, leaving the
+ * intrinsic `width` at the natural layout size. For a flowchart with a
+ * handful of nodes that means lots of wasted whitespace on wide screens
+ * and a tendency to center rather than stretch. Stripping the hardcoded
+ * `width`/`height` attributes and forcing `width="100%"` + `height: auto`
+ * makes the graph actually fill the card edge-to-edge at any breakpoint.
+ */
+function stretchSvgToFullWidth(container: HTMLDivElement) {
+  const svg = container.querySelector("svg");
+  if (!svg) return;
+  svg.removeAttribute("width");
+  svg.removeAttribute("height");
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  svg.style.width = "100%";
+  svg.style.maxWidth = "100%";
+  svg.style.height = "auto";
+  svg.style.display = "block";
 }
 
 export default function WorkflowDiagram({
@@ -211,24 +271,47 @@ export default function WorkflowDiagram({
   authorHandle,
 }: WorkflowDiagramProps) {
   const name = authorHandle ? `@${authorHandle}` : "This developer";
-  const containerRef = useRef<HTMLDivElement>(null);
+  const desktopRef = useRef<HTMLDivElement>(null);
+  const mobileRef = useRef<HTMLDivElement>(null);
   const renderIdRef = useRef(0);
   const hasSkillData = Object.keys(workflowData.skillInvocations).length > 0;
   const { ready, error, render } = useMermaid({ shouldLoad: hasSkillData });
 
   useEffect(() => {
-    if (!ready || !containerRef.current) return;
+    if (!ready) return;
     let cancelled = false;
 
-    const diagram = buildWorkflowDiagram(workflowData);
-    if (!diagram) return;
-
-    const id = `mermaid-workflow-${++renderIdRef.current}`;
-    render(id, diagram).then((svg) => {
-      if (svg && !cancelled && containerRef.current) {
-        containerRef.current.innerHTML = svg;
-      }
+    // Render two separate diagrams so the desktop and mobile variants can
+    // use different flowchart directions and font sizes. We can't reliably
+    // switch direction with CSS alone — Mermaid bakes layout into the SVG
+    // at render time, so the breakpoint lives in the JSX (hidden / block
+    // classes) and each variant renders into its own container ref.
+    const desktopDiagram = buildWorkflowDiagram(workflowData, {
+      direction: "LR",
+      nameSize: 24,
+      metaSize: 18,
     });
+    const mobileDiagram = buildWorkflowDiagram(workflowData, {
+      direction: "TD",
+      nameSize: 20,
+      metaSize: 15,
+    });
+
+    const renderInto = async (
+      container: HTMLDivElement | null,
+      diagram: string,
+      idSuffix: string,
+    ) => {
+      if (!container || !diagram) return;
+      const id = `mermaid-workflow-${++renderIdRef.current}-${idSuffix}`;
+      const svg = await render(id, diagram);
+      if (!svg || cancelled || !container) return;
+      container.innerHTML = svg;
+      stretchSvgToFullWidth(container);
+    };
+
+    renderInto(desktopRef.current, desktopDiagram, "desktop");
+    renderInto(mobileRef.current, mobileDiagram, "mobile");
 
     return () => {
       cancelled = true;
@@ -238,7 +321,6 @@ export default function WorkflowDiagram({
   if (error || !hasSkillData) return null;
 
   const { phaseStats, phaseDistribution } = workflowData;
-  const sortedSkills = topEntries(workflowData.skillInvocations, 10);
   const topSkillPills = topEntries(workflowData.skillInvocations, 6);
   const topSkill = topEntries(workflowData.skillInvocations, 1)[0];
   const strongestPattern = strongestWorkflowPattern(
@@ -307,46 +389,22 @@ export default function WorkflowDiagram({
           </div>
         )}
 
+        {/* Desktop variant: flowchart LR, big fonts. Hidden below sm breakpoint. */}
         <div
-          ref={containerRef}
-          className="hidden min-h-[420px] items-center justify-center overflow-auto rounded-lg border border-slate-100 bg-slate-50/70 px-4 py-5 sm:flex dark:border-slate-800 dark:bg-slate-950/30 [&_svg]:min-h-[360px] [&_svg]:min-w-[960px] [&_svg]:max-w-none"
+          ref={desktopRef}
+          className="workflow-diagram-container workflow-diagram-container--desktop hidden min-h-[320px] items-center justify-center rounded-lg border border-slate-100 bg-slate-50/70 px-4 py-5 sm:flex dark:border-slate-800 dark:bg-slate-950/30"
         >
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
         </div>
 
-        <div className="block sm:hidden">
-          <ol className="space-y-2">
-            {sortedSkills.map(([skillName, count]) => {
-              const { plugin } = parseSkillSource(skillName);
-              const color = getPluginColor(plugin);
-              const safeName = safeSkillKeyLabel(skillName);
-              return (
-                <li
-                  key={skillName}
-                  className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800/50"
-                >
-                  <div className="min-w-0">
-                    <div className="truncate font-mono text-xs text-slate-700 dark:text-slate-300">
-                      {safeName}
-                    </div>
-                    <div
-                      className="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                      style={{
-                        backgroundColor: color.fill,
-                        color: color.text,
-                        border: `1px solid ${color.stroke}`,
-                      }}
-                    >
-                      {plugin}
-                    </div>
-                  </div>
-                  <span className="ml-3 shrink-0 text-xs text-slate-400">
-                    {count}x
-                  </span>
-                </li>
-              );
-            })}
-          </ol>
+        {/* Mobile variant: flowchart TD (top-down) so nodes stack naturally
+            on narrow viewports. Smaller label sizes because each node gets
+            the full 375px rather than sharing it horizontally. */}
+        <div
+          ref={mobileRef}
+          className="workflow-diagram-container workflow-diagram-container--mobile flex min-h-[320px] items-center justify-center rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-4 sm:hidden dark:border-slate-800 dark:bg-slate-950/30"
+        >
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
         </div>
 
         {(pluginsPresent.length > 1 || topSkill || strongestPattern) && (
@@ -449,7 +507,9 @@ export default function WorkflowDiagram({
                         className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300"
                       >
                         <span className="font-medium">{label}</span>
-                        <span className="font-mono text-slate-400">{count}</span>
+                        <span className="font-mono text-slate-400">
+                          {count}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -505,8 +565,8 @@ export default function WorkflowDiagram({
               Workflow Insight
             </h3>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              What this workflow reveals about development style, sequencing, and
-              shipping posture.
+              What this workflow reveals about development style, sequencing,
+              and shipping posture.
             </p>
           </div>
 
