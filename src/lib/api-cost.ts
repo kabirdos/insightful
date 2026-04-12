@@ -122,7 +122,8 @@ const MODEL_RATES: ModelRate[] = [
   // IMPORTANT: more specific patterns must come BEFORE generic
   // /haiku/i so they win the match.
   {
-    match: /(?:claude[-_.\s]?)?3[-_.\s]?5[-_.\s]?haiku|haiku[-_.\s]?3[-_.\s]?5/i,
+    match:
+      /(?:claude[-_.\s]?)?3[-_.\s]?5[-_.\s]?haiku|haiku[-_.\s]?3[-_.\s]?5/i,
     inputUsdPerMTok: 0.8,
     outputUsdPerMTok: 4,
     label: "Claude Haiku 3.5",
@@ -197,26 +198,53 @@ export function lookupModelRate(modelName: string): ModelRate {
   return found ?? FALLBACK_RATE;
 }
 
+/** 4-way per-model token breakdown from stats-cache modelUsage. */
+interface ModelTokenBreakdown {
+  input: number;
+  output: number;
+  cache_read: number;
+  cache_create: number;
+}
+
 /**
- * Estimate the API cost in USD for a per-model token breakdown.
+ * Estimate the API cost in USD using the best available data.
  *
- * @param modelTokens
- *   A map of `{ modelName: tokenCount }`. Token counts are TOTAL tokens
- *   (input + output combined) — harness reports do not split them.
- *   May be undefined or empty.
- * @param fallbackTotalTokens
- *   When `modelTokens` is missing or empty, this is used with the
- *   fallback (Sonnet 4.6 blended) rate. Pass the totalTokens stat from
- *   the harness report.
- *
- * @returns Estimated USD cost. Always >= 0. Returns 0 when both inputs
- *   are missing or zero.
+ * Tries three paths in order of accuracy:
+ *   1. **4-way breakdown** (`perModelTokens`): exact per-type rates
+ *      (input, output, cache read at 90% discount, cache create at 25% premium)
+ *   2. **Simple model map** (`modelTokens`): input+output only, blended rate
+ *   3. **Fallback total**: single number with Sonnet 4.6 blended rate
  */
 export function estimateApiCostUsd(
   modelTokens: Record<string, number> | undefined,
   fallbackTotalTokens: number = 0,
+  perModelTokens?: Record<string, ModelTokenBreakdown> | null,
 ): number {
-  // Validate the per-model breakdown.
+  // Path 1: 4-way per-model breakdown — most accurate
+  if (perModelTokens && typeof perModelTokens === "object") {
+    const entries = Object.entries(perModelTokens).filter(
+      ([, v]) => v && typeof v === "object",
+    );
+    if (entries.length > 0) {
+      let total = 0;
+      for (const [name, breakdown] of entries) {
+        const rate = lookupModelRate(name);
+        const inp = breakdown.input ?? 0;
+        const out = breakdown.output ?? 0;
+        const cr = breakdown.cache_read ?? 0;
+        const cc = breakdown.cache_create ?? 0;
+        if (inp + out + cr + cc <= 0) continue;
+        total +=
+          (inp / 1_000_000) * rate.inputUsdPerMTok +
+          (out / 1_000_000) * rate.outputUsdPerMTok +
+          (cr / 1_000_000) * rate.inputUsdPerMTok * 0.1 + // cache reads: 90% discount
+          (cc / 1_000_000) * rate.inputUsdPerMTok * 1.25; // cache creation: 25% premium
+      }
+      if (total > 0) return total;
+    }
+  }
+
+  // Path 2: simple per-model counts (input+output combined)
   if (modelTokens && typeof modelTokens === "object") {
     const entries = Object.entries(modelTokens).filter(
       ([name, tokens]) =>
@@ -226,25 +254,10 @@ export function estimateApiCostUsd(
         tokens > 0,
     );
 
-    // Detect when the `models` map isn't really per-model token counts:
-    //
-    //   a) Percentage-encoded: values sum to ~100.
-    //   b) Dispatch-count / proportion-encoded: values are small
-    //      integers (e.g. {sonnet: 890, opus: 240, haiku: 120}) while
-    //      the real totalTokens is in the millions. Some seeded demo
-    //      reports ship this shape — see prisma/seed-demos.ts.
-    //
-    // In both cases we treat the values as PROPORTIONS and rescale to
-    // `fallbackTotalTokens`. The threshold: if the sum is less than
-    // 10% of the known total tokens, the map can't possibly be raw
-    // token counts, so treat it as proportional. This is the heuristic
-    // that prevents a $0.02 answer when the breakdown is count-shaped.
     if (entries.length > 0) {
       const sum = entries.reduce((acc, [, v]) => acc + v, 0);
       const looksLikeProportion =
-        fallbackTotalTokens > 0 &&
-        sum > 0 &&
-        sum < fallbackTotalTokens * 0.1;
+        fallbackTotalTokens > 0 && sum > 0 && sum < fallbackTotalTokens * 0.1;
 
       const scaled: Array<[string, number]> = looksLikeProportion
         ? entries.map(([name, share]) => [
@@ -262,9 +275,7 @@ export function estimateApiCostUsd(
     }
   }
 
-  // Fallback path — no usable breakdown. Use Sonnet 4.6 blended rate
-  // over the total token count. Documented as the safe default in the
-  // module-level comment.
+  // Path 3: fallback — Sonnet 4.6 blended rate over total tokens
   if (fallbackTotalTokens > 0) {
     return (fallbackTotalTokens / 1_000_000) * blendedRate(FALLBACK_RATE);
   }

@@ -19,6 +19,11 @@ interface ActivityHeatmapProps {
   slug?: string;
   /** Optional model → token count map, used to estimate API cost */
   models?: Record<string, number>;
+  /** Optional 4-way per-model breakdown for accurate cost estimation */
+  perModelTokens?: Record<
+    string,
+    { input: number; output: number; cache_read: number; cache_create: number }
+  > | null;
 }
 
 // 4 weeks × 7 days = 28 cells per heatmap (no day-of-week labels)
@@ -274,6 +279,7 @@ export default function ActivityHeatmap({
   dateRangeStart,
   slug,
   models,
+  perModelTokens,
 }: ActivityHeatmapProps) {
   const { sessionsDaily, tokensDaily } = useMemo<{
     sessionsDaily: number[] | null;
@@ -340,11 +346,15 @@ export default function ActivityHeatmap({
       totalTokens ?? tokensDaily.reduce((a, b) => a + b, 0);
     // Shared helper handles per-model rate lookup AND the missing-
     // breakdown fallback (Sonnet 4.6 blended rate over total tokens).
-    const totalCost = estimateApiCostUsd(models, totalTokenCount);
+    const totalCost = estimateApiCostUsd(
+      models,
+      totalTokenCount,
+      perModelTokens,
+    );
     if (totalCost <= 0) return tokensDaily.map(() => 0);
     const tokenSum = tokensDaily.reduce((a, b) => a + b, 0) || 1;
     return tokensDaily.map((t) => (t / tokenSum) * totalCost);
-  }, [tokensDaily, models, totalTokens]);
+  }, [tokensDaily, models, totalTokens, perModelTokens]);
 
   if (!sessionsDaily || !tokensDaily || !costDaily) return null;
 

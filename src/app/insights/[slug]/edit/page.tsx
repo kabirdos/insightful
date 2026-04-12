@@ -509,6 +509,7 @@ export default function EditReportPage() {
               dayCount={report.dayCount ?? undefined}
               slug={report.slug}
               models={harnessData.models}
+              perModelTokens={harnessData.perModelTokens}
             />
           </HideableCard>
 
@@ -551,7 +552,11 @@ export default function EditReportPage() {
             >
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {harnessData.skillInventory.map((skill, i) => {
-                  const itemKey = buildItemKey(harnessData.skillInventory, i, (s) => s.name);
+                  const itemKey = buildItemKey(
+                    harnessData.skillInventory,
+                    i,
+                    (s) => s.name,
+                  );
                   const keypath = `skillInventory.${itemKey}`;
                   return (
                     <HideableItem
@@ -581,7 +586,11 @@ export default function EditReportPage() {
               >
                 <div className="grid gap-2 sm:grid-cols-2">
                   {harnessData.plugins.map((plugin, i) => {
-                    const itemKey = buildItemKey(harnessData.plugins, i, (p) => p.name);
+                    const itemKey = buildItemKey(
+                      harnessData.plugins,
+                      i,
+                      (p) => p.name,
+                    );
                     const keypath = `plugins.${itemKey}`;
                     return (
                       <HideableItem
@@ -683,7 +692,9 @@ export default function EditReportPage() {
                           ([typeName, value]) => {
                             const keypath = `agentDispatch.${buildItemKey(
                               Object.keys(harnessData.agentDispatch!.types),
-                              Object.keys(harnessData.agentDispatch!.types).indexOf(typeName),
+                              Object.keys(
+                                harnessData.agentDispatch!.types,
+                              ).indexOf(typeName),
                               (k) => k,
                             )}`;
                             return (
@@ -713,7 +724,9 @@ export default function EditReportPage() {
                           ([modelName, value]) => {
                             const keypath = `agentDispatch.${buildItemKey(
                               Object.keys(harnessData.agentDispatch!.models),
-                              Object.keys(harnessData.agentDispatch!.models).indexOf(modelName),
+                              Object.keys(
+                                harnessData.agentDispatch!.models,
+                              ).indexOf(modelName),
                               (k) => k,
                             )}`;
                             return (
@@ -840,7 +853,11 @@ export default function EditReportPage() {
               >
                 <div className="flex flex-wrap gap-1.5">
                   {harnessData.versions.map((version, i) => {
-                    const itemKey = buildItemKey(harnessData.versions, i, (v) => v);
+                    const itemKey = buildItemKey(
+                      harnessData.versions,
+                      i,
+                      (v) => v,
+                    );
                     const keypath = `versions.${itemKey}`;
                     return (
                       <HideableItem
@@ -873,7 +890,11 @@ export default function EditReportPage() {
               >
                 <div className="space-y-6">
                   {harnessData.writeupSections.map((section, i) => {
-                    const itemKey = buildItemKey(harnessData.writeupSections, i, (w) => w.title);
+                    const itemKey = buildItemKey(
+                      harnessData.writeupSections,
+                      i,
+                      (w) => w.title,
+                    );
                     const keypath = `writeupSections.${itemKey}`;
                     return (
                       <HideableItem
@@ -914,7 +935,11 @@ export default function EditReportPage() {
               >
                 <div className="space-y-1">
                   {harnessData.harnessFiles.map((file, i) => {
-                    const itemKey = buildItemKey(harnessData.harnessFiles, i, (f) => f);
+                    const itemKey = buildItemKey(
+                      harnessData.harnessFiles,
+                      i,
+                      (f) => f,
+                    );
                     const keypath = `harnessFiles.${itemKey}`;
                     return (
                       <HideableItem

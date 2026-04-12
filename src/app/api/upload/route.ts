@@ -110,12 +110,35 @@ export async function POST(request: Request) {
     // Detect sensitive data using the redaction engine
     const detectedRedactions = detectRedactions(parsed.data);
 
-    // Extract enhanced stats — for harness reports, use harness stats grid;
-    // for plain insights, use the insights stats row
-    const enhancedStats = extractEnhancedStats(isHarness ? html : insightsHtml);
-
     // Parse harness-specific data if applicable
-    const harnessData = isHarness ? parseHarnessHtml(html) : undefined;
+    let harnessData: ReturnType<typeof parseHarnessHtml> | undefined;
+    if (isHarness) {
+      try {
+        harnessData = parseHarnessHtml(html);
+      } catch (e) {
+        return NextResponse.json(
+          {
+            error:
+              e instanceof Error
+                ? e.message
+                : "Failed to parse harness report data",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Extract enhanced stats — for harness reports, source from JSON blob;
+    // for plain insights, scrape from the insights stats row
+    const enhancedStats = harnessData?.enhancedStats
+      ? {
+          linesAdded: harnessData.enhancedStats.linesAdded,
+          linesRemoved: harnessData.enhancedStats.linesRemoved,
+          fileCount: harnessData.enhancedStats.fileCount,
+          dayCount: harnessData.enhancedStats.dayCount,
+          msgsPerDay: harnessData.enhancedStats.msgsPerDay,
+        }
+      : extractEnhancedStats(insightsHtml);
 
     // For harness reports, override stats with harness-level data
     // since the embedded insights tab may have stale/different stats
@@ -125,9 +148,9 @@ export async function POST(request: Request) {
       ...(harnessData
         ? {
             sessionCount:
-              parsed.stats.sessionCount || harnessData.stats.sessionCount || 0,
+              harnessData.stats.sessionCount ?? parsed.stats.sessionCount ?? 0,
             commitCount:
-              parsed.stats.commitCount || harnessData.stats.commitCount || 0,
+              harnessData.stats.commitCount ?? parsed.stats.commitCount ?? 0,
             dayCount: enhancedStats.dayCount ?? 30,
           }
         : {}),
