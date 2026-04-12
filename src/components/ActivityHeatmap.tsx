@@ -336,7 +336,8 @@ export default function ActivityHeatmap({
   // series. If we have no tokens, fall back to zeros.
   const costDaily = useMemo<number[] | null>(() => {
     if (!tokensDaily) return null;
-    const totalTokenCount = totalTokens ?? tokensDaily.reduce((a, b) => a + b, 0);
+    const totalTokenCount =
+      totalTokens ?? tokensDaily.reduce((a, b) => a + b, 0);
     // Shared helper handles per-model rate lookup AND the missing-
     // breakdown fallback (Sonnet 4.6 blended rate over total tokens).
     const totalCost = estimateApiCostUsd(models, totalTokenCount);
@@ -370,7 +371,7 @@ export default function ActivityHeatmap({
           title="Tokens"
           bigNumber={formatTokens(totalTokensSum)}
           bigNumberLabel="total tokens"
-          scale="green"
+          scale="amber"
           data={tokensDaily}
           formatValue={(n) => (n > 0 ? formatTokens(n) : "")}
           ariaValueLabel="tokens"
@@ -379,7 +380,7 @@ export default function ActivityHeatmap({
           title="Est. API Cost"
           bigNumber={formatCost(totalCostEstimate)}
           bigNumberLabel="estimated API cost"
-          scale="amber"
+          scale="green"
           data={costDaily}
           formatValue={(n) => (n > 0 ? formatCost(n) : "")}
           ariaValueLabel="dollars estimated"

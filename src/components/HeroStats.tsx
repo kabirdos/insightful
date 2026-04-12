@@ -191,9 +191,7 @@ function LinesStatCard({
         <span className="text-green-600 dark:text-green-400">{addedStr}</span>
         {removedStr && (
           <>
-            <span className="mx-0 hidden text-slate-300 dark:text-slate-600 lg:mx-1 lg:inline">
-              /
-            </span>
+            <span className="hidden lg:inline"> </span>
             <br className="lg:hidden" />
             <span className="text-red-600 dark:text-red-400">{removedStr}</span>
           </>
@@ -229,8 +227,28 @@ export default function HeroStats({
   const removedRaw = linesRemoved ?? 0;
   const showLinesCard = addedRaw > 0 || removedRaw > 0;
 
+  // Lifetime tokens: use the explicit lifetimeTokens field if present,
+  // otherwise fall back to totalTokens as a reasonable proxy.
+  const lifetimeTokens = stats.lifetimeTokens || stats.totalTokens || 0;
+
   return (
     <div className="mb-8">
+      {/* Lifetime tokens banner */}
+      {lifetimeTokens > 0 && (
+        <div className="mb-6 rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-cyan-50/60 px-6 py-5 text-center dark:border-blue-900/40 dark:from-blue-950/30 dark:to-cyan-950/20">
+          <div className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text font-mono text-5xl font-extrabold leading-none tracking-tight text-transparent sm:text-7xl dark:from-blue-400 dark:to-cyan-400">
+            {formatNumber(lifetimeTokens)}
+          </div>
+          <div className="mt-2 text-[13px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-slate-400">
+            Lifetime Tokens
+          </div>
+          {stats.totalTokens > 0 && stats.totalTokens !== lifetimeTokens && (
+            <div className="mt-1.5 text-[13px] font-medium text-slate-400 dark:text-slate-500">
+              {formatNumber(stats.totalTokens)} in last 30 days
+            </div>
+          )}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {stats.totalTokens > 0 && (
           <StatCard
