@@ -97,6 +97,7 @@ const STAT_COLORS: Record<string, string> = {
   Sessions: "#8b5cf6",
   "Active Time": "#06b6d4",
   Skills: "#f59e0b",
+  "Lines of Code": "#22c55e",
 };
 
 function StatCard({
@@ -146,6 +147,68 @@ function StatCard({
   );
 }
 
+// Specialized variant of StatCard for Lines of Code: shows
+// `+added / -removed` with green/red two-tone coloring instead of a
+// single value. When `removed` is null we hide the `-X` half so the
+// gitPatterns fallback (additions only) still renders cleanly.
+function LinesStatCard({
+  added,
+  removed,
+  numericSeed,
+}: {
+  added: number;
+  removed: number | null;
+  numericSeed: number;
+}) {
+  const sparkData = seededSparkline(numericSeed);
+  const color = STAT_COLORS["Lines of Code"];
+  const addedStr = `+${formatLines(added)}`;
+  const removedStr = removed != null ? `-${formatLines(removed)}` : null;
+  // Hero card width is the constraint here. Inside `max-w-5xl px-4`
+  // the grid switches to four columns at `sm:` (640px), which actually
+  // *narrows* each card vs the 2-column mobile layout, so the inline
+  // `+X / -Y` form only safely fits across the full formatter range
+  // (up to `+2.1M / -2.1M`) at `lg:` (1024px) and above. Strategy:
+  //   (a) tighten font sizes by display length,
+  //   (b) drop horizontal card padding from `px-5` to `px-2` until lg,
+  //   (c) stack the two halves vertically with a `<br>` until lg, then
+  //       go inline with the slash separator at lg:+.
+  const displayLength =
+    addedStr.length + (removedStr ? removedStr.length + 3 : 0);
+  const sizeClass = removedStr
+    ? displayLength >= 12
+      ? "text-[18px] lg:text-[22px]"
+      : "text-[22px] lg:text-[26px]"
+    : addedStr.length >= 6
+      ? "text-[24px] lg:text-[28px]"
+      : "text-[30px] lg:text-[32px]";
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white px-2 py-5 text-center dark:border-slate-700 dark:bg-slate-900/50 lg:px-5">
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-blue-500 to-violet-500" />
+      <div
+        className={`${sizeClass} font-extrabold leading-tight tracking-tight lg:whitespace-nowrap lg:leading-none`}
+      >
+        <span className="text-green-600 dark:text-green-400">{addedStr}</span>
+        {removedStr && (
+          <>
+            <span className="mx-0 hidden text-slate-300 dark:text-slate-600 lg:mx-1 lg:inline">
+              /
+            </span>
+            <br className="lg:hidden" />
+            <span className="text-red-600 dark:text-red-400">{removedStr}</span>
+          </>
+        )}
+      </div>
+      <div className="mt-2">
+        <Sparkline data={sparkData} color={color} />
+      </div>
+      <div className="mt-1 text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        Lines of Code
+      </div>
+    </div>
+  );
+}
+
 export default function HeroStats({
   stats,
   dayCount,
@@ -154,16 +217,17 @@ export default function HeroStats({
   linesRemoved,
 }: HeroStatsProps) {
   const sessions = sessionCount || stats.sessionCount || 0;
-  // Null-safe: only render the lines pill when we have at least one
-  // positive value. Zero / null / undefined all hide the metric cleanly
-  // per issue #24 ("reports missing these values hide the metric cleanly").
-  // Real harness reports (#35) only ship additions via the gitPatterns
-  // fallback — removed stays null — so we track "present vs missing"
-  // distinctly from "zero" and hide the `-X` half when removed is null.
-  const added = linesAdded ?? 0;
-  const removed = linesRemoved ?? 0;
-  const removedPresent = linesRemoved != null;
-  const showLines = added > 0 || removed > 0;
+  // Lines of Code now lives in the top-four card slot (issue #44),
+  // replacing Skills. We track "present vs missing" distinctly from
+  // "zero" so the gitPatterns fallback (#35) — which only ships
+  // additions — can render `+18.4k` without an empty `-0` half.
+  // When neither additions nor removals are populated we fall back to
+  // the Skills card, keeping the layout at four cards instead of three
+  // (per the issue's "implementer's call" — simpler than a variable
+  // grid).
+  const addedRaw = linesAdded ?? 0;
+  const removedRaw = linesRemoved ?? 0;
+  const showLinesCard = addedRaw > 0 || removedRaw > 0;
 
   return (
     <div className="mb-8">
@@ -192,33 +256,23 @@ export default function HeroStats({
             numericSeed={stats.durationHours * 13}
           />
         )}
-        {stats.skillsUsedCount > 0 && (
-          <StatCard
-            value={stats.skillsUsedCount.toString()}
-            label="Skills"
-            rate={null}
-            numericSeed={stats.skillsUsedCount * 31}
+        {showLinesCard ? (
+          <LinesStatCard
+            added={addedRaw}
+            removed={linesRemoved ?? null}
+            numericSeed={(addedRaw + removedRaw) * 17 || 1}
           />
+        ) : (
+          stats.skillsUsedCount > 0 && (
+            <StatCard
+              value={stats.skillsUsedCount.toString()}
+              label="Skills"
+              rate={null}
+              numericSeed={stats.skillsUsedCount * 31}
+            />
+          )
         )}
       </div>
-      {showLines && (
-        <div className="mt-3 flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 font-mono text-sm dark:border-slate-700 dark:bg-slate-900/50">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-            Lines of code
-          </span>
-          <span className="font-bold text-green-600 dark:text-green-400">
-            +{formatLines(added)}
-          </span>
-          {removedPresent && (
-            <>
-              <span className="text-slate-300 dark:text-slate-600">/</span>
-              <span className="font-bold text-red-600 dark:text-red-400">
-                -{formatLines(removed)}
-              </span>
-            </>
-          )}
-        </div>
-      )}
     </div>
   );
 }
