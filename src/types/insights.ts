@@ -228,6 +228,7 @@ export interface HarnessData {
   writeupSections: HarnessWriteupSection[];
   workflowData: HarnessWorkflowData | null;
   integrityHash: string;
+  skillVersion: string | null;
 }
 
 // v2: Chart data parsed from HTML report
@@ -423,5 +424,6 @@ export function normalizeHarnessData(raw: unknown): HarnessData | null {
       (obj.writeupSections as HarnessData["writeupSections"]) ?? [],
     workflowData: (obj.workflowData as HarnessData["workflowData"]) ?? null,
     integrityHash: (obj.integrityHash as string) ?? "",
+    skillVersion: (obj.skillVersion as string) ?? null,
   };
 }
