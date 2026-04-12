@@ -233,10 +233,13 @@ export default function HeroStats({
 
   return (
     <div className="mb-8">
-      {/* Lifetime tokens banner */}
+      {/* Lifetime tokens banner — uses the same Inter extrabold /
+          tracking-tight / leading-none treatment as StatCard values so the
+          hero number reads as "the biggest stat card" rather than a
+          stylistically separate element. */}
       {lifetimeTokens > 0 && (
         <div className="mb-6 rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-cyan-50/60 px-6 py-5 text-center dark:border-blue-900/40 dark:from-blue-950/30 dark:to-cyan-950/20">
-          <div className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text font-mono text-5xl font-extrabold leading-none tracking-tight text-transparent sm:text-7xl dark:from-blue-400 dark:to-cyan-400">
+          <div className="text-5xl font-extrabold leading-none tracking-tight text-slate-900 sm:text-7xl dark:text-slate-100">
             {formatNumber(lifetimeTokens)}
           </div>
           <div className="mt-2 text-[13px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-slate-400">

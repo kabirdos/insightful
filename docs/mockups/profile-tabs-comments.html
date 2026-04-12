@@ -1,0 +1,5346 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Profile detail — tabs + sectional comments</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --panel: #ffffff;
+        --border: #e2e8f0;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --faint: #94a3b8;
+        --blue: #2563eb;
+        --violet: #7c3aed;
+        --amber: #f59e0b;
+        --green: #10b981;
+        --red: #ef4444;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          "Inter",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        line-height: 1.5;
+      }
+
+      /* Sticky nav */
+      .shell-nav {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: #0f172a;
+        color: #f1f5f9;
+        padding: 12px 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 13px;
+      }
+      .shell-nav .title {
+        font-weight: 600;
+      }
+      .shell-nav .spacer {
+        flex: 1;
+      }
+      .shell-nav a {
+        color: #cbd5e1;
+        text-decoration: none;
+        padding: 4px 8px;
+        border-radius: 4px;
+      }
+      .shell-nav a:hover {
+        background: #1e293b;
+      }
+      .shell-nav button {
+        background: #2563eb;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .viewport-toggle {
+        display: inline-flex;
+        border: 1px solid #334155;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .viewport-toggle button {
+        background: transparent;
+        color: #cbd5e1;
+        padding: 5px 10px;
+        border-radius: 0;
+      }
+      .viewport-toggle button.active {
+        background: #334155;
+        color: white;
+      }
+
+      /* Mockup section wrapper (the shell's feedback-bearing container) */
+      .mockup-section {
+        max-width: 1200px;
+        margin: 32px auto;
+        padding: 0 24px;
+      }
+      .section-label {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--violet);
+        background: #f3e8ff;
+        padding: 4px 10px;
+        border-radius: 999px;
+      }
+      .section-desc {
+        color: var(--muted);
+        margin: 8px 0 20px;
+        max-width: 720px;
+      }
+      .design-note {
+        background: #fef3c7;
+        border-left: 3px solid var(--amber);
+        padding: 10px 14px;
+        margin: 12px 0;
+        border-radius: 4px;
+        font-size: 13px;
+      }
+      .design-note.info {
+        background: #dbeafe;
+        border-left-color: var(--blue);
+      }
+      .design-note.future {
+        background: #ede9fe;
+        border-left-color: var(--violet);
+      }
+      .design-note code {
+        background: rgba(0, 0, 0, 0.06);
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+      }
+
+      .feedback-area {
+        margin-top: 16px;
+      }
+      .feedback-area label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+        display: block;
+        margin-bottom: 6px;
+      }
+      .feedback-area textarea {
+        width: 100%;
+        min-height: 72px;
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 13px;
+        resize: vertical;
+      }
+      .char-count {
+        font-size: 11px;
+        color: var(--faint);
+        margin-top: 4px;
+      }
+      .version-nav {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 12px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .version-nav button {
+        padding: 4px 10px;
+        border: 1px solid var(--border);
+        background: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .version-nav button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .version {
+        display: none;
+      }
+      .version.active {
+        display: block;
+      }
+      .section-divider {
+        border-top: 1px dashed var(--border);
+        margin: 40px auto;
+        max-width: 1200px;
+      }
+
+      /* ───────────── Profile detail page styles (approximating /insights/[slug]) ───────────── */
+      .page-shell {
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        gap: 32px;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+      }
+      body.viewport-mobile .page-shell {
+        grid-template-columns: 1fr;
+      }
+
+      /* Author bar */
+      .author-bar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding-bottom: 20px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+      }
+      .avatar {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 20px;
+      }
+      .author-meta {
+        flex: 1;
+      }
+      .author-name {
+        font-weight: 600;
+        color: var(--ink);
+      }
+      .harness-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: linear-gradient(135deg, #ede9fe, #dbeafe);
+        border: 1px solid #ddd6fe;
+        color: #6d28d9;
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-left: 8px;
+      }
+      .date-range {
+        font-size: 13px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .author-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .btn-outline {
+        padding: 6px 12px;
+        border: 1px solid var(--border);
+        background: white;
+        border-radius: 6px;
+        font-size: 13px;
+        color: var(--muted);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .btn-primary {
+        padding: 6px 14px;
+        background: var(--blue);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      /* ── Tab bar ── */
+      .tab-bar {
+        display: flex;
+        gap: 2px;
+        border-bottom: 2px solid var(--border);
+        margin-bottom: 28px;
+        overflow-x: auto;
+      }
+      .tab {
+        padding: 12px 20px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--muted);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+      }
+      .tab:hover {
+        color: var(--ink);
+      }
+      .tab.active {
+        color: var(--blue);
+        border-bottom-color: var(--blue);
+        font-weight: 600;
+      }
+      .tab-count {
+        background: #e0e7ff;
+        color: #4338ca;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 1px 7px;
+        border-radius: 999px;
+      }
+      .tab.active .tab-count {
+        background: var(--blue);
+        color: white;
+      }
+      .tab .comment-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--red);
+      }
+
+      /* Hero stats */
+      .hero-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+      body.viewport-mobile .hero-stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .stat-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+        position: relative;
+      }
+      .stat-value {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--ink);
+        line-height: 1.1;
+      }
+      .stat-value .suffix {
+        font-size: 14px;
+        color: var(--muted);
+        font-weight: 500;
+        margin-left: 4px;
+      }
+      .stat-label {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 600;
+      }
+      .stat-sub {
+        font-size: 11px;
+        color: var(--faint);
+        margin-top: 2px;
+      }
+
+      /* Section block — a commentable unit */
+      .doc-section {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 16px;
+        position: relative;
+        scroll-margin-top: 80px;
+      }
+      .doc-section.has-comment {
+        border-left: 3px solid var(--amber);
+      }
+      .doc-section h3 {
+        margin: 0 0 12px;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .doc-section h3 .icon-badge {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #f1f5f9;
+        font-size: 14px;
+      }
+      .doc-section .section-actions {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        display: flex;
+        gap: 6px;
+        opacity: 0.6;
+        transition: opacity 0.15s;
+      }
+      .doc-section:hover .section-actions {
+        opacity: 1;
+      }
+      .icon-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: white;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .icon-btn:hover {
+        background: #f1f5f9;
+        color: var(--ink);
+      }
+      .icon-btn.upvoted {
+        background: #dbeafe;
+        border-color: #93c5fd;
+        color: var(--blue);
+      }
+      .icon-btn .count {
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: 4px;
+      }
+
+      .placeholder-viz {
+        background: repeating-linear-gradient(
+          45deg,
+          #f8fafc,
+          #f8fafc 10px,
+          #f1f5f9 10px,
+          #f1f5f9 20px
+        );
+        border-radius: 6px;
+        height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--faint);
+        font-size: 13px;
+      }
+      .placeholder-viz.tall {
+        height: 200px;
+      }
+      .prose {
+        color: #334155;
+        font-size: 14px;
+        line-height: 1.65;
+      }
+      .prose p {
+        margin: 0 0 10px;
+      }
+
+      /* ── Right rail: Comments ── */
+      .comment-rail {
+        position: sticky;
+        top: 72px;
+        align-self: start;
+        max-height: calc(100vh - 96px);
+        overflow-y: auto;
+        padding-left: 20px;
+        border-left: 1px solid var(--border);
+      }
+      body.viewport-mobile .comment-rail {
+        position: static;
+        border-left: none;
+        padding-left: 0;
+        max-height: none;
+      }
+      .rail-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .rail-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--ink);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .rail-filter {
+        font-size: 11px;
+        color: var(--muted);
+        cursor: pointer;
+      }
+      .comment-thread {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
+      }
+      .comment-thread:hover {
+        border-color: var(--amber);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      }
+      .comment-thread.active {
+        border-color: var(--amber);
+        background: #fffbeb;
+      }
+      .thread-anchor {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--amber);
+        margin-bottom: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .comment-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+      }
+      .comment-avatar {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #10b981, #3b82f6);
+        color: white;
+        font-size: 10px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .comment-author {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ink);
+      }
+      .comment-time {
+        font-size: 11px;
+        color: var(--faint);
+      }
+      .comment-body {
+        font-size: 13px;
+        color: #334155;
+        line-height: 1.5;
+      }
+      .comment-reply {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 6px;
+        cursor: pointer;
+      }
+      .comment-reply:hover {
+        color: var(--blue);
+      }
+      .reply-nested {
+        margin-top: 8px;
+        padding-top: 8px;
+        padding-left: 10px;
+        border-left: 2px solid #e2e8f0;
+      }
+      .new-comment {
+        border: 1px dashed var(--border);
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 12px;
+        color: var(--muted);
+        text-align: center;
+        cursor: pointer;
+      }
+      .new-comment:hover {
+        border-color: var(--blue);
+        color: var(--blue);
+        background: #eff6ff;
+      }
+
+      /* Upvote bar (top-of-report summary) */
+      .upvote-bar {
+        display: inline-flex;
+        gap: 12px;
+        margin-top: 8px;
+      }
+      .upvote-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        background: #f1f5f9;
+        border-radius: 999px;
+        font-size: 12px;
+        color: var(--muted);
+        cursor: pointer;
+      }
+      .upvote-pill:hover {
+        background: #e2e8f0;
+      }
+      .upvote-pill.active {
+        background: #dbeafe;
+        color: var(--blue);
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body class="viewport-desktop">
+    <!-- Sticky shell nav -->
+    <nav class="shell-nav">
+      <span class="title">Profile Tabs + Comments — UX exploration</span>
+      <div class="viewport-toggle">
+        <button class="active" data-vp="desktop">Desktop</button>
+        <button data-vp="mobile">Mobile</button>
+      </div>
+      <span class="spacer"></span>
+      <a href="#tabs">Tabs</a>
+      <a href="#comments">Comments</a>
+      <a href="#upvotes">Upvotes</a>
+      <a href="#libraries">Libraries</a>
+      <button onclick="copyFeedback()">Copy All Feedback</button>
+    </nav>
+
+    <!-- ============== SECTION 1: Proposed tab structure + live mock ============== -->
+    <div class="mockup-section" data-section-id="tabs" id="tabs">
+      <span class="section-label">1 · Tabbed layout</span>
+      <p class="section-desc">
+        Break the long profile detail page into tabs at the top (above hero
+        stats), mirroring the three-tab structure of the insight-harness HTML
+        report. Below: Dashboard tab is active. Sidebar shows anchored comments
+        like Google Docs.
+      </p>
+
+      <div class="design-note info">
+        <strong
+          >v6 — 3 tabs (Dashboard · Write-up · Claude Insights). Skill Showcase
+          deferred as future tab #4.</strong
+        >
+        Dropped "Skills &amp; Setup" and "Activity" as top-level tabs; their
+        content folds into Dashboard as additional cards (Skills &amp; Plugins,
+        Tool Usage &amp; Activity) — same card pattern as the existing Activity
+        Heatmap / How I Work / Workflow Diagram. Tab layout is now
+        horizontal-flex inside each tab (icon left, label + meta right) so three
+        wider tabs still feel populated. All v5 polish preserved: custom SVG
+        icons, three-layer active state, Inter-extrabold lifetime-tokens number.
+        Amber callout under the tab bar marks where the Skill Showcase tab will
+        slot in later.
+      </div>
+
+      <div class="design-note info" style="opacity: 0.6">
+        <strong
+          >v5 — custom SVG icons + refined active state + hero font fix.</strong
+        >
+        Keeps the live-site design system (same cards, same classes, same
+        blue→violet signature rail). Changes from v4:
+        <ul style="margin: 6px 0 0 18px; padding: 0">
+          <li>
+            Replaced emoji (📊 🧰 ⚡ 📝 ✨) with
+            <strong>5 custom SVG icons</strong> drawn in the site's existing
+            lucide style — stroke 1.75, round joins, <code>currentColor</code>.
+            Each is tuned to its concept: Dashboard = 2×2 cell grid with one
+            accent cell, Skills = stacked layers, Activity = stepped pulse,
+            Write-up = document with a Claude sparkle in the corner, Insights =
+            primary Claude sparkle with two satellites (mirrors lucide's
+            <code>Sparkles</code>).
+          </li>
+          <li>
+            <strong>Active tab = three escalating layers of saturation:</strong>
+            (1) subtle tinted card fill matching the icon family, (2) icon badge
+            flips from tinted bg + colored stroke → saturated solid fill with
+            white glyph + soft drop shadow, (3) the 3px blue→violet rail at the
+            bottom stays as the family signature. Inactive icons gently lift on
+            hover.
+          </li>
+          <li>
+            <strong>Lifetime Tokens font fixed:</strong> was 60px JetBrains Mono
+            with a blue→cyan gradient. Now matches <code>StatCard</code> exactly
+            — Inter, 64px, <code>font-extrabold</code>,
+            <code>leading-none</code>, <code>tracking-tight</code>, solid
+            <code>text-slate-900</code>. Reads as "the biggest stat card", which
+            is what it is.
+          </li>
+          <li>
+            Upvote pill got a proper lucide-style chevron SVG instead of a
+            Unicode arrow.
+          </li>
+        </ul>
+        Click <em>Prev</em> to compare with v4, v3, v2, v1.
+      </div>
+
+      <div class="design-note info" style="opacity: 0.6">
+        <strong>v4 — match the live site's actual design system.</strong>
+        v3 invented its own look (Fraunces serif, slate-900 tabs, numbered
+        <code>01–05</code>). Thrown out. v4 uses only classes &amp; patterns
+        that already exist on insightharness.com:
+        <ul style="margin: 6px 0 0 18px; padding: 0">
+          <li>
+            Tab container = the same
+            <code>rounded-xl border border-slate-200 bg-white</code> card every
+            section on the live site already uses (see
+            <code>CollapsibleSection.tsx</code>).
+          </li>
+          <li>
+            Each tab's icon uses the site's existing
+            <code>h-10 w-10 rounded-xl</code> icon-badge pattern with the same
+            tint palette (<code>bg-blue-100</code>, <code>bg-teal-100</code>,
+            <code>bg-amber-100</code>, <code>bg-indigo-100</code>,
+            <code>bg-purple-100</code>) — these are pulled verbatim from
+            <code>SECTIONS</code> in <code>page.tsx</code>.
+          </li>
+          <li>
+            Active-tab indicator is a 3px
+            <code>bg-gradient-to-r from-blue-500 to-violet-500</code> rail —
+            <strong>this is the site's signature accent</strong>, already used
+            on the <code>StatCard</code> top (<code>HeroStats.tsx:129</code>)
+            and the lifetime-tokens banner. Not invented; just reused for
+            selection state.
+          </li>
+          <li>
+            Typography: Inter + JetBrains Mono (the site's real fonts). No
+            Fraunces, no cobalt palette.
+          </li>
+          <li>
+            "by Claude" subtitle on Write-up and Claude Insights tabs so
+            authorship is unambiguous.
+          </li>
+        </ul>
+        Click <em>Prev</em> to compare with v3 (invented look) and v2
+        (purple-pill misfire).
+      </div>
+
+      <div class="design-note info">
+        <strong>Locked: 5 tabs (Option B):</strong><br />
+        <strong>1. Dashboard</strong> (default) — hero stats, activity heatmap,
+        projects, How I Work cluster, workflow diagram. The "at a glance" visual
+        layer.<br />
+        <strong>2. Skills &amp; Setup</strong> — skill grid, plugins, MCP
+        servers, hooks, permission modes, CLI tools, versions. Everything about
+        <em>what's installed</em>.<br />
+        <strong>3. Activity</strong> — tool usage treemap, languages, git
+        patterns, agent dispatch, file-op breakdown. Everything about
+        <em>what they did</em>.<br />
+        <strong>4. Write-up</strong> — Claude's prose summary of the raw harness
+        data (markdown).<br />
+        <strong>5. Claude Insights</strong> — the 6 AI-generated narrative
+        sections (At a Glance, Interaction Style, Impressive Workflows,
+        Friction, Suggestions, On the Horizon).
+      </div>
+
+      <div class="design-note">
+        <strong>Alternative 3-tab version</strong> (matches harness HTML
+        exactly): Dashboard • Write-up • Claude Insights. Simpler. The Activity
+        / Skills splits above are optional; if kept to 3 tabs, fold them into
+        Dashboard.
+      </div>
+
+      <div class="version-container">
+        <div class="version" data-version="1">
+          <!-- Profile page shell -->
+          <div class="page-shell">
+            <div>
+              <!-- Author bar -->
+              <div class="author-bar">
+                <div class="avatar">C</div>
+                <div class="author-meta">
+                  <span class="author-name">Craig dos Santos</span>
+                  <span class="harness-pill">✦ Insight Harness</span>
+                  <div class="date-range">
+                    📅 Mar 12 – Apr 11, 2026 · 30 days
+                  </div>
+                </div>
+                <div class="author-actions">
+                  <button class="btn-outline">↗ Share</button>
+                  <button class="btn-outline">✎ Edit</button>
+                </div>
+              </div>
+
+              <!-- TAB BAR -->
+              <div class="tab-bar" id="demo-tabs">
+                <button class="tab active" data-tab="dashboard">
+                  📊 Dashboard
+                </button>
+                <button class="tab" data-tab="setup">
+                  🧰 Skills &amp; Setup <span class="tab-count">42</span>
+                </button>
+                <button class="tab" data-tab="activity">
+                  ⚡ Activity
+                  <span class="comment-dot" title="unread comment"></span>
+                </button>
+                <button class="tab" data-tab="writeup">📝 Write-up</button>
+                <button class="tab" data-tab="insights">
+                  ✨ Claude Insights <span class="tab-count">6</span>
+                </button>
+              </div>
+
+              <!-- Optional: overall upvote bar -->
+              <div class="upvote-bar">
+                <span class="upvote-pill active">▲ 24 useful</span>
+                <span class="upvote-pill">💬 7 comments</span>
+                <span class="upvote-pill">👁 312 views</span>
+              </div>
+
+              <!-- Hero stats -->
+              <h2 style="margin: 24px 0 12px; font-size: 18px">Dashboard</h2>
+              <div class="hero-stats">
+                <div class="stat-card">
+                  <div class="stat-value">1.5<span class="suffix">M</span></div>
+                  <div class="stat-label">Lifetime tokens</div>
+                  <div class="stat-sub">↑ 12% vs prev month</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-value">247</div>
+                  <div class="stat-label">Sessions</div>
+                  <div class="stat-sub">8.2/day avg</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-value">
+                    18.4<span class="suffix">K</span>
+                  </div>
+                  <div class="stat-label">Lines added</div>
+                  <div class="stat-sub">−2.1K removed</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-value">34</div>
+                  <div class="stat-label">Skills active</div>
+                  <div class="stat-sub">12 custom</div>
+                </div>
+              </div>
+
+              <!-- Activity heatmap (as first commentable section) -->
+              <div
+                class="doc-section has-comment"
+                id="sec-heatmap"
+                data-section="heatmap"
+              >
+                <div class="section-actions">
+                  <button class="icon-btn upvoted" title="Upvote">
+                    ▲<span class="count">8</span>
+                  </button>
+                  <button class="icon-btn" title="Comment">
+                    💬<span class="count">2</span>
+                  </button>
+                </div>
+                <h3><span class="icon-badge">🔥</span> Activity Heatmap</h3>
+                <div class="placeholder-viz tall">
+                  [ 30-day heatmap with token intensity coloring ]
+                </div>
+              </div>
+
+              <!-- How I Work -->
+              <div
+                class="doc-section"
+                id="sec-howiwork"
+                data-section="howiwork"
+              >
+                <div class="section-actions">
+                  <button class="icon-btn" title="Upvote">
+                    ▲<span class="count">3</span>
+                  </button>
+                  <button class="icon-btn" title="Comment">💬</button>
+                </div>
+                <h3><span class="icon-badge">🎯</span> How I Work</h3>
+                <div class="placeholder-viz">
+                  [ Autonomy gauge · Model donut · File-op bars ]
+                </div>
+              </div>
+
+              <!-- Workflow diagram -->
+              <div
+                class="doc-section has-comment"
+                id="sec-workflow"
+                data-section="workflow"
+              >
+                <div class="section-actions">
+                  <button class="icon-btn" title="Upvote">
+                    ▲<span class="count">12</span>
+                  </button>
+                  <button class="icon-btn" title="Comment">
+                    💬<span class="count">1</span>
+                  </button>
+                </div>
+                <h3><span class="icon-badge">🔀</span> Workflow Diagram</h3>
+                <div class="placeholder-viz tall">
+                  [ Mermaid diagram of agent dispatch graph ]
+                </div>
+              </div>
+
+              <p
+                style="
+                  color: var(--faint);
+                  font-size: 12px;
+                  text-align: center;
+                  margin-top: 16px;
+                "
+              >
+                Projects · Skill summary · (switch tab for details)
+              </p>
+            </div>
+            <!-- /left col -->
+
+            <!-- ── Right rail: Comments ── -->
+            <aside class="comment-rail" id="comments-rail">
+              <div class="rail-header">
+                <span class="rail-title">Comments · Dashboard</span>
+                <span class="rail-filter">All ▾</span>
+              </div>
+
+              <!-- Thread on heatmap -->
+              <div class="comment-thread active">
+                <div class="thread-anchor">◆ on: Activity Heatmap</div>
+                <div class="comment-head">
+                  <div class="comment-avatar">JB</div>
+                  <span class="comment-author">jenbenn</span>
+                  <span class="comment-time">2h</span>
+                </div>
+                <div class="comment-body">
+                  Interesting that weekends stay hot — are you batching personal
+                  projects or is work bleeding in?
+                </div>
+                <div class="reply-nested">
+                  <div class="comment-head">
+                    <div
+                      class="comment-avatar"
+                      style="
+                        background: linear-gradient(135deg, #f59e0b, #ef4444);
+                      "
+                    >
+                      C
+                    </div>
+                    <span class="comment-author">craig</span>
+                    <span class="comment-time">1h</span>
+                  </div>
+                  <div class="comment-body">
+                    Mostly personal. I track skill-creator work on Saturdays.
+                  </div>
+                </div>
+                <div class="comment-reply">Reply</div>
+              </div>
+
+              <!-- Second thread -->
+              <div class="comment-thread">
+                <div class="thread-anchor">◆ on: Activity Heatmap</div>
+                <div class="comment-head">
+                  <div
+                    class="comment-avatar"
+                    style="
+                      background: linear-gradient(135deg, #8b5cf6, #ec4899);
+                    "
+                  >
+                    RS
+                  </div>
+                  <span class="comment-author">rsanchez</span>
+                  <span class="comment-time">yesterday</span>
+                </div>
+                <div class="comment-body">
+                  Would love a weekly-average overlay. 30 days of daily ticks is
+                  noisy.
+                </div>
+                <div class="comment-reply">Reply</div>
+              </div>
+
+              <!-- Thread on workflow -->
+              <div class="comment-thread">
+                <div class="thread-anchor">◆ on: Workflow Diagram</div>
+                <div class="comment-head">
+                  <div
+                    class="comment-avatar"
+                    style="
+                      background: linear-gradient(135deg, #10b981, #06b6d4);
+                    "
+                  >
+                    DK
+                  </div>
+                  <span class="comment-author">dkochman</span>
+                  <span class="comment-time">3d</span>
+                </div>
+                <div class="comment-body">
+                  How did you generate the agent dispatch graph? Is that from
+                  the harness or authored?
+                </div>
+                <div class="comment-reply">Reply</div>
+              </div>
+
+              <div class="new-comment">+ Start a new comment</div>
+
+              <div
+                style="
+                  margin-top: 16px;
+                  font-size: 11px;
+                  color: var(--faint);
+                  line-height: 1.4;
+                "
+              >
+                Tip: hover any section on the left and click 💬 to anchor a
+                comment there. Click a thread to scroll to its section.
+              </div>
+            </aside>
+          </div>
+          <!-- /page-shell -->
+        </div>
+        <!-- /v1 -->
+
+        <!-- ============== V2 — obvious tabs, no right rail, bottom comments ============== -->
+        <div class="version" data-version="2">
+          <style>
+            /* v2-scoped styles */
+            .v2-shell {
+              max-width: 1080px;
+              margin: 0 auto;
+              padding: 24px;
+              background: var(--panel);
+              border: 1px solid var(--border);
+              border-radius: 12px;
+            }
+            .v2-tabs {
+              display: flex;
+              gap: 8px;
+              padding: 6px;
+              background: #f1f5f9;
+              border-radius: 12px;
+              margin: 20px 0 24px;
+              overflow-x: auto;
+            }
+            .v2-tab {
+              flex: 1;
+              min-width: 140px;
+              padding: 12px 16px;
+              background: white;
+              border: 1px solid var(--border);
+              border-radius: 8px;
+              font-size: 14px;
+              font-weight: 600;
+              color: var(--ink);
+              cursor: pointer;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 4px;
+              transition: all 0.15s;
+              box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+            }
+            .v2-tab .v2-tab-icon {
+              font-size: 20px;
+              line-height: 1;
+            }
+            .v2-tab .v2-tab-label {
+              font-size: 13px;
+            }
+            .v2-tab .v2-tab-sub {
+              font-size: 10px;
+              font-weight: 500;
+              color: var(--faint);
+              text-transform: uppercase;
+              letter-spacing: 0.04em;
+            }
+            .v2-tab:hover {
+              border-color: var(--blue);
+              transform: translateY(-1px);
+              box-shadow: 0 4px 10px rgba(37, 99, 235, 0.12);
+            }
+            .v2-tab.active {
+              background: linear-gradient(135deg, #2563eb, #7c3aed);
+              color: white;
+              border-color: transparent;
+              box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+            }
+            .v2-tab.active .v2-tab-sub {
+              color: rgba(255, 255, 255, 0.8);
+            }
+            body.viewport-mobile .v2-tabs {
+              flex-wrap: nowrap;
+            }
+            body.viewport-mobile .v2-tab {
+              min-width: 110px;
+            }
+
+            .v2-section {
+              background: white;
+              border: 1px solid var(--border);
+              border-radius: 10px;
+              padding: 20px;
+              margin-bottom: 16px;
+            }
+            .v2-section h3 {
+              margin: 0 0 12px;
+              font-size: 16px;
+              font-weight: 700;
+              display: flex;
+              align-items: center;
+              gap: 10px;
+            }
+            .v2-section h3 .icon-badge {
+              width: 28px;
+              height: 28px;
+              border-radius: 7px;
+              background: #f1f5f9;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 14px;
+            }
+
+            /* Next-tab nav at bottom */
+            .v2-next-nav {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-top: 24px;
+              padding: 20px;
+              background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+              border: 1px solid #dbeafe;
+              border-radius: 12px;
+            }
+            .v2-next-hint {
+              font-size: 12px;
+              color: var(--muted);
+              text-transform: uppercase;
+              letter-spacing: 0.06em;
+              font-weight: 700;
+            }
+            .v2-next-btn {
+              display: inline-flex;
+              align-items: center;
+              gap: 10px;
+              padding: 12px 20px;
+              background: white;
+              border: 1px solid var(--border);
+              border-radius: 10px;
+              cursor: pointer;
+              font-size: 15px;
+              font-weight: 600;
+              color: var(--ink);
+              box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            }
+            .v2-next-btn:hover {
+              border-color: var(--blue);
+              color: var(--blue);
+              transform: translateX(2px);
+            }
+            .v2-next-btn.prev {
+              color: var(--muted);
+            }
+            .v2-next-btn .chev {
+              font-size: 18px;
+            }
+
+            /* Bottom comments section */
+            .v2-comments {
+              margin-top: 40px;
+              padding-top: 24px;
+              border-top: 2px solid var(--border);
+            }
+            .v2-comments-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: baseline;
+              margin-bottom: 16px;
+            }
+            .v2-comments-title {
+              font-size: 18px;
+              font-weight: 700;
+            }
+            .v2-comment {
+              background: white;
+              border: 1px solid var(--border);
+              border-radius: 10px;
+              padding: 14px 16px;
+              margin-bottom: 10px;
+            }
+            .v2-comment-anchor {
+              font-size: 10px;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              color: var(--amber);
+              margin-bottom: 8px;
+              display: inline-flex;
+              align-items: center;
+              gap: 5px;
+            }
+            .v2-comment-body {
+              font-size: 14px;
+              color: #334155;
+              line-height: 1.55;
+              margin-top: 4px;
+            }
+            .v2-new-comment {
+              display: flex;
+              gap: 10px;
+              margin-top: 16px;
+            }
+            .v2-new-comment textarea {
+              flex: 1;
+              padding: 10px 12px;
+              border: 1px solid var(--border);
+              border-radius: 8px;
+              font-family: inherit;
+              font-size: 13px;
+              min-height: 60px;
+              resize: vertical;
+            }
+
+            .v2-upvote {
+              display: inline-flex;
+              align-items: center;
+              gap: 8px;
+              padding: 8px 16px;
+              background: linear-gradient(135deg, #dbeafe, #ede9fe);
+              border: 1px solid #c7d2fe;
+              border-radius: 999px;
+              font-size: 14px;
+              font-weight: 600;
+              color: var(--blue);
+              cursor: pointer;
+              box-shadow: 0 1px 2px rgba(37, 99, 235, 0.08);
+            }
+            .v2-upvote:hover {
+              transform: translateY(-1px);
+              box-shadow: 0 4px 10px rgba(37, 99, 235, 0.18);
+            }
+            .v2-upvote .arrow {
+              font-size: 16px;
+            }
+          </style>
+
+          <div class="v2-shell">
+            <!-- Author bar -->
+            <div class="author-bar">
+              <div class="avatar">C</div>
+              <div class="author-meta">
+                <span class="author-name">Craig dos Santos</span>
+                <span class="harness-pill">✦ Insight Harness</span>
+                <div class="date-range">📅 Mar 12 – Apr 11, 2026 · 30 days</div>
+              </div>
+              <div class="author-actions">
+                <span class="v2-upvote"
+                  ><span class="arrow">▲</span> 24 useful</span
+                >
+                <button class="btn-outline">↗ Share</button>
+                <button class="btn-outline">✎ Edit</button>
+              </div>
+            </div>
+
+            <!-- OBVIOUSLY CLICKABLE TAB BAR -->
+            <div class="v2-tabs" id="v2-tabs">
+              <button class="v2-tab active" data-tab="dashboard">
+                <span class="v2-tab-icon">📊</span>
+                <span class="v2-tab-label">Dashboard</span>
+                <span class="v2-tab-sub">at a glance</span>
+              </button>
+              <button class="v2-tab" data-tab="setup">
+                <span class="v2-tab-icon">🧰</span>
+                <span class="v2-tab-label">Skills &amp; Setup</span>
+                <span class="v2-tab-sub">42 items</span>
+              </button>
+              <button class="v2-tab" data-tab="activity">
+                <span class="v2-tab-icon">⚡</span>
+                <span class="v2-tab-label">Activity</span>
+                <span class="v2-tab-sub">tools &amp; git</span>
+              </button>
+              <button class="v2-tab" data-tab="writeup">
+                <span class="v2-tab-icon">📝</span>
+                <span class="v2-tab-label">Write-up</span>
+                <span class="v2-tab-sub">by author</span>
+              </button>
+              <button class="v2-tab" data-tab="insights">
+                <span class="v2-tab-icon">✨</span>
+                <span class="v2-tab-label">Claude Insights</span>
+                <span class="v2-tab-sub">AI analysis</span>
+              </button>
+            </div>
+
+            <!-- Hero stats -->
+            <div class="hero-stats" style="margin-bottom: 20px">
+              <div class="stat-card">
+                <div class="stat-value">1.5<span class="suffix">M</span></div>
+                <div class="stat-label">Lifetime tokens</div>
+                <div class="stat-sub">↑ 12% vs prev month</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value">247</div>
+                <div class="stat-label">Sessions</div>
+                <div class="stat-sub">8.2/day avg</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value">18.4<span class="suffix">K</span></div>
+                <div class="stat-label">Lines added</div>
+                <div class="stat-sub">−2.1K removed</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value">34</div>
+                <div class="stat-label">Skills active</div>
+                <div class="stat-sub">12 custom</div>
+              </div>
+            </div>
+
+            <!-- Dashboard tab content -->
+            <div class="v2-section">
+              <h3><span class="icon-badge">🔥</span> Activity Heatmap</h3>
+              <div class="placeholder-viz tall">
+                [ 30-day heatmap with token intensity coloring ]
+              </div>
+            </div>
+
+            <div class="v2-section">
+              <h3><span class="icon-badge">🎯</span> How I Work</h3>
+              <div class="placeholder-viz">
+                [ Autonomy gauge · Model donut · File-op bars ]
+              </div>
+            </div>
+
+            <div class="v2-section">
+              <h3><span class="icon-badge">🔀</span> Workflow Diagram</h3>
+              <div class="placeholder-viz tall">
+                [ Mermaid diagram of agent dispatch graph ]
+              </div>
+            </div>
+
+            <!-- NEXT-TAB NAV at bottom -->
+            <div class="v2-next-nav">
+              <div>
+                <div class="v2-next-hint">You've finished</div>
+                <div style="font-size: 15px; font-weight: 700; margin-top: 2px">
+                  📊 Dashboard
+                </div>
+              </div>
+              <button class="v2-next-btn">
+                Next: Skills &amp; Setup <span class="chev">→</span>
+              </button>
+            </div>
+
+            <!-- COMMENTS at bottom, ALL comments across tabs -->
+            <div class="v2-comments">
+              <div class="v2-comments-header">
+                <span class="v2-comments-title"
+                  >💬 Comments
+                  <span
+                    style="
+                      color: var(--faint);
+                      font-weight: 500;
+                      font-size: 14px;
+                    "
+                    >· 4 threads across all tabs</span
+                  ></span
+                >
+                <span style="font-size: 12px; color: var(--muted)"
+                  >Showing all</span
+                >
+              </div>
+
+              <div class="v2-comment">
+                <span class="v2-comment-anchor"
+                  >◆ Dashboard · Activity Heatmap</span
+                >
+                <div class="comment-head">
+                  <div class="comment-avatar">JB</div>
+                  <span class="comment-author">jenbenn</span>
+                  <span class="comment-time">2h</span>
+                </div>
+                <div class="v2-comment-body">
+                  Interesting that weekends stay hot — are you batching personal
+                  projects or is work bleeding in?
+                </div>
+                <div class="reply-nested">
+                  <div class="comment-head">
+                    <div
+                      class="comment-avatar"
+                      style="
+                        background: linear-gradient(135deg, #f59e0b, #ef4444);
+                      "
+                    >
+                      C
+                    </div>
+                    <span class="comment-author">craig</span>
+                    <span class="comment-time">1h</span>
+                  </div>
+                  <div class="v2-comment-body">
+                    Mostly personal. Saturdays are skill-creator days.
+                  </div>
+                </div>
+                <div class="comment-reply">Reply</div>
+              </div>
+
+              <div class="v2-comment">
+                <span class="v2-comment-anchor"
+                  >◆ Dashboard · Workflow Diagram</span
+                >
+                <div class="comment-head">
+                  <div
+                    class="comment-avatar"
+                    style="
+                      background: linear-gradient(135deg, #10b981, #06b6d4);
+                    "
+                  >
+                    DK
+                  </div>
+                  <span class="comment-author">dkochman</span>
+                  <span class="comment-time">3d</span>
+                </div>
+                <div class="v2-comment-body">
+                  How did you generate the agent dispatch graph? From the
+                  harness or authored?
+                </div>
+                <div class="comment-reply">Reply</div>
+              </div>
+
+              <div class="v2-comment">
+                <span class="v2-comment-anchor"
+                  >◆ Skills &amp; Setup · MCP Servers</span
+                >
+                <div class="comment-head">
+                  <div
+                    class="comment-avatar"
+                    style="
+                      background: linear-gradient(135deg, #8b5cf6, #ec4899);
+                    "
+                  >
+                    RS
+                  </div>
+                  <span class="comment-author">rsanchez</span>
+                  <span class="comment-time">yesterday</span>
+                </div>
+                <div class="v2-comment-body">
+                  That Gmail MCP config — does it handle attachments reliably?
+                  I've been fighting with it all week.
+                </div>
+                <div class="comment-reply">Reply</div>
+              </div>
+
+              <div class="v2-comment">
+                <span class="v2-comment-anchor"
+                  >◆ Claude Insights · Suggestions</span
+                >
+                <div class="comment-head">
+                  <div
+                    class="comment-avatar"
+                    style="
+                      background: linear-gradient(135deg, #f97316, #ec4899);
+                    "
+                  >
+                    MP
+                  </div>
+                  <span class="comment-author">mpatel</span>
+                  <span class="comment-time">5d</span>
+                </div>
+                <div class="v2-comment-body">
+                  Strong +1 on the "try subagent-driven-development" suggestion.
+                  It changed how I work.
+                </div>
+                <div class="comment-reply">Reply</div>
+              </div>
+
+              <div class="v2-new-comment">
+                <div class="comment-avatar">Y</div>
+                <textarea
+                  placeholder="Leave a comment on this profile..."
+                ></textarea>
+              </div>
+            </div>
+          </div>
+          <!-- /v2-shell -->
+        </div>
+        <!-- /v2 -->
+
+        <!-- ============== V3 — slate/blue palette, editorial tabs, Claude-authored write-up ============== -->
+        <div class="version" data-version="3">
+          <link
+            href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Instrument+Serif:ital@0;1&display=swap"
+            rel="stylesheet"
+          />
+          <style>
+            /* v3 — palette locked to the live site's slate + cobalt + one warm accent */
+            .v3-shell {
+              --ink: #0f172a;
+              --ink-soft: #334155;
+              --muted: #64748b;
+              --faint: #94a3b8;
+              --line: #e2e8f0;
+              --line-strong: #cbd5e1;
+              --paper: #ffffff;
+              --paper-soft: #f8fafc;
+              --cobalt: #1d4ed8;
+              --cobalt-ink: #1e3a8a;
+              --ember: #c2410c; /* warm accent — only for "New"/unread */
+
+              max-width: 1080px;
+              margin: 0 auto;
+              padding: 28px 32px 40px;
+              background: var(--paper);
+              border: 1px solid var(--line);
+              border-radius: 12px;
+              color: var(--ink);
+              font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+            }
+            .v3-shell .serif {
+              font-family: "Fraunces", "Instrument Serif", Georgia, serif;
+              font-variation-settings: "opsz" 144;
+              letter-spacing: -0.01em;
+            }
+            .v3-shell .mono {
+              font-family:
+                "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+              letter-spacing: 0.02em;
+            }
+
+            /* Author bar */
+            .v3-author {
+              display: flex;
+              align-items: center;
+              gap: 16px;
+              padding-bottom: 20px;
+              border-bottom: 1px solid var(--line);
+              margin-bottom: 28px;
+            }
+            .v3-avatar {
+              width: 56px;
+              height: 56px;
+              border-radius: 50%;
+              background: var(--ink);
+              color: white;
+              display: grid;
+              place-items: center;
+              font-weight: 700;
+              font-size: 22px;
+              letter-spacing: -0.02em;
+            }
+            .v3-author-meta {
+              flex: 1;
+            }
+            .v3-author-meta .name {
+              font-weight: 600;
+              font-size: 16px;
+              color: var(--ink);
+            }
+            .v3-author-meta .meta {
+              font-size: 13px;
+              color: var(--muted);
+              margin-top: 2px;
+              display: flex;
+              gap: 10px;
+              align-items: center;
+            }
+            .v3-author-meta .meta .dot {
+              width: 3px;
+              height: 3px;
+              border-radius: 50%;
+              background: var(--faint);
+            }
+            .v3-chip {
+              display: inline-flex;
+              align-items: center;
+              gap: 5px;
+              padding: 3px 9px;
+              border: 1px solid var(--line);
+              border-radius: 4px;
+              font-size: 10px;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.08em;
+              color: var(--ink-soft);
+              background: var(--paper-soft);
+            }
+            .v3-chip.harness {
+              color: var(--cobalt-ink);
+              border-color: #bfdbfe;
+              background: #eff6ff;
+            }
+            .v3-actions {
+              display: flex;
+              gap: 8px;
+              align-items: center;
+            }
+            .v3-upvote {
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              padding: 7px 12px;
+              background: var(--paper);
+              border: 1px solid var(--line-strong);
+              border-radius: 8px;
+              font-size: 13px;
+              font-weight: 600;
+              color: var(--ink);
+              cursor: pointer;
+              transition: all 0.15s;
+            }
+            .v3-upvote:hover {
+              border-color: var(--cobalt);
+              color: var(--cobalt);
+            }
+            .v3-upvote .arrow {
+              font-size: 14px;
+              font-weight: 700;
+              color: var(--cobalt);
+            }
+            .v3-upvote .count {
+              font-variant-numeric: tabular-nums;
+            }
+            .v3-btn {
+              padding: 7px 12px;
+              background: var(--paper);
+              border: 1px solid var(--line);
+              border-radius: 8px;
+              font-size: 13px;
+              color: var(--ink-soft);
+              cursor: pointer;
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+            }
+            .v3-btn:hover {
+              border-color: var(--line-strong);
+              color: var(--ink);
+            }
+
+            /* ── TAB BAR — "segmented instrument panel" ── */
+            .v3-tabs {
+              display: grid;
+              grid-template-columns: repeat(5, 1fr);
+              gap: 0;
+              border: 1px solid var(--line);
+              border-radius: 10px;
+              background: var(--paper-soft);
+              padding: 6px;
+              position: relative;
+              margin-bottom: 28px;
+            }
+            .v3-tab {
+              position: relative;
+              padding: 12px 10px 10px;
+              background: transparent;
+              border: none;
+              cursor: pointer;
+              text-align: left;
+              border-radius: 7px;
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+              color: var(--ink-soft);
+              transition: all 0.18s ease;
+              z-index: 1;
+            }
+            .v3-tab:hover {
+              background: var(--paper);
+              color: var(--ink);
+            }
+            .v3-tab .tab-top {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              gap: 8px;
+            }
+            .v3-tab .tab-num {
+              font-family: "JetBrains Mono", ui-monospace, monospace;
+              font-size: 10px;
+              color: var(--faint);
+              letter-spacing: 0.08em;
+              font-weight: 500;
+            }
+            .v3-tab .tab-meta {
+              font-family: "JetBrains Mono", ui-monospace, monospace;
+              font-size: 10px;
+              color: var(--faint);
+              letter-spacing: 0.02em;
+            }
+            .v3-tab .tab-label {
+              font-size: 14px;
+              font-weight: 600;
+              color: inherit;
+            }
+            .v3-tab .tab-by {
+              font-size: 10.5px;
+              font-weight: 500;
+              color: var(--faint);
+              letter-spacing: 0.02em;
+              text-transform: lowercase;
+              font-style: italic;
+            }
+            .v3-tab .tab-dot {
+              display: inline-block;
+              width: 6px;
+              height: 6px;
+              border-radius: 50%;
+              background: var(--ember);
+            }
+            .v3-tab.active {
+              background: var(--ink);
+              color: white;
+              box-shadow:
+                0 1px 2px rgba(15, 23, 42, 0.06),
+                0 6px 16px -6px rgba(15, 23, 42, 0.25);
+            }
+            .v3-tab.active .tab-num,
+            .v3-tab.active .tab-meta,
+            .v3-tab.active .tab-by {
+              color: rgba(255, 255, 255, 0.55);
+            }
+            .v3-tab.active::after {
+              content: "";
+              position: absolute;
+              left: 10px;
+              right: 10px;
+              top: 4px;
+              height: 2px;
+              background: var(--cobalt);
+              border-radius: 2px;
+            }
+            body.viewport-mobile .v3-tabs {
+              grid-template-columns: repeat(3, 1fr);
+            }
+            body.viewport-mobile .v3-tab:nth-child(n + 4) {
+              grid-column: span 1;
+            }
+
+            /* Section header above content */
+            .v3-tab-header {
+              display: flex;
+              align-items: baseline;
+              justify-content: space-between;
+              margin-bottom: 18px;
+              padding-bottom: 10px;
+              border-bottom: 1px solid var(--line);
+            }
+            .v3-tab-header h2 {
+              font-family: "Fraunces", "Instrument Serif", Georgia, serif;
+              font-variation-settings: "opsz" 144;
+              font-weight: 500;
+              font-size: 26px;
+              margin: 0;
+              letter-spacing: -0.015em;
+              color: var(--ink);
+            }
+            .v3-tab-header .breadcrumb {
+              font-family: "JetBrains Mono", ui-monospace, monospace;
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.1em;
+              color: var(--faint);
+            }
+
+            /* Stats row */
+            .v3-stats {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 0;
+              border: 1px solid var(--line);
+              border-radius: 10px;
+              overflow: hidden;
+              margin-bottom: 20px;
+              background: var(--paper);
+            }
+            .v3-stat {
+              padding: 16px 18px;
+              border-right: 1px solid var(--line);
+            }
+            .v3-stat:last-child {
+              border-right: none;
+            }
+            .v3-stat .value {
+              font-family: "Fraunces", Georgia, serif;
+              font-variation-settings: "opsz" 144;
+              font-size: 30px;
+              font-weight: 500;
+              letter-spacing: -0.02em;
+              color: var(--ink);
+              line-height: 1.05;
+            }
+            .v3-stat .value .suffix {
+              font-size: 15px;
+              color: var(--muted);
+              margin-left: 3px;
+              font-weight: 400;
+            }
+            .v3-stat .label {
+              font-family: "JetBrains Mono", ui-monospace, monospace;
+              font-size: 10px;
+              text-transform: uppercase;
+              letter-spacing: 0.1em;
+              color: var(--muted);
+              margin-top: 6px;
+            }
+            .v3-stat .sub {
+              font-size: 11px;
+              color: var(--faint);
+              margin-top: 3px;
+              font-variant-numeric: tabular-nums;
+            }
+            body.viewport-mobile .v3-stats {
+              grid-template-columns: repeat(2, 1fr);
+            }
+            body.viewport-mobile .v3-stat {
+              border-bottom: 1px solid var(--line);
+            }
+            body.viewport-mobile .v3-stat:nth-child(2) {
+              border-right: none;
+            }
+
+            /* Content cards */
+            .v3-card {
+              border: 1px solid var(--line);
+              border-radius: 10px;
+              padding: 20px;
+              margin-bottom: 14px;
+              background: var(--paper);
+            }
+            .v3-card h3 {
+              font-family: "Fraunces", Georgia, serif;
+              font-weight: 500;
+              font-size: 18px;
+              margin: 0 0 12px;
+              letter-spacing: -0.01em;
+              display: flex;
+              align-items: center;
+              gap: 10px;
+            }
+            .v3-card h3 .num {
+              font-family: "JetBrains Mono", monospace;
+              font-size: 10px;
+              color: var(--faint);
+              letter-spacing: 0.1em;
+              font-weight: 500;
+              background: var(--paper-soft);
+              border: 1px solid var(--line);
+              padding: 3px 7px;
+              border-radius: 4px;
+            }
+            .v3-placeholder {
+              background: repeating-linear-gradient(
+                135deg,
+                var(--paper-soft),
+                var(--paper-soft) 10px,
+                #f1f5f9 10px,
+                #f1f5f9 11px
+              );
+              border-radius: 6px;
+              min-height: 120px;
+              display: grid;
+              place-items: center;
+              color: var(--faint);
+              font-size: 12px;
+              font-family: "JetBrains Mono", monospace;
+            }
+            .v3-placeholder.tall {
+              min-height: 180px;
+            }
+
+            /* Footer next-tab nav */
+            .v3-next {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-top: 28px;
+              padding: 18px 20px;
+              border: 1px solid var(--line);
+              border-radius: 10px;
+              background: var(--paper-soft);
+            }
+            .v3-next .hint {
+              font-family: "JetBrains Mono", monospace;
+              font-size: 10px;
+              text-transform: uppercase;
+              letter-spacing: 0.12em;
+              color: var(--faint);
+            }
+            .v3-next .current {
+              font-family: "Fraunces", Georgia, serif;
+              font-size: 16px;
+              font-weight: 500;
+              margin-top: 3px;
+              color: var(--ink);
+            }
+            .v3-next-btn {
+              display: inline-flex;
+              align-items: center;
+              gap: 12px;
+              padding: 12px 18px;
+              background: var(--ink);
+              color: white;
+              border: none;
+              border-radius: 8px;
+              cursor: pointer;
+              font-size: 14px;
+              font-weight: 600;
+              font-family: inherit;
+              transition:
+                transform 0.15s,
+                background 0.15s;
+            }
+            .v3-next-btn:hover {
+              background: var(--cobalt);
+              transform: translateX(2px);
+            }
+            .v3-next-btn .arr {
+              font-size: 16px;
+              line-height: 1;
+            }
+
+            /* Comments */
+            .v3-comments {
+              margin-top: 40px;
+              padding-top: 24px;
+              border-top: 1px solid var(--line);
+            }
+            .v3-comments h3 {
+              font-family: "Fraunces", Georgia, serif;
+              font-weight: 500;
+              font-size: 22px;
+              margin: 0 0 4px;
+              letter-spacing: -0.01em;
+            }
+            .v3-comments .sub {
+              font-family: "JetBrains Mono", monospace;
+              font-size: 11px;
+              color: var(--faint);
+              text-transform: uppercase;
+              letter-spacing: 0.1em;
+              margin-bottom: 18px;
+            }
+            .v3-comment {
+              padding: 14px 16px;
+              border: 1px solid var(--line);
+              border-radius: 8px;
+              margin-bottom: 10px;
+              background: var(--paper);
+            }
+            .v3-comment .anchor {
+              font-family: "JetBrains Mono", monospace;
+              font-size: 10px;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.08em;
+              color: var(--cobalt-ink);
+              background: #eff6ff;
+              border: 1px solid #dbeafe;
+              padding: 2px 8px;
+              border-radius: 4px;
+              display: inline-block;
+              margin-bottom: 8px;
+            }
+            .v3-comment .head {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              margin-bottom: 4px;
+            }
+            .v3-comment .head .av {
+              width: 22px;
+              height: 22px;
+              border-radius: 50%;
+              background: var(--ink);
+              color: white;
+              font-size: 10px;
+              font-weight: 600;
+              display: grid;
+              place-items: center;
+            }
+            .v3-comment .head .author {
+              font-size: 13px;
+              font-weight: 600;
+              color: var(--ink);
+            }
+            .v3-comment .head .t {
+              font-family: "JetBrains Mono", monospace;
+              font-size: 10px;
+              color: var(--faint);
+            }
+            .v3-comment .body {
+              font-size: 14px;
+              color: var(--ink-soft);
+              line-height: 1.55;
+            }
+            .v3-comment .reply {
+              margin-top: 8px;
+              padding-top: 8px;
+              padding-left: 12px;
+              border-left: 2px solid var(--line);
+            }
+            .v3-comment .reply-link {
+              font-size: 12px;
+              color: var(--muted);
+              margin-top: 6px;
+              cursor: pointer;
+            }
+            .v3-new {
+              margin-top: 14px;
+              display: flex;
+              gap: 10px;
+            }
+            .v3-new textarea {
+              flex: 1;
+              min-height: 60px;
+              padding: 10px 12px;
+              border: 1px solid var(--line);
+              border-radius: 8px;
+              font-family: inherit;
+              font-size: 13px;
+              resize: vertical;
+            }
+            .v3-new textarea:focus {
+              outline: none;
+              border-color: var(--cobalt);
+              box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
+            }
+          </style>
+
+          <div class="v3-shell">
+            <!-- Author bar -->
+            <div class="v3-author">
+              <div class="v3-avatar">C</div>
+              <div class="v3-author-meta">
+                <div>
+                  <span class="name">Craig dos Santos</span>
+                  <span class="v3-chip harness" style="margin-left: 8px"
+                    >✦ Insight Harness</span
+                  >
+                </div>
+                <div class="meta">
+                  <span class="mono">Mar 12 – Apr 11, 2026</span>
+                  <span class="dot"></span>
+                  <span>30 days</span>
+                  <span class="dot"></span>
+                  <span>247 sessions</span>
+                </div>
+              </div>
+              <div class="v3-actions">
+                <button class="v3-upvote">
+                  <span class="arrow">▲</span>
+                  <span class="count">24</span>
+                </button>
+                <button class="v3-btn">↗ Share</button>
+                <button class="v3-btn">✎ Edit</button>
+              </div>
+            </div>
+
+            <!-- SEGMENTED TAB BAR — slate ink + cobalt rail -->
+            <div class="v3-tabs" id="v3-tabs">
+              <button class="v3-tab active" data-tab="dashboard">
+                <div class="tab-top">
+                  <span class="tab-num">01</span>
+                  <span class="tab-meta">default</span>
+                </div>
+                <span class="tab-label">Dashboard</span>
+                <span class="tab-by">metrics &amp; charts</span>
+              </button>
+              <button class="v3-tab" data-tab="setup">
+                <div class="tab-top">
+                  <span class="tab-num">02</span>
+                  <span class="tab-meta">42 items</span>
+                </div>
+                <span class="tab-label">Skills &amp; Setup</span>
+                <span class="tab-by">toolkit inventory</span>
+              </button>
+              <button class="v3-tab" data-tab="activity">
+                <div class="tab-top">
+                  <span class="tab-num">03</span>
+                  <span class="tab-meta">tools · git</span>
+                </div>
+                <span class="tab-label">Activity</span>
+                <span class="tab-by">what got done</span>
+              </button>
+              <button class="v3-tab" data-tab="writeup">
+                <div class="tab-top">
+                  <span class="tab-num">04</span>
+                  <span class="tab-meta">prose</span>
+                </div>
+                <span class="tab-label">Write-up</span>
+                <span class="tab-by">by Claude</span>
+              </button>
+              <button class="v3-tab" data-tab="insights">
+                <div class="tab-top">
+                  <span class="tab-num">05</span>
+                  <span class="tab-meta">
+                    6 sections <span class="tab-dot" title="new"></span>
+                  </span>
+                </div>
+                <span class="tab-label">Claude Insights</span>
+                <span class="tab-by">by Claude</span>
+              </button>
+            </div>
+
+            <!-- Active tab content -->
+            <div class="v3-tab-header">
+              <h2>Dashboard</h2>
+              <span class="breadcrumb"
+                >01 / 05 · Overview — metrics &amp; charts</span
+              >
+            </div>
+
+            <div class="v3-stats">
+              <div class="v3-stat">
+                <div class="value">1.5<span class="suffix">M</span></div>
+                <div class="label">Lifetime tokens</div>
+                <div class="sub">↑ 12% vs prev month</div>
+              </div>
+              <div class="v3-stat">
+                <div class="value">247</div>
+                <div class="label">Sessions</div>
+                <div class="sub">8.2 / day avg</div>
+              </div>
+              <div class="v3-stat">
+                <div class="value">18.4<span class="suffix">K</span></div>
+                <div class="label">Lines added</div>
+                <div class="sub">− 2.1K removed</div>
+              </div>
+              <div class="v3-stat">
+                <div class="value">34</div>
+                <div class="label">Skills active</div>
+                <div class="sub">12 custom</div>
+              </div>
+            </div>
+
+            <div class="v3-card">
+              <h3>Activity Heatmap <span class="num">30d</span></h3>
+              <div class="v3-placeholder tall">
+                [ 30-day heatmap — token intensity coloring ]
+              </div>
+            </div>
+            <div class="v3-card">
+              <h3>How I Work</h3>
+              <div class="v3-placeholder">
+                [ Autonomy · Model mix · File ops ]
+              </div>
+            </div>
+            <div class="v3-card">
+              <h3>Workflow Diagram</h3>
+              <div class="v3-placeholder tall">
+                [ Mermaid: agent dispatch graph ]
+              </div>
+            </div>
+
+            <!-- Next-tab footer -->
+            <div class="v3-next">
+              <div>
+                <div class="hint">End of section 01</div>
+                <div class="current">Dashboard</div>
+              </div>
+              <button class="v3-next-btn">
+                <span>Next · Skills &amp; Setup</span>
+                <span class="arr">→</span>
+              </button>
+            </div>
+
+            <!-- Comments -->
+            <div class="v3-comments">
+              <h3>Comments</h3>
+              <div class="sub">4 threads · all tabs · newest first</div>
+
+              <div class="v3-comment">
+                <span class="anchor">Dashboard · Activity Heatmap</span>
+                <div class="head">
+                  <div class="av">JB</div>
+                  <span class="author">jenbenn</span>
+                  <span class="t">2h</span>
+                </div>
+                <div class="body">
+                  Interesting that weekends stay hot — batching personal
+                  projects, or is work bleeding in?
+                </div>
+                <div class="reply">
+                  <div class="head">
+                    <div class="av" style="background: var(--cobalt)">C</div>
+                    <span class="author">craig</span>
+                    <span class="t">1h</span>
+                  </div>
+                  <div class="body">
+                    Mostly personal. Saturdays are skill-creator days.
+                  </div>
+                </div>
+                <div class="reply-link">Reply</div>
+              </div>
+
+              <div class="v3-comment">
+                <span class="anchor">Dashboard · Workflow Diagram</span>
+                <div class="head">
+                  <div class="av" style="background: #0f766e">DK</div>
+                  <span class="author">dkochman</span>
+                  <span class="t">3d</span>
+                </div>
+                <div class="body">
+                  How did you generate the agent dispatch graph? From the
+                  harness or authored?
+                </div>
+                <div class="reply-link">Reply</div>
+              </div>
+
+              <div class="v3-comment">
+                <span class="anchor">Skills &amp; Setup · MCP Servers</span>
+                <div class="head">
+                  <div class="av" style="background: #b45309">RS</div>
+                  <span class="author">rsanchez</span>
+                  <span class="t">yesterday</span>
+                </div>
+                <div class="body">
+                  That Gmail MCP config — does it handle attachments reliably?
+                </div>
+                <div class="reply-link">Reply</div>
+              </div>
+
+              <div class="v3-comment">
+                <span class="anchor">Claude Insights · Suggestions</span>
+                <div class="head">
+                  <div class="av" style="background: #7c2d12">MP</div>
+                  <span class="author">mpatel</span>
+                  <span class="t">5d</span>
+                </div>
+                <div class="body">
+                  Strong +1 on the "try subagent-driven-development" suggestion
+                  — it changed how I work.
+                </div>
+                <div class="reply-link">Reply</div>
+              </div>
+
+              <div class="v3-new">
+                <div
+                  class="v3-avatar"
+                  style="width: 36px; height: 36px; font-size: 14px"
+                >
+                  Y
+                </div>
+                <textarea
+                  placeholder="Comment on this profile — @mention a section to anchor it"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+          <!-- /v3-shell -->
+        </div>
+        <!-- /v3 -->
+
+        <!-- ============== V4 — match the ACTUAL live site components ============== -->
+        <div class="version" data-version="4">
+          <style>
+            /* v4 mirrors Tailwind classes used by HeroStats.tsx + CollapsibleSection.tsx */
+            .v4-page {
+              background: #f8fafc; /* bg-slate-50 */
+              padding: 32px 16px;
+              font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+              color: #0f172a;
+              border-radius: 12px;
+              border: 1px solid #e2e8f0;
+            }
+            .v4-container {
+              max-width: 1024px; /* max-w-5xl */
+              margin: 0 auto;
+              padding: 0 16px;
+            }
+
+            /* Author bar — lifted verbatim from page.tsx:282 */
+            .v4-author {
+              display: flex;
+              align-items: center;
+              gap: 16px;
+              padding-bottom: 24px;
+              border-bottom: 1px solid #e2e8f0;
+              margin-bottom: 24px;
+            }
+            .v4-avatar {
+              width: 52px;
+              height: 52px;
+              border-radius: 9999px;
+              background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+              color: white;
+              display: grid;
+              place-items: center;
+              font-weight: 700;
+              font-size: 18px;
+            }
+            .v4-author-name {
+              font-weight: 600;
+              color: #0f172a;
+            }
+            .v4-harness-pill {
+              margin-left: 8px;
+              display: inline-flex;
+              align-items: center;
+              gap: 4px;
+              padding: 1px 10px;
+              border-radius: 9999px;
+              background: linear-gradient(
+                to right,
+                #ede9fe,
+                #dbeafe
+              ); /* from-violet-100 to-blue-100 (existing site) */
+              border: 1px solid #ddd6fe; /* border-violet-200 */
+              color: #6d28d9; /* text-violet-700 */
+              font-size: 11px;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.04em;
+            }
+            .v4-date {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              font-size: 14px;
+              color: #64748b;
+              margin-top: 2px;
+            }
+            .v4-actions {
+              display: flex;
+              gap: 8px;
+              align-items: center;
+            }
+            .v4-btn {
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              padding: 6px 12px;
+              border: 1px solid #e2e8f0;
+              border-radius: 8px;
+              font-size: 14px;
+              color: #475569;
+              background: white;
+              cursor: pointer;
+            }
+            .v4-btn:hover {
+              background: #f8fafc;
+            }
+            .v4-upvote {
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              padding: 6px 12px;
+              border: 1px solid #bfdbfe;
+              border-radius: 8px;
+              font-size: 14px;
+              font-weight: 600;
+              color: #1d4ed8;
+              background: #eff6ff;
+              cursor: pointer;
+            }
+            .v4-upvote:hover {
+              background: #dbeafe;
+            }
+            .v4-upvote .arrow {
+              font-weight: 700;
+            }
+
+            /* ── TAB BAR — mirrors CollapsibleSection's rounded-xl card + HeroStats' gradient rail ── */
+            .v4-tabs {
+              position: relative;
+              overflow: hidden;
+              background: white;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              display: grid;
+              grid-template-columns: repeat(5, 1fr);
+              margin-bottom: 24px;
+            }
+            .v4-tab {
+              position: relative;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 8px;
+              padding: 16px 12px 18px;
+              background: transparent;
+              border: none;
+              border-right: 1px solid #f1f5f9;
+              cursor: pointer;
+              text-align: center;
+              font-family: inherit;
+              transition: background-color 0.15s;
+            }
+            .v4-tab:last-child {
+              border-right: none;
+            }
+            .v4-tab:hover {
+              background: #f8fafc; /* hover:bg-slate-50 (CollapsibleSection pattern) */
+            }
+            .v4-tab-icon {
+              width: 40px;
+              height: 40px; /* h-10 w-10 — CollapsibleSection icon size */
+              border-radius: 12px; /* rounded-xl */
+              display: grid;
+              place-items: center;
+              font-size: 20px;
+              flex-shrink: 0;
+            }
+            /* icon backgrounds pulled from SECTIONS array in page.tsx */
+            .v4-tab[data-tab="dashboard"] .v4-tab-icon {
+              background: #dbeafe;
+            } /* bg-blue-100 */
+            .v4-tab[data-tab="setup"] .v4-tab-icon {
+              background: #ccfbf1;
+            } /* bg-teal-100 */
+            .v4-tab[data-tab="activity"] .v4-tab-icon {
+              background: #fef3c7;
+            } /* bg-amber-100 */
+            .v4-tab[data-tab="writeup"] .v4-tab-icon {
+              background: #e0e7ff;
+            } /* bg-indigo-100 */
+            .v4-tab[data-tab="insights"] .v4-tab-icon {
+              background: #f3e8ff;
+            } /* bg-purple-100 */
+            .v4-tab-label {
+              font-size: 15px;
+              font-weight: 600;
+              color: #334155; /* text-slate-700 */
+              line-height: 1.2;
+            }
+            .v4-tab-by {
+              font-size: 11px;
+              color: #94a3b8; /* text-slate-400 */
+            }
+            .v4-tab.active {
+              background: #f8fafc; /* subtle fill */
+            }
+            .v4-tab.active .v4-tab-label {
+              color: #0f172a;
+            } /* text-slate-900 */
+            /* Active indicator: thin blue→violet rail — directly lifted from
+               HeroStats.tsx StatCard top-bar (line 129): the site's signature accent */
+            .v4-tab.active::after {
+              content: "";
+              position: absolute;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              height: 3px;
+              background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            }
+
+            /* Content area — matches CollapsibleSection's rounded-xl cards */
+            .v4-card {
+              background: white;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              padding: 20px;
+              margin-bottom: 16px;
+            }
+            .v4-card-head {
+              display: flex;
+              align-items: flex-start;
+              gap: 16px;
+              margin-bottom: 16px;
+            }
+            .v4-card-icon {
+              width: 40px;
+              height: 40px;
+              border-radius: 12px;
+              display: grid;
+              place-items: center;
+              font-size: 20px;
+              flex-shrink: 0;
+            }
+            .v4-card-title {
+              font-size: 18px;
+              font-weight: 600;
+              color: #0f172a;
+            }
+            .v4-card-summary {
+              font-size: 14px;
+              color: #475569;
+              margin-top: 2px;
+            }
+            .v4-placeholder {
+              background: #f8fafc;
+              border: 1px dashed #cbd5e1;
+              border-radius: 8px;
+              padding: 24px;
+              text-align: center;
+              color: #94a3b8;
+              font-size: 13px;
+            }
+            .v4-placeholder.tall {
+              padding: 48px 24px;
+            }
+
+            /* Lifetime tokens banner — copied from HeroStats.tsx line 237 */
+            .v4-lifetime {
+              margin-bottom: 24px;
+              padding: 20px 24px;
+              border-radius: 12px;
+              border: 1px solid #dbeafe;
+              background: linear-gradient(
+                135deg,
+                rgba(239, 246, 255, 0.8),
+                rgba(236, 254, 255, 0.6)
+              );
+              text-align: center;
+            }
+            .v4-lifetime-value {
+              font-family: "JetBrains Mono", ui-monospace, monospace;
+              font-size: 60px;
+              font-weight: 800;
+              line-height: 1;
+              letter-spacing: -0.02em;
+              background: linear-gradient(to right, #2563eb, #0891b2);
+              -webkit-background-clip: text;
+              background-clip: text;
+              color: transparent;
+            }
+            .v4-lifetime-label {
+              margin-top: 8px;
+              font-size: 13px;
+              font-weight: 700;
+              color: #64748b;
+              text-transform: uppercase;
+              letter-spacing: 0.1em;
+            }
+
+            /* Stat cards — copied from HeroStats.tsx StatCard (line 128) */
+            .v4-stats {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 16px;
+              margin-bottom: 24px;
+            }
+            .v4-stat {
+              position: relative;
+              overflow: hidden;
+              background: white;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              padding: 20px;
+              text-align: center;
+            }
+            .v4-stat::before {
+              content: "";
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              height: 3px;
+              background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            }
+            .v4-stat-value {
+              font-size: 32px;
+              font-weight: 800;
+              letter-spacing: -0.02em;
+              color: #0f172a;
+              line-height: 1;
+            }
+            .v4-stat-label {
+              margin-top: 8px;
+              font-size: 12px;
+              font-weight: 500;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              color: #64748b;
+            }
+            .v4-stat-sub {
+              margin-top: 6px;
+              font-size: 11px;
+              color: #94a3b8;
+            }
+            body.viewport-mobile .v4-stats {
+              grid-template-columns: repeat(2, 1fr);
+            }
+            body.viewport-mobile .v4-tabs {
+              grid-template-columns: repeat(3, 1fr);
+            }
+            body.viewport-mobile .v4-tab:nth-child(3) {
+              border-right: none;
+            }
+            body.viewport-mobile .v4-tab:nth-child(n + 4) {
+              border-top: 1px solid #f1f5f9;
+            }
+
+            /* Next-tab footer — kept but softened to match card aesthetic */
+            .v4-next {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 16px 20px;
+              background: white;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              margin-top: 24px;
+            }
+            .v4-next-hint {
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.08em;
+              color: #94a3b8;
+              font-weight: 600;
+            }
+            .v4-next-current {
+              font-size: 16px;
+              font-weight: 600;
+              color: #0f172a;
+              margin-top: 2px;
+            }
+            .v4-next-btn {
+              display: inline-flex;
+              align-items: center;
+              gap: 8px;
+              padding: 10px 16px;
+              border-radius: 8px;
+              background: #0f172a;
+              color: white;
+              border: none;
+              cursor: pointer;
+              font-size: 14px;
+              font-weight: 500;
+              font-family: inherit;
+            }
+            .v4-next-btn:hover {
+              background: #1e293b;
+            }
+
+            /* Comments — match card aesthetic */
+            .v4-comments {
+              margin-top: 32px;
+              padding-top: 24px;
+              border-top: 1px solid #e2e8f0;
+            }
+            .v4-comments h3 {
+              font-size: 18px;
+              font-weight: 600;
+              color: #0f172a;
+              margin: 0 0 4px;
+            }
+            .v4-comments .sub {
+              font-size: 13px;
+              color: #64748b;
+              margin-bottom: 16px;
+            }
+            .v4-comment {
+              background: white;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              padding: 14px 16px;
+              margin-bottom: 10px;
+            }
+            .v4-comment-anchor {
+              display: inline-block;
+              font-size: 11px;
+              font-weight: 600;
+              color: #1d4ed8;
+              background: #eff6ff;
+              padding: 2px 8px;
+              border-radius: 6px;
+              margin-bottom: 8px;
+            }
+            .v4-comment-head {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              margin-bottom: 6px;
+            }
+            .v4-comment-av {
+              width: 24px;
+              height: 24px;
+              border-radius: 9999px;
+              background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+              color: white;
+              font-size: 11px;
+              font-weight: 600;
+              display: grid;
+              place-items: center;
+            }
+            .v4-comment-author {
+              font-size: 13px;
+              font-weight: 600;
+              color: #0f172a;
+            }
+            .v4-comment-t {
+              font-size: 11px;
+              color: #94a3b8;
+            }
+            .v4-comment-body {
+              font-size: 14px;
+              color: #334155;
+              line-height: 1.55;
+            }
+            .v4-reply {
+              margin-top: 10px;
+              padding-top: 10px;
+              padding-left: 12px;
+              border-left: 2px solid #f1f5f9;
+            }
+            .v4-reply-link {
+              margin-top: 6px;
+              font-size: 12px;
+              color: #64748b;
+              cursor: pointer;
+            }
+            .v4-new {
+              margin-top: 14px;
+              display: flex;
+              gap: 10px;
+            }
+            .v4-new textarea {
+              flex: 1;
+              min-height: 64px;
+              padding: 10px 12px;
+              border: 1px solid #e2e8f0;
+              border-radius: 8px;
+              font-family: inherit;
+              font-size: 13px;
+              resize: vertical;
+            }
+            .v4-new textarea:focus {
+              outline: none;
+              border-color: #3b82f6;
+              box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            }
+          </style>
+
+          <div class="v4-page">
+            <div class="v4-container">
+              <!-- Author bar — verbatim pattern from page.tsx -->
+              <div class="v4-author">
+                <div class="v4-avatar">C</div>
+                <div style="flex: 1">
+                  <div>
+                    <span class="v4-author-name">Craig dos Santos</span>
+                    <span class="v4-harness-pill">✦ Insight Harness</span>
+                  </div>
+                  <div class="v4-date">📅 Mar 12 – Apr 11, 2026 · 30 days</div>
+                </div>
+                <div class="v4-actions">
+                  <button class="v4-upvote">
+                    <span class="arrow">▲</span> 24 useful
+                  </button>
+                  <button class="v4-btn">↗ Share</button>
+                  <button class="v4-btn">✎ Edit</button>
+                </div>
+              </div>
+
+              <!-- TAB BAR -->
+              <div class="v4-tabs" id="v4-tabs">
+                <button class="v4-tab active" data-tab="dashboard">
+                  <div class="v4-tab-icon">📊</div>
+                  <div class="v4-tab-label">Dashboard</div>
+                </button>
+                <button class="v4-tab" data-tab="setup">
+                  <div class="v4-tab-icon">🧰</div>
+                  <div class="v4-tab-label">Skills &amp; Setup</div>
+                </button>
+                <button class="v4-tab" data-tab="activity">
+                  <div class="v4-tab-icon">⚡</div>
+                  <div class="v4-tab-label">Activity</div>
+                </button>
+                <button class="v4-tab" data-tab="writeup">
+                  <div class="v4-tab-icon">📝</div>
+                  <div class="v4-tab-label">Write-up</div>
+                  <div class="v4-tab-by">by Claude</div>
+                </button>
+                <button class="v4-tab" data-tab="insights">
+                  <div class="v4-tab-icon">✨</div>
+                  <div class="v4-tab-label">Claude Insights</div>
+                  <div class="v4-tab-by">by Claude</div>
+                </button>
+              </div>
+
+              <!-- Lifetime tokens banner — verbatim from HeroStats -->
+              <div class="v4-lifetime">
+                <div class="v4-lifetime-value">1.5M</div>
+                <div class="v4-lifetime-label">Lifetime Tokens</div>
+                <div
+                  style="
+                    margin-top: 6px;
+                    font-size: 13px;
+                    font-weight: 500;
+                    color: #94a3b8;
+                  "
+                >
+                  842K in last 30 days
+                </div>
+              </div>
+
+              <!-- Stat cards — verbatim from HeroStats StatCard -->
+              <div class="v4-stats">
+                <div class="v4-stat">
+                  <div class="v4-stat-value">842K</div>
+                  <div class="v4-stat-label">Tokens</div>
+                  <div class="v4-stat-sub">196.5K/wk (842K total)</div>
+                </div>
+                <div class="v4-stat">
+                  <div class="v4-stat-value">247</div>
+                  <div class="v4-stat-label">Sessions</div>
+                  <div class="v4-stat-sub">57.6/wk (247 total)</div>
+                </div>
+                <div class="v4-stat">
+                  <div class="v4-stat-value">82h</div>
+                  <div class="v4-stat-label">Active Time</div>
+                  <div class="v4-stat-sub">19.1/wk (82 total)</div>
+                </div>
+                <div class="v4-stat">
+                  <div
+                    class="v4-stat-value"
+                    style="
+                      font-size: 22px;
+                      display: flex;
+                      justify-content: center;
+                      gap: 4px;
+                    "
+                  >
+                    <span style="color: #16a34a">+18.4k</span>
+                    <span style="color: #dc2626">−2.1k</span>
+                  </div>
+                  <div class="v4-stat-label">Lines of Code</div>
+                </div>
+              </div>
+
+              <!-- Collapsible-style section cards — verbatim pattern -->
+              <div class="v4-card">
+                <div class="v4-card-head">
+                  <div class="v4-card-icon" style="background: #fef3c7">🔥</div>
+                  <div>
+                    <div class="v4-card-title">Activity Heatmap</div>
+                    <div class="v4-card-summary">
+                      30-day session density, colored by token intensity
+                    </div>
+                  </div>
+                </div>
+                <div class="v4-placeholder tall">
+                  [ Activity heatmap visualization ]
+                </div>
+              </div>
+
+              <div class="v4-card">
+                <div class="v4-card-head">
+                  <div class="v4-card-icon" style="background: #e0e7ff">🎯</div>
+                  <div>
+                    <div class="v4-card-title">How I Work</div>
+                    <div class="v4-card-summary">
+                      Autonomy gauge · Model mix · File-op breakdown
+                    </div>
+                  </div>
+                </div>
+                <div class="v4-placeholder">
+                  [ How I Work cluster visualization ]
+                </div>
+              </div>
+
+              <div class="v4-card">
+                <div class="v4-card-head">
+                  <div class="v4-card-icon" style="background: #dcfce7">🔀</div>
+                  <div>
+                    <div class="v4-card-title">Workflow Diagram</div>
+                    <div class="v4-card-summary">
+                      Mermaid graph of agent dispatch flow
+                    </div>
+                  </div>
+                </div>
+                <div class="v4-placeholder tall">
+                  [ Mermaid workflow diagram ]
+                </div>
+              </div>
+
+              <!-- Next-tab nav -->
+              <div class="v4-next">
+                <div>
+                  <div class="v4-next-hint">End of Dashboard</div>
+                  <div class="v4-next-current">Up next</div>
+                </div>
+                <button class="v4-next-btn">
+                  Skills &amp; Setup <span>→</span>
+                </button>
+              </div>
+
+              <!-- Comments — all threads across tabs, at the bottom -->
+              <div class="v4-comments">
+                <h3>💬 Comments</h3>
+                <div class="sub">4 threads across all tabs · newest first</div>
+
+                <div class="v4-comment">
+                  <span class="v4-comment-anchor"
+                    >◆ Dashboard · Activity Heatmap</span
+                  >
+                  <div class="v4-comment-head">
+                    <div class="v4-comment-av">JB</div>
+                    <span class="v4-comment-author">jenbenn</span>
+                    <span class="v4-comment-t">2h</span>
+                  </div>
+                  <div class="v4-comment-body">
+                    Interesting that weekends stay hot — batching personal
+                    projects or is work bleeding in?
+                  </div>
+                  <div class="v4-reply">
+                    <div class="v4-comment-head">
+                      <div
+                        class="v4-comment-av"
+                        style="
+                          background: linear-gradient(135deg, #f59e0b, #ef4444);
+                        "
+                      >
+                        C
+                      </div>
+                      <span class="v4-comment-author">craig</span>
+                      <span class="v4-comment-t">1h</span>
+                    </div>
+                    <div class="v4-comment-body">
+                      Mostly personal. Saturdays are skill-creator days.
+                    </div>
+                  </div>
+                  <div class="v4-reply-link">Reply</div>
+                </div>
+
+                <div class="v4-comment">
+                  <span class="v4-comment-anchor"
+                    >◆ Dashboard · Workflow Diagram</span
+                  >
+                  <div class="v4-comment-head">
+                    <div
+                      class="v4-comment-av"
+                      style="
+                        background: linear-gradient(135deg, #10b981, #06b6d4);
+                      "
+                    >
+                      DK
+                    </div>
+                    <span class="v4-comment-author">dkochman</span>
+                    <span class="v4-comment-t">3d</span>
+                  </div>
+                  <div class="v4-comment-body">
+                    How did you generate the agent dispatch graph? From the
+                    harness or authored?
+                  </div>
+                  <div class="v4-reply-link">Reply</div>
+                </div>
+
+                <div class="v4-comment">
+                  <span class="v4-comment-anchor"
+                    >◆ Skills &amp; Setup · MCP Servers</span
+                  >
+                  <div class="v4-comment-head">
+                    <div
+                      class="v4-comment-av"
+                      style="
+                        background: linear-gradient(135deg, #8b5cf6, #ec4899);
+                      "
+                    >
+                      RS
+                    </div>
+                    <span class="v4-comment-author">rsanchez</span>
+                    <span class="v4-comment-t">yesterday</span>
+                  </div>
+                  <div class="v4-comment-body">
+                    That Gmail MCP config — does it handle attachments reliably?
+                  </div>
+                  <div class="v4-reply-link">Reply</div>
+                </div>
+
+                <div class="v4-comment">
+                  <span class="v4-comment-anchor"
+                    >◆ Claude Insights · Suggestions</span
+                  >
+                  <div class="v4-comment-head">
+                    <div
+                      class="v4-comment-av"
+                      style="
+                        background: linear-gradient(135deg, #f97316, #ec4899);
+                      "
+                    >
+                      MP
+                    </div>
+                    <span class="v4-comment-author">mpatel</span>
+                    <span class="v4-comment-t">5d</span>
+                  </div>
+                  <div class="v4-comment-body">
+                    Strong +1 on the "try subagent-driven-development"
+                    suggestion — changed how I work.
+                  </div>
+                  <div class="v4-reply-link">Reply</div>
+                </div>
+
+                <div class="v4-new">
+                  <div
+                    class="v4-avatar"
+                    style="width: 36px; height: 36px; font-size: 14px"
+                  >
+                    Y
+                  </div>
+                  <textarea
+                    placeholder="Leave a comment on this profile..."
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /v4-page -->
+        </div>
+        <!-- /v4 -->
+
+        <!-- ============== V5 — custom SVG icons + refined active state + fixed lifetime font ============== -->
+        <div class="version" data-version="5">
+          <!--
+            Reusable SVG symbol set — custom, lucide-compatible
+            (stroke 1.75, round joins/caps, currentColor fill).
+            These are tailored to the 5 tab concepts so they read as a family.
+          -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            style="display: none"
+            aria-hidden="true"
+          >
+            <defs>
+              <!-- 01 Dashboard — 2x2 cells with one elevated accent square -->
+              <symbol id="ico-dashboard" viewBox="0 0 24 24">
+                <rect
+                  x="3"
+                  y="3"
+                  width="7.5"
+                  height="7.5"
+                  rx="1.25"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                />
+                <rect
+                  x="13.5"
+                  y="3"
+                  width="7.5"
+                  height="4.5"
+                  rx="1.25"
+                  fill="currentColor"
+                  opacity="0.9"
+                />
+                <rect
+                  x="13.5"
+                  y="10"
+                  width="7.5"
+                  height="11"
+                  rx="1.25"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                />
+                <rect
+                  x="3"
+                  y="13.5"
+                  width="7.5"
+                  height="7.5"
+                  rx="1.25"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                />
+              </symbol>
+
+              <!-- 02 Skills & Setup — stacked prisms (toolkit layers) -->
+              <symbol id="ico-setup" viewBox="0 0 24 24">
+                <path
+                  d="M12 3 3 7.5 12 12l9-4.5L12 3Z"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M3 12.25 12 16.75 21 12.25"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M3 17 12 21.5 21 17"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </symbol>
+
+              <!-- 03 Activity — stepped pulse over a baseline -->
+              <symbol id="ico-activity" viewBox="0 0 24 24">
+                <path
+                  d="M2 14h3l3-9 4 16 3-10 2 5 2-2h3"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <circle cx="8" cy="5" r="1.25" fill="currentColor" />
+              </symbol>
+
+              <!-- 04 Write-up — page with ruled lines and a prose-wave underlay; small Claude sparkle in corner -->
+              <symbol id="ico-writeup" viewBox="0 0 24 24">
+                <path
+                  d="M13.5 2.5H6.5A1.5 1.5 0 0 0 5 4v16a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 20V8l-5.5-5.5Z"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M13.5 2.5V8H19"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M8 12h8M8 15.5h6M8 19h4.5"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
+                <!-- Claude-style 4-point sparkle badge -->
+                <path
+                  d="M18 11.5 18.5 13 20 13.5 18.5 14 18 15.5 17.5 14 16 13.5 17.5 13 18 11.5Z"
+                  fill="currentColor"
+                />
+              </symbol>
+
+              <!-- 05 Claude Insights — primary 4-point sparkle with two satellites (mirrors lucide Sparkles) -->
+              <symbol id="ico-insights" viewBox="0 0 24 24">
+                <path
+                  d="M12 3.5 13.6 9.2 19.2 10.8 13.6 12.4 12 18.1 10.4 12.4 4.8 10.8 10.4 9.2 12 3.5Z"
+                  fill="currentColor"
+                />
+                <path
+                  d="M19 4 19.6 5.9 21.5 6.5 19.6 7.1 19 9 18.4 7.1 16.5 6.5 18.4 5.9 19 4Z"
+                  fill="currentColor"
+                  opacity="0.75"
+                />
+                <path
+                  d="M18.5 15.5 19 17 20.5 17.5 19 18 18.5 19.5 18 18 16.5 17.5 18 17 18.5 15.5Z"
+                  fill="currentColor"
+                  opacity="0.6"
+                />
+              </symbol>
+            </defs>
+          </svg>
+
+          <style>
+            .v5-page {
+              background: #f8fafc;
+              padding: 32px 16px;
+              font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+              color: #0f172a;
+              border-radius: 12px;
+              border: 1px solid #e2e8f0;
+            }
+            .v5-container {
+              max-width: 1024px;
+              margin: 0 auto;
+              padding: 0 16px;
+            }
+
+            /* Author bar — same as v4 */
+            .v5-author {
+              display: flex;
+              align-items: center;
+              gap: 16px;
+              padding-bottom: 24px;
+              border-bottom: 1px solid #e2e8f0;
+              margin-bottom: 24px;
+            }
+            .v5-avatar {
+              width: 52px;
+              height: 52px;
+              border-radius: 9999px;
+              background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+              color: white;
+              display: grid;
+              place-items: center;
+              font-weight: 700;
+              font-size: 18px;
+            }
+            .v5-author-name {
+              font-weight: 600;
+              color: #0f172a;
+            }
+            .v5-harness-pill {
+              margin-left: 8px;
+              display: inline-flex;
+              align-items: center;
+              gap: 4px;
+              padding: 1px 10px;
+              border-radius: 9999px;
+              background: linear-gradient(to right, #ede9fe, #dbeafe);
+              border: 1px solid #ddd6fe;
+              color: #6d28d9;
+              font-size: 11px;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.04em;
+            }
+            .v5-date {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              font-size: 14px;
+              color: #64748b;
+              margin-top: 2px;
+            }
+            .v5-actions {
+              display: flex;
+              gap: 8px;
+              align-items: center;
+            }
+            .v5-btn {
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              padding: 6px 12px;
+              border: 1px solid #e2e8f0;
+              border-radius: 8px;
+              font-size: 14px;
+              color: #475569;
+              background: white;
+              cursor: pointer;
+            }
+            .v5-btn:hover {
+              background: #f8fafc;
+            }
+            .v5-upvote {
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              padding: 6px 12px;
+              border: 1px solid #bfdbfe;
+              border-radius: 8px;
+              font-size: 14px;
+              font-weight: 600;
+              color: #1d4ed8;
+              background: #eff6ff;
+              cursor: pointer;
+            }
+            .v5-upvote:hover {
+              background: #dbeafe;
+            }
+
+            /* ── REFINED TAB BAR ──
+               Active treatment = three escalating layers of saturation:
+               (1) subtle tinted card fill, (2) saturated icon badge with
+               white glyph, (3) the site's signature 3px blue→violet rail. */
+            .v5-tabs {
+              position: relative;
+              background: white;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              overflow: hidden;
+              display: grid;
+              grid-template-columns: repeat(5, 1fr);
+              margin-bottom: 24px;
+            }
+            .v5-tab {
+              position: relative;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 10px;
+              padding: 18px 10px 20px;
+              background: transparent;
+              border: none;
+              border-right: 1px solid #f1f5f9;
+              cursor: pointer;
+              text-align: center;
+              font-family: inherit;
+              color: #475569;
+              transition:
+                background-color 0.18s ease,
+                color 0.18s ease;
+            }
+            .v5-tab:last-child {
+              border-right: none;
+            }
+            .v5-tab:hover {
+              background: #f8fafc;
+              color: #0f172a;
+            }
+            .v5-tab:hover .v5-tab-icon {
+              transform: translateY(-1px);
+            }
+            .v5-tab-icon {
+              width: 40px;
+              height: 40px;
+              border-radius: 12px;
+              display: grid;
+              place-items: center;
+              flex-shrink: 0;
+              transition:
+                background-color 0.18s ease,
+                color 0.18s ease,
+                transform 0.18s ease;
+            }
+            .v5-tab-icon svg {
+              width: 22px;
+              height: 22px;
+              display: block;
+            }
+            .v5-tab-label {
+              font-size: 14px;
+              font-weight: 500;
+              color: inherit;
+              letter-spacing: -0.005em;
+              line-height: 1.2;
+            }
+            .v5-tab-by {
+              font-size: 11px;
+              color: #94a3b8;
+              font-style: italic;
+              letter-spacing: 0.01em;
+            }
+
+            /* Idle icon color per tab family (tint bg + saturated stroke) */
+            .v5-tab[data-tab="dashboard"] .v5-tab-icon {
+              background: #dbeafe;
+              color: #2563eb;
+            }
+            .v5-tab[data-tab="setup"] .v5-tab-icon {
+              background: #ccfbf1;
+              color: #0d9488;
+            }
+            .v5-tab[data-tab="activity"] .v5-tab-icon {
+              background: #fef3c7;
+              color: #d97706;
+            }
+            .v5-tab[data-tab="writeup"] .v5-tab-icon {
+              background: #e0e7ff;
+              color: #4f46e5;
+            }
+            .v5-tab[data-tab="insights"] .v5-tab-icon {
+              background: #f3e8ff;
+              color: #9333ea;
+            }
+
+            /* Active: (1) tinted fill on the tab, (2) saturated badge with white glyph, (3) rail */
+            .v5-tab.active {
+              color: #0f172a;
+            }
+            .v5-tab.active .v5-tab-label {
+              font-weight: 600;
+            }
+            .v5-tab.active[data-tab="dashboard"] {
+              background: #eff6ff;
+            }
+            .v5-tab.active[data-tab="dashboard"] .v5-tab-icon {
+              background: #2563eb;
+              color: white;
+              box-shadow: 0 4px 10px -3px rgba(37, 99, 235, 0.45);
+            }
+            .v5-tab.active[data-tab="setup"] {
+              background: #f0fdfa;
+            }
+            .v5-tab.active[data-tab="setup"] .v5-tab-icon {
+              background: #0d9488;
+              color: white;
+              box-shadow: 0 4px 10px -3px rgba(13, 148, 136, 0.45);
+            }
+            .v5-tab.active[data-tab="activity"] {
+              background: #fffbeb;
+            }
+            .v5-tab.active[data-tab="activity"] .v5-tab-icon {
+              background: #d97706;
+              color: white;
+              box-shadow: 0 4px 10px -3px rgba(217, 119, 6, 0.45);
+            }
+            .v5-tab.active[data-tab="writeup"] {
+              background: #eef2ff;
+            }
+            .v5-tab.active[data-tab="writeup"] .v5-tab-icon {
+              background: #4f46e5;
+              color: white;
+              box-shadow: 0 4px 10px -3px rgba(79, 70, 229, 0.45);
+            }
+            .v5-tab.active[data-tab="insights"] {
+              background: #faf5ff;
+            }
+            .v5-tab.active[data-tab="insights"] .v5-tab-icon {
+              background: #9333ea;
+              color: white;
+              box-shadow: 0 4px 10px -3px rgba(147, 51, 234, 0.45);
+            }
+            /* Site-signature rail (blue→violet) bottom of active tab */
+            .v5-tab.active::after {
+              content: "";
+              position: absolute;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              height: 3px;
+              background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            }
+
+            /* Lifetime tokens banner —
+               NEW: font now matches StatCard values (Inter, extrabold,
+               tracking-tight, leading-none, solid slate-900). No more
+               JetBrains Mono gradient. Just sized larger for hero emphasis. */
+            .v5-lifetime {
+              margin-bottom: 24px;
+              padding: 24px;
+              border-radius: 12px;
+              border: 1px solid #dbeafe;
+              background: linear-gradient(
+                135deg,
+                rgba(239, 246, 255, 0.8),
+                rgba(236, 254, 255, 0.6)
+              );
+              text-align: center;
+            }
+            .v5-lifetime-value {
+              font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+              font-size: 64px;
+              font-weight: 800;
+              line-height: 1; /* leading-none */
+              letter-spacing: -0.03em; /* tracking-tight, a hair extra for hero scale */
+              color: #0f172a; /* text-slate-900 */
+            }
+            .v5-lifetime-label {
+              margin-top: 10px;
+              font-size: 13px;
+              font-weight: 700;
+              color: #64748b;
+              text-transform: uppercase;
+              letter-spacing: 0.1em;
+            }
+            .v5-lifetime-sub {
+              margin-top: 6px;
+              font-size: 13px;
+              font-weight: 500;
+              color: #94a3b8;
+            }
+
+            /* Stat cards — verbatim from HeroStats StatCard */
+            .v5-stats {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 16px;
+              margin-bottom: 24px;
+            }
+            .v5-stat {
+              position: relative;
+              overflow: hidden;
+              background: white;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              padding: 20px;
+              text-align: center;
+            }
+            .v5-stat::before {
+              content: "";
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              height: 3px;
+              background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            }
+            .v5-stat-value {
+              font-size: 32px;
+              font-weight: 800;
+              letter-spacing: -0.02em;
+              color: #0f172a;
+              line-height: 1;
+            }
+            .v5-stat-label {
+              margin-top: 8px;
+              font-size: 12px;
+              font-weight: 500;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              color: #64748b;
+            }
+            .v5-stat-sub {
+              margin-top: 6px;
+              font-size: 11px;
+              color: #94a3b8;
+            }
+            body.viewport-mobile .v5-stats {
+              grid-template-columns: repeat(2, 1fr);
+            }
+            body.viewport-mobile .v5-tabs {
+              grid-template-columns: repeat(3, 1fr);
+            }
+            body.viewport-mobile .v5-tab:nth-child(3) {
+              border-right: none;
+            }
+            body.viewport-mobile .v5-tab:nth-child(n + 4) {
+              border-top: 1px solid #f1f5f9;
+            }
+
+            /* Section cards */
+            .v5-card {
+              background: white;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              padding: 20px;
+              margin-bottom: 16px;
+            }
+            .v5-card-head {
+              display: flex;
+              align-items: flex-start;
+              gap: 16px;
+              margin-bottom: 16px;
+            }
+            .v5-card-icon {
+              width: 40px;
+              height: 40px;
+              border-radius: 12px;
+              display: grid;
+              place-items: center;
+              font-size: 20px;
+              flex-shrink: 0;
+            }
+            .v5-card-title {
+              font-size: 18px;
+              font-weight: 600;
+              color: #0f172a;
+            }
+            .v5-card-summary {
+              font-size: 14px;
+              color: #475569;
+              margin-top: 2px;
+            }
+            .v5-placeholder {
+              background: #f8fafc;
+              border: 1px dashed #cbd5e1;
+              border-radius: 8px;
+              padding: 24px;
+              text-align: center;
+              color: #94a3b8;
+              font-size: 13px;
+            }
+            .v5-placeholder.tall {
+              padding: 48px 24px;
+            }
+
+            /* Next tab */
+            .v5-next {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 16px 20px;
+              background: white;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              margin-top: 24px;
+            }
+            .v5-next-hint {
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.08em;
+              color: #94a3b8;
+              font-weight: 600;
+            }
+            .v5-next-current {
+              font-size: 16px;
+              font-weight: 600;
+              color: #0f172a;
+              margin-top: 2px;
+            }
+            .v5-next-btn {
+              display: inline-flex;
+              align-items: center;
+              gap: 8px;
+              padding: 10px 16px;
+              border-radius: 8px;
+              background: #0f172a;
+              color: white;
+              border: none;
+              cursor: pointer;
+              font-size: 14px;
+              font-weight: 500;
+              font-family: inherit;
+            }
+            .v5-next-btn:hover {
+              background: #1e293b;
+            }
+
+            /* Comments — same as v4 */
+            .v5-comments {
+              margin-top: 32px;
+              padding-top: 24px;
+              border-top: 1px solid #e2e8f0;
+            }
+            .v5-comments h3 {
+              font-size: 18px;
+              font-weight: 600;
+              color: #0f172a;
+              margin: 0 0 4px;
+            }
+            .v5-comments .sub {
+              font-size: 13px;
+              color: #64748b;
+              margin-bottom: 16px;
+            }
+            .v5-comment {
+              background: white;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              padding: 14px 16px;
+              margin-bottom: 10px;
+            }
+            .v5-comment-anchor {
+              display: inline-block;
+              font-size: 11px;
+              font-weight: 600;
+              color: #1d4ed8;
+              background: #eff6ff;
+              padding: 2px 8px;
+              border-radius: 6px;
+              margin-bottom: 8px;
+            }
+            .v5-comment-head {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              margin-bottom: 6px;
+            }
+            .v5-comment-av {
+              width: 24px;
+              height: 24px;
+              border-radius: 9999px;
+              background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+              color: white;
+              font-size: 11px;
+              font-weight: 600;
+              display: grid;
+              place-items: center;
+            }
+            .v5-comment-author {
+              font-size: 13px;
+              font-weight: 600;
+              color: #0f172a;
+            }
+            .v5-comment-t {
+              font-size: 11px;
+              color: #94a3b8;
+            }
+            .v5-comment-body {
+              font-size: 14px;
+              color: #334155;
+              line-height: 1.55;
+            }
+            .v5-reply {
+              margin-top: 10px;
+              padding-top: 10px;
+              padding-left: 12px;
+              border-left: 2px solid #f1f5f9;
+            }
+            .v5-reply-link {
+              margin-top: 6px;
+              font-size: 12px;
+              color: #64748b;
+              cursor: pointer;
+            }
+            .v5-new {
+              margin-top: 14px;
+              display: flex;
+              gap: 10px;
+            }
+            .v5-new textarea {
+              flex: 1;
+              min-height: 64px;
+              padding: 10px 12px;
+              border: 1px solid #e2e8f0;
+              border-radius: 8px;
+              font-family: inherit;
+              font-size: 13px;
+              resize: vertical;
+            }
+            .v5-new textarea:focus {
+              outline: none;
+              border-color: #3b82f6;
+              box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            }
+          </style>
+
+          <div class="v5-page">
+            <div class="v5-container">
+              <!-- Author bar -->
+              <div class="v5-author">
+                <div class="v5-avatar">C</div>
+                <div style="flex: 1">
+                  <div>
+                    <span class="v5-author-name">Craig dos Santos</span>
+                    <span class="v5-harness-pill">✦ Insight Harness</span>
+                  </div>
+                  <div class="v5-date">📅 Mar 12 – Apr 11, 2026 · 30 days</div>
+                </div>
+                <div class="v5-actions">
+                  <button class="v5-upvote">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="6 15 12 9 18 15" />
+                    </svg>
+                    24 useful
+                  </button>
+                  <button class="v5-btn">↗ Share</button>
+                  <button class="v5-btn">✎ Edit</button>
+                </div>
+              </div>
+
+              <!-- TAB BAR with custom SVG icons -->
+              <div class="v5-tabs" id="v5-tabs">
+                <button class="v5-tab active" data-tab="dashboard">
+                  <div class="v5-tab-icon">
+                    <svg><use href="#ico-dashboard" /></svg>
+                  </div>
+                  <div class="v5-tab-label">Dashboard</div>
+                </button>
+                <button class="v5-tab" data-tab="setup">
+                  <div class="v5-tab-icon">
+                    <svg><use href="#ico-setup" /></svg>
+                  </div>
+                  <div class="v5-tab-label">Skills &amp; Setup</div>
+                </button>
+                <button class="v5-tab" data-tab="activity">
+                  <div class="v5-tab-icon">
+                    <svg><use href="#ico-activity" /></svg>
+                  </div>
+                  <div class="v5-tab-label">Activity</div>
+                </button>
+                <button class="v5-tab" data-tab="writeup">
+                  <div class="v5-tab-icon">
+                    <svg><use href="#ico-writeup" /></svg>
+                  </div>
+                  <div class="v5-tab-label">Write-up</div>
+                  <div class="v5-tab-by">by Claude</div>
+                </button>
+                <button class="v5-tab" data-tab="insights">
+                  <div class="v5-tab-icon">
+                    <svg><use href="#ico-insights" /></svg>
+                  </div>
+                  <div class="v5-tab-label">Claude Insights</div>
+                  <div class="v5-tab-by">by Claude</div>
+                </button>
+              </div>
+
+              <!-- Lifetime tokens (font now matches StatCard) -->
+              <div class="v5-lifetime">
+                <div class="v5-lifetime-value">1.5M</div>
+                <div class="v5-lifetime-label">Lifetime Tokens</div>
+                <div class="v5-lifetime-sub">842K in last 30 days</div>
+              </div>
+
+              <!-- Stat cards -->
+              <div class="v5-stats">
+                <div class="v5-stat">
+                  <div class="v5-stat-value">842K</div>
+                  <div class="v5-stat-label">Tokens</div>
+                  <div class="v5-stat-sub">196.5K/wk (842K total)</div>
+                </div>
+                <div class="v5-stat">
+                  <div class="v5-stat-value">247</div>
+                  <div class="v5-stat-label">Sessions</div>
+                  <div class="v5-stat-sub">57.6/wk (247 total)</div>
+                </div>
+                <div class="v5-stat">
+                  <div class="v5-stat-value">82h</div>
+                  <div class="v5-stat-label">Active Time</div>
+                  <div class="v5-stat-sub">19.1/wk (82 total)</div>
+                </div>
+                <div class="v5-stat">
+                  <div
+                    class="v5-stat-value"
+                    style="
+                      font-size: 22px;
+                      display: flex;
+                      justify-content: center;
+                      gap: 4px;
+                    "
+                  >
+                    <span style="color: #16a34a">+18.4k</span>
+                    <span style="color: #dc2626">−2.1k</span>
+                  </div>
+                  <div class="v5-stat-label">Lines of Code</div>
+                </div>
+              </div>
+
+              <!-- Content cards (abbreviated; identical pattern) -->
+              <div class="v5-card">
+                <div class="v5-card-head">
+                  <div class="v5-card-icon" style="background: #fef3c7">🔥</div>
+                  <div>
+                    <div class="v5-card-title">Activity Heatmap</div>
+                    <div class="v5-card-summary">
+                      30-day session density, colored by token intensity
+                    </div>
+                  </div>
+                </div>
+                <div class="v5-placeholder tall">
+                  [ Activity heatmap visualization ]
+                </div>
+              </div>
+
+              <div class="v5-card">
+                <div class="v5-card-head">
+                  <div class="v5-card-icon" style="background: #e0e7ff">🎯</div>
+                  <div>
+                    <div class="v5-card-title">How I Work</div>
+                    <div class="v5-card-summary">
+                      Autonomy gauge · Model mix · File-op breakdown
+                    </div>
+                  </div>
+                </div>
+                <div class="v5-placeholder">
+                  [ How I Work cluster visualization ]
+                </div>
+              </div>
+
+              <div class="v5-card">
+                <div class="v5-card-head">
+                  <div class="v5-card-icon" style="background: #dcfce7">🔀</div>
+                  <div>
+                    <div class="v5-card-title">Workflow Diagram</div>
+                    <div class="v5-card-summary">
+                      Mermaid graph of agent dispatch flow
+                    </div>
+                  </div>
+                </div>
+                <div class="v5-placeholder tall">
+                  [ Mermaid workflow diagram ]
+                </div>
+              </div>
+
+              <div class="v5-next">
+                <div>
+                  <div class="v5-next-hint">End of Dashboard</div>
+                  <div class="v5-next-current">Up next</div>
+                </div>
+                <button class="v5-next-btn">
+                  Skills &amp; Setup <span>→</span>
+                </button>
+              </div>
+
+              <div class="v5-comments">
+                <h3>💬 Comments</h3>
+                <div class="sub">4 threads across all tabs · newest first</div>
+
+                <div class="v5-comment">
+                  <span class="v5-comment-anchor"
+                    >◆ Dashboard · Activity Heatmap</span
+                  >
+                  <div class="v5-comment-head">
+                    <div class="v5-comment-av">JB</div>
+                    <span class="v5-comment-author">jenbenn</span>
+                    <span class="v5-comment-t">2h</span>
+                  </div>
+                  <div class="v5-comment-body">
+                    Interesting that weekends stay hot — batching personal
+                    projects, or is work bleeding in?
+                  </div>
+                  <div class="v5-reply">
+                    <div class="v5-comment-head">
+                      <div
+                        class="v5-comment-av"
+                        style="
+                          background: linear-gradient(135deg, #f59e0b, #ef4444);
+                        "
+                      >
+                        C
+                      </div>
+                      <span class="v5-comment-author">craig</span>
+                      <span class="v5-comment-t">1h</span>
+                    </div>
+                    <div class="v5-comment-body">
+                      Mostly personal. Saturdays are skill-creator days.
+                    </div>
+                  </div>
+                  <div class="v5-reply-link">Reply</div>
+                </div>
+
+                <div class="v5-comment">
+                  <span class="v5-comment-anchor"
+                    >◆ Skills &amp; Setup · MCP Servers</span
+                  >
+                  <div class="v5-comment-head">
+                    <div
+                      class="v5-comment-av"
+                      style="
+                        background: linear-gradient(135deg, #8b5cf6, #ec4899);
+                      "
+                    >
+                      RS
+                    </div>
+                    <span class="v5-comment-author">rsanchez</span>
+                    <span class="v5-comment-t">yesterday</span>
+                  </div>
+                  <div class="v5-comment-body">
+                    That Gmail MCP config — does it handle attachments reliably?
+                  </div>
+                  <div class="v5-reply-link">Reply</div>
+                </div>
+
+                <div class="v5-comment">
+                  <span class="v5-comment-anchor"
+                    >◆ Claude Insights · Suggestions</span
+                  >
+                  <div class="v5-comment-head">
+                    <div
+                      class="v5-comment-av"
+                      style="
+                        background: linear-gradient(135deg, #f97316, #ec4899);
+                      "
+                    >
+                      MP
+                    </div>
+                    <span class="v5-comment-author">mpatel</span>
+                    <span class="v5-comment-t">5d</span>
+                  </div>
+                  <div class="v5-comment-body">
+                    Strong +1 on the "try subagent-driven-development"
+                    suggestion.
+                  </div>
+                  <div class="v5-reply-link">Reply</div>
+                </div>
+
+                <div class="v5-new">
+                  <div
+                    class="v5-avatar"
+                    style="width: 36px; height: 36px; font-size: 14px"
+                  >
+                    Y
+                  </div>
+                  <textarea
+                    placeholder="Leave a comment on this profile..."
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /v5-page -->
+        </div>
+        <!-- /v5 -->
+
+        <!-- ============== V6 — 3 tabs (Dashboard / Write-up / Claude Insights) ============== -->
+        <div class="version active" data-version="6">
+          <style>
+            .v6-page {
+              background: #f8fafc;
+              padding: 32px 16px;
+              font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+              color: #0f172a;
+              border-radius: 12px;
+              border: 1px solid #e2e8f0;
+            }
+            .v6-container {
+              max-width: 1024px;
+              margin: 0 auto;
+              padding: 0 16px;
+            }
+            .v6-author {
+              display: flex;
+              align-items: center;
+              gap: 16px;
+              padding-bottom: 24px;
+              border-bottom: 1px solid #e2e8f0;
+              margin-bottom: 24px;
+            }
+            .v6-avatar {
+              width: 52px;
+              height: 52px;
+              border-radius: 9999px;
+              background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+              color: white;
+              display: grid;
+              place-items: center;
+              font-weight: 700;
+              font-size: 18px;
+            }
+            .v6-author-name {
+              font-weight: 600;
+              color: #0f172a;
+            }
+            .v6-harness-pill {
+              margin-left: 8px;
+              display: inline-flex;
+              align-items: center;
+              gap: 4px;
+              padding: 1px 10px;
+              border-radius: 9999px;
+              background: linear-gradient(to right, #ede9fe, #dbeafe);
+              border: 1px solid #ddd6fe;
+              color: #6d28d9;
+              font-size: 11px;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.04em;
+            }
+            .v6-date {
+              font-size: 14px;
+              color: #64748b;
+              margin-top: 2px;
+            }
+            .v6-actions {
+              display: flex;
+              gap: 8px;
+              align-items: center;
+            }
+            .v6-btn {
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              padding: 6px 12px;
+              border: 1px solid #e2e8f0;
+              border-radius: 8px;
+              font-size: 14px;
+              color: #475569;
+              background: white;
+              cursor: pointer;
+            }
+            .v6-btn:hover {
+              background: #f8fafc;
+            }
+            .v6-upvote {
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              padding: 6px 12px;
+              border: 1px solid #bfdbfe;
+              border-radius: 8px;
+              font-size: 14px;
+              font-weight: 600;
+              color: #1d4ed8;
+              background: #eff6ff;
+              cursor: pointer;
+            }
+            .v6-upvote:hover {
+              background: #dbeafe;
+            }
+
+            /* ── 3-TAB BAR ──
+               Each tab now has more surface area. Icon + label + meta line;
+               horizontal flex inside the tab instead of stacked, to use width. */
+            .v6-tabs {
+              position: relative;
+              background: white;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              overflow: hidden;
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              margin-bottom: 24px;
+            }
+            .v6-tab {
+              position: relative;
+              display: flex;
+              align-items: center;
+              gap: 14px;
+              padding: 18px 20px;
+              background: transparent;
+              border: none;
+              border-right: 1px solid #f1f5f9;
+              cursor: pointer;
+              text-align: left;
+              font-family: inherit;
+              color: #475569;
+              transition:
+                background-color 0.18s ease,
+                color 0.18s ease;
+            }
+            .v6-tab:last-child {
+              border-right: none;
+            }
+            .v6-tab:hover {
+              background: #f8fafc;
+              color: #0f172a;
+            }
+            .v6-tab:hover .v6-tab-icon {
+              transform: translateY(-1px);
+            }
+            .v6-tab-icon {
+              width: 44px;
+              height: 44px;
+              border-radius: 12px;
+              display: grid;
+              place-items: center;
+              flex-shrink: 0;
+              transition:
+                background-color 0.18s ease,
+                color 0.18s ease,
+                transform 0.18s ease,
+                box-shadow 0.18s ease;
+            }
+            .v6-tab-icon svg {
+              width: 24px;
+              height: 24px;
+              display: block;
+            }
+            .v6-tab-body {
+              min-width: 0;
+              flex: 1;
+            }
+            .v6-tab-label {
+              font-size: 16px;
+              font-weight: 500;
+              color: inherit;
+              letter-spacing: -0.005em;
+              line-height: 1.2;
+            }
+            .v6-tab-by {
+              font-size: 12px;
+              color: #94a3b8;
+              font-style: italic;
+              margin-top: 3px;
+            }
+            .v6-tab-meta {
+              font-size: 12px;
+              color: #94a3b8;
+              margin-top: 3px;
+            }
+
+            /* Idle tint per tab family */
+            .v6-tab[data-tab="dashboard"] .v6-tab-icon {
+              background: #dbeafe;
+              color: #2563eb;
+            }
+            .v6-tab[data-tab="writeup"] .v6-tab-icon {
+              background: #e0e7ff;
+              color: #4f46e5;
+            }
+            .v6-tab[data-tab="insights"] .v6-tab-icon {
+              background: #f3e8ff;
+              color: #9333ea;
+            }
+
+            /* Active — three-layer treatment (tab fill + saturated badge + blue→violet rail) */
+            .v6-tab.active {
+              color: #0f172a;
+            }
+            .v6-tab.active .v6-tab-label {
+              font-weight: 600;
+            }
+            .v6-tab.active[data-tab="dashboard"] {
+              background: #eff6ff;
+            }
+            .v6-tab.active[data-tab="dashboard"] .v6-tab-icon {
+              background: #2563eb;
+              color: white;
+              box-shadow: 0 4px 10px -3px rgba(37, 99, 235, 0.45);
+            }
+            .v6-tab.active[data-tab="writeup"] {
+              background: #eef2ff;
+            }
+            .v6-tab.active[data-tab="writeup"] .v6-tab-icon {
+              background: #4f46e5;
+              color: white;
+              box-shadow: 0 4px 10px -3px rgba(79, 70, 229, 0.45);
+            }
+            .v6-tab.active[data-tab="insights"] {
+              background: #faf5ff;
+            }
+            .v6-tab.active[data-tab="insights"] .v6-tab-icon {
+              background: #9333ea;
+              color: white;
+              box-shadow: 0 4px 10px -3px rgba(147, 51, 234, 0.45);
+            }
+            .v6-tab.active::after {
+              content: "";
+              position: absolute;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              height: 3px;
+              background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            }
+
+            body.viewport-mobile .v6-tabs {
+              grid-template-columns: 1fr;
+            }
+            body.viewport-mobile .v6-tab {
+              border-right: none;
+              border-bottom: 1px solid #f1f5f9;
+            }
+            body.viewport-mobile .v6-tab:last-child {
+              border-bottom: none;
+            }
+
+            /* Lifetime tokens — Inter extrabold, matches StatCard */
+            .v6-lifetime {
+              margin-bottom: 24px;
+              padding: 24px;
+              border-radius: 12px;
+              border: 1px solid #dbeafe;
+              background: linear-gradient(
+                135deg,
+                rgba(239, 246, 255, 0.8),
+                rgba(236, 254, 255, 0.6)
+              );
+              text-align: center;
+            }
+            .v6-lifetime-value {
+              font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+              font-size: 64px;
+              font-weight: 800;
+              line-height: 1;
+              letter-spacing: -0.03em;
+              color: #0f172a;
+            }
+            .v6-lifetime-label {
+              margin-top: 10px;
+              font-size: 13px;
+              font-weight: 700;
+              color: #64748b;
+              text-transform: uppercase;
+              letter-spacing: 0.1em;
+            }
+            .v6-lifetime-sub {
+              margin-top: 6px;
+              font-size: 13px;
+              color: #94a3b8;
+            }
+
+            /* Stat cards */
+            .v6-stats {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 16px;
+              margin-bottom: 24px;
+            }
+            .v6-stat {
+              position: relative;
+              overflow: hidden;
+              background: white;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              padding: 20px;
+              text-align: center;
+            }
+            .v6-stat::before {
+              content: "";
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              height: 3px;
+              background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            }
+            .v6-stat-value {
+              font-size: 32px;
+              font-weight: 800;
+              letter-spacing: -0.02em;
+              color: #0f172a;
+              line-height: 1;
+            }
+            .v6-stat-label {
+              margin-top: 8px;
+              font-size: 12px;
+              font-weight: 500;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              color: #64748b;
+            }
+            .v6-stat-sub {
+              margin-top: 6px;
+              font-size: 11px;
+              color: #94a3b8;
+            }
+            body.viewport-mobile .v6-stats {
+              grid-template-columns: repeat(2, 1fr);
+            }
+
+            /* Cards */
+            .v6-card {
+              background: white;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              padding: 20px;
+              margin-bottom: 16px;
+            }
+            .v6-card-head {
+              display: flex;
+              align-items: flex-start;
+              gap: 16px;
+              margin-bottom: 16px;
+            }
+            .v6-card-icon {
+              width: 40px;
+              height: 40px;
+              border-radius: 12px;
+              display: grid;
+              place-items: center;
+              font-size: 20px;
+              flex-shrink: 0;
+            }
+            .v6-card-title {
+              font-size: 18px;
+              font-weight: 600;
+              color: #0f172a;
+            }
+            .v6-card-summary {
+              font-size: 14px;
+              color: #475569;
+              margin-top: 2px;
+            }
+            .v6-placeholder {
+              background: #f8fafc;
+              border: 1px dashed #cbd5e1;
+              border-radius: 8px;
+              padding: 24px;
+              text-align: center;
+              color: #94a3b8;
+              font-size: 13px;
+            }
+            .v6-placeholder.tall {
+              padding: 48px 24px;
+            }
+
+            /* Next tab footer */
+            .v6-next {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 16px 20px;
+              background: white;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              margin-top: 24px;
+            }
+            .v6-next-hint {
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.08em;
+              color: #94a3b8;
+              font-weight: 600;
+            }
+            .v6-next-current {
+              font-size: 16px;
+              font-weight: 600;
+              color: #0f172a;
+              margin-top: 2px;
+            }
+            .v6-next-btn {
+              display: inline-flex;
+              align-items: center;
+              gap: 8px;
+              padding: 10px 16px;
+              border-radius: 8px;
+              background: #0f172a;
+              color: white;
+              border: none;
+              cursor: pointer;
+              font-size: 14px;
+              font-weight: 500;
+              font-family: inherit;
+            }
+            .v6-next-btn:hover {
+              background: #1e293b;
+            }
+
+            /* Comments */
+            .v6-comments {
+              margin-top: 32px;
+              padding-top: 24px;
+              border-top: 1px solid #e2e8f0;
+            }
+            .v6-comments h3 {
+              font-size: 18px;
+              font-weight: 600;
+              color: #0f172a;
+              margin: 0 0 4px;
+            }
+            .v6-comments .sub {
+              font-size: 13px;
+              color: #64748b;
+              margin-bottom: 16px;
+            }
+            .v6-comment {
+              background: white;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              padding: 14px 16px;
+              margin-bottom: 10px;
+            }
+            .v6-comment-anchor {
+              display: inline-block;
+              font-size: 11px;
+              font-weight: 600;
+              color: #1d4ed8;
+              background: #eff6ff;
+              padding: 2px 8px;
+              border-radius: 6px;
+              margin-bottom: 8px;
+            }
+            .v6-comment-head {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              margin-bottom: 6px;
+            }
+            .v6-comment-av {
+              width: 24px;
+              height: 24px;
+              border-radius: 9999px;
+              background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+              color: white;
+              font-size: 11px;
+              font-weight: 600;
+              display: grid;
+              place-items: center;
+            }
+            .v6-comment-author {
+              font-size: 13px;
+              font-weight: 600;
+              color: #0f172a;
+            }
+            .v6-comment-t {
+              font-size: 11px;
+              color: #94a3b8;
+            }
+            .v6-comment-body {
+              font-size: 14px;
+              color: #334155;
+              line-height: 1.55;
+            }
+            .v6-new {
+              margin-top: 14px;
+              display: flex;
+              gap: 10px;
+            }
+            .v6-new textarea {
+              flex: 1;
+              min-height: 64px;
+              padding: 10px 12px;
+              border: 1px solid #e2e8f0;
+              border-radius: 8px;
+              font-family: inherit;
+              font-size: 13px;
+              resize: vertical;
+            }
+            .v6-new textarea:focus {
+              outline: none;
+              border-color: #3b82f6;
+              box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            }
+          </style>
+
+          <div class="v6-page">
+            <div class="v6-container">
+              <!-- Author bar -->
+              <div class="v6-author">
+                <div class="v6-avatar">C</div>
+                <div style="flex: 1">
+                  <div>
+                    <span class="v6-author-name">Craig dos Santos</span>
+                    <span class="v6-harness-pill">✦ Insight Harness</span>
+                  </div>
+                  <div class="v6-date">📅 Mar 12 – Apr 11, 2026 · 30 days</div>
+                </div>
+                <div class="v6-actions">
+                  <button class="v6-upvote">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="6 15 12 9 18 15" />
+                    </svg>
+                    24 useful
+                  </button>
+                  <button class="v6-btn">↗ Share</button>
+                  <button class="v6-btn">✎ Edit</button>
+                </div>
+              </div>
+
+              <!-- 3 TAB BAR -->
+              <div class="v6-tabs" id="v6-tabs">
+                <button class="v6-tab active" data-tab="dashboard">
+                  <div class="v6-tab-icon">
+                    <svg><use href="#ico-dashboard" /></svg>
+                  </div>
+                  <div class="v6-tab-body">
+                    <div class="v6-tab-label">Dashboard</div>
+                    <div class="v6-tab-meta">metrics · charts · setup</div>
+                  </div>
+                </button>
+                <button class="v6-tab" data-tab="writeup">
+                  <div class="v6-tab-icon">
+                    <svg><use href="#ico-writeup" /></svg>
+                  </div>
+                  <div class="v6-tab-body">
+                    <div class="v6-tab-label">Write-up</div>
+                    <div class="v6-tab-by">by Claude</div>
+                  </div>
+                </button>
+                <button class="v6-tab" data-tab="insights">
+                  <div class="v6-tab-icon">
+                    <svg><use href="#ico-insights" /></svg>
+                  </div>
+                  <div class="v6-tab-body">
+                    <div class="v6-tab-label">Claude Insights</div>
+                    <div class="v6-tab-by">by Claude</div>
+                  </div>
+                </button>
+              </div>
+
+              <div
+                style="
+                  margin: -12px 0 20px;
+                  padding: 10px 14px;
+                  background: #fffbeb;
+                  border: 1px dashed #fde68a;
+                  border-radius: 8px;
+                  font-size: 12px;
+                  color: #92400e;
+                "
+              >
+                <strong>Future 4th tab:</strong> when Skill Showcase ships, a
+                <code>🎯 Skill Showcase</code> tab will slot in as tab #4
+                (before Claude Insights or after Write-up, TBD).
+              </div>
+
+              <!-- Lifetime tokens -->
+              <div class="v6-lifetime">
+                <div class="v6-lifetime-value">1.5M</div>
+                <div class="v6-lifetime-label">Lifetime Tokens</div>
+                <div class="v6-lifetime-sub">842K in last 30 days</div>
+              </div>
+
+              <!-- Stat cards -->
+              <div class="v6-stats">
+                <div class="v6-stat">
+                  <div class="v6-stat-value">842K</div>
+                  <div class="v6-stat-label">Tokens</div>
+                  <div class="v6-stat-sub">196.5K/wk (842K total)</div>
+                </div>
+                <div class="v6-stat">
+                  <div class="v6-stat-value">247</div>
+                  <div class="v6-stat-label">Sessions</div>
+                  <div class="v6-stat-sub">57.6/wk (247 total)</div>
+                </div>
+                <div class="v6-stat">
+                  <div class="v6-stat-value">82h</div>
+                  <div class="v6-stat-label">Active Time</div>
+                  <div class="v6-stat-sub">19.1/wk (82 total)</div>
+                </div>
+                <div class="v6-stat">
+                  <div
+                    class="v6-stat-value"
+                    style="
+                      font-size: 22px;
+                      display: flex;
+                      justify-content: center;
+                      gap: 4px;
+                    "
+                  >
+                    <span style="color: #16a34a">+18.4k</span>
+                    <span style="color: #dc2626">−2.1k</span>
+                  </div>
+                  <div class="v6-stat-label">Lines of Code</div>
+                </div>
+              </div>
+
+              <!-- Dashboard content (everything merged — heatmap, how-i-work, workflow, skills, tools, activity) -->
+              <div class="v6-card">
+                <div class="v6-card-head">
+                  <div class="v6-card-icon" style="background: #fef3c7">🔥</div>
+                  <div>
+                    <div class="v6-card-title">Activity Heatmap</div>
+                    <div class="v6-card-summary">
+                      30-day session density, colored by token intensity
+                    </div>
+                  </div>
+                </div>
+                <div class="v6-placeholder tall">
+                  [ Activity heatmap visualization ]
+                </div>
+              </div>
+
+              <div class="v6-card">
+                <div class="v6-card-head">
+                  <div class="v6-card-icon" style="background: #e0e7ff">🎯</div>
+                  <div>
+                    <div class="v6-card-title">How I Work</div>
+                    <div class="v6-card-summary">
+                      Autonomy · Model mix · File-op breakdown
+                    </div>
+                  </div>
+                </div>
+                <div class="v6-placeholder">
+                  [ How I Work cluster visualization ]
+                </div>
+              </div>
+
+              <div class="v6-card">
+                <div class="v6-card-head">
+                  <div class="v6-card-icon" style="background: #dcfce7">🔀</div>
+                  <div>
+                    <div class="v6-card-title">Workflow Diagram</div>
+                    <div class="v6-card-summary">
+                      Mermaid graph of agent dispatch flow
+                    </div>
+                  </div>
+                </div>
+                <div class="v6-placeholder tall">
+                  [ Mermaid workflow diagram ]
+                </div>
+              </div>
+
+              <div class="v6-card">
+                <div class="v6-card-head">
+                  <div class="v6-card-icon" style="background: #ccfbf1">🧰</div>
+                  <div>
+                    <div class="v6-card-title">Skills &amp; Plugins</div>
+                    <div class="v6-card-summary">
+                      34 active · 12 custom · folded in from former Setup tab
+                    </div>
+                  </div>
+                </div>
+                <div class="v6-placeholder">
+                  [ Skill card grid · plugins · MCP servers ]
+                </div>
+              </div>
+
+              <div class="v6-card">
+                <div class="v6-card-head">
+                  <div class="v6-card-icon" style="background: #fef3c7">⚡</div>
+                  <div>
+                    <div class="v6-card-title">Tool Usage &amp; Activity</div>
+                    <div class="v6-card-summary">
+                      Tool treemap · languages · git patterns · agent dispatch
+                    </div>
+                  </div>
+                </div>
+                <div class="v6-placeholder">
+                  [ Tool usage treemap + git patterns ]
+                </div>
+              </div>
+
+              <!-- Next tab footer -->
+              <div class="v6-next">
+                <div>
+                  <div class="v6-next-hint">End of Dashboard</div>
+                  <div class="v6-next-current">Up next</div>
+                </div>
+                <button class="v6-next-btn">Write-up <span>→</span></button>
+              </div>
+
+              <!-- Comments -->
+              <div class="v6-comments">
+                <h3>💬 Comments</h3>
+                <div class="sub">3 threads across all tabs · newest first</div>
+
+                <div class="v6-comment">
+                  <span class="v6-comment-anchor"
+                    >◆ Dashboard · Activity Heatmap</span
+                  >
+                  <div class="v6-comment-head">
+                    <div class="v6-comment-av">JB</div>
+                    <span class="v6-comment-author">jenbenn</span>
+                    <span class="v6-comment-t">2h</span>
+                  </div>
+                  <div class="v6-comment-body">
+                    Interesting that weekends stay hot — batching personal
+                    projects, or is work bleeding in?
+                  </div>
+                </div>
+                <div class="v6-comment">
+                  <span class="v6-comment-anchor"
+                    >◆ Dashboard · Skills &amp; Plugins</span
+                  >
+                  <div class="v6-comment-head">
+                    <div
+                      class="v6-comment-av"
+                      style="
+                        background: linear-gradient(135deg, #8b5cf6, #ec4899);
+                      "
+                    >
+                      RS
+                    </div>
+                    <span class="v6-comment-author">rsanchez</span>
+                    <span class="v6-comment-t">yesterday</span>
+                  </div>
+                  <div class="v6-comment-body">
+                    That Gmail MCP config — does it handle attachments reliably?
+                  </div>
+                </div>
+                <div class="v6-comment">
+                  <span class="v6-comment-anchor"
+                    >◆ Claude Insights · Suggestions</span
+                  >
+                  <div class="v6-comment-head">
+                    <div
+                      class="v6-comment-av"
+                      style="
+                        background: linear-gradient(135deg, #f97316, #ec4899);
+                      "
+                    >
+                      MP
+                    </div>
+                    <span class="v6-comment-author">mpatel</span>
+                    <span class="v6-comment-t">5d</span>
+                  </div>
+                  <div class="v6-comment-body">
+                    Strong +1 on the "try subagent-driven-development"
+                    suggestion.
+                  </div>
+                </div>
+
+                <div class="v6-new">
+                  <div
+                    class="v6-avatar"
+                    style="width: 36px; height: 36px; font-size: 14px"
+                  >
+                    Y
+                  </div>
+                  <textarea
+                    placeholder="Leave a comment on this profile..."
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /v6-page -->
+        </div>
+        <!-- /v6 -->
+      </div>
+
+      <div class="version-nav">
+        <button data-dir="prev">← Prev</button>
+        <span class="version-label">v6 of 6</span>
+        <button data-dir="next" disabled>Next →</button>
+      </div>
+
+      <div class="feedback-area">
+        <label for="fb-tabs"
+          >Feedback on the tab structure + inline commenting layout</label
+        >
+        <textarea
+          id="fb-tabs"
+          placeholder="Does 5 tabs feel right, or cut to 3 (Dashboard / Write-up / Claude Insights)? Does the right rail work on mobile (it collapses below)?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ============== SECTION 2: Tab-count options ============== -->
+    <div class="mockup-section" data-section-id="tabcount" id="tabcount">
+      <span class="section-label">2 · Alt tab groupings</span>
+      <p class="section-desc">Three grouping options. Pick one.</p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div
+            style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px"
+          >
+            <!-- Option A -->
+            <div
+              style="
+                background: white;
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                padding: 16px;
+              "
+            >
+              <div
+                style="
+                  font-size: 11px;
+                  font-weight: 700;
+                  color: var(--blue);
+                  text-transform: uppercase;
+                  letter-spacing: 0.05em;
+                "
+              >
+                Option A — Mirror harness HTML exactly
+              </div>
+              <div
+                style="font-size: 16px; font-weight: 700; margin: 8px 0 12px"
+              >
+                3 tabs
+              </div>
+              <ul
+                style="
+                  padding-left: 18px;
+                  margin: 0;
+                  font-size: 13px;
+                  line-height: 1.8;
+                  color: #334155;
+                "
+              >
+                <li>
+                  📊 Dashboard
+                  <span style="color: var(--faint)"
+                    >(hero + all charts + tools)</span
+                  >
+                </li>
+                <li>📝 Write-up</li>
+                <li>✨ Claude Insights</li>
+              </ul>
+              <p style="margin-top: 10px; font-size: 12px; color: var(--muted)">
+                Simplest. Exactly matches user's harness report tabs. Dashboard
+                tab is still long but ~50% of current.
+              </p>
+            </div>
+
+            <!-- Option B -->
+            <div
+              style="
+                background: white;
+                border: 2px solid var(--blue);
+                border-radius: 10px;
+                padding: 16px;
+              "
+            >
+              <div
+                style="
+                  font-size: 11px;
+                  font-weight: 700;
+                  color: var(--blue);
+                  text-transform: uppercase;
+                  letter-spacing: 0.05em;
+                "
+              >
+                Option B — Recommended
+              </div>
+              <div
+                style="font-size: 16px; font-weight: 700; margin: 8px 0 12px"
+              >
+                5 tabs
+              </div>
+              <ul
+                style="
+                  padding-left: 18px;
+                  margin: 0;
+                  font-size: 13px;
+                  line-height: 1.8;
+                  color: #334155;
+                "
+              >
+                <li>
+                  📊 Dashboard
+                  <span style="color: var(--faint)"
+                    >(hero + heatmap + How I Work + workflow)</span
+                  >
+                </li>
+                <li>
+                  🧰 Skills &amp; Setup
+                  <span style="color: var(--faint)"
+                    >(skills, plugins, MCP, hooks, perms)</span
+                  >
+                </li>
+                <li>
+                  ⚡ Activity
+                  <span style="color: var(--faint)"
+                    >(tool usage, langs, git, agents)</span
+                  >
+                </li>
+                <li>📝 Write-up</li>
+                <li>✨ Claude Insights</li>
+              </ul>
+              <p style="margin-top: 10px; font-size: 12px; color: var(--muted)">
+                Separates <em>what's installed</em> from <em>what was used</em>.
+                Each tab fits one scroll. Best skimmability.
+              </p>
+            </div>
+
+            <!-- Option C -->
+            <div
+              style="
+                background: white;
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                padding: 16px;
+              "
+            >
+              <div
+                style="
+                  font-size: 11px;
+                  font-weight: 700;
+                  color: var(--blue);
+                  text-transform: uppercase;
+                  letter-spacing: 0.05em;
+                "
+              >
+                Option C — Skill-forward
+              </div>
+              <div
+                style="font-size: 16px; font-weight: 700; margin: 8px 0 12px"
+              >
+                4 tabs
+              </div>
+              <ul
+                style="
+                  padding-left: 18px;
+                  margin: 0;
+                  font-size: 13px;
+                  line-height: 1.8;
+                  color: #334155;
+                "
+              >
+                <li>📊 Overview</li>
+                <li>
+                  🧰 Toolkit
+                  <span style="color: var(--faint)"
+                    >(skills, plugins, MCP, hooks, CLI, agents)</span
+                  >
+                </li>
+                <li>📝 Write-up</li>
+                <li>✨ Insights</li>
+              </ul>
+              <p style="margin-top: 10px; font-size: 12px; color: var(--muted)">
+                Bets that visitors mostly want to see "what's in this person's
+                toolbox." Fold Activity back into Overview.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feedback-area">
+        <label for="fb-tabcount">Which option? Or a different cut?</label>
+        <textarea
+          id="fb-tabcount"
+          placeholder="A / B / C / other..."
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ============== SECTION 3: Upvotes ============== -->
+    <div class="mockup-section" data-section-id="upvotes" id="upvotes">
+      <span class="section-label">3 · Upvote placement</span>
+      <p class="section-desc">
+        Two layers of voting signal. We already have
+        <code>VoteButton.tsx</code> + <code>voteCounts</code> in the data model
+        — they're stubbed but not displayed.
+      </p>
+
+      <div class="design-note info">
+        <strong>Layer 1 — Report-level upvote:</strong> A single "▲ 24 useful"
+        pill next to the share button / in the upvote-bar under the tabs. Drives
+        the <code>/top</code> leaderboard.<br />
+        <strong>Layer 2 — Per-section upvote:</strong> Small ▲ button top-right
+        of each doc-section (see Activity Heatmap above with "▲ 8"). Matches
+        what <code>SectionRenderer</code> already expects (<code
+          >voteCount</code
+        >
+        + <code>voted</code> props). Lets readers signal <em>which parts</em> of
+        a report were useful — valuable data for Claude Insights tuning.
+      </div>
+
+      <div class="design-note">
+        <strong>Ship order if time-constrained:</strong> Layer 1 first (simple
+        pill, drives /top). Defer Layer 2 until after launch — per-section
+        voting needs moderation thinking (what if someone spams ▲ on the
+        Friction section to mock the author?).
+      </div>
+
+      <div class="feedback-area">
+        <label for="fb-upvotes">Upvote plan</label>
+        <textarea
+          id="fb-upvotes"
+          placeholder="Ship Layer 1 only? Both? Different placement?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ============== SECTION 4: Comment library research ============== -->
+    <div class="mockup-section" data-section-id="libraries" id="libraries">
+      <span class="section-label"
+        >4 · Libraries for inline/anchored comments</span
+      >
+      <p class="section-desc">
+        You asked whether libraries make Google-Docs-style anchored comments
+        easy. Short answer: no turnkey React library nails this. Here's what's
+        out there.
+      </p>
+
+      <div
+        style="
+          background: white;
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          overflow: hidden;
+        "
+      >
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px">
+          <thead>
+            <tr style="background: #f8fafc; text-align: left">
+              <th
+                style="
+                  padding: 10px 12px;
+                  font-size: 11px;
+                  font-weight: 700;
+                  color: var(--muted);
+                  text-transform: uppercase;
+                "
+              >
+                Option
+              </th>
+              <th
+                style="
+                  padding: 10px 12px;
+                  font-size: 11px;
+                  font-weight: 700;
+                  color: var(--muted);
+                  text-transform: uppercase;
+                "
+              >
+                Fit
+              </th>
+              <th
+                style="
+                  padding: 10px 12px;
+                  font-size: 11px;
+                  font-weight: 700;
+                  color: var(--muted);
+                  text-transform: uppercase;
+                "
+              >
+                Verdict
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-top: 1px solid var(--border)">
+              <td style="padding: 10px 12px; vertical-align: top">
+                <strong>Build it yourself</strong><br /><span
+                  style="color: var(--faint); font-size: 12px"
+                  >Prisma table + right rail + section IDs</span
+                >
+              </td>
+              <td
+                style="padding: 10px 12px; vertical-align: top; color: #10b981"
+              >
+                ★★★★★
+              </td>
+              <td style="padding: 10px 12px; vertical-align: top">
+                Schema already has <code>annotations[]</code> keyed by
+                <code>sectionKey</code>. Add <code>Comment</code> table with
+                <code>sectionKey</code>, <code>parentId</code>,
+                <code>body</code>, <code>authorId</code>. Render right-rail.
+                <strong>1–2 days of work, full control.</strong>
+              </td>
+            </tr>
+            <tr style="border-top: 1px solid var(--border)">
+              <td style="padding: 10px 12px; vertical-align: top">
+                <strong>Giscus</strong><br /><span
+                  style="color: var(--faint); font-size: 12px"
+                  >GitHub Discussions-backed</span
+                >
+              </td>
+              <td style="padding: 10px 12px; vertical-align: top">★★☆☆☆</td>
+              <td style="padding: 10px 12px; vertical-align: top">
+                One thread per page only. Can't anchor per-section without
+                hacks. Also requires a GitHub account to comment → wrong
+                audience for a general public profile page.
+              </td>
+            </tr>
+            <tr style="border-top: 1px solid var(--border)">
+              <td style="padding: 10px 12px; vertical-align: top">
+                <strong>Hypothes.is</strong><br /><span
+                  style="color: var(--faint); font-size: 12px"
+                  >W3C web annotations</span
+                >
+              </td>
+              <td style="padding: 10px 12px; vertical-align: top">★★☆☆☆</td>
+              <td style="padding: 10px 12px; vertical-align: top">
+                Overlay sidebar, text-range anchoring. Overkill — their model is
+                annotating arbitrary text; ours is commenting on structured
+                sections. Brand lives in their UI, not yours.
+              </td>
+            </tr>
+            <tr style="border-top: 1px solid var(--border)">
+              <td style="padding: 10px 12px; vertical-align: top">
+                <strong>Disqus / Commento / Remark42</strong>
+              </td>
+              <td style="padding: 10px 12px; vertical-align: top">★★☆☆☆</td>
+              <td style="padding: 10px 12px; vertical-align: top">
+                Page-level thread only. Same limitation as Giscus. Also brings
+                tracking (Disqus) or self-hosting overhead.
+              </td>
+            </tr>
+            <tr style="border-top: 1px solid var(--border)">
+              <td style="padding: 10px 12px; vertical-align: top">
+                <strong>Liveblocks · Threads</strong><br /><span
+                  style="color: var(--faint); font-size: 12px"
+                  >liveblocks.io/docs/products/comments</span
+                >
+              </td>
+              <td style="padding: 10px 12px; vertical-align: top">★★★★☆</td>
+              <td style="padding: 10px 12px; vertical-align: top">
+                Purpose-built for Figma-style anchored threads. Real-time out of
+                the box. <strong>But:</strong> hosted service with usage
+                pricing, adds dependency, and their data (not yours). Good if we
+                want real-time multi-user co-presence later; overkill for v1.
+              </td>
+            </tr>
+            <tr style="border-top: 1px solid var(--border)">
+              <td style="padding: 10px 12px; vertical-align: top">
+                <strong>react-comments-section / @chatscope</strong>
+              </td>
+              <td style="padding: 10px 12px; vertical-align: top">★★☆☆☆</td>
+              <td style="padding: 10px 12px; vertical-align: top">
+                UI kits only — they render the thread tree but you own the data.
+                Saves maybe 4 hours of component work. Not worth the dependency
+                for what is, structurally, a simple form + list.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="design-note" style="margin-top: 16px">
+        <strong>Recommendation: build it yourself.</strong> The right rail above
+        is ~200 lines of React + a <code>Comment</code> Prisma model. You
+        already have auth, Prisma, and section keys. Using a library to save
+        half a day now costs you lock-in and a third-party UI that will drift
+        from your design system. Revisit Liveblocks only if real-time
+        co-presence becomes a feature ask.
+      </div>
+
+      <div class="design-note future" style="margin-top: 12px">
+        <strong>Decision (2026-04-12):</strong> Deferred. Keep the existing
+        bottom-of-page <code>CommentSection</code> as-is for launch. Revisit
+        anchored/rail comments post-launch.
+      </div>
+
+      <div class="feedback-area">
+        <label for="fb-libraries">Build vs buy?</label>
+        <textarea
+          id="fb-libraries"
+          placeholder="Agree on build? Or try Liveblocks for real-time?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ============== SECTION 5: Open questions ============== -->
+    <div class="mockup-section" data-section-id="questions" id="questions">
+      <span class="section-label">5 · Open questions before building</span>
+      <ol style="color: #334155; line-height: 1.8">
+        <li>
+          <strong>Mobile comments.</strong> Right rail collapses below content
+          on mobile. Acceptable, or do we need a floating "💬 3" button that
+          opens a drawer?
+        </li>
+        <li>
+          <strong>Comment ownership.</strong> Can the report author delete
+          others' comments on their profile, like Medium?
+        </li>
+        <li>
+          <strong>Anonymous comments?</strong> Probably no — require login,
+          mirrors upvote auth.
+        </li>
+        <li>
+          <strong>Notifications.</strong> Email the author when someone
+          comments? (Resend is already on the stack.)
+        </li>
+        <li>
+          <strong>Per-tab comment badges.</strong> Should each tab show an
+          unread-count badge (like the red dot on Activity in the mock)?
+          Probably yes, low-cost, high-value.
+        </li>
+        <li>
+          <strong>Cross-tab thread visibility.</strong>
+          <em>Decided 2026-04-12:</em> comments stay at the bottom of the page
+          (not in a rail) and show <strong>all</strong> threads across tabs,
+          with an anchor label on each. See v2.
+        </li>
+      </ol>
+
+      <div class="feedback-area">
+        <label for="fb-questions">Answers / priorities</label>
+        <textarea id="fb-questions"></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <script>
+      // Viewport toggle
+      document.querySelectorAll(".viewport-toggle button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document
+            .querySelectorAll(".viewport-toggle button")
+            .forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          document.body.classList.remove("viewport-mobile", "viewport-desktop");
+          document.body.classList.add("viewport-" + btn.dataset.vp);
+        });
+      });
+
+      // Tab switching within the mock (v1 legacy)
+      document.querySelectorAll("#demo-tabs .tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          document
+            .querySelectorAll("#demo-tabs .tab")
+            .forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+        });
+      });
+
+      // v2 tab switching
+      document.querySelectorAll("#v2-tabs .v2-tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          document
+            .querySelectorAll("#v2-tabs .v2-tab")
+            .forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+        });
+      });
+
+      // v3 tab switching
+      document.querySelectorAll("#v3-tabs .v3-tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          document
+            .querySelectorAll("#v3-tabs .v3-tab")
+            .forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+        });
+      });
+
+      // v4 tab switching
+      document.querySelectorAll("#v4-tabs .v4-tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          document
+            .querySelectorAll("#v4-tabs .v4-tab")
+            .forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+        });
+      });
+
+      // v5 tab switching
+      document.querySelectorAll("#v5-tabs .v5-tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          document
+            .querySelectorAll("#v5-tabs .v5-tab")
+            .forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+        });
+      });
+
+      // v6 tab switching
+      document.querySelectorAll("#v6-tabs .v6-tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          document
+            .querySelectorAll("#v6-tabs .v6-tab")
+            .forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+        });
+      });
+
+      // Version prev/next navigation
+      document.querySelectorAll(".version-nav").forEach((nav) => {
+        const section = nav.closest(".mockup-section");
+        if (!section) return;
+        const versions = section.querySelectorAll(".version");
+        if (versions.length < 2) return;
+        const prevBtn = nav.querySelector('[data-dir="prev"]');
+        const nextBtn = nav.querySelector('[data-dir="next"]');
+        const label = nav.querySelector(".version-label");
+        const update = () => {
+          const activeIdx = Array.from(versions).findIndex((v) =>
+            v.classList.contains("active"),
+          );
+          label.textContent = `v${activeIdx + 1} of ${versions.length}`;
+          prevBtn.disabled = activeIdx === 0;
+          nextBtn.disabled = activeIdx === versions.length - 1;
+        };
+        const go = (dir) => {
+          const activeIdx = Array.from(versions).findIndex((v) =>
+            v.classList.contains("active"),
+          );
+          const target = activeIdx + (dir === "next" ? 1 : -1);
+          if (target < 0 || target >= versions.length) return;
+          versions[activeIdx].classList.remove("active");
+          versions[target].classList.add("active");
+          update();
+        };
+        prevBtn.addEventListener("click", () => go("prev"));
+        nextBtn.addEventListener("click", () => go("next"));
+        update();
+      });
+
+      // Char counts
+      document.querySelectorAll(".feedback-area textarea").forEach((ta) => {
+        const count = ta.parentElement.querySelector(".char-count");
+        ta.addEventListener("input", () => {
+          count.textContent = ta.value.length + " chars";
+        });
+      });
+
+      // Copy feedback
+      function copyFeedback() {
+        const sections = {};
+        document.querySelectorAll(".mockup-section").forEach((s) => {
+          const id = s.dataset.sectionId;
+          const ta = s.querySelector("textarea");
+          if (ta && ta.value.trim()) {
+            sections[id] = { feedback: ta.value.trim() };
+          }
+        });
+        const payload = {
+          mockup: "Profile tabs + sectional comments",
+          timestamp: new Date().toISOString(),
+          viewport: document.body.classList.contains("viewport-mobile")
+            ? "mobile"
+            : "desktop",
+          sections,
+        };
+        navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+        alert("Feedback copied to clipboard");
+      }
+    </script>
+  </body>
+</html>

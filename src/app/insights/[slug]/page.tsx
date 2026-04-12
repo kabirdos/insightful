@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import ProfileTabs, {
+  NextTabNav,
+  type ProfileTab,
+} from "@/components/ProfileTabs";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -209,6 +213,16 @@ export default function InsightDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState<ProfileTab>("dashboard");
+
+  // Scroll to top of tab content when switching tabs so readers don't
+  // land mid-way through the previous panel's scroll position.
+  const handleTabChange = (tab: ProfileTab) => {
+    setActiveTab(tab);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
   useEffect(() => {
     fetch(`/api/insights/${slug}`)
@@ -344,331 +358,372 @@ export default function InsightDetailPage() {
       {/* ── Harness Report Layout ── */}
       {isHarness && report.harnessData ? (
         <>
-          {/* Hero Stats */}
-          {!isSectionHidden(hiddenSet, "heroStats") && (
-            <HeroStats
-              stats={report.harnessData.stats}
-              dayCount={report.dayCount}
-              sessionCount={
-                report.sessionCount ||
-                report.harnessData?.stats?.sessionCount ||
-                0
-              }
-              linesAdded={resolveLinesAdded({
-                linesAdded: report.linesAdded,
-                linesRemoved: report.linesRemoved,
-                harnessData: report.harnessData,
-              })}
-              linesRemoved={resolveLinesRemoved({
-                linesAdded: report.linesAdded,
-                linesRemoved: report.linesRemoved,
-                harnessData: report.harnessData,
-              })}
-            />
-          )}
+          {/* Three-tab navigation — Dashboard (default) / Write-up / Claude Insights.
+              Mirrors the insight-harness HTML report structure. A Skill
+              Showcase tab will slot in as tab #4 when that feature ships. */}
+          <ProfileTabs active={activeTab} onChange={handleTabChange} />
 
-          {/* Activity Heatmap — generated from aggregate stats */}
-          {!isSectionHidden(hiddenSet, "activityHeatmap") && (
-            <ActivityHeatmap
-              totalSessions={
-                report.sessionCount ??
-                report.harnessData?.stats?.sessionCount ??
-                undefined
-              }
-              totalTokens={report.totalTokens ?? undefined}
-              dayCount={report.dayCount ?? undefined}
-              dateRangeStart={report.dateRangeStart ?? undefined}
-              slug={slug}
-              models={report.harnessData?.models ?? undefined}
-              perModelTokens={report.harnessData?.perModelTokens ?? undefined}
-            />
-          )}
+          {activeTab === "dashboard" && (
+            <>
+              {/* Hero Stats */}
+              {!isSectionHidden(hiddenSet, "heroStats") && (
+                <HeroStats
+                  stats={report.harnessData.stats}
+                  dayCount={report.dayCount}
+                  sessionCount={
+                    report.sessionCount ||
+                    report.harnessData?.stats?.sessionCount ||
+                    0
+                  }
+                  linesAdded={resolveLinesAdded({
+                    linesAdded: report.linesAdded,
+                    linesRemoved: report.linesRemoved,
+                    harnessData: report.harnessData,
+                  })}
+                  linesRemoved={resolveLinesRemoved({
+                    linesAdded: report.linesAdded,
+                    linesRemoved: report.linesRemoved,
+                    harnessData: report.harnessData,
+                  })}
+                />
+              )}
 
-          {/* Project Links — rich stacked cards with OG metadata.
+              {/* Activity Heatmap — generated from aggregate stats */}
+              {!isSectionHidden(hiddenSet, "activityHeatmap") && (
+                <ActivityHeatmap
+                  totalSessions={
+                    report.sessionCount ??
+                    report.harnessData?.stats?.sessionCount ??
+                    undefined
+                  }
+                  totalTokens={report.totalTokens ?? undefined}
+                  dayCount={report.dayCount ?? undefined}
+                  dateRangeStart={report.dateRangeStart ?? undefined}
+                  slug={slug}
+                  models={report.harnessData?.models ?? undefined}
+                  perModelTokens={
+                    report.harnessData?.perModelTokens ?? undefined
+                  }
+                />
+              )}
+
+              {/* Project Links — rich stacked cards with OG metadata.
               Rendered directly under the activity card per issue #27. */}
-          {report.reportProjects.length > 0 && (
-            <div className="mb-6">
-              <ProjectLinks
-                links={report.reportProjects.map((rp) => rp.project)}
-              />
-            </div>
-          )}
+              {report.reportProjects.length > 0 && (
+                <div className="mb-6">
+                  <ProjectLinks
+                    links={report.reportProjects.map((rp) => rp.project)}
+                  />
+                </div>
+              )}
 
-          {/* How I Work cluster: Autonomy + Model Donut + File Ops */}
-          {!isSectionHidden(hiddenSet, "howIWork") && (
-            <HowIWorkCluster harnessData={report.harnessData} />
-          )}
+              {/* How I Work cluster: Autonomy + Model Donut + File Ops */}
+              {!isSectionHidden(hiddenSet, "howIWork") && (
+                <HowIWorkCluster harnessData={report.harnessData} />
+              )}
 
-          {/* Workflow Diagrams */}
-          {report.harnessData.workflowData &&
-            !isSectionHidden(hiddenSet, "workflowData") && (
-              <WorkflowDiagram
-                workflowData={report.harnessData.workflowData}
-                agentDispatch={report.harnessData.agentDispatch}
-                authorHandle={report.author.username}
-              />
-            )}
-
-          {/* Skills Card Grid */}
-          {!isSectionHidden(hiddenSet, "skillInventory") &&
-            report.harnessData.skillInventory.length > 0 && (
-              <SkillCardGrid
-                skillInventory={filterList(
-                  report.harnessData.skillInventory,
-                  hiddenSet,
-                  "skillInventory",
-                  (s) => s.name,
+              {/* Workflow Diagrams */}
+              {report.harnessData.workflowData &&
+                !isSectionHidden(hiddenSet, "workflowData") && (
+                  <WorkflowDiagram
+                    workflowData={report.harnessData.workflowData}
+                    agentDispatch={report.harnessData.agentDispatch}
+                    authorHandle={report.author.username}
+                  />
                 )}
-              />
-            )}
 
-          {/* Plugins */}
-          {!isSectionHidden(hiddenSet, "plugins") &&
-            report.harnessData.plugins.length > 0 && (
-              <CollapsibleSection
-                icon="🔌"
-                iconBgClass="bg-teal-100 dark:bg-teal-900/30"
-                title="Plugins"
-                defaultOpen={true}
-              >
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {filterList(
-                    report.harnessData.plugins,
-                    hiddenSet,
-                    "plugins",
-                    (p) => p.name,
-                  ).map((p) => (
-                    <div
-                      key={p.name}
-                      className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
-                          {p.name}
-                        </span>
-                        <span
-                          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
-                            p.active
-                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                              : "bg-slate-100 text-slate-400 dark:bg-slate-800"
-                          }`}
+              {/* Skills Card Grid */}
+              {!isSectionHidden(hiddenSet, "skillInventory") &&
+                report.harnessData.skillInventory.length > 0 && (
+                  <SkillCardGrid
+                    skillInventory={filterList(
+                      report.harnessData.skillInventory,
+                      hiddenSet,
+                      "skillInventory",
+                      (s) => s.name,
+                    )}
+                  />
+                )}
+
+              {/* Plugins */}
+              {!isSectionHidden(hiddenSet, "plugins") &&
+                report.harnessData.plugins.length > 0 && (
+                  <CollapsibleSection
+                    icon="🔌"
+                    iconBgClass="bg-teal-100 dark:bg-teal-900/30"
+                    title="Plugins"
+                    defaultOpen={true}
+                  >
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {filterList(
+                        report.harnessData.plugins,
+                        hiddenSet,
+                        "plugins",
+                        (p) => p.name,
+                      ).map((p) => (
+                        <div
+                          key={p.name}
+                          className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
                         >
-                          {p.active ? "on" : "off"}
-                        </span>
-                      </div>
-                      {(p.version || p.marketplace) && (
-                        <div className="mt-0.5 text-[11px] text-slate-400">
-                          {p.version && `v${p.version}`}
-                          {p.version && p.marketplace && " · "}
-                          {p.marketplace}
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
+                              {p.name}
+                            </span>
+                            <span
+                              className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
+                                p.active
+                                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                  : "bg-slate-100 text-slate-400 dark:bg-slate-800"
+                              }`}
+                            >
+                              {p.active ? "on" : "off"}
+                            </span>
+                          </div>
+                          {(p.version || p.marketplace) && (
+                            <div className="mt-0.5 text-[11px] text-slate-400">
+                              {p.version && `v${p.version}`}
+                              {p.version && p.marketplace && " · "}
+                              {p.marketplace}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleSection>
+                )}
+
+              {/* Tool Usage Treemap */}
+              {!isSectionHidden(hiddenSet, "toolUsage") &&
+                Object.keys(report.harnessData.toolUsage).length > 0 && (
+                  <ToolUsageTreemap toolUsage={report.harnessData.toolUsage} />
+                )}
+
+              {/* CLI Tools Donut */}
+              {!isSectionHidden(hiddenSet, "cliTools") &&
+                Object.keys(report.harnessData.cliTools).length > 0 && (
+                  <CliToolsDonut cliTools={report.harnessData.cliTools} />
+                )}
+
+              {/* Git Patterns */}
+              {!isSectionHidden(hiddenSet, "gitPatterns") && (
+                <GitPatternsDisplay
+                  gitPatterns={report.harnessData.gitPatterns}
+                />
+              )}
+
+              {/* Permission Mode & Safety */}
+              {!isSectionHidden(hiddenSet, "permissionModes") && (
+                <PermissionModeDisplay
+                  permissionModes={report.harnessData.permissionModes}
+                  featurePills={report.harnessData.featurePills}
+                />
+              )}
+
+              {/* Hooks & Safety */}
+              {!isSectionHidden(hiddenSet, "hookDefinitions") && (
+                <HooksSafetyTable
+                  hookDefinitions={report.harnessData.hookDefinitions}
+                />
+              )}
+
+              {/* Agent Dispatch */}
+              {!isSectionHidden(hiddenSet, "agentDispatch") &&
+                report.harnessData.agentDispatch &&
+                report.harnessData.agentDispatch.totalAgents > 0 && (
+                  <CollapsibleSection
+                    icon="🤖"
+                    iconBgClass="bg-indigo-100 dark:bg-indigo-900/30"
+                    title={`Agent Dispatch (${report.harnessData.agentDispatch.totalAgents} agents)`}
+                    defaultOpen={false}
+                  >
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {Object.keys(report.harnessData.agentDispatch.types)
+                        .length > 0 && (
+                        <div>
+                          <h4 className="mb-2 text-xs font-semibold text-slate-500">
+                            Agent Types
+                          </h4>
+                          <MiniBarChart
+                            data={Object.entries(
+                              report.harnessData.agentDispatch.types,
+                            ).map(([label, value]) => ({ label, value }))}
+                            title=""
+                            color="bg-indigo-500"
+                          />
+                        </div>
+                      )}
+                      {Object.keys(report.harnessData.agentDispatch.models)
+                        .length > 0 && (
+                        <div>
+                          <h4 className="mb-2 text-xs font-semibold text-slate-500">
+                            Model Tiering
+                          </h4>
+                          <MiniBarChart
+                            data={Object.entries(
+                              report.harnessData.agentDispatch.models,
+                            ).map(([label, value]) => ({ label, value }))}
+                            title=""
+                            color="bg-purple-500"
+                          />
+                          {report.harnessData.agentDispatch.backgroundPct >
+                            0 && (
+                            <p className="mt-1 text-xs text-slate-400">
+                              {report.harnessData.agentDispatch.backgroundPct}%
+                              run in background
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
-                  ))}
-                </div>
-              </CollapsibleSection>
-            )}
-
-          {/* Tool Usage Treemap */}
-          {!isSectionHidden(hiddenSet, "toolUsage") &&
-            Object.keys(report.harnessData.toolUsage).length > 0 && (
-              <ToolUsageTreemap toolUsage={report.harnessData.toolUsage} />
-            )}
-
-          {/* CLI Tools Donut */}
-          {!isSectionHidden(hiddenSet, "cliTools") &&
-            Object.keys(report.harnessData.cliTools).length > 0 && (
-              <CliToolsDonut cliTools={report.harnessData.cliTools} />
-            )}
-
-          {/* Git Patterns */}
-          {!isSectionHidden(hiddenSet, "gitPatterns") && (
-            <GitPatternsDisplay gitPatterns={report.harnessData.gitPatterns} />
-          )}
-
-          {/* Permission Mode & Safety */}
-          {!isSectionHidden(hiddenSet, "permissionModes") && (
-            <PermissionModeDisplay
-              permissionModes={report.harnessData.permissionModes}
-              featurePills={report.harnessData.featurePills}
-            />
-          )}
-
-          {/* Hooks & Safety */}
-          {!isSectionHidden(hiddenSet, "hookDefinitions") && (
-            <HooksSafetyTable
-              hookDefinitions={report.harnessData.hookDefinitions}
-            />
-          )}
-
-          {/* Agent Dispatch */}
-          {!isSectionHidden(hiddenSet, "agentDispatch") &&
-            report.harnessData.agentDispatch &&
-            report.harnessData.agentDispatch.totalAgents > 0 && (
-              <CollapsibleSection
-                icon="🤖"
-                iconBgClass="bg-indigo-100 dark:bg-indigo-900/30"
-                title={`Agent Dispatch (${report.harnessData.agentDispatch.totalAgents} agents)`}
-                defaultOpen={false}
-              >
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {Object.keys(report.harnessData.agentDispatch.types).length >
-                    0 && (
-                    <div>
-                      <h4 className="mb-2 text-xs font-semibold text-slate-500">
-                        Agent Types
-                      </h4>
-                      <MiniBarChart
-                        data={Object.entries(
-                          report.harnessData.agentDispatch.types,
-                        ).map(([label, value]) => ({ label, value }))}
-                        title=""
-                        color="bg-indigo-500"
-                      />
-                    </div>
-                  )}
-                  {Object.keys(report.harnessData.agentDispatch.models).length >
-                    0 && (
-                    <div>
-                      <h4 className="mb-2 text-xs font-semibold text-slate-500">
-                        Model Tiering
-                      </h4>
-                      <MiniBarChart
-                        data={Object.entries(
-                          report.harnessData.agentDispatch.models,
-                        ).map(([label, value]) => ({ label, value }))}
-                        title=""
-                        color="bg-purple-500"
-                      />
-                      {report.harnessData.agentDispatch.backgroundPct > 0 && (
-                        <p className="mt-1 text-xs text-slate-400">
-                          {report.harnessData.agentDispatch.backgroundPct}% run
-                          in background
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-                {report.harnessData.agentDispatch.customAgents.length > 0 && (
-                  <div className="mt-3">
-                    <h4 className="mb-1 text-xs font-semibold text-slate-500">
-                      Custom Agents
-                    </h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {report.harnessData.agentDispatch.customAgents.map(
-                        (a) => (
-                          <span
-                            key={a}
-                            className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
-                          >
-                            {a}
-                          </span>
-                        ),
-                      )}
-                    </div>
-                  </div>
-                )}
-              </CollapsibleSection>
-            )}
-
-          {/* Languages */}
-          {!isSectionHidden(hiddenSet, "languages") &&
-            Object.keys(report.harnessData.languages).length > 0 && (
-              <CollapsibleSection
-                icon="💻"
-                iconBgClass="bg-green-100 dark:bg-green-900/30"
-                title="Languages"
-                defaultOpen={false}
-              >
-                <MiniBarChart
-                  data={Object.entries(
-                    filterRecord(
-                      report.harnessData.languages,
-                      hiddenSet,
-                      "languages",
-                    ),
-                  )
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 12)
-                    .map(([label, value]) => ({ label, value }))}
-                  title=""
-                  color="bg-green-500"
-                />
-              </CollapsibleSection>
-            )}
-
-          {/* MCP Servers */}
-          {!isSectionHidden(hiddenSet, "mcpServers") &&
-            Object.keys(report.harnessData.mcpServers).length > 0 && (
-              <CollapsibleSection
-                icon="🔗"
-                iconBgClass="bg-cyan-100 dark:bg-cyan-900/30"
-                title="MCP Servers"
-                defaultOpen={false}
-              >
-                <div className="space-y-1">
-                  {Object.entries(
-                    filterRecord(
-                      report.harnessData.mcpServers,
-                      hiddenSet,
-                      "mcpServers",
-                    ),
-                  )
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([server, calls]) => (
-                      <div
-                        key={server}
-                        className="flex justify-between border-b border-slate-100 py-1 dark:border-slate-800"
-                      >
-                        <span className="font-mono text-xs text-slate-600 dark:text-slate-400">
-                          {server}
-                        </span>
-                        <span className="text-xs text-slate-400">
-                          {calls.toLocaleString()} calls
-                        </span>
+                    {report.harnessData.agentDispatch.customAgents.length >
+                      0 && (
+                      <div className="mt-3">
+                        <h4 className="mb-1 text-xs font-semibold text-slate-500">
+                          Custom Agents
+                        </h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {report.harnessData.agentDispatch.customAgents.map(
+                            (a) => (
+                              <span
+                                key={a}
+                                className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
+                              >
+                                {a}
+                              </span>
+                            ),
+                          )}
+                        </div>
                       </div>
-                    ))}
-                </div>
-              </CollapsibleSection>
-            )}
+                    )}
+                  </CollapsibleSection>
+                )}
 
-          {/* Versions */}
-          {!isSectionHidden(hiddenSet, "versions") &&
-            report.harnessData.versions.length > 0 && (
-              <CollapsibleSection
-                icon="📦"
-                iconBgClass="bg-slate-100 dark:bg-slate-900/30"
-                title="Claude Code Versions"
-                defaultOpen={false}
-              >
-                <div className="flex flex-wrap gap-1.5">
-                  {filterList(
-                    report.harnessData.versions,
-                    hiddenSet,
-                    "versions",
-                    (v) => v,
-                  ).map((v) => (
-                    <span
-                      key={v}
-                      className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
-                    >
-                      {v}
-                    </span>
-                  ))}
-                </div>
-              </CollapsibleSection>
-            )}
+              {/* Languages */}
+              {!isSectionHidden(hiddenSet, "languages") &&
+                Object.keys(report.harnessData.languages).length > 0 && (
+                  <CollapsibleSection
+                    icon="💻"
+                    iconBgClass="bg-green-100 dark:bg-green-900/30"
+                    title="Languages"
+                    defaultOpen={false}
+                  >
+                    <MiniBarChart
+                      data={Object.entries(
+                        filterRecord(
+                          report.harnessData.languages,
+                          hiddenSet,
+                          "languages",
+                        ),
+                      )
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 12)
+                        .map(([label, value]) => ({ label, value }))}
+                      title=""
+                      color="bg-green-500"
+                    />
+                  </CollapsibleSection>
+                )}
 
-          {/* Writeup Sections */}
-          {!isSectionHidden(hiddenSet, "writeupSections") &&
-            report.harnessData.writeupSections.length > 0 && (
-              <CollapsibleSection
-                icon="📝"
-                iconBgClass="bg-blue-100 dark:bg-blue-900/30"
-                title="Writeup Analysis"
-                defaultOpen={false}
-              >
-                <div className="space-y-6">
+              {/* MCP Servers */}
+              {!isSectionHidden(hiddenSet, "mcpServers") &&
+                Object.keys(report.harnessData.mcpServers).length > 0 && (
+                  <CollapsibleSection
+                    icon="🔗"
+                    iconBgClass="bg-cyan-100 dark:bg-cyan-900/30"
+                    title="MCP Servers"
+                    defaultOpen={false}
+                  >
+                    <div className="space-y-1">
+                      {Object.entries(
+                        filterRecord(
+                          report.harnessData.mcpServers,
+                          hiddenSet,
+                          "mcpServers",
+                        ),
+                      )
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([server, calls]) => (
+                          <div
+                            key={server}
+                            className="flex justify-between border-b border-slate-100 py-1 dark:border-slate-800"
+                          >
+                            <span className="font-mono text-xs text-slate-600 dark:text-slate-400">
+                              {server}
+                            </span>
+                            <span className="text-xs text-slate-400">
+                              {calls.toLocaleString()} calls
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </CollapsibleSection>
+                )}
+
+              {/* Versions */}
+              {!isSectionHidden(hiddenSet, "versions") &&
+                report.harnessData.versions.length > 0 && (
+                  <CollapsibleSection
+                    icon="📦"
+                    iconBgClass="bg-slate-100 dark:bg-slate-900/30"
+                    title="Claude Code Versions"
+                    defaultOpen={false}
+                  >
+                    <div className="flex flex-wrap gap-1.5">
+                      {filterList(
+                        report.harnessData.versions,
+                        hiddenSet,
+                        "versions",
+                        (v) => v,
+                      ).map((v) => (
+                        <span
+                          key={v}
+                          className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
+                        >
+                          {v}
+                        </span>
+                      ))}
+                    </div>
+                  </CollapsibleSection>
+                )}
+
+              {/* Harness Files */}
+              {!isSectionHidden(hiddenSet, "harnessFiles") &&
+                report.harnessData.harnessFiles.length > 0 && (
+                  <CollapsibleSection
+                    icon="📁"
+                    iconBgClass="bg-orange-100 dark:bg-orange-900/30"
+                    title="Harness File Ecosystem"
+                    defaultOpen={false}
+                  >
+                    <div className="space-y-1">
+                      {filterList(
+                        report.harnessData.harnessFiles,
+                        hiddenSet,
+                        "harnessFiles",
+                        (f) => f,
+                      ).map((f) => (
+                        <div
+                          key={f}
+                          className="border-b border-slate-100 py-1 font-mono text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400"
+                        >
+                          {f}
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleSection>
+                )}
+            </>
+          )}
+
+          {activeTab === "writeup" && (
+            <>
+              {/* Writeup Sections — Claude-authored prose summary of the
+                  raw harness data. Rendered as its own tab so readers who
+                  want the narrative don't scroll past all the dashboard
+                  charts to find it. */}
+              {!isSectionHidden(hiddenSet, "writeupSections") &&
+              report.harnessData.writeupSections.length > 0 ? (
+                <div className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/50">
                   {filterList(
                     report.harnessData.writeupSections,
                     hiddenSet,
@@ -676,11 +731,11 @@ export default function InsightDetailPage() {
                     (w) => w.title,
                   ).map((section) => (
                     <div key={section.title}>
-                      <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      <h3 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
                         {section.title}
-                      </h4>
+                      </h3>
                       <div
-                        className="prose prose-sm max-w-none text-slate-600 dark:text-slate-400 [&_p]:mb-2 [&_li]:mb-1"
+                        className="prose prose-slate max-w-none text-slate-700 dark:text-slate-300 dark:prose-invert [&_li]:mb-1 [&_p]:mb-3"
                         dangerouslySetInnerHTML={{
                           __html: section.contentHtml,
                         }}
@@ -688,69 +743,64 @@ export default function InsightDetailPage() {
                     </div>
                   ))}
                 </div>
-              </CollapsibleSection>
-            )}
-
-          {/* Harness Files */}
-          {!isSectionHidden(hiddenSet, "harnessFiles") &&
-            report.harnessData.harnessFiles.length > 0 && (
-              <CollapsibleSection
-                icon="📁"
-                iconBgClass="bg-orange-100 dark:bg-orange-900/30"
-                title="Harness File Ecosystem"
-                defaultOpen={false}
-              >
-                <div className="space-y-1">
-                  {filterList(
-                    report.harnessData.harnessFiles,
-                    hiddenSet,
-                    "harnessFiles",
-                    (f) => f,
-                  ).map((f) => (
-                    <div
-                      key={f}
-                      className="border-b border-slate-100 py-1 font-mono text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400"
-                    >
-                      {f}
-                    </div>
-                  ))}
+              ) : (
+                <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
+                  No write-up available for this report.
                 </div>
-              </CollapsibleSection>
-            )}
+              )}
+            </>
+          )}
 
-          {/* Narrative Sections */}
-          <div className="space-y-4">
-            {SECTIONS.map((section) => {
-              const data = (report as unknown as Record<string, unknown>)[
-                section.dataKey
-              ];
-              if (!data) return null;
-              const summary = getSectionSummary(section.key, report);
-              const isAtAGlance = section.key === "at_a_glance";
-              return (
-                <CollapsibleSection
-                  key={section.key}
-                  icon={section.icon}
-                  iconBgClass={section.iconBgClass}
-                  title={section.label}
-                  summary={isAtAGlance ? null : summary}
-                  defaultOpen={isAtAGlance}
-                >
-                  <SectionRenderer
-                    slug={slug}
-                    sectionKey={section.key}
-                    sectionType={section.sectionType}
-                    data={data}
-                    reportId={report.id}
-                    voteCount={report.voteCounts[section.key] ?? 0}
-                    voted={report.userVotes[section.key] ?? false}
-                    annotation={annotations[section.key]}
-                    hiddenItems={hiddenHarnessSections}
-                  />
-                </CollapsibleSection>
-              );
-            })}
-          </div>
+          {activeTab === "insights" && (
+            <>
+              {/* Narrative Sections — the Claude-generated analysis
+                  (At a Glance, Interaction Style, Impressive Workflows,
+                  Friction, Suggestions, On the Horizon). */}
+              {SECTIONS.some(
+                (s) =>
+                  (report as unknown as Record<string, unknown>)[s.dataKey],
+              ) ? (
+                <div className="space-y-4">
+                  {SECTIONS.map((section) => {
+                    const data = (report as unknown as Record<string, unknown>)[
+                      section.dataKey
+                    ];
+                    if (!data) return null;
+                    const summary = getSectionSummary(section.key, report);
+                    const isAtAGlance = section.key === "at_a_glance";
+                    return (
+                      <CollapsibleSection
+                        key={section.key}
+                        icon={section.icon}
+                        iconBgClass={section.iconBgClass}
+                        title={section.label}
+                        summary={isAtAGlance ? null : summary}
+                        defaultOpen={isAtAGlance}
+                      >
+                        <SectionRenderer
+                          slug={slug}
+                          sectionKey={section.key}
+                          sectionType={section.sectionType}
+                          data={data}
+                          reportId={report.id}
+                          voteCount={report.voteCounts[section.key] ?? 0}
+                          voted={report.userVotes[section.key] ?? false}
+                          annotation={annotations[section.key]}
+                          hiddenItems={hiddenHarnessSections}
+                        />
+                      </CollapsibleSection>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
+                  No Claude insights available for this report.
+                </div>
+              )}
+            </>
+          )}
+
+          <NextTabNav active={activeTab} onChange={handleTabChange} />
         </>
       ) : (
         /* ── Standard /insights Report Layout ── */
