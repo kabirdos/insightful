@@ -26,6 +26,7 @@ import type {
   UsagePattern,
   HorizonOpportunity,
 } from "@/types/insights";
+import { hideSetFromArray, filterList } from "@/lib/item-visibility";
 
 interface SectionRendererProps {
   slug: string;
@@ -37,6 +38,14 @@ interface SectionRendererProps {
   voted?: boolean;
   annotation?: string | null;
   readOnly?: boolean;
+  /** Hidden keypaths for defense-in-depth client-side filtering */
+  hiddenItems?: string[];
+  /** Optional wrapper for each item — used on edit page to mount eye toggles */
+  renderItemWrapper?: (
+    sectionKey: string,
+    itemKey: string,
+    children: React.ReactNode,
+  ) => React.ReactNode;
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -205,58 +214,84 @@ function InteractionStyleSection({
   );
 }
 
-function ProjectAreasSection({ data }: { data: { areas: ProjectArea[] } }) {
+function ProjectAreasSection({
+  data,
+  hidden,
+  renderItemWrapper,
+}: {
+  data: { areas: ProjectArea[] };
+  hidden?: Set<string>;
+  renderItemWrapper?: (key: string, itemKey: string, children: React.ReactNode) => React.ReactNode;
+}) {
+  const areas = hidden
+    ? filterList(data.areas, hidden, "projectAreas", (a) => a.name)
+    : data.areas;
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {data.areas.map((area, i) => (
-        <div
-          key={i}
-          className="rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-sm dark:border-slate-700 dark:bg-slate-800/50"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="font-semibold text-slate-900 dark:text-white truncate">
-              {area.name}
-            </h4>
-            <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-400">
-              {area.session_count} sessions
-            </span>
+      {areas.map((area, i) => {
+        const itemKey = `area-${i}`;
+        const card = (
+          <div
+            key={i}
+            className="rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-sm dark:border-slate-700 dark:bg-slate-800/50"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-semibold text-slate-900 dark:text-white truncate">
+                {area.name}
+              </h4>
+              <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-400">
+                {area.session_count} sessions
+              </span>
+            </div>
+            <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              {area.description}
+            </p>
           </div>
-          <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-            {area.description}
-          </p>
-        </div>
-      ))}
+        );
+        return renderItemWrapper ? renderItemWrapper("projectAreas", itemKey, card) : card;
+      })}
     </div>
   );
 }
 
 function ImpressiveWorkflowsSection({
   data,
+  hidden,
+  renderItemWrapper,
 }: {
   data: { intro: string; impressive_workflows: ImpressiveWorkflow[] };
+  hidden?: Set<string>;
+  renderItemWrapper?: (key: string, itemKey: string, children: React.ReactNode) => React.ReactNode;
 }) {
+  const workflows = hidden
+    ? filterList(data.impressive_workflows, hidden, "impressiveWorkflows", (w) => w.title)
+    : data.impressive_workflows;
   return (
     <div className="space-y-4">
       <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
         {data.intro}
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
-        {data.impressive_workflows.map((wf, i) => (
-          <div
-            key={i}
-            className="rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-4 dark:border-green-900 dark:from-green-950/30 dark:to-emerald-950/20"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <h4 className="font-semibold text-green-800 dark:text-green-300">
-                {wf.title}
-              </h4>
+        {workflows.map((wf, i) => {
+          const itemKey = `wf-${i}`;
+          const card = (
+            <div
+              key={i}
+              className="rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-4 dark:border-green-900 dark:from-green-950/30 dark:to-emerald-950/20"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <h4 className="font-semibold text-green-800 dark:text-green-300">
+                  {wf.title}
+                </h4>
+              </div>
+              <p className="text-sm leading-relaxed text-green-700 dark:text-green-400">
+                {wf.description}
+              </p>
             </div>
-            <p className="text-sm leading-relaxed text-green-700 dark:text-green-400">
-              {wf.description}
-            </p>
-          </div>
-        ))}
+          );
+          return renderItemWrapper ? renderItemWrapper("impressiveWorkflows", itemKey, card) : card;
+        })}
       </div>
     </div>
   );
@@ -264,41 +299,52 @@ function ImpressiveWorkflowsSection({
 
 function FrictionAnalysisSection({
   data,
+  hidden,
+  renderItemWrapper,
 }: {
   data: { intro: string; categories: FrictionCategory[] };
+  hidden?: Set<string>;
+  renderItemWrapper?: (key: string, itemKey: string, children: React.ReactNode) => React.ReactNode;
 }) {
+  const categories = hidden
+    ? filterList(data.categories, hidden, "frictionAnalysis", (c) => c.category)
+    : data.categories;
   return (
     <div className="space-y-4">
       <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
         {data.intro}
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
-        {data.categories.map((cat, i) => (
-          <div
-            key={i}
-            className="rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-amber-50 p-4 dark:border-red-900/50 dark:from-red-950/20 dark:to-amber-950/10"
-          >
-            <h4 className="font-semibold text-red-800 dark:text-red-300 mb-1.5">
-              {cat.category}
-            </h4>
-            <p className="text-sm leading-relaxed text-red-700 dark:text-red-400 mb-2">
-              {cat.description}
-            </p>
-            {cat.examples.length > 0 && (
-              <ul className="space-y-1">
-                {cat.examples.map((ex, j) => (
-                  <li
-                    key={j}
-                    className="flex items-start gap-1.5 text-xs text-red-600 dark:text-red-400"
-                  >
-                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-red-400 dark:bg-red-600" />
-                    {ex}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
+        {categories.map((cat, i) => {
+          const itemKey = `cat-${i}`;
+          const card = (
+            <div
+              key={i}
+              className="rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-amber-50 p-4 dark:border-red-900/50 dark:from-red-950/20 dark:to-amber-950/10"
+            >
+              <h4 className="font-semibold text-red-800 dark:text-red-300 mb-1.5">
+                {cat.category}
+              </h4>
+              <p className="text-sm leading-relaxed text-red-700 dark:text-red-400 mb-2">
+                {cat.description}
+              </p>
+              {cat.examples.length > 0 && (
+                <ul className="space-y-1">
+                  {cat.examples.map((ex, j) => (
+                    <li
+                      key={j}
+                      className="flex items-start gap-1.5 text-xs text-red-600 dark:text-red-400"
+                    >
+                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-red-400 dark:bg-red-600" />
+                      {ex}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+          return renderItemWrapper ? renderItemWrapper("frictionAnalysis", itemKey, card) : card;
+        })}
       </div>
     </div>
   );
@@ -312,6 +358,8 @@ function SuggestionsSection({
     features_to_try: FeatureToTry[];
     usage_patterns: UsagePattern[];
   };
+  hidden?: Set<string>;
+  renderItemWrapper?: (key: string, itemKey: string, children: React.ReactNode) => React.ReactNode;
 }) {
   return (
     <div className="space-y-8">
@@ -442,47 +490,58 @@ function SuggestionsSection({
 
 function OnTheHorizonSection({
   data,
+  hidden,
+  renderItemWrapper,
 }: {
   data: { intro: string; opportunities: HorizonOpportunity[] };
+  hidden?: Set<string>;
+  renderItemWrapper?: (key: string, itemKey: string, children: React.ReactNode) => React.ReactNode;
 }) {
+  const opportunities = hidden
+    ? filterList(data.opportunities, hidden, "onTheHorizon", (o) => o.title)
+    : data.opportunities;
   return (
     <div className="space-y-4">
       <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
         {data.intro}
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
-        {data.opportunities.map((opp, i) => (
-          <div
-            key={i}
-            className="rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 to-violet-50 p-4 dark:border-purple-900/50 dark:from-purple-950/30 dark:to-violet-950/20"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <Rocket className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-              <h4 className="font-semibold text-purple-800 dark:text-purple-300 text-sm">
-                {opp.title}
-              </h4>
-            </div>
-            <p className="text-xs text-purple-700 dark:text-purple-400 leading-relaxed">
-              {opp.whats_possible}
-            </p>
-            <p className="mt-2 text-xs text-purple-600 dark:text-purple-400/80">
-              {opp.how_to_try}
-            </p>
-            {opp.copyable_prompt && (
-              <div className="mt-2 rounded-md bg-purple-100/50 p-2 dark:bg-purple-950/30">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] uppercase tracking-wider text-purple-500 font-medium">
-                    Try it
-                  </span>
-                  <CopyButton text={opp.copyable_prompt} />
-                </div>
-                <pre className="text-xs text-purple-800 dark:text-purple-300 whitespace-pre-wrap font-mono">
-                  {opp.copyable_prompt}
-                </pre>
+        {opportunities.map((opp, i) => {
+          const itemKey = `opp-${i}`;
+          const card = (
+            <div
+              key={i}
+              className="rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 to-violet-50 p-4 dark:border-purple-900/50 dark:from-purple-950/30 dark:to-violet-950/20"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Rocket className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                <h4 className="font-semibold text-purple-800 dark:text-purple-300 text-sm">
+                  {opp.title}
+                </h4>
               </div>
-            )}
-          </div>
-        ))}
+              <p className="text-xs text-purple-700 dark:text-purple-400 leading-relaxed">
+                {opp.whats_possible}
+              </p>
+              <p className="mt-2 text-xs text-purple-600 dark:text-purple-400/80">
+                {opp.how_to_try}
+              </p>
+              {opp.copyable_prompt && (
+                <div className="mt-2 rounded-md bg-purple-100/50 p-2 dark:bg-purple-950/30">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] uppercase tracking-wider text-purple-500 font-medium">
+                      Try it
+                    </span>
+                    <CopyButton text={opp.copyable_prompt} />
+                  </div>
+                  <pre className="text-xs text-purple-800 dark:text-purple-300 whitespace-pre-wrap font-mono">
+                    {opp.copyable_prompt}
+                  </pre>
+                </div>
+              )}
+            </div>
+          );
+          return renderItemWrapper ? renderItemWrapper("onTheHorizon", itemKey, card) : card;
+        })}
       </div>
     </div>
   );
@@ -573,8 +632,11 @@ export default function SectionRenderer({
   voted = false,
   annotation,
   readOnly = false,
+  hiddenItems,
+  renderItemWrapper,
 }: SectionRendererProps) {
   const meta = sectionMeta[sectionType] || sectionMeta.at_a_glance;
+  const hiddenSet = hiddenItems?.length ? hideSetFromArray(hiddenItems) : undefined;
 
   function renderContent() {
     switch (sectionType) {
@@ -598,7 +660,13 @@ export default function SectionRenderer({
           />
         );
       case "project_areas":
-        return <ProjectAreasSection data={data as { areas: ProjectArea[] }} />;
+        return (
+          <ProjectAreasSection
+            data={data as { areas: ProjectArea[] }}
+            hidden={hiddenSet}
+            renderItemWrapper={renderItemWrapper}
+          />
+        );
       case "impressive_workflows":
         return (
           <ImpressiveWorkflowsSection
@@ -608,12 +676,16 @@ export default function SectionRenderer({
                 impressive_workflows: ImpressiveWorkflow[];
               }
             }
+            hidden={hiddenSet}
+            renderItemWrapper={renderItemWrapper}
           />
         );
       case "friction_analysis":
         return (
           <FrictionAnalysisSection
             data={data as { intro: string; categories: FrictionCategory[] }}
+            hidden={hiddenSet}
+            renderItemWrapper={renderItemWrapper}
           />
         );
       case "suggestions":
@@ -626,6 +698,8 @@ export default function SectionRenderer({
                 usage_patterns: UsagePattern[];
               }
             }
+            hidden={hiddenSet}
+            renderItemWrapper={renderItemWrapper}
           />
         );
       case "on_the_horizon":
@@ -634,6 +708,8 @@ export default function SectionRenderer({
             data={
               data as { intro: string; opportunities: HorizonOpportunity[] }
             }
+            hidden={hiddenSet}
+            renderItemWrapper={renderItemWrapper}
           />
         );
       case "fun_ending":

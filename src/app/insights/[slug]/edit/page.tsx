@@ -5,8 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
 import EyeToggle from "@/components/EyeToggle";
+import HideableItem from "@/components/HideableItem";
 import type { HarnessData } from "@/types/insights";
 import { normalizeHarnessData } from "@/types/insights";
+import { buildItemKey } from "@/lib/item-visibility";
 import HeroStats from "@/components/HeroStats";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
 import HowIWorkCluster from "@/components/HowIWorkCluster";
@@ -22,7 +24,7 @@ import CollapsibleSection from "@/components/CollapsibleSection";
 import SectionRenderer from "@/components/SectionRenderer";
 import Link from "next/link";
 import clsx from "clsx";
-import { getHiddenHarnessSections } from "@/lib/harness-section-visibility";
+import { getHiddenKeypaths } from "@/lib/harness-section-visibility";
 import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 
 interface EditProject {
@@ -311,7 +313,7 @@ export default function EditReportPage() {
       }
     }
 
-    body.hiddenHarnessSections = getHiddenHarnessSections(hiddenSections);
+    body.hiddenHarnessSections = getHiddenKeypaths(hiddenSections);
 
     return body;
   };
@@ -547,7 +549,21 @@ export default function EditReportPage() {
               hidden={!!hiddenSections["skillInventory"]}
               onToggle={() => toggleSection("skillInventory")}
             >
-              <SkillCardGrid skillInventory={harnessData.skillInventory} />
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {harnessData.skillInventory.map((skill, i) => {
+                  const itemKey = buildItemKey(harnessData.skillInventory, i, (s) => s.name);
+                  const keypath = `skillInventory.${itemKey}`;
+                  return (
+                    <HideableItem
+                      key={itemKey}
+                      hidden={!!hiddenSections[keypath]}
+                      onToggle={() => toggleSection(keypath)}
+                    >
+                      <SkillCardGrid skillInventory={[skill]} />
+                    </HideableItem>
+                  );
+                })}
+              </div>
             </HideableCard>
           )}
 
@@ -564,34 +580,41 @@ export default function EditReportPage() {
                 defaultOpen={true}
               >
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {harnessData.plugins.map((plugin) => (
-                    <div
-                      key={plugin.name}
-                      className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
-                          {plugin.name}
-                        </span>
-                        <span
-                          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
-                            plugin.active
-                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                              : "bg-slate-100 text-slate-400 dark:bg-slate-800"
-                          }`}
-                        >
-                          {plugin.active ? "on" : "off"}
-                        </span>
-                      </div>
-                      {(plugin.version || plugin.marketplace) && (
-                        <div className="mt-0.5 text-[11px] text-slate-400">
-                          {plugin.version && `v${plugin.version}`}
-                          {plugin.version && plugin.marketplace && " · "}
-                          {plugin.marketplace}
+                  {harnessData.plugins.map((plugin, i) => {
+                    const itemKey = buildItemKey(harnessData.plugins, i, (p) => p.name);
+                    const keypath = `plugins.${itemKey}`;
+                    return (
+                      <HideableItem
+                        key={itemKey}
+                        hidden={!!hiddenSections[keypath]}
+                        onToggle={() => toggleSection(keypath)}
+                      >
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50">
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
+                              {plugin.name}
+                            </span>
+                            <span
+                              className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
+                                plugin.active
+                                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                  : "bg-slate-100 text-slate-400 dark:bg-slate-800"
+                              }`}
+                            >
+                              {plugin.active ? "on" : "off"}
+                            </span>
+                          </div>
+                          {(plugin.version || plugin.marketplace) && (
+                            <div className="mt-0.5 text-[11px] text-slate-400">
+                              {plugin.version && `v${plugin.version}`}
+                              {plugin.version && plugin.marketplace && " · "}
+                              {plugin.marketplace}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  ))}
+                      </HideableItem>
+                    );
+                  })}
                 </div>
               </CollapsibleSection>
             </HideableCard>
@@ -656,13 +679,28 @@ export default function EditReportPage() {
                         <h4 className="mb-2 text-xs font-semibold text-slate-500">
                           Agent Types
                         </h4>
-                        <MiniBarChart
-                          data={Object.entries(
-                            harnessData.agentDispatch.types,
-                          ).map(([label, value]) => ({ label, value }))}
-                          title=""
-                          color="bg-indigo-500"
-                        />
+                        {Object.entries(harnessData.agentDispatch.types).map(
+                          ([typeName, value]) => {
+                            const keypath = `agentDispatch.${buildItemKey(
+                              Object.keys(harnessData.agentDispatch!.types),
+                              Object.keys(harnessData.agentDispatch!.types).indexOf(typeName),
+                              (k) => k,
+                            )}`;
+                            return (
+                              <HideableItem
+                                key={typeName}
+                                hidden={!!hiddenSections[keypath]}
+                                onToggle={() => toggleSection(keypath)}
+                              >
+                                <MiniBarChart
+                                  data={[{ label: typeName, value }]}
+                                  title=""
+                                  color="bg-indigo-500"
+                                />
+                              </HideableItem>
+                            );
+                          },
+                        )}
                       </div>
                     )}
                     {Object.keys(harnessData.agentDispatch.models).length >
@@ -671,13 +709,28 @@ export default function EditReportPage() {
                         <h4 className="mb-2 text-xs font-semibold text-slate-500">
                           Model Tiering
                         </h4>
-                        <MiniBarChart
-                          data={Object.entries(
-                            harnessData.agentDispatch.models,
-                          ).map(([label, value]) => ({ label, value }))}
-                          title=""
-                          color="bg-purple-500"
-                        />
+                        {Object.entries(harnessData.agentDispatch.models).map(
+                          ([modelName, value]) => {
+                            const keypath = `agentDispatch.${buildItemKey(
+                              Object.keys(harnessData.agentDispatch!.models),
+                              Object.keys(harnessData.agentDispatch!.models).indexOf(modelName),
+                              (k) => k,
+                            )}`;
+                            return (
+                              <HideableItem
+                                key={modelName}
+                                hidden={!!hiddenSections[keypath]}
+                                onToggle={() => toggleSection(keypath)}
+                              >
+                                <MiniBarChart
+                                  data={[{ label: modelName, value }]}
+                                  title=""
+                                  color="bg-purple-500"
+                                />
+                              </HideableItem>
+                            );
+                          },
+                        )}
                         {harnessData.agentDispatch.backgroundPct > 0 && (
                           <p className="mt-1 text-xs text-slate-400">
                             {harnessData.agentDispatch.backgroundPct}% run in
@@ -703,14 +756,29 @@ export default function EditReportPage() {
                 title="Languages"
                 defaultOpen={false}
               >
-                <MiniBarChart
-                  data={Object.entries(harnessData.languages)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 12)
-                    .map(([label, value]) => ({ label, value }))}
-                  title=""
-                  color="bg-green-500"
-                />
+                {Object.entries(harnessData.languages)
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 12)
+                  .map(([lang, value]) => {
+                    const keypath = `languages.${buildItemKey(
+                      Object.keys(harnessData.languages),
+                      Object.keys(harnessData.languages).indexOf(lang),
+                      (k) => k,
+                    )}`;
+                    return (
+                      <HideableItem
+                        key={lang}
+                        hidden={!!hiddenSections[keypath]}
+                        onToggle={() => toggleSection(keypath)}
+                      >
+                        <MiniBarChart
+                          data={[{ label: lang, value }]}
+                          title=""
+                          color="bg-green-500"
+                        />
+                      </HideableItem>
+                    );
+                  })}
               </CollapsibleSection>
             </HideableCard>
           )}
@@ -730,19 +798,29 @@ export default function EditReportPage() {
                 <div className="space-y-1">
                   {Object.entries(harnessData.mcpServers)
                     .sort((a, b) => b[1] - a[1])
-                    .map(([server, calls]) => (
-                      <div
-                        key={server}
-                        className="flex justify-between border-b border-slate-100 py-1 dark:border-slate-800"
-                      >
-                        <span className="font-mono text-xs text-slate-600 dark:text-slate-400">
-                          {server}
-                        </span>
-                        <span className="text-xs text-slate-400">
-                          {calls.toLocaleString()} calls
-                        </span>
-                      </div>
-                    ))}
+                    .map(([server, calls]) => {
+                      const keypath = `mcpServers.${buildItemKey(
+                        Object.keys(harnessData.mcpServers),
+                        Object.keys(harnessData.mcpServers).indexOf(server),
+                        (k) => k,
+                      )}`;
+                      return (
+                        <HideableItem
+                          key={server}
+                          hidden={!!hiddenSections[keypath]}
+                          onToggle={() => toggleSection(keypath)}
+                        >
+                          <div className="flex justify-between border-b border-slate-100 py-1 dark:border-slate-800">
+                            <span className="font-mono text-xs text-slate-600 dark:text-slate-400">
+                              {server}
+                            </span>
+                            <span className="text-xs text-slate-400">
+                              {calls.toLocaleString()} calls
+                            </span>
+                          </div>
+                        </HideableItem>
+                      );
+                    })}
                 </div>
               </CollapsibleSection>
             </HideableCard>
@@ -761,14 +839,21 @@ export default function EditReportPage() {
                 defaultOpen={false}
               >
                 <div className="flex flex-wrap gap-1.5">
-                  {harnessData.versions.map((version) => (
-                    <span
-                      key={version}
-                      className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
-                    >
-                      {version}
-                    </span>
-                  ))}
+                  {harnessData.versions.map((version, i) => {
+                    const itemKey = buildItemKey(harnessData.versions, i, (v) => v);
+                    const keypath = `versions.${itemKey}`;
+                    return (
+                      <HideableItem
+                        key={itemKey}
+                        hidden={!!hiddenSections[keypath]}
+                        onToggle={() => toggleSection(keypath)}
+                      >
+                        <span className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">
+                          {version}
+                        </span>
+                      </HideableItem>
+                    );
+                  })}
                 </div>
               </CollapsibleSection>
             </HideableCard>
@@ -787,19 +872,29 @@ export default function EditReportPage() {
                 defaultOpen={false}
               >
                 <div className="space-y-6">
-                  {harnessData.writeupSections.map((section) => (
-                    <div key={section.title}>
-                      <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                        {section.title}
-                      </h4>
-                      <div
-                        className="prose prose-sm max-w-none text-slate-600 dark:text-slate-400 [&_p]:mb-2 [&_li]:mb-1"
-                        dangerouslySetInnerHTML={{
-                          __html: section.contentHtml,
-                        }}
-                      />
-                    </div>
-                  ))}
+                  {harnessData.writeupSections.map((section, i) => {
+                    const itemKey = buildItemKey(harnessData.writeupSections, i, (w) => w.title);
+                    const keypath = `writeupSections.${itemKey}`;
+                    return (
+                      <HideableItem
+                        key={itemKey}
+                        hidden={!!hiddenSections[keypath]}
+                        onToggle={() => toggleSection(keypath)}
+                      >
+                        <div>
+                          <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                            {section.title}
+                          </h4>
+                          <div
+                            className="prose prose-sm max-w-none text-slate-600 dark:text-slate-400 [&_p]:mb-2 [&_li]:mb-1"
+                            dangerouslySetInnerHTML={{
+                              __html: section.contentHtml,
+                            }}
+                          />
+                        </div>
+                      </HideableItem>
+                    );
+                  })}
                 </div>
               </CollapsibleSection>
             </HideableCard>
@@ -818,14 +913,21 @@ export default function EditReportPage() {
                 defaultOpen={false}
               >
                 <div className="space-y-1">
-                  {harnessData.harnessFiles.map((file) => (
-                    <div
-                      key={file}
-                      className="border-b border-slate-100 py-1 font-mono text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400"
-                    >
-                      {file}
-                    </div>
-                  ))}
+                  {harnessData.harnessFiles.map((file, i) => {
+                    const itemKey = buildItemKey(harnessData.harnessFiles, i, (f) => f);
+                    const keypath = `harnessFiles.${itemKey}`;
+                    return (
+                      <HideableItem
+                        key={itemKey}
+                        hidden={!!hiddenSections[keypath]}
+                        onToggle={() => toggleSection(keypath)}
+                      >
+                        <div className="border-b border-slate-100 py-1 font-mono text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400">
+                          {file}
+                        </div>
+                      </HideableItem>
+                    );
+                  })}
                 </div>
               </CollapsibleSection>
             </HideableCard>
