@@ -51,6 +51,7 @@ export function parseHarnessHtml(html: string): HarnessData {
     writeupSections: parseWriteupSections($),
     workflowData: parseWorkflowData($),
     integrityHash: parseIntegrityHash($),
+    skillVersion: parseSkillVersion($),
   };
 }
 
@@ -486,6 +487,18 @@ function parseIntegrityHash($: cheerio.CheerioAPI): string {
   }
 }
 
+function parseSkillVersion($: cheerio.CheerioAPI): string | null {
+  const script = $("#insight-harness-integrity").html();
+  if (!script) return null;
+  try {
+    const data = JSON.parse(script);
+    const payload = JSON.parse(data.payload ?? "{}");
+    return payload.skill_version ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Workflow Data (Phases & Tool Transitions)
 // ---------------------------------------------------------------------------
@@ -653,9 +666,7 @@ function parseNumericValue(s: string): number {
   if (!s) return 0;
   s = s.replace(/,/g, "").trim();
 
-  const tokenMatch = s.match(
-    /(\d+(?:\.\d+)?)\s*([KM])?\s*(?:tokens?|tok)\b/i,
-  );
+  const tokenMatch = s.match(/(\d+(?:\.\d+)?)\s*([KM])?\s*(?:tokens?|tok)\b/i);
   if (tokenMatch) {
     const value = parseFloat(tokenMatch[1]);
     const suffix = tokenMatch[2]?.toUpperCase();
