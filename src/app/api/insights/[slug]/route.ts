@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import type { InsightReportDetailContract } from "@/types/api-contracts";
 import { ALLOWED_PUT_FIELDS } from "@/app/api/insights/allowed-fields";
+import { filterReportForResponse } from "@/lib/filter-report-response";
 
 const SECTION_KEYS = [
   "atAGlance",
@@ -121,9 +122,18 @@ export async function GET(
 
     const { votes: _votes, highlights: _highlights, ...rest } = report;
 
+    // Apply server-side filtering of hidden harness/narrative data.
+    // Owner with ?includeHidden=true gets unfiltered data (edit page).
+    // Non-owners always get filtered, regardless of query param.
+    const viewerIsOwner = !!(userId && userId === report.authorId);
+    const filtered = filterReportForResponse(rest, {
+      viewerIsOwner,
+      includeHidden: includeHiddenRequested,
+    });
+
     return NextResponse.json({
       data: {
-        ...rest,
+        ...filtered,
         voteCounts,
         userVotes,
         userHighlights,
