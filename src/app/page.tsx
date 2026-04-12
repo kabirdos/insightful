@@ -294,21 +294,21 @@ function extractPluginNames(
 function tokenLevelClass(value: number, max: number): string {
   if (value === 0) return "bg-slate-100 dark:bg-slate-800";
   const pct = value / Math.max(max, 1);
-  if (pct <= 0.2) return "bg-green-100 dark:bg-green-950/50";
-  if (pct <= 0.4) return "bg-green-300 dark:bg-green-800";
-  if (pct <= 0.6) return "bg-green-400 dark:bg-green-700";
-  if (pct <= 0.8) return "bg-green-500 dark:bg-green-600";
-  return "bg-green-700 dark:bg-green-500";
-}
-
-function costLevelClass(value: number, max: number): string {
-  if (value === 0) return "bg-slate-100 dark:bg-slate-800";
-  const pct = value / Math.max(max, 1);
   if (pct <= 0.2) return "bg-amber-100 dark:bg-amber-950/50";
   if (pct <= 0.4) return "bg-amber-300 dark:bg-amber-800";
   if (pct <= 0.6) return "bg-amber-400 dark:bg-amber-700";
   if (pct <= 0.8) return "bg-amber-500 dark:bg-amber-600";
   return "bg-amber-700 dark:bg-amber-500";
+}
+
+function costLevelClass(value: number, max: number): string {
+  if (value === 0) return "bg-slate-100 dark:bg-slate-800";
+  const pct = value / Math.max(max, 1);
+  if (pct <= 0.2) return "bg-green-100 dark:bg-green-950/50";
+  if (pct <= 0.4) return "bg-green-300 dark:bg-green-800";
+  if (pct <= 0.6) return "bg-green-400 dark:bg-green-700";
+  if (pct <= 0.8) return "bg-green-500 dark:bg-green-600";
+  return "bg-green-700 dark:bg-green-500";
 }
 
 // ── Sub-components ──────────────────────────────────────────
@@ -650,7 +650,7 @@ function ProfileCard({
           )}
           {hoursWk != null && hoursWk > 0 && (
             <div className="flex flex-1 flex-col border-r border-slate-100 px-3 dark:border-slate-800">
-              <span className="text-[15px] font-bold leading-none text-purple-600 dark:text-purple-400">
+              <span className="text-[15px] font-bold leading-none text-cyan-600 dark:text-cyan-400">
                 {formatHours(hoursWk)}
               </span>
               <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-slate-400">
@@ -664,14 +664,6 @@ function ProfileCard({
             </span>
             <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-slate-400">
               skills
-            </span>
-          </div>
-          <div className="flex flex-1 flex-col px-3 last:pr-0">
-            <span className="text-[15px] font-bold leading-none text-slate-800 dark:text-slate-200">
-              {pluginsCount}
-            </span>
-            <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-slate-400">
-              {pluginsCount === 1 ? "plugin" : "plugins"}
             </span>
           </div>
           {(() => {

@@ -69,6 +69,7 @@ function parseHarnessStats($: cheerio.CheerioAPI): HarnessStats {
 
   return {
     totalTokens: parseNumericValue(statValues["tokens"] ?? "0"),
+    lifetimeTokens: parseNumericValue(statValues["lifetime tokens"] ?? "0"),
     durationHours:
       parseInt(statValues["duration"]?.replace(/h$/i, "") ?? "0", 10) || 0,
     avgSessionMinutes:

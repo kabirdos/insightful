@@ -118,6 +118,7 @@ export interface ParsedInsightsReport {
 
 export interface HarnessStats {
   totalTokens: number;
+  lifetimeTokens?: number;
   durationHours: number;
   avgSessionMinutes: number;
   skillsUsedCount: number;
@@ -389,7 +390,11 @@ export function normalizeHarnessData(raw: unknown): HarnessData | null {
 
   // Fill in defaults for optional/array fields that may be missing
   return {
-    stats: obj.stats as HarnessData["stats"],
+    stats: {
+      ...(obj.stats as HarnessData["stats"]),
+      lifetimeTokens:
+        ((obj.stats as Record<string, unknown>).lifetimeTokens as number) ?? 0,
+    },
     autonomy: obj.autonomy as HarnessData["autonomy"],
     featurePills: obj.featurePills as HarnessData["featurePills"],
     toolUsage: (obj.toolUsage as Record<string, number>) ?? {},

@@ -1,9 +1,6 @@
 import { ImageResponse } from "next/og";
 import { prisma } from "@/lib/db";
-import {
-  resolveLinesAdded,
-  resolveLinesRemoved,
-} from "@/lib/lines-of-code";
+import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 import { normalizeHarnessData, type HarnessData } from "@/types/insights";
 
 export const runtime = "nodejs";
@@ -64,14 +61,14 @@ function perWeek(total: number, days: number): string {
   return formatNumber(Math.round(total / weeks));
 }
 
-// Heatmap color scale
+// Heatmap color scale — amber for tokens, green for cost
 const HEATMAP_COLORS = [
   "#f1f5f9",
-  "#dbeafe",
-  "#93c5fd",
-  "#60a5fa",
-  "#3b82f6",
-  "#1d4ed8",
+  "#fef3c7",
+  "#fcd34d",
+  "#f59e0b",
+  "#d97706",
+  "#b45309",
 ];
 
 function getHeatmapColor(value: number, max: number): string {
@@ -563,7 +560,6 @@ export async function GET(
                 </div>
               </div>
             )}
-
           </div>
         </div>
 
