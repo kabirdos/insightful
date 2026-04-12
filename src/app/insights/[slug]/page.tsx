@@ -380,6 +380,7 @@ export default function InsightDetailPage() {
               dateRangeStart={report.dateRangeStart ?? undefined}
               slug={slug}
               models={report.harnessData?.models ?? undefined}
+              perModelTokens={report.harnessData?.perModelTokens ?? undefined}
             />
           )}
 

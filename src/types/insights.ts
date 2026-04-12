@@ -207,6 +207,13 @@ export interface HarnessWorkflowData {
   phaseStats: HarnessPhaseStats;
 }
 
+export interface HarnessModelTokenBreakdown {
+  input: number;
+  output: number;
+  cache_read: number;
+  cache_create: number;
+}
+
 export interface HarnessEnhancedStats {
   linesAdded: number | null;
   linesRemoved: number | null;
@@ -239,6 +246,7 @@ export interface HarnessData {
   integrityHash: string;
   skillVersion: string | null;
   enhancedStats?: HarnessEnhancedStats | null;
+  perModelTokens?: Record<string, HarnessModelTokenBreakdown> | null;
 }
 
 // v2: Chart data parsed from HTML report
@@ -440,5 +448,7 @@ export function normalizeHarnessData(raw: unknown): HarnessData | null {
     integrityHash: (obj.integrityHash as string) ?? "",
     skillVersion: (obj.skillVersion as string) ?? null,
     enhancedStats: (obj.enhancedStats as HarnessData["enhancedStats"]) ?? null,
+    perModelTokens:
+      (obj.perModelTokens as HarnessData["perModelTokens"]) ?? null,
   };
 }

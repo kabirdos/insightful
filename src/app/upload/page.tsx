@@ -1432,6 +1432,7 @@ export default function UploadPage() {
                   dateRangeStart={parsed.stats.dateRangeStart ?? undefined}
                   slug="preview"
                   models={parsed.harnessData.models}
+                  perModelTokens={parsed.harnessData.perModelTokens}
                 />
               </RedactableSection>
 

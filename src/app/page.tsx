@@ -65,6 +65,11 @@ interface HarnessSlice {
   workflowData?: HarnessWorkflowSlice | null;
   /** Top-level per-model token counts used for API cost estimation. */
   models?: Record<string, number>;
+  /** 4-way per-model breakdown (input/output/cache_read/cache_create) for accurate cost. */
+  perModelTokens?: Record<
+    string,
+    { input: number; output: number; cache_read: number; cache_create: number }
+  > | null;
   /**
    * Git patterns slice — used by the lines-of-code resolver when the
    * scalar `linesAdded` / `linesRemoved` columns on the report are null
@@ -508,6 +513,7 @@ function ProfileCard({
   const totalCost = estimateApiCostUsd(
     insight.harnessData?.models,
     effectiveTokens ?? 0,
+    insight.harnessData?.perModelTokens,
   );
   const costWk = perWeek(totalCost, insight.dayCount);
 
