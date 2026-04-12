@@ -666,16 +666,21 @@ function parseNumericValue(s: string): number {
   if (!s) return 0;
   s = s.replace(/,/g, "").trim();
 
-  const tokenMatch = s.match(/(\d+(?:\.\d+)?)\s*([KM])?\s*(?:tokens?|tok)\b/i);
+  const tokenMatch = s.match(
+    /(\d+(?:\.\d+)?)\s*([BKMG])?\s*(?:tokens?|tok)\b/i,
+  );
   if (tokenMatch) {
     const value = parseFloat(tokenMatch[1]);
     const suffix = tokenMatch[2]?.toUpperCase();
+    if (suffix === "B") return Math.round(value * 1_000_000_000);
+    if (suffix === "G") return Math.round(value * 1_000_000_000);
     if (suffix === "M") return Math.round(value * 1_000_000);
     if (suffix === "K") return Math.round(value * 1_000);
     return Math.round(value) || 0;
   }
 
   const upper = s.toUpperCase();
+  if (upper.endsWith("B")) return Math.round(parseFloat(s) * 1_000_000_000);
   if (upper.endsWith("M")) return Math.round(parseFloat(s) * 1_000_000);
   if (upper.endsWith("K")) return Math.round(parseFloat(s) * 1_000);
   return Math.round(parseFloat(s)) || 0;
