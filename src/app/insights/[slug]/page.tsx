@@ -395,12 +395,6 @@ export default function InsightDetailPage() {
             <HowIWorkCluster harnessData={report.harnessData} />
           )}
 
-          {/* Tool Usage Treemap */}
-          {!isHarnessSectionHidden(hiddenHarnessSections, "toolUsage") &&
-            Object.keys(report.harnessData.toolUsage).length > 0 && (
-            <ToolUsageTreemap toolUsage={report.harnessData.toolUsage} />
-          )}
-
           {/* Workflow Diagrams */}
           {report.harnessData.workflowData &&
             !isHarnessSectionHidden(hiddenHarnessSections, "workflowData") && (
@@ -457,6 +451,12 @@ export default function InsightDetailPage() {
                 ))}
               </div>
             </CollapsibleSection>
+          )}
+
+          {/* Tool Usage Treemap */}
+          {!isHarnessSectionHidden(hiddenHarnessSections, "toolUsage") &&
+            Object.keys(report.harnessData.toolUsage).length > 0 && (
+            <ToolUsageTreemap toolUsage={report.harnessData.toolUsage} />
           )}
 
           {/* CLI Tools Donut */}
