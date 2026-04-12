@@ -5,6 +5,7 @@ import type { InsightReportListItemContract } from "@/types/api-contracts";
 import { normalizeHarnessData } from "@/types/insights";
 import type { Prisma } from "@prisma/client";
 import { fetchLinkPreview } from "@/lib/link-preview";
+import { filterReportForResponse } from "@/lib/filter-report-response";
 const SECTION_KEYS = [
   "atAGlance",
   "interactionStyle",
@@ -105,8 +106,16 @@ export async function GET(request: Request) {
 
       const { votes: ignoredVotes, ...rest } = report;
       void ignoredVotes;
+
+      // Apply server-side filtering of hidden data for list feeds.
+      // List feeds never pass includeHidden — always filter.
+      const filtered = filterReportForResponse(rest, {
+        viewerIsOwner: false,
+        includeHidden: false,
+      });
+
       return {
-        ...rest,
+        ...filtered,
         voteCounts,
         _trendingVotes: report.votes,
       };

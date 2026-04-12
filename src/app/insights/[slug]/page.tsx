@@ -34,7 +34,12 @@ import HooksSafetyTable from "@/components/HooksSafetyTable";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
 import WorkflowDiagram from "@/components/WorkflowDiagram";
 import MiniBarChart from "@/components/MiniBarChart";
-import { isHarnessSectionHidden } from "@/lib/harness-section-visibility";
+import {
+  hideSetFromArray,
+  isSectionHidden,
+  filterList,
+  filterRecord,
+} from "@/lib/item-visibility";
 
 interface ReportData {
   id: string;
@@ -269,6 +274,7 @@ export default function InsightDetailPage() {
 
   const isHarness = report.reportType === "insight-harness";
   const hiddenHarnessSections = report.hiddenHarnessSections ?? [];
+  const hiddenSet = hideSetFromArray(hiddenHarnessSections);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -339,7 +345,7 @@ export default function InsightDetailPage() {
       {isHarness && report.harnessData ? (
         <>
           {/* Hero Stats */}
-          {!isHarnessSectionHidden(hiddenHarnessSections, "heroStats") && (
+          {!isSectionHidden(hiddenSet, "heroStats") && (
             <HeroStats
               stats={report.harnessData.stats}
               dayCount={report.dayCount}
@@ -362,10 +368,7 @@ export default function InsightDetailPage() {
           )}
 
           {/* Activity Heatmap — generated from aggregate stats */}
-          {!isHarnessSectionHidden(
-            hiddenHarnessSections,
-            "activityHeatmap",
-          ) && (
+          {!isSectionHidden(hiddenSet, "activityHeatmap") && (
             <ActivityHeatmap
               totalSessions={
                 report.sessionCount ??
@@ -391,13 +394,13 @@ export default function InsightDetailPage() {
           )}
 
           {/* How I Work cluster: Autonomy + Model Donut + File Ops */}
-          {!isHarnessSectionHidden(hiddenHarnessSections, "howIWork") && (
+          {!isSectionHidden(hiddenSet, "howIWork") && (
             <HowIWorkCluster harnessData={report.harnessData} />
           )}
 
           {/* Workflow Diagrams */}
           {report.harnessData.workflowData &&
-            !isHarnessSectionHidden(hiddenHarnessSections, "workflowData") && (
+            !isSectionHidden(hiddenSet, "workflowData") && (
               <WorkflowDiagram
                 workflowData={report.harnessData.workflowData}
                 agentDispatch={report.harnessData.agentDispatch}
@@ -406,75 +409,84 @@ export default function InsightDetailPage() {
             )}
 
           {/* Skills Card Grid */}
-          {!isHarnessSectionHidden(hiddenHarnessSections, "skillInventory") &&
+          {!isSectionHidden(hiddenSet, "skillInventory") &&
             report.harnessData.skillInventory.length > 0 && (
-            <SkillCardGrid skillInventory={report.harnessData.skillInventory} />
-          )}
+              <SkillCardGrid
+                skillInventory={filterList(
+                  report.harnessData.skillInventory,
+                  hiddenSet,
+                  "skillInventory",
+                  (s) => s.name,
+                )}
+              />
+            )}
 
           {/* Plugins */}
-          {!isHarnessSectionHidden(hiddenHarnessSections, "plugins") &&
+          {!isSectionHidden(hiddenSet, "plugins") &&
             report.harnessData.plugins.length > 0 && (
-            <CollapsibleSection
-              icon="🔌"
-              iconBgClass="bg-teal-100 dark:bg-teal-900/30"
-              title="Plugins"
-              defaultOpen={true}
-            >
-              <div className="grid gap-2 sm:grid-cols-2">
-                {report.harnessData.plugins.map((p) => (
-                  <div
-                    key={p.name}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        {p.name}
-                      </span>
-                      <span
-                        className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
-                          p.active
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                            : "bg-slate-100 text-slate-400 dark:bg-slate-800"
-                        }`}
-                      >
-                        {p.active ? "on" : "off"}
-                      </span>
-                    </div>
-                    {(p.version || p.marketplace) && (
-                      <div className="mt-0.5 text-[11px] text-slate-400">
-                        {p.version && `v${p.version}`}
-                        {p.version && p.marketplace && " · "}
-                        {p.marketplace}
+              <CollapsibleSection
+                icon="🔌"
+                iconBgClass="bg-teal-100 dark:bg-teal-900/30"
+                title="Plugins"
+                defaultOpen={true}
+              >
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {filterList(
+                    report.harnessData.plugins,
+                    hiddenSet,
+                    "plugins",
+                    (p) => p.name,
+                  ).map((p) => (
+                    <div
+                      key={p.name}
+                      className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          {p.name}
+                        </span>
+                        <span
+                          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
+                            p.active
+                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                              : "bg-slate-100 text-slate-400 dark:bg-slate-800"
+                          }`}
+                        >
+                          {p.active ? "on" : "off"}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CollapsibleSection>
-          )}
+                      {(p.version || p.marketplace) && (
+                        <div className="mt-0.5 text-[11px] text-slate-400">
+                          {p.version && `v${p.version}`}
+                          {p.version && p.marketplace && " · "}
+                          {p.marketplace}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleSection>
+            )}
 
           {/* Tool Usage Treemap */}
-          {!isHarnessSectionHidden(hiddenHarnessSections, "toolUsage") &&
+          {!isSectionHidden(hiddenSet, "toolUsage") &&
             Object.keys(report.harnessData.toolUsage).length > 0 && (
-            <ToolUsageTreemap toolUsage={report.harnessData.toolUsage} />
-          )}
+              <ToolUsageTreemap toolUsage={report.harnessData.toolUsage} />
+            )}
 
           {/* CLI Tools Donut */}
-          {!isHarnessSectionHidden(hiddenHarnessSections, "cliTools") &&
+          {!isSectionHidden(hiddenSet, "cliTools") &&
             Object.keys(report.harnessData.cliTools).length > 0 && (
-            <CliToolsDonut cliTools={report.harnessData.cliTools} />
-          )}
+              <CliToolsDonut cliTools={report.harnessData.cliTools} />
+            )}
 
           {/* Git Patterns */}
-          {!isHarnessSectionHidden(hiddenHarnessSections, "gitPatterns") && (
+          {!isSectionHidden(hiddenSet, "gitPatterns") && (
             <GitPatternsDisplay gitPatterns={report.harnessData.gitPatterns} />
           )}
 
           {/* Permission Mode & Safety */}
-          {!isHarnessSectionHidden(
-            hiddenHarnessSections,
-            "permissionModes",
-          ) && (
+          {!isSectionHidden(hiddenSet, "permissionModes") && (
             <PermissionModeDisplay
               permissionModes={report.harnessData.permissionModes}
               featurePills={report.harnessData.featurePills}
@@ -482,14 +494,14 @@ export default function InsightDetailPage() {
           )}
 
           {/* Hooks & Safety */}
-          {!isHarnessSectionHidden(hiddenHarnessSections, "hookDefinitions") && (
+          {!isSectionHidden(hiddenSet, "hookDefinitions") && (
             <HooksSafetyTable
               hookDefinitions={report.harnessData.hookDefinitions}
             />
           )}
 
           {/* Agent Dispatch */}
-          {!isHarnessSectionHidden(hiddenHarnessSections, "agentDispatch") &&
+          {!isSectionHidden(hiddenSet, "agentDispatch") &&
             report.harnessData.agentDispatch &&
             report.harnessData.agentDispatch.totalAgents > 0 && (
               <CollapsibleSection
@@ -556,127 +568,154 @@ export default function InsightDetailPage() {
                   </div>
                 )}
               </CollapsibleSection>
-          )}
+            )}
 
           {/* Languages */}
-          {!isHarnessSectionHidden(hiddenHarnessSections, "languages") &&
+          {!isSectionHidden(hiddenSet, "languages") &&
             Object.keys(report.harnessData.languages).length > 0 && (
-            <CollapsibleSection
-              icon="💻"
-              iconBgClass="bg-green-100 dark:bg-green-900/30"
-              title="Languages"
-              defaultOpen={false}
-            >
-              <MiniBarChart
-                data={Object.entries(report.harnessData.languages)
-                  .sort((a, b) => b[1] - a[1])
-                  .slice(0, 12)
-                  .map(([label, value]) => ({ label, value }))}
-                title=""
-                color="bg-green-500"
-              />
-            </CollapsibleSection>
-          )}
+              <CollapsibleSection
+                icon="💻"
+                iconBgClass="bg-green-100 dark:bg-green-900/30"
+                title="Languages"
+                defaultOpen={false}
+              >
+                <MiniBarChart
+                  data={Object.entries(
+                    filterRecord(
+                      report.harnessData.languages,
+                      hiddenSet,
+                      "languages",
+                    ),
+                  )
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 12)
+                    .map(([label, value]) => ({ label, value }))}
+                  title=""
+                  color="bg-green-500"
+                />
+              </CollapsibleSection>
+            )}
 
           {/* MCP Servers */}
-          {!isHarnessSectionHidden(hiddenHarnessSections, "mcpServers") &&
+          {!isSectionHidden(hiddenSet, "mcpServers") &&
             Object.keys(report.harnessData.mcpServers).length > 0 && (
-            <CollapsibleSection
-              icon="🔗"
-              iconBgClass="bg-cyan-100 dark:bg-cyan-900/30"
-              title="MCP Servers"
-              defaultOpen={false}
-            >
-              <div className="space-y-1">
-                {Object.entries(report.harnessData.mcpServers)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([server, calls]) => (
-                    <div
-                      key={server}
-                      className="flex justify-between border-b border-slate-100 py-1 dark:border-slate-800"
-                    >
-                      <span className="font-mono text-xs text-slate-600 dark:text-slate-400">
-                        {server}
-                      </span>
-                      <span className="text-xs text-slate-400">
-                        {calls.toLocaleString()} calls
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </CollapsibleSection>
-          )}
+              <CollapsibleSection
+                icon="🔗"
+                iconBgClass="bg-cyan-100 dark:bg-cyan-900/30"
+                title="MCP Servers"
+                defaultOpen={false}
+              >
+                <div className="space-y-1">
+                  {Object.entries(
+                    filterRecord(
+                      report.harnessData.mcpServers,
+                      hiddenSet,
+                      "mcpServers",
+                    ),
+                  )
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([server, calls]) => (
+                      <div
+                        key={server}
+                        className="flex justify-between border-b border-slate-100 py-1 dark:border-slate-800"
+                      >
+                        <span className="font-mono text-xs text-slate-600 dark:text-slate-400">
+                          {server}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          {calls.toLocaleString()} calls
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </CollapsibleSection>
+            )}
 
           {/* Versions */}
-          {!isHarnessSectionHidden(hiddenHarnessSections, "versions") &&
+          {!isSectionHidden(hiddenSet, "versions") &&
             report.harnessData.versions.length > 0 && (
-            <CollapsibleSection
-              icon="📦"
-              iconBgClass="bg-slate-100 dark:bg-slate-900/30"
-              title="Claude Code Versions"
-              defaultOpen={false}
-            >
-              <div className="flex flex-wrap gap-1.5">
-                {report.harnessData.versions.map((v) => (
-                  <span
-                    key={v}
-                    className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
-                  >
-                    {v}
-                  </span>
-                ))}
-              </div>
-            </CollapsibleSection>
-          )}
+              <CollapsibleSection
+                icon="📦"
+                iconBgClass="bg-slate-100 dark:bg-slate-900/30"
+                title="Claude Code Versions"
+                defaultOpen={false}
+              >
+                <div className="flex flex-wrap gap-1.5">
+                  {filterList(
+                    report.harnessData.versions,
+                    hiddenSet,
+                    "versions",
+                    (v) => v,
+                  ).map((v) => (
+                    <span
+                      key={v}
+                      className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
+                    >
+                      {v}
+                    </span>
+                  ))}
+                </div>
+              </CollapsibleSection>
+            )}
 
           {/* Writeup Sections */}
-          {!isHarnessSectionHidden(hiddenHarnessSections, "writeupSections") &&
+          {!isSectionHidden(hiddenSet, "writeupSections") &&
             report.harnessData.writeupSections.length > 0 && (
-            <CollapsibleSection
-              icon="📝"
-              iconBgClass="bg-blue-100 dark:bg-blue-900/30"
-              title="Writeup Analysis"
-              defaultOpen={false}
-            >
-              <div className="space-y-6">
-                {report.harnessData.writeupSections.map((section) => (
-                  <div key={section.title}>
-                    <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                      {section.title}
-                    </h4>
-                    <div
-                      className="prose prose-sm max-w-none text-slate-600 dark:text-slate-400 [&_p]:mb-2 [&_li]:mb-1"
-                      dangerouslySetInnerHTML={{
-                        __html: section.contentHtml,
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </CollapsibleSection>
-          )}
+              <CollapsibleSection
+                icon="📝"
+                iconBgClass="bg-blue-100 dark:bg-blue-900/30"
+                title="Writeup Analysis"
+                defaultOpen={false}
+              >
+                <div className="space-y-6">
+                  {filterList(
+                    report.harnessData.writeupSections,
+                    hiddenSet,
+                    "writeupSections",
+                    (w) => w.title,
+                  ).map((section) => (
+                    <div key={section.title}>
+                      <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        {section.title}
+                      </h4>
+                      <div
+                        className="prose prose-sm max-w-none text-slate-600 dark:text-slate-400 [&_p]:mb-2 [&_li]:mb-1"
+                        dangerouslySetInnerHTML={{
+                          __html: section.contentHtml,
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleSection>
+            )}
 
           {/* Harness Files */}
-          {!isHarnessSectionHidden(hiddenHarnessSections, "harnessFiles") &&
+          {!isSectionHidden(hiddenSet, "harnessFiles") &&
             report.harnessData.harnessFiles.length > 0 && (
-            <CollapsibleSection
-              icon="📁"
-              iconBgClass="bg-orange-100 dark:bg-orange-900/30"
-              title="Harness File Ecosystem"
-              defaultOpen={false}
-            >
-              <div className="space-y-1">
-                {report.harnessData.harnessFiles.map((f) => (
-                  <div
-                    key={f}
-                    className="border-b border-slate-100 py-1 font-mono text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400"
-                  >
-                    {f}
-                  </div>
-                ))}
-              </div>
-            </CollapsibleSection>
-          )}
+              <CollapsibleSection
+                icon="📁"
+                iconBgClass="bg-orange-100 dark:bg-orange-900/30"
+                title="Harness File Ecosystem"
+                defaultOpen={false}
+              >
+                <div className="space-y-1">
+                  {filterList(
+                    report.harnessData.harnessFiles,
+                    hiddenSet,
+                    "harnessFiles",
+                    (f) => f,
+                  ).map((f) => (
+                    <div
+                      key={f}
+                      className="border-b border-slate-100 py-1 font-mono text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400"
+                    >
+                      {f}
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleSection>
+            )}
 
           {/* Narrative Sections */}
           <div className="space-y-4">
@@ -705,6 +744,7 @@ export default function InsightDetailPage() {
                     voteCount={report.voteCounts[section.key] ?? 0}
                     voted={report.userVotes[section.key] ?? false}
                     annotation={annotations[section.key]}
+                    hiddenItems={hiddenHarnessSections}
                   />
                 </CollapsibleSection>
               );
