@@ -505,9 +505,9 @@ export async function GET(
             style={{
               display: "flex",
               gap: "40px",
-              padding: "0 56px 10px 56px",
+              padding: "0 56px 40px 56px",
               flex: 1,
-              alignItems: "flex-start",
+              alignItems: "center",
               justifyContent: "center",
             }}
           >
@@ -553,24 +553,6 @@ export async function GET(
             )}
           </div>
         )}
-
-        {/* FOOTER */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 56px",
-            borderTop: "1px solid #e2e8f0",
-          }}
-        >
-          <span style={{ fontSize: "30px", fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>
-            InsightHarness.com
-          </span>
-          <span style={{ fontSize: "22px", fontWeight: 600, color: MUTED }}>
-            See how developers use Claude Code
-          </span>
-        </div>
       </div>,
       {
         width: 1200,
