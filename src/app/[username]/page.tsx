@@ -17,7 +17,9 @@ import {
   Trash2,
 } from "lucide-react";
 import InsightCard from "@/components/InsightCard";
+import SetupCard from "@/components/profile/SetupCard";
 import { buildReportApiUrl, buildReportEditUrl } from "@/lib/urls";
+import type { ProfileSetup } from "@/types/profile";
 
 function GithubIcon({ className }: { className?: string }) {
   return (
@@ -44,6 +46,7 @@ interface UserProfile {
   twitterUrl?: string | null;
   linkedinUrl?: string | null;
   websiteUrl?: string | null;
+  setup?: ProfileSetup | null;
   createdAt: string;
   totalReports: number;
   totalVotes: number;
@@ -476,6 +479,9 @@ export default function UserProfilePage() {
           )}
         </div>
       </div>
+
+      {/* Developer Setup (only renders when non-empty) */}
+      <SetupCard setup={profile.setup} />
 
       {/* Reports */}
       <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
