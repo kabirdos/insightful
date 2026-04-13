@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { normalizeSetup } from "@/lib/profile-setup-normalize";
 
 export async function GET(
   request: Request,
@@ -20,6 +21,7 @@ export async function GET(
         twitterUrl: true,
         linkedinUrl: true,
         websiteUrl: true,
+        setup: true,
         createdAt: true,
         reports: {
           orderBy: { publishedAt: "desc" },
@@ -89,6 +91,9 @@ export async function GET(
         twitterUrl: user.twitterUrl,
         linkedinUrl: user.linkedinUrl,
         websiteUrl: user.websiteUrl,
+        // Pass `setup` as both raw + prevStored so a well-formed stored blob
+        // preserves its persisted `setupUpdatedAt` across reads (plan §5).
+        setup: normalizeSetup(user.setup, user.setup),
         createdAt: user.createdAt,
         totalReports: user.reports.length,
         totalVotes,

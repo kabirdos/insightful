@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { normalizeSetup } from "@/lib/profile-setup-normalize";
 
 const URL_FIELDS = [
   "githubUrl",
@@ -8,6 +10,19 @@ const URL_FIELDS = [
   "linkedinUrl",
   "websiteUrl",
 ] as const;
+
+const USER_SELECT = {
+  id: true,
+  username: true,
+  displayName: true,
+  avatarUrl: true,
+  bio: true,
+  githubUrl: true,
+  twitterUrl: true,
+  linkedinUrl: true,
+  websiteUrl: true,
+  setup: true,
+} as const;
 
 function isValidUrl(value: string): boolean {
   try {
@@ -27,24 +42,18 @@ export async function GET() {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: {
-        id: true,
-        username: true,
-        displayName: true,
-        avatarUrl: true,
-        bio: true,
-        githubUrl: true,
-        twitterUrl: true,
-        linkedinUrl: true,
-        websiteUrl: true,
-      },
+      select: USER_SELECT,
     });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ data: user });
+    // Pass `setup` as both `raw` and `prevStored` so a well-formed stored
+    // blob preserves its persisted `setupUpdatedAt` on every read (plan §5).
+    return NextResponse.json({
+      data: { ...user, setup: normalizeSetup(user.setup, user.setup) },
+    });
   } catch (error) {
     console.error("GET /api/users/me error:", error);
     return NextResponse.json(
@@ -64,7 +73,9 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const { displayName, bio } = body;
 
-    const updateData: Record<string, string | null> = {};
+    // Widened from `Record<string, string | null>` so `setup` (Json | DbNull)
+    // can land in the same accumulator.
+    const updateData: Prisma.UserUpdateInput = {};
 
     if (displayName !== undefined) {
       updateData.displayName =
@@ -94,7 +105,27 @@ export async function PUT(request: Request) {
       }
     }
 
-    if (Object.keys(updateData).length === 0) {
+    // Accept `setup` as an object (fields to set), explicit `null` (clear), or
+    // omitted (leave alone). normalizeSetup collapses empty-user-fields to
+    // null too. Prisma null handling: use `Prisma.DbNull` to store SQL NULL.
+    // `Prisma.JsonNull` would persist a JSON null literal, which is NOT what
+    // we want. See plan §5 and
+    // https://www.prisma.io/docs/orm/prisma-client/special-fields-and-types/working-with-json-fields#using-null-values
+    let setupProvided = false;
+    if (body.setup !== undefined) {
+      setupProvided = true;
+      const prevStored = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { setup: true },
+      });
+      const normalized = normalizeSetup(body.setup, prevStored?.setup ?? null);
+      updateData.setup =
+        normalized === null
+          ? Prisma.DbNull
+          : (normalized as unknown as Prisma.InputJsonValue);
+    }
+
+    if (Object.keys(updateData).length === 0 && !setupProvided) {
       return NextResponse.json(
         { error: "No valid fields to update" },
         { status: 400 },
@@ -104,20 +135,12 @@ export async function PUT(request: Request) {
     const user = await prisma.user.update({
       where: { id: session.user.id },
       data: updateData,
-      select: {
-        id: true,
-        username: true,
-        displayName: true,
-        avatarUrl: true,
-        bio: true,
-        githubUrl: true,
-        twitterUrl: true,
-        linkedinUrl: true,
-        websiteUrl: true,
-      },
+      select: USER_SELECT,
     });
 
-    return NextResponse.json({ data: user });
+    return NextResponse.json({
+      data: { ...user, setup: normalizeSetup(user.setup, user.setup) },
+    });
   } catch (error) {
     console.error("PUT /api/users/me error:", error);
     return NextResponse.json(
