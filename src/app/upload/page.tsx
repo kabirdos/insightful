@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
+import posthog from "posthog-js";
 import {
   Upload,
   Check,
@@ -813,6 +814,11 @@ export default function UploadPage() {
       if (!createdSlug || !createdUsername) {
         throw new Error("Server response missing slug or username");
       }
+      posthog.capture("profile_published", {
+        username: createdUsername,
+        slug: createdSlug,
+        report_type: parsed.reportType ?? "insights",
+      });
       router.push(buildReportUrl(createdUsername, createdSlug));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to publish");
