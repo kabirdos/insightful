@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { TrendingUp, Clock, Flame, Upload } from "lucide-react";
 import Link from "next/link";
+import ShareButton from "@/components/ShareButton";
 import Image from "next/image";
 import clsx from "clsx";
 import {
@@ -587,13 +588,24 @@ function ProfileCard({
               className="shrink-0"
             />
             <div className="min-w-0">
-              <div
-                className={clsx(
-                  "truncate font-bold text-slate-900 group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400",
-                  featured ? "text-lg" : "text-base",
-                )}
-              >
-                {identityName}
+              <div className="flex items-center gap-2">
+                <div
+                  className={clsx(
+                    "truncate font-bold text-slate-900 group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400",
+                    featured ? "text-lg" : "text-base",
+                  )}
+                >
+                  {identityName}
+                </div>
+                <ShareButton
+                  url={
+                    typeof window !== "undefined"
+                      ? `${window.location.origin}/insights/${insight.slug}`
+                      : `/insights/${insight.slug}`
+                  }
+                  title={identityName}
+                  className="shrink-0 px-2 py-1 text-xs"
+                />
               </div>
               <div className="truncate text-xs text-slate-400">
                 @{insight.author.username}

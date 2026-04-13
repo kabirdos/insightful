@@ -9,8 +9,9 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Calendar, Pencil, Share2, Sparkles } from "lucide-react";
+import { Calendar, Pencil, Sparkles } from "lucide-react";
 import SectionRenderer from "@/components/SectionRenderer";
+import ShareButton from "@/components/ShareButton";
 import CommentSection from "@/components/CommentSection";
 import ProjectLinks from "@/components/ProjectLinks";
 import SnapshotCard from "@/components/SnapshotCard";
@@ -212,7 +213,6 @@ export default function InsightDetailPage() {
   const [report, setReport] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>("dashboard");
 
   // Scroll to top of tab content when switching tabs so readers don't
@@ -242,12 +242,6 @@ export default function InsightDetailPage() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [slug]);
-
-  const handleShare = async () => {
-    await navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   if (loading) {
     return (
@@ -336,13 +330,14 @@ export default function InsightDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleShare}
-            className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-          >
-            <Share2 className="h-4 w-4" />
-            {copied ? "Copied!" : "Share"}
-          </button>
+          <ShareButton
+            url={
+              typeof window !== "undefined"
+                ? window.location.href
+                : `/insights/${slug}`
+            }
+            title={report.title}
+          />
           {session?.user?.id === report.authorId && (
             <Link
               href={`/insights/${slug}/edit`}
