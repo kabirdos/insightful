@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
+import { buildOgImageUrl } from "@/lib/urls";
 
 function formatTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -10,12 +11,12 @@ function formatTokens(n: number): string {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ username: string; slug: string }>;
 }): Promise<Metadata> {
-  const { slug } = await params;
+  const { username, slug } = await params;
 
   const report = await prisma.insightReport.findFirst({
-    where: { slug },
+    where: { slug, author: { username } },
     select: {
       totalTokens: true,
       sessionCount: true,
@@ -54,7 +55,7 @@ export async function generateMetadata({
       ? parts.join(" \u00b7 ")
       : "See how this developer uses Claude Code";
 
-  const ogImage = `/api/og/${slug}`;
+  const ogImage = buildOgImageUrl(username, slug);
 
   return {
     title,

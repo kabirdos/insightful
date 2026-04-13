@@ -6,6 +6,12 @@ import ProfileTabs, {
   type ProfileTab,
 } from "@/components/ProfileTabs";
 import { useParams } from "next/navigation";
+import {
+  buildProfileUrl,
+  buildReportApiUrl,
+  buildReportEditUrl,
+  buildReportUrl,
+} from "@/lib/urls";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -208,6 +214,7 @@ function getSectionSummary(
 
 export default function InsightDetailPage() {
   const params = useParams();
+  const username = params.username as string;
   const slug = params.slug as string;
   const { data: session } = useSession();
   const [report, setReport] = useState<ReportData | null>(null);
@@ -225,7 +232,7 @@ export default function InsightDetailPage() {
   };
 
   useEffect(() => {
-    fetch(`/api/insights/${slug}`)
+    fetch(buildReportApiUrl(username, slug))
       .then((res) => {
         if (!res.ok) throw new Error("Report not found");
         return res.json();
@@ -241,7 +248,7 @@ export default function InsightDetailPage() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [username, slug]);
 
   if (loading) {
     return (
@@ -288,7 +295,7 @@ export default function InsightDetailPage() {
     <div className="mx-auto max-w-5xl px-4 py-8">
       {/* Author bar */}
       <div className="mb-6 flex items-center gap-4 border-b border-slate-200 pb-6 dark:border-slate-700">
-        <Link href={`/u/${report.author.username}`}>
+        <Link href={buildProfileUrl(report.author.username)}>
           {report.author.avatarUrl ? (
             <Image
               src={report.author.avatarUrl}
@@ -306,7 +313,7 @@ export default function InsightDetailPage() {
         </Link>
         <div className="flex-1">
           <Link
-            href={`/u/${report.author.username}`}
+            href={buildProfileUrl(report.author.username)}
             className="font-semibold text-slate-900 hover:text-blue-600 dark:text-white"
           >
             {report.author.displayName || report.author.username}
@@ -334,13 +341,13 @@ export default function InsightDetailPage() {
             url={
               typeof window !== "undefined"
                 ? window.location.href
-                : `/insights/${slug}`
+                : buildReportUrl(username, slug)
             }
             title={report.title}
           />
           {session?.user?.id === report.authorId && (
             <Link
-              href={`/insights/${slug}/edit`}
+              href={buildReportEditUrl(username, slug)}
               className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               <Pencil className="h-3.5 w-3.5" />
