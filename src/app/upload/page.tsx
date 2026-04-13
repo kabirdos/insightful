@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import {
   Upload,
   Check,
@@ -86,6 +87,11 @@ const EMPTY_FORM: ProjectFormInput = {
 
 const INSIGHTS_PATH = "~/.claude/usage-data/report.html";
 const HARNESS_PATH = "~/.claude/usage-data/insight-harness.html";
+
+const SAMPLE_PROFILE_SLUG = "kabirdos-20260412-5x373x";
+const SAMPLE_PROFILE_HREF = `/insights/${SAMPLE_PROFILE_SLUG}`;
+const SAMPLE_PROFILE_OG = `/api/og/${SAMPLE_PROFILE_SLUG}`;
+const SAMPLE_PROFILE_LABEL = "Kabir's Insight Harness — Apr 2026";
 
 function CopyButton({
   text,
@@ -842,9 +848,51 @@ export default function UploadPage() {
       <h1 className="mb-2 text-2xl font-bold text-slate-900 dark:text-white">
         Share Your Insights
       </h1>
-      <p className="mb-8 text-slate-500 dark:text-slate-400">
+      <p className="mb-4 text-slate-500 dark:text-slate-400">
         Upload your Claude Code insights report and share it with the community.
       </p>
+
+      <div className="mb-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/40">
+        <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-5">
+          <Link
+            href={SAMPLE_PROFILE_HREF}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 transition-opacity hover:opacity-90 dark:border-slate-700 dark:bg-slate-900 sm:w-64"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={SAMPLE_PROFILE_OG}
+              alt={`Preview of ${SAMPLE_PROFILE_LABEL}`}
+              loading="lazy"
+              className="block h-auto w-full"
+              width={1200}
+              height={630}
+            />
+          </Link>
+          <div className="min-w-0 flex-1">
+            <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">
+              What your profile will look like
+            </div>
+            <div className="mb-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+              {SAMPLE_PROFILE_LABEL}
+            </div>
+            <p className="mb-3 text-sm text-slate-600 dark:text-slate-400">
+              Rich stats, skill inventory, and workflow patterns —
+              auto-generated from your local usage data.
+            </p>
+            <Link
+              href={SAMPLE_PROFILE_HREF}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              See a sample profile
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </div>
 
       {/* Step indicator */}
       <div className="mb-8 flex items-center gap-2">
