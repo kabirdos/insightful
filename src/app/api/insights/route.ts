@@ -5,7 +5,7 @@ import type { InsightReportListItemContract } from "@/types/api-contracts";
 import { normalizeHarnessData } from "@/types/insights";
 import type { Prisma } from "@prisma/client";
 import { fetchLinkPreview } from "@/lib/link-preview";
-import { filterReportForResponse } from "@/lib/filter-report-response";
+import { filterReportForListFeed } from "@/lib/filter-report-response";
 const SECTION_KEYS = [
   "atAGlance",
   "interactionStyle",
@@ -107,12 +107,11 @@ export async function GET(request: Request) {
       const { votes: ignoredVotes, ...rest } = report;
       void ignoredVotes;
 
-      // Apply server-side filtering of hidden data for list feeds.
-      // List feeds never pass includeHidden — always filter.
-      const filtered = filterReportForResponse(rest, {
-        viewerIsOwner: false,
-        includeHidden: false,
-      });
+      // Apply list-feed filtering: strips hidden items AND drops heavy
+      // showcase bytes (readme_markdown, hero_base64) from visible skills.
+      // Cards don't render those fields, and shipping them in a 30-report
+      // homepage fetch would be multi-MB post --include-skills.
+      const filtered = filterReportForListFeed(rest);
 
       return {
         ...filtered,

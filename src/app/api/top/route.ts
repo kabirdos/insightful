@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
+import { filterReportForListFeed } from "@/lib/filter-report-response";
 
 export const SORT_MAP: Record<
   string,
@@ -88,6 +89,7 @@ export async function GET(req: NextRequest) {
       autonomyLabel: true,
       detectedSkills: true,
       harnessData: true,
+      hiddenHarnessSections: true,
       author: {
         select: {
           username: true,
@@ -98,5 +100,10 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  return NextResponse.json({ data: reports });
+  // Apply list-feed filter: strips hidden items (privacy) and drops heavy
+  // showcase bytes (readme_markdown, hero_base64) even on visible items —
+  // cards don't render them and they'd bloat the response post --include-skills.
+  const filtered = reports.map((r) => filterReportForListFeed(r));
+
+  return NextResponse.json({ data: filtered });
 }

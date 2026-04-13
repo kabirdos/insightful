@@ -1,6 +1,6 @@
 import { hasShowcaseContent, type HarnessSkillEntry } from "@/types/insights";
 import { getSafeHeroDataUri } from "@/lib/safe-image";
-import { slugItemKey } from "@/lib/item-visibility";
+import { buildItemKey, slugItemKey } from "@/lib/item-visibility";
 import { SkillReadme } from "@/components/SkillReadme";
 
 interface SkillsShowcaseSectionProps {
@@ -27,14 +27,22 @@ export function SkillsShowcaseSection({
     (s) => typeof s.category === "string" && s.category.length > 0,
   );
 
+  // Build collision-safe item keys against the ORIGINAL skillInventory so
+  // anchor ids match whatever SkillsTeaserCard generated from the same list.
+  // Using the filtered showcaseSkills here would produce different indices
+  // and break the teaser "View all" anchors.
+  const itemKeyFor = (skill: HarnessSkillEntry): string =>
+    buildItemKey(skillInventory, skillInventory.indexOf(skill), (s) => s.name);
+
   if (!anyHasCategory) {
     return (
       <section id="skill-showcase" className="space-y-6">
         <h2 className="text-xl font-semibold">Skill Showcase</h2>
         <div className="space-y-8">
-          {showcaseSkills.map((skill) => (
-            <SkillCard key={skill.name} skill={skill} />
-          ))}
+          {showcaseSkills.map((skill) => {
+            const itemKey = itemKeyFor(skill);
+            return <SkillCard key={itemKey} itemKey={itemKey} skill={skill} />;
+          })}
         </div>
       </section>
     );
@@ -84,9 +92,12 @@ export function SkillsShowcaseSection({
         >
           <h3 className="text-lg font-medium">{cat}</h3>
           <div className="space-y-8">
-            {(groups.get(cat) ?? []).map((skill) => (
-              <SkillCard key={skill.name} skill={skill} />
-            ))}
+            {(groups.get(cat) ?? []).map((skill) => {
+              const itemKey = itemKeyFor(skill);
+              return (
+                <SkillCard key={itemKey} itemKey={itemKey} skill={skill} />
+              );
+            })}
           </div>
         </div>
       ))}
@@ -94,9 +105,15 @@ export function SkillsShowcaseSection({
   );
 }
 
-function SkillCard({ skill }: { skill: HarnessSkillEntry }) {
+function SkillCard({
+  skill,
+  itemKey,
+}: {
+  skill: HarnessSkillEntry;
+  itemKey: string;
+}) {
   const heroUri = getSafeHeroDataUri(skill);
-  const anchorId = `skill-${slugItemKey(skill.name) || "item"}`;
+  const anchorId = `skill-${itemKey}`;
 
   return (
     <article

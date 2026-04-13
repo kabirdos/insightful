@@ -1,5 +1,5 @@
 import { hasShowcaseContent, type HarnessSkillEntry } from "@/types/insights";
-import { slugItemKey } from "@/lib/item-visibility";
+import { buildItemKey } from "@/lib/item-visibility";
 
 interface SkillsTeaserCardProps {
   skillInventory: HarnessSkillEntry[];
@@ -39,27 +39,37 @@ export function SkillsTeaserCard({ skillInventory }: SkillsTeaserCardProps) {
         </a>
       </div>
       <ul className="space-y-2">
-        {showcaseSkills.map((skill) => (
-          <li
-            key={skill.name}
-            className="flex items-center justify-between gap-3"
-          >
-            <div className="min-w-0 flex-1">
-              <a
-                href={`#skill-${slugItemKey(skill.name) || "item"}`}
-                className="font-medium hover:underline"
-              >
-                {skill.name}
-              </a>
-              {skill.description && (
-                <div className="truncate text-xs text-zinc-500">
-                  {skill.description}
-                </div>
-              )}
-            </div>
-            <SourceBadge source={skill.source} />
-          </li>
-        ))}
+        {showcaseSkills.map((skill) => {
+          // Collision-safe keypath derived from the FULL input list so two
+          // skills with the same slugged name get distinct anchors matching
+          // the SkillCard DOM ids in SkillsShowcaseSection.
+          const itemKey = buildItemKey(
+            skillInventory,
+            skillInventory.indexOf(skill),
+            (s) => s.name,
+          );
+          return (
+            <li
+              key={itemKey}
+              className="flex items-center justify-between gap-3"
+            >
+              <div className="min-w-0 flex-1">
+                <a
+                  href={`#skill-${itemKey}`}
+                  className="font-medium hover:underline"
+                >
+                  {skill.name}
+                </a>
+                {skill.description && (
+                  <div className="truncate text-xs text-zinc-500">
+                    {skill.description}
+                  </div>
+                )}
+              </div>
+              <SourceBadge source={skill.source} />
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

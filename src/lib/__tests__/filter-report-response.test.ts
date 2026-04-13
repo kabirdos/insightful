@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { filterReportForResponse } from "../filter-report-response";
+import {
+  filterReportForListFeed,
+  filterReportForResponse,
+} from "../filter-report-response";
 
 function makeReport(overrides: Record<string, unknown> = {}) {
   return {
@@ -484,5 +487,84 @@ describe("filterReportForResponse — showcase fields", () => {
     });
     const json = JSON.stringify(result);
     expect(json).not.toContain("SECRETBASE64BLOB");
+  });
+});
+
+// ── List-feed filter (for /api/top, /api/search, /api/insights list) ──────
+//
+// These test both the privacy property (hidden items stripped) AND the
+// response-size property (heavy showcase bytes dropped even on visible
+// skills so the homepage fetch doesn't balloon to multi-MB after users
+// start uploading with --include-skills).
+
+describe("filterReportForListFeed", () => {
+  it("drops readme_markdown + hero_base64 from VISIBLE skills (response size)", () => {
+    const report = makeReportWithShowcase([]);
+    const result = filterReportForListFeed(report);
+    const skills = (
+      result.harnessData as {
+        skillInventory: Array<Record<string, unknown>>;
+      }
+    ).skillInventory;
+    for (const skill of skills) {
+      expect(skill.readme_markdown).toBeNull();
+      expect(skill.hero_base64).toBeNull();
+      expect(skill.hero_mime_type).toBeNull();
+    }
+    // Non-showcase fields must be preserved so cards still render
+    expect(skills[0].name).toBe("Public Skill");
+    expect(skills[0].calls).toBe(10);
+    expect(skills[0].source).toBe("user");
+    expect(skills[0].description).toBe("shareable");
+    expect(skills[0].category).toBe("Productivity");
+  });
+
+  it("strips hidden items entirely AND drops showcase bytes from visible skills", () => {
+    const report = makeReportWithShowcase(["skillInventory.secret-skill"]);
+    const result = filterReportForListFeed(report);
+    const skills = (
+      result.harnessData as {
+        skillInventory: Array<{ name: string }>;
+      }
+    ).skillInventory;
+    expect(skills).toHaveLength(1);
+    expect(skills[0].name).toBe("Public Skill");
+
+    // Hidden skill's bytes and visible skill's bytes both absent
+    const json = JSON.stringify(result);
+    expect(json).not.toContain("SECRETBASE64BLOB");
+    expect(json).not.toContain("PUBLICBASE64DATA");
+    expect(json).not.toContain("Secret Skill");
+  });
+
+  it("handles reports without harnessData without crashing", () => {
+    const report = {
+      id: "report-1",
+      authorId: "user-1",
+      hiddenHarnessSections: [] as string[],
+    };
+    expect(() => filterReportForListFeed(report)).not.toThrow();
+    expect(filterReportForListFeed(report)).toEqual(report);
+  });
+
+  it("handles reports without showcase fields (back-compat)", () => {
+    // Report predates --include-skills: no readme_markdown/hero_base64 on entries
+    const report = {
+      id: "report-1",
+      authorId: "user-1",
+      hiddenHarnessSections: [] as string[],
+      harnessData: {
+        skillInventory: [
+          { name: "a", calls: 1, source: "user", description: "" },
+        ],
+      },
+    };
+    const result = filterReportForListFeed(report);
+    const skills = (result.harnessData as { skillInventory: unknown[] })
+      .skillInventory;
+    expect(skills).toHaveLength(1);
+    // Shape unchanged for old reports — no new null keys injected where
+    // the source skill didn't have them
+    expect(skills[0]).not.toHaveProperty("readme_markdown");
   });
 });
