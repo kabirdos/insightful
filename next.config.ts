@@ -16,6 +16,26 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // PostHog reverse proxy — bypass ad-blockers by serving analytics
+  // through our own domain instead of *.posthog.com.
+  // https://posthog.com/docs/advanced/proxy/nextjs
+  skipTrailingSlashRedirect: true,
+  async rewrites() {
+    return [
+      {
+        source: "/ingest/static/:path*",
+        destination: "https://us-assets.i.posthog.com/static/:path*",
+      },
+      {
+        source: "/ingest/:path*",
+        destination: "https://us.i.posthog.com/:path*",
+      },
+      {
+        source: "/ingest/decide",
+        destination: "https://us.i.posthog.com/decide",
+      },
+    ];
+  },
 };
 
 export default withSentryConfig(nextConfig, {
