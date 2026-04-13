@@ -77,6 +77,11 @@ function ProfileCard({ report }: { report: TopReport }) {
     ? normalizeHarnessData(report.harnessData as HarnessData)
     : null;
   const sessions = report.sessionCount || hd?.stats?.sessionCount || 0;
+  const lifetimeTokensRaw = hd?.stats?.lifetimeTokens;
+  const lifetimeTokens =
+    lifetimeTokensRaw && lifetimeTokensRaw > 0
+      ? lifetimeTokensRaw
+      : (report.totalTokens ?? 0);
   const tokensWk = perWeek(report.totalTokens, report.dayCount);
   const sessionsWk = perWeek(sessions, report.dayCount);
   const commitsWk = perWeek(report.commitCount, report.dayCount);
@@ -113,6 +118,16 @@ function ProfileCard({ report }: { report: TopReport }) {
           <span className="text-xs text-slate-500 dark:text-slate-400">
             @{report.author.username}
           </span>
+          {lifetimeTokens > 0 && (
+            <div className="mt-1.5">
+              <div className="font-mono text-base font-semibold leading-none text-slate-900 dark:text-white">
+                {formatNumber(lifetimeTokens)}
+              </div>
+              <div className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500">
+                lifetime tokens
+              </div>
+            </div>
+          )}
         </div>
         <ShareButton
           url={
