@@ -1,11 +1,11 @@
 import { ImageResponse } from "next/og";
 import { prisma } from "@/lib/db";
 import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
+import { estimateApiCostUsd } from "@/lib/api-cost";
 import { normalizeHarnessData, type HarnessData } from "@/types/insights";
 
 export const runtime = "nodejs";
 
-// Google Fonts as ArrayBuffer
 async function loadFonts() {
   const [interRes, jetbrainsRes] = await Promise.all([
     fetch(
@@ -38,9 +38,6 @@ function formatNumber(n: number): string {
   return n.toLocaleString();
 }
 
-// Compact lines-of-code formatter mirroring HeroStats: "18.4k" above 1000,
-// rounded number below. Used for the OG card LINES/WK cell so the format
-// stays consistent with the detail page.
 function formatLines(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 100_000) return `${Math.round(n / 1_000)}k`;
@@ -54,76 +51,133 @@ function formatDuration(hours: number): string {
   return `${hours.toFixed(1)}h`;
 }
 
-// Compute per-week stats
-function perWeek(total: number, days: number): string {
-  if (days <= 0) return formatNumber(total);
+function formatCost(usd: number): string {
+  if (usd >= 1000) return `$${(usd / 1000).toFixed(1)}k`;
+  if (usd >= 100) return `$${Math.round(usd)}`;
+  if (usd >= 10) return `$${usd.toFixed(0)}`;
+  return `$${usd.toFixed(2)}`;
+}
+
+function perWeek(total: number, days: number): number {
+  if (days <= 0) return total;
   const weeks = Math.max(days / 7, 1);
-  return formatNumber(Math.round(total / weeks));
+  return total / weeks;
 }
 
-// Heatmap color scale — amber for tokens, green for cost
-const HEATMAP_COLORS = [
-  "#f1f5f9",
-  "#fef3c7",
-  "#fcd34d",
-  "#f59e0b",
-  "#d97706",
-  "#b45309",
-];
+// 5-stop heatmap palettes.
+const AMBER_SCALE = ["#f1f5f9", "#fef3c7", "#fcd34d", "#f59e0b", "#b45309"];
+const GREEN_SCALE = ["#f1f5f9", "#dcfce7", "#86efac", "#22c55e", "#15803d"];
 
-function getHeatmapColor(value: number, max: number): string {
-  if (max === 0 || value === 0) return HEATMAP_COLORS[0];
-  const idx = Math.min(
-    Math.floor((value / max) * (HEATMAP_COLORS.length - 1)) + 1,
-    HEATMAP_COLORS.length - 1,
-  );
-  return HEATMAP_COLORS[idx];
+function scaleIdx(value: number, max: number): number {
+  if (max === 0 || value === 0) return 0;
+  const steps = 5;
+  const idx = Math.min(Math.floor((value / max) * (steps - 1)) + 1, steps - 1);
+  return idx;
 }
 
-// Generate synthetic daily activity from aggregate stats
-function generateDailyActivity(
-  totalTokens: number,
-  totalSessions: number,
-  dayCount: number,
+// Deterministic synthetic daily series from aggregate totals. Used when
+// we don't have a real per-day breakdown — the OG card renders a pattern
+// that correlates with total activity rather than a flat block.
+function synthesizeDaily(
+  total: number,
+  days: number,
+  seedBase: number,
 ): number[] {
-  const days = Math.min(dayCount, 28);
   const cells = 28;
-  const activity: number[] = new Array(cells).fill(0);
-
-  if (days === 0 || totalTokens === 0) return activity;
-
-  // Distribute tokens across active days with some variance
-  const avgPerDay = totalTokens / days;
-  let seed = totalTokens % 997; // deterministic pseudo-random
-  for (let i = cells - days; i < cells; i++) {
+  const out: number[] = new Array(cells).fill(0);
+  if (days === 0 || total === 0) return out;
+  const active = Math.min(days, cells);
+  const avg = total / active;
+  let seed = (seedBase % 997) + 13;
+  for (let i = cells - active; i < cells; i++) {
     seed = (seed * 16807 + 7) % 2147483647;
-    const variance = 0.3 + (seed % 1000) / 714; // 0.3 - 1.7
-    activity[i] = Math.round(avgPerDay * variance);
+    const variance = 0.3 + (seed % 1000) / 714;
+    out[i] = Math.round(avg * variance);
   }
-
-  // Some days might be zero (weekends)
   for (let i = 0; i < cells; i++) {
     seed = (seed * 16807 + 7) % 2147483647;
-    if (seed % 7 === 0 && i > cells - days) {
-      activity[i] = 0;
-    }
+    if (seed % 7 === 0 && i > cells - active) out[i] = 0;
   }
-
-  return activity;
+  return out;
 }
 
-interface StatItem {
-  value: string;
-  label: string;
-  color: string;
-  // Optional override so the LINES/WK cell can shrink slightly to fit the
-  // wider "+18.4k/-9.2k" string while the rest of the row stays visually
-  // dominant.
-  fontSize?: number;
+function Heatmap({
+  data,
+  max,
+  palette,
+}: {
+  data: number[];
+  max: number;
+  palette: string[];
+}) {
+  // 7 columns × 4 rows = 28 days. Column-major layout so each column is
+  // a "week".
+  return (
+    <div style={{ display: "flex", gap: "4px" }}>
+      {Array.from({ length: 7 }).map((_, col) => (
+        <div
+          key={col}
+          style={{ display: "flex", flexDirection: "column", gap: "4px" }}
+        >
+          {Array.from({ length: 4 }).map((_, row) => {
+            const idx = row * 7 + col;
+            return (
+              <div
+                key={idx}
+                style={{
+                  width: "20px",
+                  height: "20px",
+                  borderRadius: "3px",
+                  backgroundColor: palette[scaleIdx(data[idx], max)],
+                }}
+              />
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function HeatmapScale({
+  palette,
+  leftLabel,
+  rightLabel,
+}: {
+  palette: string[];
+  leftLabel: string;
+  rightLabel: string;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "3px",
+        marginTop: "6px",
+        fontSize: "10px",
+        color: "#94a3b8",
+      }}
+    >
+      <span>{leftLabel}</span>
+      {palette.map((c, i) => (
+        <div
+          key={i}
+          style={{
+            width: "12px",
+            height: "12px",
+            borderRadius: "2px",
+            backgroundColor: c,
+          }}
+        />
+      ))}
+      <span>{rightLabel}</span>
+    </div>
+  );
 }
 
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ slug: string }> },
 ) {
   try {
@@ -150,157 +204,73 @@ export async function GET(
 
     const harnessData = normalizeHarnessData(report.harnessData);
     const isHarness = report.reportType === "insight-harness" && harnessData;
+    const h = isHarness ? (harnessData as HarnessData) : null;
 
     const displayName = report.author.displayName || report.author.username;
-    const initial = displayName[0].toUpperCase();
+    const initial = displayName[0]?.toUpperCase() ?? "?";
     const dayCount = report.dayCount ?? 28;
-    const weeks = Math.max(dayCount / 7, 1);
 
-    // Build stats
-    const stats: StatItem[] = [];
+    // ── Top-right headline stats ─────────────────────────────────
+    const totalTokens = h?.stats.totalTokens || report.totalTokens || 0;
+    const tokensPerWeek = perWeek(totalTokens, dayCount);
 
-    if (isHarness && harnessData) {
-      const h = harnessData as HarnessData;
-      const totalTokens = h.stats.totalTokens || report.totalTokens || 0;
-      const sessions = report.sessionCount || h.stats.sessionCount || 0;
-      const commits = report.commitCount ?? h.stats.commitCount ?? 0;
-      const duration = h.stats.durationHours || report.durationHours || 0;
-
-      // Lines of code: prefer scalar columns (populated for `insights`
-      // reports and any harness reports that carry them), and fall back to
-      // the harness `gitPatterns.linesAdded` display string when scalars
-      // are null. Without this fallback the LINES/WK cell rendered `0` for
-      // every harness report whose scalar columns weren't populated by
-      // upload — see issues #29 / #35. Shared resolver lives in
-      // src/lib/lines-of-code.ts so ProfileCard and HeroStats get the same
-      // fallback.
-      const resolvedAdded = resolveLinesAdded({
-        linesAdded: report.linesAdded,
-        linesRemoved: report.linesRemoved,
-        harnessData: h,
-      });
-      const resolvedRemoved = resolveLinesRemoved({
-        linesAdded: report.linesAdded,
-        linesRemoved: report.linesRemoved,
-        harnessData: h,
-      });
-      const scalarAdded = resolvedAdded ?? 0;
-      const scalarRemoved = resolvedRemoved ?? 0;
-      const totalLines = scalarAdded + scalarRemoved;
-      const hasLinesData = totalLines > 0;
-      const hasSplit = scalarAdded > 0 && scalarRemoved > 0;
-
-      stats.push({
-        value: perWeek(totalTokens, dayCount),
-        label: "tokens/wk",
-        color: "#2563eb",
-      });
-      stats.push({
-        value: perWeek(sessions, dayCount),
-        label: "sessions/wk",
-        color: "#16a34a",
-      });
-      stats.push({
-        value: perWeek(commits, dayCount),
-        label: "commits/wk",
-        color: "#7c3aed",
-      });
-      // Only render the LINES/WK cell when we have real data — never
-      // render `0`, which falsely implies the user wrote no code.
-      if (hasLinesData) {
-        const linesValue = hasSplit
-          ? // Split format mirrors HeroStats: per-week additions and
-            // removals shown side-by-side. Compact, no spaces, so the
-            // string fits the cell at the slightly reduced font size.
-            `+${formatLines(scalarAdded / weeks)}/-${formatLines(scalarRemoved / weeks)}`
-          : // Single combined value when only the harness fallback (or
-            // only one of the two scalars) is available.
-            formatLines(totalLines / weeks);
-        stats.push({
-          value: linesValue,
-          label: "lines/wk",
-          color: "#d97706",
-          // Shrink only this cell so the wider split string fits on one
-          // line in monospace without truncating the rest of the row.
-          fontSize: hasSplit ? 38 : 56,
-        });
-      }
-      stats.push({
-        value: formatDuration(duration / weeks),
-        label: "duration/wk",
-        color: "#0891b2",
-      });
-    } else {
-      // Standard insights-report fallback
-      stats.push({
-        value: formatNumber(report.sessionCount ?? 0),
-        label: "sessions",
-        color: "#16a34a",
-      });
-      stats.push({
-        value: formatNumber(report.messageCount ?? 0),
-        label: "messages",
-        color: "#2563eb",
-      });
-      stats.push({
-        value: formatNumber(report.commitCount ?? 0),
-        label: "commits",
-        color: "#7c3aed",
-      });
-      // Same null-safe LOC handling as the harness branch: only render the
-      // cell when there is real data, prefer split format when both
-      // additions and removals are populated. Shared resolver is still
-      // used here even though `insights` reports have no harnessData
-      // fallback — it keeps the read path symmetrical with the harness
-      // branch and demo reports.
-      const insightsAdded =
-        resolveLinesAdded({
-          linesAdded: report.linesAdded,
-          linesRemoved: report.linesRemoved,
-          harnessData: null,
-        }) ?? 0;
-      const insightsRemoved =
-        resolveLinesRemoved({
-          linesAdded: report.linesAdded,
-          linesRemoved: report.linesRemoved,
-          harnessData: null,
-        }) ?? 0;
-      const insightsTotal = insightsAdded + insightsRemoved;
-      if (insightsTotal > 0) {
-        const hasSplit = insightsAdded > 0 && insightsRemoved > 0;
-        stats.push({
-          value: hasSplit
-            ? `+${formatLines(insightsAdded)}/-${formatLines(insightsRemoved)}`
-            : formatLines(insightsTotal),
-          label: "lines",
-          color: "#d97706",
-          fontSize: hasSplit ? 38 : 56,
-        });
-      }
-    }
-
-    // Heatmap data
-    const totalTokens =
-      (isHarness && harnessData
-        ? (harnessData as HarnessData).stats.totalTokens
-        : 0) ||
-      report.totalTokens ||
-      0;
-    const totalSessions = report.sessionCount ?? 0;
-    const dailyActivity = generateDailyActivity(
+    const costUsd = estimateApiCostUsd(
+      h?.models,
       totalTokens,
-      totalSessions,
-      dayCount,
+      h?.perModelTokens ?? null,
     );
-    const maxActivity = Math.max(...dailyActivity, 1);
+    const costPerWeek = perWeek(costUsd, dayCount);
 
-    // Date range
+    // ── Lifetime tokens line under the avatar ────────────────────
+    const lifetimeTokens =
+      h?.stats.lifetimeTokens && h.stats.lifetimeTokens > 0
+        ? h.stats.lifetimeTokens
+        : totalTokens;
+
+    // ── 4 stat cards ─────────────────────────────────────────────
+    const sessions = report.sessionCount || h?.stats.sessionCount || 0;
+    const durationHours = h?.stats.durationHours || report.durationHours || 0;
+    const skillsCount =
+      h?.stats.skillsUsedCount ?? report.detectedSkills?.length ?? 0;
+
+    const resolvedAdded =
+      resolveLinesAdded({
+        linesAdded: report.linesAdded,
+        linesRemoved: report.linesRemoved,
+        harnessData: h,
+      }) ?? 0;
+    const resolvedRemoved =
+      resolveLinesRemoved({
+        linesAdded: report.linesAdded,
+        linesRemoved: report.linesRemoved,
+        harnessData: h,
+      }) ?? 0;
+    const hasLines = resolvedAdded + resolvedRemoved > 0;
+    const hasLinesSplit = resolvedAdded > 0 && resolvedRemoved > 0;
+
+    // ── Dual heatmap series ──────────────────────────────────────
+    const tokensDaily = synthesizeDaily(totalTokens, dayCount, totalTokens);
+    const tokenMax = Math.max(...tokensDaily, 1);
+    const costDaily = synthesizeDaily(
+      costUsd,
+      dayCount,
+      Math.round(costUsd * 100) || 1,
+    );
+    const costMax = Math.max(...costDaily, 1);
+
+    // ── Date range ───────────────────────────────────────────────
     const dateRange =
       report.dateRangeStart && report.dateRangeEnd
-        ? `${new Date(report.dateRangeStart + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${new Date(report.dateRangeEnd + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+        ? `${new Date(report.dateRangeStart + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${new Date(report.dateRangeEnd + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
         : "";
 
-    const fonts = [];
+    type FontEntry = {
+      name: string;
+      data: ArrayBuffer;
+      style: "normal";
+      weight: 400 | 600 | 700;
+    };
+    const fonts: FontEntry[] = [];
     if (interFont) {
       fonts.push({
         name: "Inter",
@@ -313,6 +283,12 @@ export async function GET(
         data: interFont,
         style: "normal" as const,
         weight: 600 as const,
+      });
+      fonts.push({
+        name: "Inter",
+        data: interFont,
+        style: "normal" as const,
+        weight: 700 as const,
       });
     }
     if (jetbrainsFont) {
@@ -345,67 +321,57 @@ export async function GET(
           }}
         />
 
-        {/* Main content */}
+        {/* TOP: avatar+id on the left, tokens/wk + cost/wk on the right */}
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
-            padding: "32px 48px 24px 48px",
-            flex: 1,
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            padding: "36px 56px 0 56px",
           }}
         >
-          {/* Author row */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              marginBottom: "28px",
-            }}
-          >
-            {/* Avatar circle */}
+          {/* Left: avatar + name + date + lifetime */}
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <div
               style={{
-                width: "48px",
-                height: "48px",
-                borderRadius: "24px",
+                width: "64px",
+                height: "64px",
+                borderRadius: "32px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                background: "linear-gradient(135deg, #3b82f6, #7c3aed)",
+                background: "linear-gradient(135deg, #3b82f6, #0891b2)",
                 color: "#ffffff",
-                fontSize: "22px",
+                fontSize: "30px",
                 fontWeight: 700,
+                flexShrink: 0,
               }}
             >
               {initial}
             </div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                marginLeft: "14px",
-              }}
-            >
+            <div style={{ display: "flex", flexDirection: "column" }}>
               <div
                 style={{
                   display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
+                  alignItems: "baseline",
+                  gap: "10px",
                 }}
               >
                 <span
                   style={{
-                    fontSize: "20px",
-                    fontWeight: 600,
+                    fontSize: "28px",
+                    fontWeight: 700,
                     color: "#0f172a",
+                    lineHeight: 1,
                   }}
                 >
                   {displayName}
                 </span>
                 <span
                   style={{
-                    fontSize: "16px",
-                    color: "#64748b",
+                    fontSize: "18px",
+                    color: "#94a3b8",
+                    fontWeight: 400,
                   }}
                 >
                   @{report.author.username}
@@ -414,180 +380,223 @@ export async function GET(
               {dateRange && (
                 <span
                   style={{
-                    fontSize: "14px",
+                    fontSize: "16px",
                     color: "#94a3b8",
-                    marginTop: "2px",
+                    marginTop: "6px",
                   }}
                 >
                   {dateRange}
                 </span>
               )}
+              {lifetimeTokens > 0 && (
+                <span
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: 700,
+                    color: "#2563eb",
+                    marginTop: "4px",
+                  }}
+                >
+                  {formatNumber(lifetimeTokens)} lifetime tokens
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Stats row — big monospace numbers. Numbers dominate the
-              card; unit labels stay small. The optional per-stat
-              fontSize override lets the LINES/WK split-format cell shrink
-              slightly so its wider value still fits on one line. */}
+          {/* Right: big tokens/wk + smaller cost/wk */}
           <div
             style={{
               display: "flex",
-              gap: "36px",
-              marginBottom: "32px",
+              flexDirection: "column",
               alignItems: "flex-end",
             }}
           >
-            {stats.map((s) => (
+            <span
+              style={{
+                fontFamily: "JetBrains Mono, monospace",
+                fontWeight: 700,
+                fontSize: "64px",
+                lineHeight: 1,
+                color: "#2563eb",
+              }}
+            >
+              {formatNumber(tokensPerWeek)}
+            </span>
+            <span
+              style={{
+                fontSize: "14px",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                color: "#94a3b8",
+                marginTop: "6px",
+              }}
+            >
+              tokens / wk
+            </span>
+            {costUsd > 0 && (
               <div
-                key={s.label}
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  alignItems: "flex-start",
+                  alignItems: "flex-end",
+                  marginTop: "14px",
                 }}
               >
                 <span
                   style={{
                     fontFamily: "JetBrains Mono, monospace",
-                    fontSize: `${s.fontSize ?? 56}px`,
                     fontWeight: 700,
-                    color: s.color,
+                    fontSize: "30px",
                     lineHeight: 1,
+                    color: "#d97706",
                   }}
                 >
-                  {s.value}
+                  {formatCost(costPerWeek)}
                 </span>
                 <span
                   style={{
-                    fontSize: "14px",
-                    color: "#94a3b8",
-                    marginTop: "8px",
+                    fontSize: "12px",
+                    fontWeight: 700,
                     textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                  }}
-                >
-                  {s.label}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Middle row: 28-day activity heatmap (skills section removed
-              per issue #29 — the reclaimed space serves as visual
-              breathing room for the larger stats row above). */}
-          <div
-            style={{
-              display: "flex",
-              gap: "40px",
-              flex: 1,
-              alignItems: "flex-start",
-            }}
-          >
-            {/* Heatmap */}
-            {isHarness && (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "11px",
+                    letterSpacing: "0.08em",
                     color: "#94a3b8",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    marginBottom: "8px",
+                    marginTop: "4px",
                   }}
                 >
-                  28-day activity
+                  api cost / wk
                 </span>
-                {/* 7 columns x 4 rows */}
-                <div style={{ display: "flex", gap: "4px" }}>
-                  {Array.from({ length: 7 }).map((_, col) => (
-                    <div
-                      key={col}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "4px",
-                      }}
-                    >
-                      {Array.from({ length: 4 }).map((_, row) => {
-                        const idx = row * 7 + col;
-                        return (
-                          <div
-                            key={idx}
-                            style={{
-                              width: "20px",
-                              height: "20px",
-                              borderRadius: "3px",
-                              backgroundColor: getHeatmapColor(
-                                dailyActivity[idx],
-                                maxActivity,
-                              ),
-                            }}
-                          />
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-                {/* Scale */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "3px",
-                    marginTop: "6px",
-                  }}
-                >
-                  <span style={{ fontSize: "10px", color: "#94a3b8" }}>0</span>
-                  {HEATMAP_COLORS.map((c, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        width: "12px",
-                        height: "12px",
-                        borderRadius: "2px",
-                        backgroundColor: c,
-                      }}
-                    />
-                  ))}
-                  <span style={{ fontSize: "10px", color: "#94a3b8" }}>
-                    {formatNumber(maxActivity)}
-                  </span>
-                </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Brand footer */}
+        {/* MIDDLE: 4-card stats grid */}
+        <div
+          style={{
+            display: "flex",
+            gap: "16px",
+            padding: "28px 56px 20px 56px",
+          }}
+        >
+          <StatCard
+            value={formatNumber(Math.round(perWeek(sessions, dayCount)))}
+            label="sessions / wk"
+            color="#16a34a"
+          />
+          <StatCard
+            value={formatDuration(perWeek(durationHours, dayCount))}
+            label="active / wk"
+            color="#0891b2"
+          />
+          <StatCard
+            value={skillsCount.toString()}
+            label={skillsCount === 1 ? "skill" : "skills"}
+            color="#334155"
+          />
+          {hasLines ? (
+            hasLinesSplit ? (
+              <SplitStatCard
+                added={formatLines(resolvedAdded)}
+                removed={formatLines(resolvedRemoved)}
+              />
+            ) : (
+              <StatCard
+                value={formatLines(resolvedAdded + resolvedRemoved)}
+                label="lines of code"
+                color="#d97706"
+              />
+            )
+          ) : (
+            // Keep a 4th cell for layout symmetry even when LOC is missing.
+            <StatCard
+              value={formatNumber(report.commitCount ?? 0)}
+              label="commits"
+              color="#7c3aed"
+            />
+          )}
+        </div>
+
+        {/* BOTTOM: dual heatmaps */}
+        <div
+          style={{
+            display: "flex",
+            gap: "48px",
+            padding: "0 56px 12px 56px",
+            flex: 1,
+            alignItems: "flex-start",
+          }}
+        >
+          {isHarness && (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  color: "#94a3b8",
+                  marginBottom: "8px",
+                }}
+              >
+                Tokens · 4w
+              </span>
+              <Heatmap
+                data={tokensDaily}
+                max={tokenMax}
+                palette={AMBER_SCALE}
+              />
+              <HeatmapScale
+                palette={AMBER_SCALE}
+                leftLabel="0"
+                rightLabel={formatNumber(tokenMax)}
+              />
+            </div>
+          )}
+          {isHarness && costUsd > 0 && (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  color: "#94a3b8",
+                  marginBottom: "8px",
+                }}
+              >
+                API cost · 4w
+              </span>
+              <Heatmap data={costDaily} max={costMax} palette={GREEN_SCALE} />
+              <HeatmapScale
+                palette={GREEN_SCALE}
+                leftLabel="$0"
+                rightLabel={formatCost(costMax)}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "12px 48px",
+            padding: "12px 56px",
             borderTop: "1px solid #e2e8f0",
           }}
         >
           <span
             style={{
-              fontSize: "14px",
+              fontSize: "16px",
               fontWeight: 600,
               color: "#64748b",
             }}
           >
             InsightHarness.com
           </span>
-          <span
-            style={{
-              fontSize: "12px",
-              color: "#94a3b8",
-            }}
-          >
+          <span style={{ fontSize: "13px", color: "#94a3b8" }}>
             See how developers use Claude Code
           </span>
         </div>
@@ -602,4 +611,99 @@ export async function GET(
     console.error("OG image generation error:", error);
     return new Response("Failed to generate image", { status: 500 });
   }
+}
+
+function StatCard({
+  value,
+  label,
+  color,
+}: {
+  value: string;
+  label: string;
+  color: string;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        flex: 1,
+        background: "#f8fafc",
+        border: "1px solid #e2e8f0",
+        borderRadius: "10px",
+        padding: "16px 12px",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "JetBrains Mono, monospace",
+          fontWeight: 700,
+          fontSize: "40px",
+          lineHeight: 1,
+          color,
+        }}
+      >
+        {value}
+      </span>
+      <span
+        style={{
+          fontSize: "12px",
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          color: "#94a3b8",
+          marginTop: "8px",
+        }}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function SplitStatCard({ added, removed }: { added: string; removed: string }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        flex: 1,
+        background: "#f8fafc",
+        border: "1px solid #e2e8f0",
+        borderRadius: "10px",
+        padding: "16px 12px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          gap: "10px",
+          fontFamily: "JetBrains Mono, monospace",
+          fontWeight: 700,
+          fontSize: "28px",
+          lineHeight: 1,
+        }}
+      >
+        <span style={{ color: "#16a34a" }}>+{added}</span>
+        <span style={{ color: "#dc2626" }}>-{removed}</span>
+      </div>
+      <span
+        style={{
+          fontSize: "12px",
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          color: "#94a3b8",
+          marginTop: "8px",
+        }}
+      >
+        lines of code
+      </span>
+    </div>
+  );
 }
