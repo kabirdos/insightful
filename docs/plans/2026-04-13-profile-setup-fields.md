@@ -6,16 +6,17 @@
 
 > **Revisions folded in from codex review:**
 >
-> - Validation runs on BOTH read and write paths (defense in depth)
+> - Validation runs on BOTH read and write paths (defense in depth), with `normalizeSetup(stored, stored)` on reads to preserve the persisted `setupUpdatedAt`
 > - `version: 1` and server-owned `setupUpdatedAt` baked into the type
-> - `primaryModel` derives from `perModelTokens` (token share) not `models` (message count)
+> - `primaryModel` derives from `perModelTokens` (active tokens = input+output, deliberately excluding cache) with `models` count as fallback
 > - `packageManager` added as a 4th auto-derived field (from `harnessData.cliTools`)
 > - OS heuristic returns only `{ os: "..." }`, never the matched path
 > - Auto-derive runs on `stripHiddenHarnessData(...)` output, never raw
+> - MCP privacy copy ("Review names before publishing…") added to the edit form
 > - Migration uses full timestamp directory matching existing convention
 > - Verification commands fixed (`npx tsc --noEmit`, `npx vitest run` — no `typecheck` / `test` scripts exist in `package.json`)
-> - Suggestion UI states defined: loading / no-reports / unavailable / failed / already-applied
-> - Prisma null handling specified (`Prisma.JsonNull` vs `Prisma.DbNull`)
+> - Suggestion UI states defined: loading / no-reports / no-suggestions / ok / failed / already-applied
+> - Prisma null handling: use `Prisma.DbNull` to clear to SQL NULL (NOT `Prisma.JsonNull`, which stores a JSON null literal)
 
 ## Goals
 
@@ -213,11 +214,11 @@ export const EDITOR_SUGGESTIONS = ["VS Code", "Cursor", "Zed", "Neovim", "JetBra
 
 **File:** `src/app/api/users/me/route.ts`
 
-- In `GET`, add `setup: true` to the Prisma `select` (line 30–40). **Run the result through `normalizeSetup` before returning** — defense in depth against malformed JSON from manual DB edits or stale shapes.
-- In `PUT`, accept `body.setup`, run through `normalizeSetup(raw, prevStored): ProfileSetup | null` (see helper below).
+- In `GET`, add `setup: true` to the Prisma `select` (line 30–40). **Run the result through `normalizeSetup(stored, stored)` before returning** — defense in depth against malformed JSON from manual DB edits or stale shapes. Passing `stored` as `prevStored` ensures a well-formed stored blob preserves its persisted `setupUpdatedAt` on every read (no thrash).
+- In `PUT`, accept `body.setup`, run through `normalizeSetup(raw, prevStored): ProfileSetup | null` (see helper below). `prevStored` is the user's currently persisted `setup` read earlier in the handler.
 - The current update accumulator is typed `Record<string, string | null>` (line 67) — widen to `Prisma.UserUpdateInput` (or a hand-typed superset) to allow the `Json | null` value. The "no valid fields" check (line 97) must accept "clear setup to null" as a valid update.
-- For Prisma JSON null handling: pass `Prisma.JsonNull` to clear the column (stores SQL `NULL`), not plain JS `null`. Pass `Prisma.DbNull` is wrong here. Document the choice inline.
-- Include `setup` in both the response `select` blocks (lines 30–40 and 107–117), normalized.
+- **For Prisma JSON null handling: pass `Prisma.DbNull` to clear the column to SQL `NULL`. Do NOT use `Prisma.JsonNull` (that stores a JSON `null` literal, which is NOT what we want). Do NOT pass plain JS `null`.** Document the choice inline. [Prisma docs](https://www.prisma.io/docs/orm/prisma-client/special-fields-and-types/working-with-json-fields#using-null-values).
+- Include `setup` in both the response `select` blocks (lines 30–40 and 107–117), normalized with `prevStored = stored`.
 
 **`normalizeSetup` helper:**
 
@@ -239,7 +240,7 @@ Behavior:
 **File:** `src/app/api/users/[username]/route.ts` (public GET)
 
 - Add `setup: true` to Prisma select.
-- Normalize the result through `normalizeSetup` before returning. (Even though all fields are intentionally public, normalization prevents stale unknown keys leaking through if the type changes.)
+- Normalize via `normalizeSetup(stored, stored)` before returning (same pattern as the private GET — preserves the persisted `setupUpdatedAt`). Normalization prevents stale unknown keys leaking through if the type changes.
 
 **Verification:**
 
@@ -293,7 +294,7 @@ On the edit form's mount, pre-fill suggestions from the user's most recent uploa
 
 ### Source fields in `harnessData` (verified in `src/types/insights.ts` lines 225–250)
 
-- `harnessData.perModelTokens: Record<string, {input,output,cache_read,cache_create}>` → `primaryModel` = key with max `(input + output)`. **Falls back to** `harnessData.models` (count) if `perModelTokens` absent. Token share is a more honest "primary" signal than message count.
+- `harnessData.perModelTokens: Record<string, {input,output,cache_read,cache_create}>` → `primaryModel` = key with max **active tokens** (`input + output`, deliberately excluding cache reads/creates — cache traffic distorts the "primary" signal toward whichever model happened to inherit long cached context, which isn't what "primary model" should mean). **Falls back to** `harnessData.models` (message count) if `perModelTokens` absent.
 - `harnessData.mcpServers: Record<string, number>` → `mcpServers` = array of keys, sorted by count desc, top N=8.
 - `harnessData.cliTools: Record<string, number>` → `packageManager` = first match in the known set `{pnpm, npm, yarn, bun, uv, pip, cargo, go, mise}`, picking the highest-count match if multiple.
 - **OS hint**: scan `harnessData.harnessFiles: string[]` + `harnessData.versions: string[]` for `/Users/` (macOS), `/home/` (Linux), `C:\` or `\\wsl$` (Windows/WSL). **The helper returns ONLY `{ os: "macOS" }` — never the matched path, never logs evidence, never serializes the source string.** Local file paths are classified as high-risk private data per `docs/research/review-step-design.md`.
