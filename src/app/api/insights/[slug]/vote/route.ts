@@ -34,7 +34,7 @@ export async function POST(
       );
     }
 
-    const report = await prisma.insightReport.findUnique({
+    const report = await prisma.insightReport.findFirst({
       where: { slug },
       select: { id: true },
     });
@@ -92,7 +92,7 @@ export async function DELETE(
       );
     }
 
-    const report = await prisma.insightReport.findUnique({
+    const report = await prisma.insightReport.findFirst({
       where: { slug },
       select: { id: true },
     });

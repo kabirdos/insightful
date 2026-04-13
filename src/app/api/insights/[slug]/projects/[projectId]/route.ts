@@ -25,7 +25,7 @@ export async function PATCH(
 
     const { slug, projectId } = await params;
 
-    const report = await prisma.insightReport.findUnique({
+    const report = await prisma.insightReport.findFirst({
       where: { slug },
       select: { id: true, authorId: true },
     });

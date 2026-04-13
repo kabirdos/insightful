@@ -9,7 +9,7 @@ export async function GET(
   try {
     const { slug } = await params;
 
-    const report = await prisma.insightReport.findUnique({
+    const report = await prisma.insightReport.findFirst({
       where: { slug },
       select: { id: true },
     });
@@ -85,7 +85,7 @@ export async function POST(
       );
     }
 
-    const report = await prisma.insightReport.findUnique({
+    const report = await prisma.insightReport.findFirst({
       where: { slug },
       select: { id: true },
     });

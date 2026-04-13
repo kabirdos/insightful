@@ -38,7 +38,7 @@ export async function GET(
     // on the following v2 fields being present: chartData, detectedSkills, dayCount,
     // linesAdded, linesRemoved, fileCount. If you change this to an explicit
     // `select`, you MUST add those fields explicitly, or the UI will silently break.
-    const report = await prisma.insightReport.findUnique({
+    const report = await prisma.insightReport.findFirst({
       where: { slug },
       include: {
         author: {
@@ -160,7 +160,7 @@ export async function PUT(
 
     const { slug } = await params;
 
-    const report = await prisma.insightReport.findUnique({
+    const report = await prisma.insightReport.findFirst({
       where: { slug },
       select: { id: true, authorId: true },
     });
@@ -221,7 +221,7 @@ export async function DELETE(
 
     const { slug } = await params;
 
-    const report = await prisma.insightReport.findUnique({
+    const report = await prisma.insightReport.findFirst({
       where: { slug },
       select: { id: true, authorId: true },
     });

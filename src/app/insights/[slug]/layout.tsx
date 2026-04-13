@@ -14,7 +14,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
 
-  const report = await prisma.insightReport.findUnique({
+  const report = await prisma.insightReport.findFirst({
     where: { slug },
     select: {
       totalTokens: true,

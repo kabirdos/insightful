@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 vi.mock("@/lib/db", () => ({
   prisma: {
     insightReport: {
-      findUnique: vi.fn(),
+      findFirst: vi.fn(),
     },
     project: {
       findMany: vi.fn(),
@@ -34,7 +34,7 @@ import { PATCH as toggleHidden } from "../[projectId]/route";
 
 const mockAuth = auth as unknown as Mock;
 const mockPrisma = prisma as unknown as {
-  insightReport: { findUnique: Mock };
+  insightReport: { findFirst: Mock };
   project: { findMany: Mock };
   reportProject: {
     findUnique: Mock;
@@ -82,7 +82,7 @@ describe("POST /api/insights/[slug]/projects (attach)", () => {
 
   it("returns 404 when the report does not exist", async () => {
     mockSession("user-1");
-    mockPrisma.insightReport.findUnique.mockResolvedValue(null);
+    mockPrisma.insightReport.findFirst.mockResolvedValue(null);
 
     const response = await attachProjects(jsonRequest({ projectIds: ["p1"] }), {
       params: paramsPromise({ slug: "missing" }),
@@ -92,7 +92,7 @@ describe("POST /api/insights/[slug]/projects (attach)", () => {
 
   it("returns 403 when the report belongs to another user", async () => {
     mockSession("user-1");
-    mockPrisma.insightReport.findUnique.mockResolvedValue({
+    mockPrisma.insightReport.findFirst.mockResolvedValue({
       id: "r1",
       authorId: "user-2",
     });
@@ -105,7 +105,7 @@ describe("POST /api/insights/[slug]/projects (attach)", () => {
 
   it("returns 400 when projectIds is not an array", async () => {
     mockSession("user-1");
-    mockPrisma.insightReport.findUnique.mockResolvedValue({
+    mockPrisma.insightReport.findFirst.mockResolvedValue({
       id: "r1",
       authorId: "user-1",
     });
@@ -118,7 +118,7 @@ describe("POST /api/insights/[slug]/projects (attach)", () => {
 
   it("returns 200 with empty data when projectIds is []", async () => {
     mockSession("user-1");
-    mockPrisma.insightReport.findUnique.mockResolvedValue({
+    mockPrisma.insightReport.findFirst.mockResolvedValue({
       id: "r1",
       authorId: "user-1",
     });
@@ -133,7 +133,7 @@ describe("POST /api/insights/[slug]/projects (attach)", () => {
 
   it("returns 400 when any projectId is not owned by the current user", async () => {
     mockSession("user-1");
-    mockPrisma.insightReport.findUnique.mockResolvedValue({
+    mockPrisma.insightReport.findFirst.mockResolvedValue({
       id: "r1",
       authorId: "user-1",
     });
@@ -152,7 +152,7 @@ describe("POST /api/insights/[slug]/projects (attach)", () => {
 
   it("creates junction rows with positions starting after existing max", async () => {
     mockSession("user-1");
-    mockPrisma.insightReport.findUnique.mockResolvedValue({
+    mockPrisma.insightReport.findFirst.mockResolvedValue({
       id: "r1",
       authorId: "user-1",
     });
@@ -185,7 +185,7 @@ describe("POST /api/insights/[slug]/projects (attach)", () => {
 
   it("starts position at 0 when there are no existing attachments", async () => {
     mockSession("user-1");
-    mockPrisma.insightReport.findUnique.mockResolvedValue({
+    mockPrisma.insightReport.findFirst.mockResolvedValue({
       id: "r1",
       authorId: "user-1",
     });
@@ -220,7 +220,7 @@ describe("PATCH /api/insights/[slug]/projects/[projectId] (hide toggle)", () => 
 
   it("returns 404 when the report does not exist", async () => {
     mockSession("user-1");
-    mockPrisma.insightReport.findUnique.mockResolvedValue(null);
+    mockPrisma.insightReport.findFirst.mockResolvedValue(null);
 
     const response = await toggleHidden(jsonRequest({ hidden: true }), {
       params: paramsPromise({ slug: "missing", projectId: "p1" }),
@@ -230,7 +230,7 @@ describe("PATCH /api/insights/[slug]/projects/[projectId] (hide toggle)", () => 
 
   it("returns 403 when the report belongs to another user", async () => {
     mockSession("user-1");
-    mockPrisma.insightReport.findUnique.mockResolvedValue({
+    mockPrisma.insightReport.findFirst.mockResolvedValue({
       id: "r1",
       authorId: "user-2",
     });
@@ -243,7 +243,7 @@ describe("PATCH /api/insights/[slug]/projects/[projectId] (hide toggle)", () => 
 
   it("returns 404 when the junction row does not exist", async () => {
     mockSession("user-1");
-    mockPrisma.insightReport.findUnique.mockResolvedValue({
+    mockPrisma.insightReport.findFirst.mockResolvedValue({
       id: "r1",
       authorId: "user-1",
     });
@@ -257,7 +257,7 @@ describe("PATCH /api/insights/[slug]/projects/[projectId] (hide toggle)", () => 
 
   it("returns 400 when hidden is not a boolean", async () => {
     mockSession("user-1");
-    mockPrisma.insightReport.findUnique.mockResolvedValue({
+    mockPrisma.insightReport.findFirst.mockResolvedValue({
       id: "r1",
       authorId: "user-1",
     });
@@ -276,7 +276,7 @@ describe("PATCH /api/insights/[slug]/projects/[projectId] (hide toggle)", () => 
 
   it("toggles hidden to true", async () => {
     mockSession("user-1");
-    mockPrisma.insightReport.findUnique.mockResolvedValue({
+    mockPrisma.insightReport.findFirst.mockResolvedValue({
       id: "r1",
       authorId: "user-1",
     });
@@ -308,7 +308,7 @@ describe("PATCH /api/insights/[slug]/projects/[projectId] (hide toggle)", () => 
 
   it("toggles hidden to false (unhide)", async () => {
     mockSession("user-1");
-    mockPrisma.insightReport.findUnique.mockResolvedValue({
+    mockPrisma.insightReport.findFirst.mockResolvedValue({
       id: "r1",
       authorId: "user-1",
     });

@@ -17,10 +17,10 @@ const SECTION_KEYS = [
   "funEnding",
 ] as const;
 
-function generateSlug(username: string): string {
+function generateSlug(): string {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const shortId = Math.random().toString(36).substring(2, 8);
-  return `${username}-${date}-${shortId}`;
+  return `${date}-${shortId}`;
 }
 
 export async function GET(request: Request) {
@@ -246,7 +246,7 @@ export async function POST(request: Request) {
       providedTitle ||
       `${user.username}'s Claude Code Insights - ${new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" })}`;
 
-    const slug = generateSlug(user.username);
+    const slug = generateSlug();
 
     // The upload flow in Unit 7 will send `projectIds` directly.
     // During the transition, the old `projectLinks` inline shape is
