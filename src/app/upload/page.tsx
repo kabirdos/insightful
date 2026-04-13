@@ -90,7 +90,7 @@ const INSIGHTS_PATH = "~/.claude/usage-data/report.html";
 const HARNESS_PATH = "~/.claude/usage-data/insight-harness.html";
 
 const SAMPLE_PROFILE_USERNAME = "kabirdos";
-const SAMPLE_PROFILE_SLUG = "20260412-5x373x";
+const SAMPLE_PROFILE_SLUG = "20260413-e3n48n";
 const SAMPLE_PROFILE_HREF = buildReportUrl(
   SAMPLE_PROFILE_USERNAME,
   SAMPLE_PROFILE_SLUG,
