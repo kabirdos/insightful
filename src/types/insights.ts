@@ -148,6 +148,25 @@ export interface HarnessSkillEntry {
   calls: number;
   source: string;
   description: string;
+  // Showcase fields — populated only when extract was run with --include-skills
+  // AND the skill survived the repo: private/none filter. All optional/nullable
+  // so reports without showcase data continue to type-check.
+  readme_markdown?: string | null;
+  hero_base64?: string | null;
+  hero_mime_type?: "image/png" | "image/jpeg" | null;
+  category?: string | null;
+}
+
+/**
+ * Returns true when the skill entry carries renderable showcase content
+ * (a non-empty README markdown). Used by render-layer code to decide
+ * whether to show the expanded showcase card vs. the bare summary row.
+ */
+export function hasShowcaseContent(entry: HarnessSkillEntry): boolean {
+  return (
+    typeof entry.readme_markdown === "string" &&
+    entry.readme_markdown.length > 0
+  );
 }
 
 export interface HarnessHookDef {

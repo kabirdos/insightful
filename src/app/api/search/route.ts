@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { filterReportForListFeed } from "@/lib/filter-report-response";
 
 const SEARCHABLE_JSON_FIELDS = [
   "atAGlance",
@@ -106,8 +107,14 @@ export async function GET(request: Request) {
           ...rest
         } = report;
 
+        // Strip hidden items + heavy showcase bytes before serializing.
+        // Cards don't render readme_markdown/hero_base64; shipping them in
+        // search results would bloat the response post --include-skills and
+        // could leak hidden showcase content.
+        const listFiltered = filterReportForListFeed(rest);
+
         return {
-          ...rest,
+          ...listFiltered,
           matchedSections,
           relevanceScore: score,
         };

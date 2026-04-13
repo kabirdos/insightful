@@ -56,8 +56,13 @@ export function filterReportForResponse<
   }
 
   // Filter narrative JSON sections that contain sub-lists
-  if (result.impressiveWorkflows && typeof result.impressiveWorkflows === "object") {
-    const iw = result.impressiveWorkflows as { impressive_workflows?: Array<{ title: string }> };
+  if (
+    result.impressiveWorkflows &&
+    typeof result.impressiveWorkflows === "object"
+  ) {
+    const iw = result.impressiveWorkflows as {
+      impressive_workflows?: Array<{ title: string }>;
+    };
     if (iw.impressive_workflows && Array.isArray(iw.impressive_workflows)) {
       result.impressiveWorkflows = {
         ...iw,
@@ -72,7 +77,9 @@ export function filterReportForResponse<
   }
 
   if (result.frictionAnalysis && typeof result.frictionAnalysis === "object") {
-    const fa = result.frictionAnalysis as { categories?: Array<{ category: string }> };
+    const fa = result.frictionAnalysis as {
+      categories?: Array<{ category: string }>;
+    };
     if (fa.categories && Array.isArray(fa.categories)) {
       result.frictionAnalysis = {
         ...fa,
@@ -131,7 +138,9 @@ export function filterReportForResponse<
   }
 
   if (result.onTheHorizon && typeof result.onTheHorizon === "object") {
-    const oh = result.onTheHorizon as { opportunities?: Array<{ title: string }> };
+    const oh = result.onTheHorizon as {
+      opportunities?: Array<{ title: string }>;
+    };
     if (oh.opportunities && Array.isArray(oh.opportunities)) {
       result.onTheHorizon = {
         ...oh,
@@ -146,4 +155,81 @@ export function filterReportForResponse<
   }
 
   return result;
+}
+
+/**
+ * Shape used by list-feed filtering. Same as filterReportForResponse's input,
+ * plus the knowledge that we never want showcase bytes (readme_markdown,
+ * hero_base64) to ship in list responses — cards don't render them, and
+ * shipping them would make the homepage/top feeds multi-MB once users start
+ * uploading with --include-skills.
+ */
+
+/**
+ * Filter a report for a list feed (homepage, /top, /api/search, etc.).
+ * Applies the same hidden-item stripping as filterReportForResponse, then
+ * additionally drops the heavy showcase fields (readme_markdown, hero_base64,
+ * hero_mime_type) from every visible skill. Preserves name/calls/source/
+ * description/category so cards still render correctly.
+ *
+ * List feeds never pass includeHidden — hidden items must be stripped for
+ * privacy, and the showcase byte drop is for response-size sanity.
+ */
+export function filterReportForListFeed<
+  T extends {
+    harnessData?: unknown;
+    hiddenHarnessSections?: string[] | null;
+    impressiveWorkflows?: unknown;
+    frictionAnalysis?: unknown;
+    projectAreas?: unknown;
+    suggestions?: unknown;
+    onTheHorizon?: unknown;
+  },
+>(report: T): T {
+  const filtered = filterReportForResponse(report, {
+    viewerIsOwner: false,
+    includeHidden: false,
+  });
+
+  if (
+    !filtered.harnessData ||
+    typeof filtered.harnessData !== "object" ||
+    !Array.isArray(
+      (filtered.harnessData as { skillInventory?: unknown }).skillInventory,
+    )
+  ) {
+    return filtered;
+  }
+
+  const hd = filtered.harnessData as {
+    skillInventory: Array<{
+      readme_markdown?: string | null;
+      hero_base64?: string | null;
+      hero_mime_type?: string | null;
+      [key: string]: unknown;
+    }>;
+  };
+
+  const skillInventory = hd.skillInventory.map((skill) => {
+    // Only strip if showcase fields are actually present — avoids unnecessary
+    // object allocation for reports without --include-skills data
+    if (
+      skill.readme_markdown == null &&
+      skill.hero_base64 == null &&
+      skill.hero_mime_type == null
+    ) {
+      return skill;
+    }
+    return {
+      ...skill,
+      readme_markdown: null,
+      hero_base64: null,
+      hero_mime_type: null,
+    };
+  });
+
+  return {
+    ...filtered,
+    harnessData: { ...hd, skillInventory },
+  } as T;
 }

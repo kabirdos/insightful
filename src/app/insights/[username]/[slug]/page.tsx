@@ -38,6 +38,8 @@ import HeroStats from "@/components/HeroStats";
 import HowIWorkCluster from "@/components/HowIWorkCluster";
 import ToolUsageTreemap from "@/components/ToolUsageTreemap";
 import SkillCardGrid from "@/components/SkillCardGrid";
+import { SkillsTeaserCard } from "@/components/SkillsTeaserCard";
+import { SkillsShowcaseSection } from "@/components/SkillsShowcaseSection";
 import CliToolsDonut from "@/components/CliToolsDonut";
 import GitPatternsDisplay from "@/components/GitPatternsDisplay";
 import PermissionModeDisplay from "@/components/PermissionModeDisplay";
@@ -434,10 +436,40 @@ export default function InsightDetailPage() {
                   />
                 )}
 
+              {/* Skills Teaser — top-5 shareable skills with showcase content.
+                  Renders nothing when no skill carries showcase data, so reports
+                  generated without --include-skills aren't affected. */}
+              {!isSectionHidden(hiddenSet, "skillInventory") &&
+                report.harnessData.skillInventory.length > 0 && (
+                  <SkillsTeaserCard
+                    skillInventory={filterList(
+                      report.harnessData.skillInventory,
+                      hiddenSet,
+                      "skillInventory",
+                      (s) => s.name,
+                    )}
+                  />
+                )}
+
               {/* Skills Card Grid */}
               {!isSectionHidden(hiddenSet, "skillInventory") &&
                 report.harnessData.skillInventory.length > 0 && (
                   <SkillCardGrid
+                    skillInventory={filterList(
+                      report.harnessData.skillInventory,
+                      hiddenSet,
+                      "skillInventory",
+                      (s) => s.name,
+                    )}
+                  />
+                )}
+
+              {/* Full Skills Showcase — README + hero per skill, grouped by
+                  category. Rendered through SkillReadme + getSafeHeroDataUri
+                  so any unsafe markdown URL or hero data URI is stripped. */}
+              {!isSectionHidden(hiddenSet, "skillInventory") &&
+                report.harnessData.skillInventory.length > 0 && (
+                  <SkillsShowcaseSection
                     skillInventory={filterList(
                       report.harnessData.skillInventory,
                       hiddenSet,

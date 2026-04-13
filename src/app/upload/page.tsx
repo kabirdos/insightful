@@ -48,10 +48,10 @@ import WorkflowDiagram from "@/components/WorkflowDiagram";
 import HowIWorkCluster from "@/components/HowIWorkCluster";
 import ProjectLinks from "@/components/ProjectLinks";
 import MiniBarChart from "@/components/MiniBarChart";
-import {
-  getHiddenHarnessSections,
-  stripHiddenHarnessData,
-} from "@/lib/harness-section-visibility";
+import { getHiddenKeypaths } from "@/lib/harness-section-visibility";
+import { buildItemKey } from "@/lib/item-visibility";
+import HideableItem from "@/components/HideableItem";
+import { hasShowcaseContent } from "@/types/insights";
 import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 import { buildOgImageUrl, buildReportUrl } from "@/lib/urls";
 
@@ -708,7 +708,11 @@ export default function UploadPage() {
     try {
       // Apply redactions client-side
       const redactedData = applyRedactions(parsed.data, redactions);
-      const hiddenHarnessSections = getHiddenHarnessSections(disabledSections);
+      // Use getHiddenKeypaths (not getHiddenHarnessSections) so item-level
+      // keypaths like `skillInventory.<slug>` survive into the persisted
+      // hiddenHarnessSections array. The top-level-only helper silently
+      // dropped them, breaking per-item hides.
+      const hiddenHarnessSections = getHiddenKeypaths(disabledSections);
 
       // Build the disabled sections set
       const disabledSet = new Set(
@@ -787,9 +791,13 @@ export default function UploadPage() {
             parsed.harnessData?.stats.avgSessionMinutes ?? null,
           prCount: parsed.harnessData?.stats.prCount ?? null,
           autonomyLabel: parsed.harnessData?.autonomy.label ?? null,
-          harnessData: parsed.harnessData
-            ? stripHiddenHarnessData(parsed.harnessData, hiddenHarnessSections)
-            : null,
+          // Persist the FULL harnessData (including hidden showcase content).
+          // Filtering is applied server-side in filterReportForResponse on
+          // every GET, so third parties never see hidden data, while the
+          // author retains the option to re-toggle hidden items via the
+          // edit flow without re-uploading. See plan
+          // docs/plans/2026-04-12-002 → "Storage Decision".
+          harnessData: parsed.harnessData ?? null,
           hiddenHarnessSections,
         }),
       });
@@ -1624,6 +1632,44 @@ export default function UploadPage() {
                   <SkillCardGrid
                     skillInventory={parsed.harnessData.skillInventory}
                   />
+                  {/* Per-skill showcase visibility — only shown when at least
+                      one skill carries renderable showcase content, since
+                      that's the only case where item-level hides matter for
+                      privacy on the public report. */}
+                  {parsed.harnessData.skillInventory.some(
+                    hasShowcaseContent,
+                  ) && (
+                    <div className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+                      <div className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
+                        Skill Showcase — toggle individual skills
+                      </div>
+                      <div className="space-y-2">
+                        {parsed.harnessData.skillInventory.map((skill, i) => {
+                          if (!hasShowcaseContent(skill)) return null;
+                          const itemKey = buildItemKey(
+                            parsed.harnessData!.skillInventory,
+                            i,
+                            (s) => s.name,
+                          );
+                          const keypath = `skillInventory.${itemKey}`;
+                          return (
+                            <HideableItem
+                              key={itemKey}
+                              hidden={!!disabledSections[keypath]}
+                              onToggle={() => toggleSection(keypath)}
+                            >
+                              <div className="rounded border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-800">
+                                <div className="font-medium">{skill.name}</div>
+                                <div className="text-xs text-zinc-500">
+                                  {skill.description || "No description"}
+                                </div>
+                              </div>
+                            </HideableItem>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </RedactableSection>
               )}
 
