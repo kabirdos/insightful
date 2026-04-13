@@ -1,6 +1,20 @@
 import { signIn } from "@/lib/auth";
 
-export default function LoginPage() {
+const LOGIN_ERROR_MESSAGES: Record<string, string> = {
+  ReservedUsername:
+    "Your GitHub username matches a reserved app route. Please contact support if you need an exception.",
+};
+
+type LoginPageProps = {
+  searchParams?: Promise<{ error?: string }>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+  const errorMessage = params?.error
+    ? LOGIN_ERROR_MESSAGES[params.error]
+    : null;
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4 dark:bg-neutral-950">
       <div className="w-full max-w-sm space-y-8 text-center">
@@ -14,6 +28,15 @@ export default function LoginPage() {
             Upload your /insights report and share your profile.
           </p>
         </div>
+
+        {errorMessage && (
+          <div
+            role="alert"
+            className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200"
+          >
+            {errorMessage}
+          </div>
+        )}
 
         <form
           action={async () => {

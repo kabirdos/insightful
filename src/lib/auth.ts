@@ -14,11 +14,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const displayName = (profile.name as string | undefined) ?? null;
         const avatarUrl = (profile.avatar_url as string | undefined) ?? null;
 
-        // Upsert user in the jwt callback to ensure it exists before we read it
+        // Upsert user in the jwt callback to ensure it exists before we read it.
+        // Note: username is only set on `create`, never on `update`. The username
+        // captured at first sign-in is the permanent URL identifier. If the user
+        // renames on GitHub, displayName and avatarUrl sync but username does not.
         const user = await prisma.user.upsert({
           where: { githubId },
           create: { githubId, username, displayName, avatarUrl },
-          update: { username, displayName, avatarUrl },
+          update: { displayName, avatarUrl },
         });
 
         token.sub = user.id;
