@@ -38,7 +38,6 @@ const DEMO = {
 };
 
 const LABEL = "#334155"; // slate-700
-const MUTED = "#1e293b"; // slate-800
 
 const AMBER_PALETTE = ["#f1f5f9", "#fef3c7", "#fcd34d", "#f59e0b", "#b45309"];
 const GREEN_PALETTE = ["#f1f5f9", "#dcfce7", "#86efac", "#22c55e", "#15803d"];
@@ -388,9 +387,9 @@ export async function GET() {
           style={{
             display: "flex",
             gap: "40px",
-            padding: "0 56px 10px 56px",
+            padding: "0 56px 40px 56px",
             flex: 1,
-            alignItems: "flex-start",
+            alignItems: "center",
             justifyContent: "center",
           }}
         >
@@ -424,24 +423,6 @@ export async function GET() {
             </span>
             <HeatmapStrip levels={COST_LEVELS} palette={GREEN_PALETTE} />
           </div>
-        </div>
-
-        {/* FOOTER */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 56px",
-            borderTop: "1px solid #e2e8f0",
-          }}
-        >
-          <span style={{ fontSize: "30px", fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>
-            InsightHarness.com
-          </span>
-          <span style={{ fontSize: "22px", fontWeight: 600, color: MUTED }}>
-            Upload your /insights report
-          </span>
         </div>
       </div>,
       {
