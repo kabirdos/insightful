@@ -332,7 +332,7 @@ export async function GET(
                 </span>
                 <span
                   style={{
-                    fontSize: "24px",
+                    fontSize: "28px",
                     color: LABEL,
                     fontWeight: 400,
                   }}
@@ -343,9 +343,9 @@ export async function GET(
               {dateRange && (
                 <span
                   style={{
-                    fontSize: "21px",
+                    fontSize: "24px",
                     color: MUTED,
-                    marginTop: "6px",
+                    marginTop: "8px",
                   }}
                 >
                   {dateRange}
@@ -374,12 +374,12 @@ export async function GET(
             </span>
             <span
               style={{
-                fontSize: "17px",
+                fontSize: "22px",
                 fontWeight: 700,
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
                 color: LABEL,
-                marginTop: "6px",
+                marginTop: "8px",
               }}
             >
               tokens / wk
@@ -447,12 +447,12 @@ export async function GET(
           </span>
           <span
             style={{
-              fontSize: "22px",
+              fontSize: "28px",
               fontWeight: 700,
               textTransform: "uppercase",
               letterSpacing: "0.12em",
               color: MUTED,
-              marginTop: "8px",
+              marginTop: "10px",
             }}
           >
             Lifetime tokens
@@ -620,12 +620,12 @@ function StatCard({
       </span>
       <span
         style={{
-          fontSize: "16px",
+          fontSize: "20px",
           fontWeight: 700,
           textTransform: "uppercase",
           letterSpacing: "0.08em",
           color: LABEL,
-          marginTop: "10px",
+          marginTop: "12px",
         }}
       >
         {label}
@@ -665,12 +665,12 @@ function SplitStatCard({ added, removed }: { added: string; removed: string }) {
       </div>
       <span
         style={{
-          fontSize: "16px",
+          fontSize: "20px",
           fontWeight: 700,
           textTransform: "uppercase",
           letterSpacing: "0.08em",
           color: LABEL,
-          marginTop: "10px",
+          marginTop: "12px",
         }}
       >
         lines of code

@@ -131,12 +131,12 @@ function StatCard({
       </span>
       <span
         style={{
-          fontSize: "16px",
+          fontSize: "20px",
           fontWeight: 700,
           textTransform: "uppercase",
           letterSpacing: "0.08em",
           color: LABEL,
-          marginTop: "10px",
+          marginTop: "12px",
         }}
       >
         {label}
@@ -256,12 +256,12 @@ export async function GET() {
             </span>
             <span
               style={{
-                fontSize: "17px",
+                fontSize: "22px",
                 fontWeight: 700,
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
                 color: LABEL,
-                marginTop: "6px",
+                marginTop: "8px",
               }}
             >
               tokens / wk
@@ -287,12 +287,12 @@ export async function GET() {
               </span>
               <span
                 style={{
-                  fontSize: "15px",
+                  fontSize: "19px",
                   fontWeight: 700,
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
                   color: LABEL,
-                  marginTop: "4px",
+                  marginTop: "5px",
                 }}
               >
                 api cost / wk
@@ -397,12 +397,12 @@ export async function GET() {
           <div style={{ display: "flex", flexDirection: "column" }}>
             <span
               style={{
-                fontSize: "16px",
+                fontSize: "20px",
                 fontWeight: 700,
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
                 color: LABEL,
-                marginBottom: "8px",
+                marginBottom: "10px",
               }}
             >
               Tokens · 4w
@@ -412,12 +412,12 @@ export async function GET() {
           <div style={{ display: "flex", flexDirection: "column" }}>
             <span
               style={{
-                fontSize: "16px",
+                fontSize: "20px",
                 fontWeight: 700,
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
                 color: LABEL,
-                marginBottom: "8px",
+                marginBottom: "10px",
               }}
             >
               API cost · 4w
