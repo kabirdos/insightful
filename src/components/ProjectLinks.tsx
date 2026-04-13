@@ -129,7 +129,7 @@ function ProjectCard({ link }: { link: ProjectCardData }) {
       )}
     >
       {showImage && safeOgImage && (
-        <div className="relative aspect-[16/7] w-full overflow-hidden bg-slate-100 dark:bg-slate-900">
+        <div className="relative aspect-[1.91/1] w-full overflow-hidden bg-slate-100 dark:bg-slate-900">
           {/* Plain <img> on purpose — OG images come from arbitrary
               third-party hosts and next/image would require wildcard
               remotePatterns in next.config.ts. URL has been gated by
@@ -138,7 +138,7 @@ function ProjectCard({ link }: { link: ProjectCardData }) {
           <img
             src={safeOgImage}
             alt=""
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
             onError={() => setImageFailed(true)}
             loading="lazy"
             referrerPolicy="no-referrer"
