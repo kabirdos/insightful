@@ -780,6 +780,7 @@ export default function InsightDetailPage() {
                         defaultOpen={isAtAGlance}
                       >
                         <SectionRenderer
+                          username={username}
                           slug={slug}
                           sectionKey={section.key}
                           sectionType={section.sectionType}
@@ -969,6 +970,7 @@ export default function InsightDetailPage() {
                   defaultOpen={isAtAGlance}
                 >
                   <SectionRenderer
+                    username={username}
                     slug={slug}
                     sectionKey={section.key}
                     sectionType={section.sectionType}
@@ -987,7 +989,12 @@ export default function InsightDetailPage() {
 
       {/* Comments */}
       <div className="mt-12">
-        <CommentSection reportId={report.id} slug={slug} comments={[]} />
+        <CommentSection
+          reportId={report.id}
+          username={username}
+          slug={slug}
+          comments={[]}
+        />
       </div>
     </div>
   );

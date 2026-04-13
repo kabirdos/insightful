@@ -1,22 +1,16 @@
 import GitHub from "next-auth/providers/github";
 import type { NextAuthConfig } from "next-auth";
-import { isReservedUsername } from "./reserved-usernames";
+
+// Note: the reserved-username check lives in src/lib/auth.ts (signIn
+// callback). It must run in the node runtime so it can query Prisma to
+// distinguish first-time signups from existing users whose GitHub login
+// changed to a reserved name. This file is loaded by middleware in the
+// edge runtime where Prisma cannot run.
 
 export default {
   pages: { signIn: "/login" },
   providers: [GitHub],
   callbacks: {
-    signIn({ profile }) {
-      // Reject signups whose GitHub login matches a reserved app route.
-      // Returning a redirect path preserves the reason through NextAuth's
-      // redirect chain — throwing here would be wrapped as a generic
-      // CallbackRouteError and lose the rejection reason.
-      const githubLogin = profile?.login as string | undefined;
-      if (githubLogin && isReservedUsername(githubLogin)) {
-        return "/login?error=ReservedUsername";
-      }
-      return true;
-    },
     session({ session, token }) {
       if (token.sub) session.user.id = token.sub;
       return session;

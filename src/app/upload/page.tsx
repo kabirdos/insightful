@@ -1962,6 +1962,7 @@ export default function UploadPage() {
                         defaultOpen={dataKey === "at_a_glance"}
                       >
                         <SectionRenderer
+                          username="preview"
                           slug="preview"
                           sectionKey={dataKey}
                           sectionType={sectionType}
@@ -2139,6 +2140,7 @@ export default function UploadPage() {
                         defaultOpen={dataKey === "at_a_glance"}
                       >
                         <SectionRenderer
+                          username="preview"
                           slug="preview"
                           sectionKey={dataKey}
                           sectionType={sectionType}

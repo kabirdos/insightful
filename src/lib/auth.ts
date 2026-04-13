@@ -1,12 +1,37 @@
 import NextAuth from "next-auth";
 import authConfig from "./auth.config";
 import { prisma } from "./db";
+import { isReservedUsername } from "./reserved-usernames";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   session: { strategy: "jwt" },
   callbacks: {
     ...authConfig.callbacks,
+    async signIn({ profile }) {
+      // Reject signups whose GitHub login matches a reserved app route,
+      // but ONLY for first-time signups. Existing users keep their account
+      // even if they later rename on GitHub to a reserved name (their
+      // stored username is immutable, so no URL conflict can result).
+      const githubLogin = profile?.login as string | undefined;
+      if (!githubLogin) return true;
+
+      if (!isReservedUsername(githubLogin)) return true;
+
+      const githubId = profile?.id ? String(profile.id) : null;
+      if (!githubId) {
+        // No id means we can't tell if this is an existing user — be safe.
+        return "/login?error=ReservedUsername";
+      }
+
+      const existing = await prisma.user.findUnique({
+        where: { githubId },
+        select: { id: true },
+      });
+      if (existing) return true;
+
+      return "/login?error=ReservedUsername";
+    },
     async jwt({ token, profile }) {
       if (profile) {
         const githubId = String(profile.id);

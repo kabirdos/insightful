@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { Heart } from "lucide-react";
 import clsx from "clsx";
+import { buildReportSubResourceApiUrl } from "@/lib/urls";
 
 interface VoteButtonProps {
+  username: string;
   slug: string;
   reportId: string;
   sectionKey: string;
@@ -13,6 +15,7 @@ interface VoteButtonProps {
 }
 
 export default function VoteButton({
+  username,
   slug,
   reportId,
   sectionKey,
@@ -33,11 +36,14 @@ export default function VoteButton({
 
     try {
       const method = voted ? "DELETE" : "POST";
-      const res = await fetch(`/api/insights/${slug}/vote`, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sectionKey }),
-      });
+      const res = await fetch(
+        buildReportSubResourceApiUrl(username, slug, "vote"),
+        {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sectionKey }),
+        },
+      );
 
       if (!res.ok) {
         // Revert optimistic update

@@ -1057,6 +1057,7 @@ export default function EditReportPage() {
                   defaultOpen={false}
                 >
                   <SectionRenderer
+                    username={username}
                     slug={slug}
                     sectionKey={section.key}
                     sectionType={section.sectionType}
