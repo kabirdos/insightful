@@ -14,6 +14,7 @@ import {
 import { homepage as copy } from "@/content/homepage";
 import { estimateApiCostUsd } from "@/lib/api-cost";
 import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
+import { buildReportUrl } from "@/lib/urls";
 
 // Parse a skill identifier into its plugin source and short name.
 // Skills are in the form "plugin-name:skill-name" or just "skill-name" (custom).
@@ -562,7 +563,7 @@ function ProfileCard({
 
   return (
     <Link
-      href={`/insights/${insight.slug}`}
+      href={buildReportUrl(insight.author.username, insight.slug)}
       className={clsx(
         "group relative block overflow-hidden rounded-xl border bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg dark:bg-slate-900",
         featured
@@ -600,8 +601,8 @@ function ProfileCard({
                 <ShareButton
                   url={
                     typeof window !== "undefined"
-                      ? `${window.location.origin}/insights/${insight.slug}`
-                      : `/insights/${insight.slug}`
+                      ? `${window.location.origin}${buildReportUrl(insight.author.username, insight.slug)}`
+                      : buildReportUrl(insight.author.username, insight.slug)
                   }
                   title={identityName}
                   className="shrink-0 px-2 py-1 text-xs"

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readdirSync, statSync, existsSync } from "fs";
 import { join } from "path";
-import { RESERVED_USERNAMES, isReservedUsername } from "../reserved-usernames";
+import { isReservedUsername } from "../reserved-usernames";
 
 describe("isReservedUsername", () => {
   it("returns false for ordinary usernames", () => {
