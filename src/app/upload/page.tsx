@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import {
   Upload,
   Check,
@@ -688,6 +688,10 @@ export default function UploadPage() {
 
   const handlePublish = async () => {
     if (!parsed) return;
+    if (!session) {
+      signIn("github", { callbackUrl: "/upload" });
+      return;
+    }
     setPublishing(true);
     setError(null);
 
@@ -837,22 +841,6 @@ export default function UploadPage() {
   const totalSensitive = redactions.length;
   const allRedacted = totalSensitive > 0 && redactedCount === totalSensitive;
 
-  if (!session) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center">
-          <Upload className="mx-auto mb-4 h-12 w-12 text-slate-400" />
-          <h2 className="mb-2 text-xl font-semibold text-slate-900 dark:text-white">
-            Sign in to share your insights
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400">
-            You need to be logged in to upload insights.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <h1 className="mb-2 text-2xl font-bold text-slate-900 dark:text-white">
@@ -953,7 +941,11 @@ export default function UploadPage() {
               disabled={publishing || formSaving}
               className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:bg-slate-300 disabled:dark:bg-slate-700"
             >
-              {publishing ? "Publishing..." : "Publish Insights"}
+              {publishing
+                ? "Publishing..."
+                : !session
+                  ? "Sign in to publish"
+                  : "Publish Insights"}
             </button>
           ) : (
             <button
@@ -2278,13 +2270,23 @@ export default function UploadPage() {
           )}
 
           {/* ── Bottom Publish CTA ── */}
-          <div className="mt-8 flex justify-end">
+          <div className="mt-8 flex flex-col items-end gap-2">
+            {!session && (
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Sign in to publish your profile — your data stays in this
+                browser until you do.
+              </p>
+            )}
             <button
               onClick={handlePublish}
               disabled={publishing || formSaving}
               className="rounded-lg bg-blue-600 px-8 py-3 font-medium text-white transition-colors hover:bg-blue-700 disabled:bg-slate-300 disabled:dark:bg-slate-700"
             >
-              {publishing ? "Publishing..." : "Publish Insights"}
+              {publishing
+                ? "Publishing..."
+                : !session
+                  ? "Sign in to publish"
+                  : "Publish Insights"}
             </button>
           </div>
         </div>
