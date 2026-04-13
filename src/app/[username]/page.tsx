@@ -20,6 +20,15 @@ import InsightCard from "@/components/InsightCard";
 import SetupCard from "@/components/profile/SetupCard";
 import { buildReportApiUrl, buildReportEditUrl } from "@/lib/urls";
 import type { ProfileSetup } from "@/types/profile";
+import {
+  OS_SUGGESTIONS,
+  EDITOR_SUGGESTIONS,
+  TERMINAL_SUGGESTIONS,
+  SHELL_SUGGESTIONS,
+  PRIMARY_AGENT_SUGGESTIONS,
+  PRIMARY_MODEL_SUGGESTIONS,
+  PACKAGE_MANAGER_SUGGESTIONS,
+} from "@/lib/profile-setup-suggestions";
 
 function GithubIcon({ className }: { className?: string }) {
   return (
@@ -130,6 +139,21 @@ function SocialLinks({
   );
 }
 
+interface EditFormSetup {
+  os: string;
+  machine: string;
+  keyboard: string;
+  editor: string;
+  terminal: string;
+  shell: string;
+  primaryAgent: string;
+  primaryModel: string;
+  /** Comma-separated string in the form; split into string[] on submit. */
+  mcpServers: string;
+  packageManager: string;
+  dotfilesUrl: string;
+}
+
 interface EditFormData {
   displayName: string;
   bio: string;
@@ -137,6 +161,115 @@ interface EditFormData {
   twitterUrl: string;
   linkedinUrl: string;
   websiteUrl: string;
+  setup: EditFormSetup;
+}
+
+const EMPTY_SETUP_FORM: EditFormSetup = {
+  os: "",
+  machine: "",
+  keyboard: "",
+  editor: "",
+  terminal: "",
+  shell: "",
+  primaryAgent: "",
+  primaryModel: "",
+  mcpServers: "",
+  packageManager: "",
+  dotfilesUrl: "",
+};
+
+function setupToForm(setup: ProfileSetup | null | undefined): EditFormSetup {
+  if (!setup) return EMPTY_SETUP_FORM;
+  return {
+    os: setup.os ?? "",
+    machine: setup.machine ?? "",
+    keyboard: setup.keyboard ?? "",
+    editor: setup.editor ?? "",
+    terminal: setup.terminal ?? "",
+    shell: setup.shell ?? "",
+    primaryAgent: setup.primaryAgent ?? "",
+    primaryModel: setup.primaryModel ?? "",
+    mcpServers: setup.mcpServers?.join(", ") ?? "",
+    packageManager: setup.packageManager ?? "",
+    dotfilesUrl: setup.dotfilesUrl ?? "",
+  };
+}
+
+/** Convert the flat form state into the payload the PUT endpoint expects. */
+function formSetupToPayload(
+  form: EditFormSetup,
+): Record<string, string | string[]> {
+  const payload: Record<string, string | string[]> = {};
+  for (const [key, value] of Object.entries(form)) {
+    if (key === "mcpServers") continue;
+    if (value && value.trim()) payload[key] = value.trim();
+  }
+  const mcpList = form.mcpServers
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (mcpList.length > 0) payload.mcpServers = mcpList;
+  return payload;
+}
+
+function SetupGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">
+        {title}
+      </h4>
+      <div className="space-y-2">{children}</div>
+    </div>
+  );
+}
+
+function SetupInput({
+  label,
+  value,
+  onChange,
+  listId,
+  options,
+  placeholder,
+  inputClass,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  listId?: string;
+  options?: readonly string[];
+  placeholder?: string;
+  inputClass: string;
+  type?: "text" | "url";
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
+        {label}
+      </label>
+      <input
+        type={type}
+        list={listId}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={inputClass}
+      />
+      {listId && options ? (
+        <datalist id={listId}>
+          {options.map((opt) => (
+            <option key={opt} value={opt} />
+          ))}
+        </datalist>
+      ) : null}
+    </div>
+  );
 }
 
 function ProfileEditForm({
@@ -155,9 +288,18 @@ function ProfileEditForm({
     twitterUrl: profile.twitterUrl ?? "",
     linkedinUrl: profile.linkedinUrl ?? "",
     websiteUrl: profile.websiteUrl ?? "",
+    setup: setupToForm(profile.setup),
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [setupOpen, setSetupOpen] = useState(() => {
+    // Default-open when the user already has setup content — they're editing,
+    // not exploring. Default-closed for empty-setup first-timers.
+    return Boolean(profile.setup);
+  });
+
+  const updateSetup = (patch: Partial<EditFormSetup>) =>
+    setForm((f) => ({ ...f, setup: { ...f.setup, ...patch } }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -255,6 +397,145 @@ function ProfileEditForm({
         </div>
       </div>
 
+      <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
+        <button
+          type="button"
+          onClick={() => setSetupOpen((v) => !v)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+            Developer Setup
+          </h3>
+          <span className="text-xs text-slate-400">
+            {setupOpen ? "Hide" : "Show"}
+          </span>
+        </button>
+        {setupOpen && (
+          <div className="mt-3 space-y-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Optional. All fields appear publicly on your profile — leave blank
+              to hide.
+            </p>
+
+            <SetupGroup title="Hardware">
+              <SetupInput
+                label="OS"
+                value={form.setup.os}
+                onChange={(os) => updateSetup({ os })}
+                listId="suggest-os"
+                options={OS_SUGGESTIONS}
+                placeholder="macOS"
+                inputClass={inputClass}
+              />
+              <SetupInput
+                label="Machine"
+                value={form.setup.machine}
+                onChange={(machine) => updateSetup({ machine })}
+                placeholder="M4 Max MBP, 64GB"
+                inputClass={inputClass}
+              />
+              <SetupInput
+                label="Keyboard"
+                value={form.setup.keyboard}
+                onChange={(keyboard) => updateSetup({ keyboard })}
+                placeholder="HHKB, split ergo, stock…"
+                inputClass={inputClass}
+              />
+            </SetupGroup>
+
+            <SetupGroup title="Editor & Terminal">
+              <SetupInput
+                label="Editor / IDE"
+                value={form.setup.editor}
+                onChange={(editor) => updateSetup({ editor })}
+                listId="suggest-editor"
+                options={EDITOR_SUGGESTIONS}
+                placeholder="VS Code"
+                inputClass={inputClass}
+              />
+              <SetupInput
+                label="Terminal"
+                value={form.setup.terminal}
+                onChange={(terminal) => updateSetup({ terminal })}
+                listId="suggest-terminal"
+                options={TERMINAL_SUGGESTIONS}
+                placeholder="Ghostty"
+                inputClass={inputClass}
+              />
+              <SetupInput
+                label="Shell"
+                value={form.setup.shell}
+                onChange={(shell) => updateSetup({ shell })}
+                listId="suggest-shell"
+                options={SHELL_SUGGESTIONS}
+                placeholder="zsh"
+                inputClass={inputClass}
+              />
+            </SetupGroup>
+
+            <SetupGroup title="AI Stack">
+              <SetupInput
+                label="Primary agent"
+                value={form.setup.primaryAgent}
+                onChange={(primaryAgent) => updateSetup({ primaryAgent })}
+                listId="suggest-primary-agent"
+                options={PRIMARY_AGENT_SUGGESTIONS}
+                placeholder="Claude Code"
+                inputClass={inputClass}
+              />
+              <SetupInput
+                label="Primary model"
+                value={form.setup.primaryModel}
+                onChange={(primaryModel) => updateSetup({ primaryModel })}
+                listId="suggest-primary-model"
+                options={PRIMARY_MODEL_SUGGESTIONS}
+                placeholder="claude-sonnet-4"
+                inputClass={inputClass}
+              />
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
+                  MCP servers
+                  <span className="ml-2 font-normal text-slate-400">
+                    Review names before publishing — server names can hint at
+                    private projects.
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  value={form.setup.mcpServers}
+                  onChange={(e) => updateSetup({ mcpServers: e.target.value })}
+                  placeholder="serena, playwright, supabase"
+                  className={inputClass}
+                />
+                <p className="mt-1 text-[11px] text-slate-400">
+                  Comma-separated.
+                </p>
+              </div>
+            </SetupGroup>
+
+            <SetupGroup title="Workflow">
+              <SetupInput
+                label="Package manager"
+                value={form.setup.packageManager}
+                onChange={(packageManager) => updateSetup({ packageManager })}
+                listId="suggest-package-manager"
+                options={PACKAGE_MANAGER_SUGGESTIONS}
+                placeholder="pnpm"
+                inputClass={inputClass}
+              />
+              <SetupInput
+                label="Dotfiles URL"
+                value={form.setup.dotfilesUrl}
+                onChange={(dotfilesUrl) => updateSetup({ dotfilesUrl })}
+                placeholder="https://github.com/you/dotfiles"
+                type="url"
+                inputClass={inputClass}
+              />
+            </SetupGroup>
+          </div>
+        )}
+      </div>
+
       {error && (
         <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
       )}
@@ -330,10 +611,23 @@ export default function UserProfilePage() {
   }, [username]);
 
   const handleSave = async (data: EditFormData) => {
+    const setupPayload = formSetupToPayload(data.setup);
+    const body = {
+      displayName: data.displayName,
+      bio: data.bio,
+      githubUrl: data.githubUrl,
+      twitterUrl: data.twitterUrl,
+      linkedinUrl: data.linkedinUrl,
+      websiteUrl: data.websiteUrl,
+      // Explicit null clears the column; otherwise the normalized object is
+      // sent as-is and the server handles shape validation.
+      setup: Object.keys(setupPayload).length > 0 ? setupPayload : null,
+    };
+
     const res = await fetch("/api/users/me", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {
@@ -354,6 +648,7 @@ export default function UserProfilePage() {
             twitterUrl: updated.twitterUrl,
             linkedinUrl: updated.linkedinUrl,
             websiteUrl: updated.websiteUrl,
+            setup: updated.setup ?? null,
           }
         : prev,
     );
