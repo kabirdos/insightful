@@ -488,6 +488,7 @@ export default function UploadPage() {
   const [dragOverHarness, setDragOverHarness] = useState(false);
   const [showAllFeatures, setShowAllFeatures] = useState(true);
   const [showStandard, setShowStandard] = useState(false);
+  const [showCurlFallback, setShowCurlFallback] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const harnessFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1048,10 +1049,42 @@ export default function UploadPage() {
                   </span>
                 </span>
               </div>
-              <CommandBlock
-                command="curl -sL https://github.com/craigdossantos/claude-toolkit/archive/main.tar.gz | tar xz -C /tmp && cp -r /tmp/claude-toolkit-main/skills/insight-harness ~/.claude/skills/ && rm -rf /tmp/claude-toolkit-main"
-                small
-              />
+              <CommandBlock command="claude plugin marketplace add kabirdos/insight-harness" />
+              <CommandBlock command="/plugin install insight-harness@kabirdos-insight-harness" />
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Auto-updates when new versions ship. Inspect the source at{" "}
+                <a
+                  href="https://github.com/kabirdos/insight-harness"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-slate-600 underline decoration-slate-300 underline-offset-2 hover:text-slate-900 hover:decoration-slate-500 dark:text-slate-300 dark:decoration-slate-600 dark:hover:text-slate-100 dark:hover:decoration-slate-400"
+                >
+                  github.com/kabirdos/insight-harness
+                </a>
+                .
+              </p>
+              <div className="mt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowCurlFallback((v) => !v)}
+                  className="flex items-center gap-1.5 text-[12px] font-medium text-slate-500 transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                >
+                  Prefer curl or no plugin support?
+                  {showCurlFallback ? (
+                    <ChevronUp className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  )}
+                </button>
+                {showCurlFallback && (
+                  <div className="mt-2">
+                    <CommandBlock
+                      command="curl -sL https://github.com/craigdossantos/claude-toolkit/archive/main.tar.gz | tar xz -C /tmp && cp -r /tmp/claude-toolkit-main/skills/insight-harness ~/.claude/skills/ && rm -rf /tmp/claude-toolkit-main"
+                      small
+                    />
+                  </div>
+                )}
+              </div>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 Then run:
               </p>
