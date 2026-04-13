@@ -1049,7 +1049,10 @@ export default function UploadPage() {
                   </span>
                 </span>
               </div>
-              <CommandBlock command="claude plugin marketplace add kabirdos/insight-harness" />
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Run these two commands inside Claude Code:
+              </p>
+              <CommandBlock command="/plugin marketplace add kabirdos/insight-harness" />
               <CommandBlock command="/plugin install insight-harness@kabirdos-insight-harness" />
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 Auto-updates when new versions ship. Inspect the source at{" "}
