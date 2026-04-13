@@ -119,7 +119,7 @@ function ProfileCard({ report }: { report: TopReport }) {
           </span>
           {lifetimeTokens > 0 && (
             <div className="mt-1.5">
-              <div className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text font-mono text-xl font-bold leading-none text-transparent dark:from-blue-400 dark:to-cyan-300">
+              <div className="font-mono text-base font-semibold leading-none text-slate-900 dark:text-white">
                 {formatNumber(lifetimeTokens)}
               </div>
               <div className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500">

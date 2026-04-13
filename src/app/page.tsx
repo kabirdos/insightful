@@ -622,8 +622,8 @@ function ProfileCard({
                 <div className="mt-1.5">
                   <div
                     className={clsx(
-                      "bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text font-mono font-bold leading-none text-transparent dark:from-blue-400 dark:to-cyan-300",
-                      featured ? "text-4xl" : "text-2xl",
+                      "font-mono font-bold leading-none text-slate-900 dark:text-white",
+                      featured ? "text-lg" : "text-base",
                     )}
                   >
                     {formatTokens(lifetimeTokens)}
