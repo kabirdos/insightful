@@ -473,7 +473,8 @@ export default function UploadPage() {
   const [publishing, setPublishing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [dragOverHarness, setDragOverHarness] = useState(false);
-  const [showAllFeatures, setShowAllFeatures] = useState(false);
+  const [showAllFeatures, setShowAllFeatures] = useState(true);
+  const [showStandard, setShowStandard] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const harnessFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -937,118 +938,151 @@ export default function UploadPage() {
             </p>
           </div>
 
-          {/* Two-column grid */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {/* ── LEFT: /insights (Standard) ── */}
-            <div className="flex flex-col gap-5 rounded-xl border-[1.5px] border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800/60">
-              {/* Column header */}
-              <div className="flex items-center gap-2">
-                <FileText className="h-[18px] w-[18px] text-slate-500 dark:text-slate-400" />
-                <span className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  /insights (Standard)
-                </span>
-              </div>
-
-              {/* Step 1 */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                    1
-                  </span>
-                  <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
-                    Run /insights
-                  </span>
-                </div>
-                <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                  Built into Claude Code. Generates a narrative report about
-                  your usage patterns.
-                </p>
-                <CommandBlock command="/insights" />
-              </div>
-
-              {/* Step 2 */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                    2
-                  </span>
-                  <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
-                    Upload the report
-                  </span>
-                </div>
-                <MiniDropZone
-                  fileInputRef={fileInputRef}
-                  handleFileInput={handleFileInput}
-                  handleDrop={handleDrop}
-                  dragOver={dragOver}
-                  setDragOver={setDragOver}
-                  path={INSIGHTS_PATH}
-                  loading={loading}
-                />
-              </div>
+          {/* ── PRIMARY: /insight-harness (Enhanced) ── */}
+          <div className="flex flex-col gap-5 rounded-xl border-[1.5px] border-blue-300 bg-white p-6 shadow-[0_0_0_1px_rgba(37,99,235,0.08),0_4px_16px_rgba(37,99,235,0.06)] dark:border-blue-700 dark:bg-slate-800/60 dark:shadow-[0_0_0_1px_rgba(37,99,235,0.15),0_4px_16px_rgba(37,99,235,0.1)] md:p-8">
+            <div className="flex flex-wrap items-center gap-2">
+              <Sparkles className="h-[18px] w-[18px] text-blue-600 dark:text-blue-400" />
+              <span className="text-base font-bold text-slate-900 dark:text-slate-100">
+                /insight-harness (Enhanced)
+              </span>
+              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                Recommended
+              </span>
             </div>
 
-            {/* ── RIGHT: /insight-harness (Enhanced) ── */}
-            <div className="flex flex-col gap-5 rounded-xl border-[1.5px] border-blue-300 bg-white p-6 shadow-[0_0_0_1px_rgba(37,99,235,0.08),0_4px_16px_rgba(37,99,235,0.06)] dark:border-blue-700 dark:bg-slate-800/60 dark:shadow-[0_0_0_1px_rgba(37,99,235,0.15),0_4px_16px_rgba(37,99,235,0.1)]">
-              {/* Column header */}
+            <div>
+              <p className="text-[13px] leading-relaxed text-slate-600 dark:text-slate-300">
+                A free custom skill that produces a richer report than{" "}
+                <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[12px] text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                  /insights
+                </code>{" "}
+                alone. It captures:
+              </p>
+              <ul className="mt-3 grid grid-cols-1 gap-x-5 gap-y-2 sm:grid-cols-2">
+                {[
+                  "Token consumption & cost breakdown",
+                  "Tool usage frequency",
+                  "Skills inventory",
+                  "Hooks & MCP servers",
+                  "Agent & workflow patterns",
+                  "Everything from /insights",
+                ].map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-start gap-2 text-[13px] text-slate-700 dark:text-slate-200"
+                  >
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-[18px] w-[18px] text-blue-600 dark:text-blue-400" />
-                <span className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  /insight-harness (Enhanced)
+                <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+                  1
                 </span>
-                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-                  Recommended
+                <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+                  Install the skill (one-time setup){" "}
+                  <span className="text-[11px] font-normal text-green-600 dark:text-green-400">
+                    (free)
+                  </span>
                 </span>
               </div>
+              <CommandBlock
+                command="curl -sL https://github.com/craigdossantos/claude-toolkit/archive/main.tar.gz | tar xz -C /tmp && cp -r /tmp/claude-toolkit-main/skills/insight-harness ~/.claude/skills/ && rm -rf /tmp/claude-toolkit-main"
+                small
+              />
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Then run:
+              </p>
+              <CommandBlock command="/insight-harness" />
+            </div>
 
-              {/* Step 1 */}
-              <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+                  2
+                </span>
+                <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+                  Upload the report
+                </span>
+              </div>
+              <MiniDropZone
+                fileInputRef={harnessFileInputRef}
+                handleFileInput={handleFileInput}
+                handleDrop={handleDrop}
+                dragOver={dragOverHarness}
+                setDragOver={setDragOverHarness}
+                path={HARNESS_PATH}
+                loading={loading}
+              />
+            </div>
+          </div>
+
+          {/* ── SECONDARY: /insights (Standard) disclosure ── */}
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => setShowStandard((v) => !v)}
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-[13px] font-medium text-slate-500 transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Already have an /insights report? Use that instead
+              {showStandard ? (
+                <ChevronUp className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5" />
+              )}
+            </button>
+
+            {showStandard && (
+              <div className="mt-3 flex flex-col gap-5 rounded-xl border-[1.5px] border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800/60">
                 <div className="flex items-center gap-2">
-                  <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
-                    1
+                  <FileText className="h-[18px] w-[18px] text-slate-500 dark:text-slate-400" />
+                  <span className="text-base font-bold text-slate-900 dark:text-slate-100">
+                    /insights (Standard)
                   </span>
-                  <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
-                    Install the skill (one-time setup){" "}
-                    <span className="text-[11px] font-normal text-green-600 dark:text-green-400">
-                      (free)
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                      1
                     </span>
-                  </span>
+                    <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+                      Run /insights
+                    </span>
+                  </div>
+                  <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                    Built into Claude Code. Generates a narrative report about
+                    your usage patterns.
+                  </p>
+                  <CommandBlock command="/insights" />
                 </div>
-                <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                  Everything from /insights PLUS token usage, tool breakdowns,
-                  skill inventory, hooks, agent patterns, and more.
-                </p>
-                <CommandBlock
-                  command="curl -sL https://github.com/craigdossantos/claude-toolkit/archive/main.tar.gz | tar xz -C /tmp && cp -r /tmp/claude-toolkit-main/skills/insight-harness ~/.claude/skills/ && rm -rf /tmp/claude-toolkit-main"
-                  small
-                />
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Then run:
-                </p>
-                <CommandBlock command="/insight-harness" />
-              </div>
 
-              {/* Step 2 */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
-                    2
-                  </span>
-                  <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
-                    Upload the report
-                  </span>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                      2
+                    </span>
+                    <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+                      Upload the report
+                    </span>
+                  </div>
+                  <MiniDropZone
+                    fileInputRef={fileInputRef}
+                    handleFileInput={handleFileInput}
+                    handleDrop={handleDrop}
+                    dragOver={dragOver}
+                    setDragOver={setDragOver}
+                    path={INSIGHTS_PATH}
+                    loading={loading}
+                  />
                 </div>
-                <MiniDropZone
-                  fileInputRef={harnessFileInputRef}
-                  handleFileInput={handleFileInput}
-                  handleDrop={handleDrop}
-                  dragOver={dragOverHarness}
-                  setDragOver={setDragOverHarness}
-                  path={HARNESS_PATH}
-                  loading={loading}
-                />
               </div>
-            </div>
+            )}
           </div>
 
           {/* Step 3: Reassurance banner */}
@@ -1070,12 +1104,6 @@ export default function UploadPage() {
               </p>
             </div>
           </div>
-
-          {/* Bottom note */}
-          <p className="mt-6 text-center text-[13px] leading-relaxed text-slate-500 dark:text-slate-400">
-            Both report types work. The Enhanced report includes everything from
-            /insights plus detailed harness data.
-          </p>
 
           {/* Comparison table */}
           <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800/60">
