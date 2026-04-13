@@ -14,12 +14,28 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+const TITLE = "Insight Harness — See How Developers Use Claude Code";
+const DESCRIPTION =
+  "Browse real developer workflows — the tools, skills, plugins, and patterns they use across actual coding sessions. Upload your /insights report and share your profile.";
+
 export const metadata: Metadata = {
-  title: "Insight Harness — See How Developers Use Claude Code",
-  description:
-    "Browse real developer workflows — the tools, skills, plugins, and patterns they use across actual coding sessions. Upload your /insights report and share your profile.",
+  title: TITLE,
+  description: DESCRIPTION,
   icons: {
     icon: "/favicon.svg",
+  },
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    siteName: "InsightHarness",
+    type: "website",
+    images: ["/api/og/home"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/api/og/home"],
   },
 };
 
