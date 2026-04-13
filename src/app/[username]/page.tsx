@@ -238,6 +238,7 @@ function SetupInput({
   placeholder,
   inputClass,
   type = "text",
+  suggestion,
 }: {
   label: string;
   value: string;
@@ -247,7 +248,11 @@ function SetupInput({
   placeholder?: string;
   inputClass: string;
   type?: "text" | "url";
+  /** Auto-derived hint to show as a click-to-fill chip. Only renders when
+   *  the field is currently empty. */
+  suggestion?: string;
 }) {
+  const showChip = suggestion && !value.trim();
   return (
     <div>
       <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -268,8 +273,35 @@ function SetupInput({
           ))}
         </datalist>
       ) : null}
+      {showChip ? (
+        <button
+          type="button"
+          onClick={() => onChange(suggestion)}
+          className="mt-1 inline-flex items-center gap-1 rounded border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] text-blue-700 transition-colors hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300"
+          title="Click to fill from your latest harness report"
+        >
+          <span>Suggest:</span>
+          <span className="font-mono">{suggestion}</span>
+        </button>
+      ) : null}
     </div>
   );
+}
+
+type SuggestionsState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "ok"; suggestions: DerivedProfileSuggestions }
+  | { status: "no-reports" }
+  | { status: "no-suggestions" }
+  | { status: "failed" };
+
+interface DerivedProfileSuggestions {
+  primaryAgent?: string;
+  primaryModel?: string;
+  mcpServers?: string[];
+  packageManager?: string;
+  os?: string;
 }
 
 function ProfileEditForm({
@@ -297,9 +329,49 @@ function ProfileEditForm({
     // not exploring. Default-closed for empty-setup first-timers.
     return Boolean(profile.setup);
   });
+  const [suggestState, setSuggestState] = useState<SuggestionsState>({
+    status: "idle",
+  });
 
   const updateSetup = (patch: Partial<EditFormSetup>) =>
     setForm((f) => ({ ...f, setup: { ...f.setup, ...patch } }));
+
+  // Fetch auto-derived suggestions once the Developer Setup section is first
+  // expanded. Keeps us off the network until the user opts in, and prevents
+  // re-fetching on every toggle.
+  useEffect(() => {
+    if (!setupOpen) return;
+    if (suggestState.status !== "idle") return;
+
+    let cancelled = false;
+    setSuggestState({ status: "loading" });
+    fetch("/api/users/me/setup-suggestions")
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((json) => {
+        if (cancelled) return;
+        if (json.status === "ok") {
+          setSuggestState({ status: "ok", suggestions: json.suggestions });
+        } else if (json.status === "no-reports") {
+          setSuggestState({ status: "no-reports" });
+        } else {
+          setSuggestState({ status: "no-suggestions" });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestState({ status: "failed" });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setupOpen, suggestState.status]);
+
+  const suggestions =
+    suggestState.status === "ok" ? suggestState.suggestions : undefined;
+  const mcpSuggestion = suggestions?.mcpServers?.join(", ");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -417,6 +489,33 @@ function ProfileEditForm({
               to hide.
             </p>
 
+            {suggestState.status === "loading" && (
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                Looking at your latest harness report…
+              </p>
+            )}
+            {suggestState.status === "no-reports" && (
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                <Link
+                  href="/upload"
+                  className="underline hover:text-slate-600 dark:hover:text-slate-300"
+                >
+                  Upload a harness report
+                </Link>{" "}
+                to get setup suggestions.
+              </p>
+            )}
+            {suggestState.status === "no-suggestions" && (
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                No suggestions from your latest report.
+              </p>
+            )}
+            {suggestState.status === "failed" && (
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                Couldn&apos;t load suggestions.
+              </p>
+            )}
+
             <SetupGroup title="Hardware">
               <SetupInput
                 label="OS"
@@ -426,6 +525,7 @@ function ProfileEditForm({
                 options={OS_SUGGESTIONS}
                 placeholder="macOS"
                 inputClass={inputClass}
+                suggestion={suggestions?.os}
               />
               <SetupInput
                 label="Machine"
@@ -482,6 +582,7 @@ function ProfileEditForm({
                 options={PRIMARY_AGENT_SUGGESTIONS}
                 placeholder="Claude Code"
                 inputClass={inputClass}
+                suggestion={suggestions?.primaryAgent}
               />
               <SetupInput
                 label="Primary model"
@@ -491,6 +592,7 @@ function ProfileEditForm({
                 options={PRIMARY_MODEL_SUGGESTIONS}
                 placeholder="claude-sonnet-4"
                 inputClass={inputClass}
+                suggestion={suggestions?.primaryModel}
               />
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -510,6 +612,17 @@ function ProfileEditForm({
                 <p className="mt-1 text-[11px] text-slate-400">
                   Comma-separated.
                 </p>
+                {mcpSuggestion && !form.setup.mcpServers.trim() ? (
+                  <button
+                    type="button"
+                    onClick={() => updateSetup({ mcpServers: mcpSuggestion })}
+                    className="mt-1 inline-flex items-center gap-1 rounded border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] text-blue-700 transition-colors hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300"
+                    title="Click to fill from your latest harness report"
+                  >
+                    <span>Suggest:</span>
+                    <span className="font-mono">{mcpSuggestion}</span>
+                  </button>
+                ) : null}
               </div>
             </SetupGroup>
 
@@ -522,6 +635,7 @@ function ProfileEditForm({
                 options={PACKAGE_MANAGER_SUGGESTIONS}
                 placeholder="pnpm"
                 inputClass={inputClass}
+                suggestion={suggestions?.packageManager}
               />
               <SetupInput
                 label="Dotfiles URL"
