@@ -646,29 +646,65 @@ function ProfileCard({
         >
           {sessionsWk != null && (
             <div className="flex flex-1 flex-col border-r border-slate-100 px-3 first:pl-0 dark:border-slate-800">
-              <span className="text-[15px] font-bold leading-none text-green-600 dark:text-green-400">
+              <span
+                className={clsx(
+                  "font-bold leading-none text-green-600 dark:text-green-400",
+                  featured ? "text-2xl" : "text-[15px]",
+                )}
+              >
                 {Math.round(sessionsWk).toLocaleString()}
               </span>
-              <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-slate-400">
+              <span
+                className={clsx(
+                  "mt-1 font-semibold uppercase tracking-wider",
+                  featured
+                    ? "text-[11px] text-slate-600 dark:text-slate-300"
+                    : "text-[9px] text-slate-400",
+                )}
+              >
                 sessions / wk
               </span>
             </div>
           )}
           {hoursWk != null && hoursWk > 0 && (
             <div className="flex flex-1 flex-col border-r border-slate-100 px-3 dark:border-slate-800">
-              <span className="text-[15px] font-bold leading-none text-cyan-600 dark:text-cyan-400">
+              <span
+                className={clsx(
+                  "font-bold leading-none text-cyan-600 dark:text-cyan-400",
+                  featured ? "text-2xl" : "text-[15px]",
+                )}
+              >
                 {formatHours(hoursWk)}
               </span>
-              <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-slate-400">
+              <span
+                className={clsx(
+                  "mt-1 font-semibold uppercase tracking-wider",
+                  featured
+                    ? "text-[11px] text-slate-600 dark:text-slate-300"
+                    : "text-[9px] text-slate-400",
+                )}
+              >
                 active / wk
               </span>
             </div>
           )}
           <div className="flex flex-1 flex-col border-r border-slate-100 px-3 dark:border-slate-800">
-            <span className="text-[15px] font-bold leading-none text-slate-800 dark:text-slate-200">
+            <span
+              className={clsx(
+                "font-bold leading-none text-slate-800 dark:text-slate-200",
+                featured ? "text-2xl" : "text-[15px]",
+              )}
+            >
               {skillsCount}
             </span>
-            <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-slate-400">
+            <span
+              className={clsx(
+                "mt-1 font-semibold uppercase tracking-wider",
+                featured
+                  ? "text-[11px] text-slate-600 dark:text-slate-300"
+                  : "text-[9px] text-slate-400",
+              )}
+            >
               skills
             </span>
           </div>
@@ -700,7 +736,12 @@ function ProfileCard({
             if (!hasLines) return null;
             return (
               <div className="flex flex-1 flex-col border-l border-slate-100 px-3 last:pr-0 dark:border-slate-800">
-                <span className="whitespace-nowrap text-[15px] font-bold leading-none">
+                <span
+                  className={clsx(
+                    "whitespace-nowrap font-bold leading-none",
+                    featured ? "text-2xl" : "text-[15px]",
+                  )}
+                >
                   <span className="text-green-600 dark:text-green-400">
                     +{formatLines(addedDisplay)}
                   </span>
@@ -715,7 +756,14 @@ function ProfileCard({
                     </>
                   )}
                 </span>
-                <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-slate-400">
+                <span
+                  className={clsx(
+                    "mt-1 font-semibold uppercase tracking-wider",
+                    featured
+                      ? "text-[11px] text-slate-600 dark:text-slate-300"
+                      : "text-[9px] text-slate-400",
+                  )}
+                >
                   lines
                 </span>
               </div>
@@ -723,10 +771,10 @@ function ProfileCard({
           })()}
           {featured && commitsWk != null && commitsWk > 0 && (
             <div className="flex flex-1 flex-col border-l border-slate-100 px-3 dark:border-slate-800">
-              <span className="text-[15px] font-bold leading-none text-cyan-600 dark:text-cyan-400">
+              <span className="text-2xl font-bold leading-none text-cyan-600 dark:text-cyan-400">
                 {Math.round(commitsWk).toLocaleString()}
               </span>
-              <span className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-slate-400">
+              <span className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                 commits / wk
               </span>
             </div>
