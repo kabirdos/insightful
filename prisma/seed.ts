@@ -43,12 +43,12 @@ async function main() {
 
   // Create demo insight reports
   const report1 = await prisma.insightReport.upsert({
-    where: { slug: "alice-codes-20260315-demo1" },
+    where: { authorId_slug: { authorId: alice.id, slug: "20260315-demo1" } },
     update: {},
     create: {
       authorId: alice.id,
       title: "78 sessions · 892 messages · 67 commits",
-      slug: "alice-codes-20260315-demo1",
+      slug: "20260315-demo1",
       sessionCount: 78,
       messageCount: 892,
       commitCount: 67,
@@ -188,12 +188,12 @@ async function main() {
   });
 
   const report2 = await prisma.insightReport.upsert({
-    where: { slug: "bob-builder-20260320-demo2" },
+    where: { authorId_slug: { authorId: bob.id, slug: "20260320-demo2" } },
     update: {},
     create: {
       authorId: bob.id,
       title: "45 sessions · 534 messages · 89 commits",
-      slug: "bob-builder-20260320-demo2",
+      slug: "20260320-demo2",
       sessionCount: 45,
       messageCount: 534,
       commitCount: 89,
@@ -325,12 +325,12 @@ async function main() {
   });
 
   const report3 = await prisma.insightReport.upsert({
-    where: { slug: "carol-dev-20260325-demo3" },
+    where: { authorId_slug: { authorId: carol.id, slug: "20260325-demo3" } },
     update: {},
     create: {
       authorId: carol.id,
       title: "156 sessions · 2,100 messages · 201 commits",
-      slug: "carol-dev-20260325-demo3",
+      slug: "20260325-demo3",
       sessionCount: 156,
       messageCount: 2100,
       commitCount: 201,

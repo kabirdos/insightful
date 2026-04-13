@@ -17,6 +17,7 @@ import {
   Trash2,
 } from "lucide-react";
 import InsightCard from "@/components/InsightCard";
+import { buildReportApiUrl, buildReportEditUrl } from "@/lib/urls";
 
 function GithubIcon({ className }: { className?: string }) {
   return (
@@ -294,7 +295,9 @@ export default function UserProfilePage() {
     if (!confirm("Delete this report? This cannot be undone.")) return;
     setDeleting(slug);
     try {
-      const res = await fetch(`/api/insights/${slug}`, { method: "DELETE" });
+      const res = await fetch(buildReportApiUrl(username, slug), {
+        method: "DELETE",
+      });
       if (!res.ok) throw new Error("Failed to delete");
       setProfile((prev) =>
         prev
@@ -502,7 +505,7 @@ export default function UserProfilePage() {
               {isOwnProfile && (
                 <>
                   <Link
-                    href={`/insights/${report.slug}/edit`}
+                    href={buildReportEditUrl(username, report.slug)}
                     // Always visible on touch devices (md:opacity-0
                     // hides it on desktop where hover-reveal works).
                     // Without the mobile-visible class, touch users

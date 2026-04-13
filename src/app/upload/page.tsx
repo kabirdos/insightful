@@ -52,6 +52,7 @@ import {
   stripHiddenHarnessData,
 } from "@/lib/harness-section-visibility";
 import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
+import { buildOgImageUrl, buildReportUrl } from "@/lib/urls";
 
 type Step = "upload" | "projects" | "review";
 
@@ -88,9 +89,16 @@ const EMPTY_FORM: ProjectFormInput = {
 const INSIGHTS_PATH = "~/.claude/usage-data/report.html";
 const HARNESS_PATH = "~/.claude/usage-data/insight-harness.html";
 
-const SAMPLE_PROFILE_SLUG = "kabirdos-20260412-5x373x";
-const SAMPLE_PROFILE_HREF = `/insights/${SAMPLE_PROFILE_SLUG}`;
-const SAMPLE_PROFILE_OG = `/api/og/${SAMPLE_PROFILE_SLUG}`;
+const SAMPLE_PROFILE_USERNAME = "kabirdos";
+const SAMPLE_PROFILE_SLUG = "20260412-5x373x";
+const SAMPLE_PROFILE_HREF = buildReportUrl(
+  SAMPLE_PROFILE_USERNAME,
+  SAMPLE_PROFILE_SLUG,
+);
+const SAMPLE_PROFILE_OG = buildOgImageUrl(
+  SAMPLE_PROFILE_USERNAME,
+  SAMPLE_PROFILE_SLUG,
+);
 const SAMPLE_PROFILE_LABEL = "Kabir's Insight Harness — Apr 2026";
 
 function CopyButton({
@@ -791,7 +799,13 @@ export default function UploadPage() {
       }
 
       const result = await res.json();
-      router.push(`/insights/${result.data?.slug || result.slug}`);
+      const created = result.data ?? result;
+      const createdSlug = created?.slug;
+      const createdUsername = created?.author?.username;
+      if (!createdSlug || !createdUsername) {
+        throw new Error("Server response missing slug or username");
+      }
+      router.push(buildReportUrl(createdUsername, createdSlug));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to publish");
     } finally {
@@ -1951,6 +1965,7 @@ export default function UploadPage() {
                         defaultOpen={dataKey === "at_a_glance"}
                       >
                         <SectionRenderer
+                          username="preview"
                           slug="preview"
                           sectionKey={dataKey}
                           sectionType={sectionType}
@@ -2128,6 +2143,7 @@ export default function UploadPage() {
                         defaultOpen={dataKey === "at_a_glance"}
                       >
                         <SectionRenderer
+                          username="preview"
                           slug="preview"
                           sectionKey={dataKey}
                           sectionType={sectionType}

@@ -15,7 +15,7 @@ import { auth } from "@/lib/auth";
  */
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ slug: string; projectId: string }> },
+  { params }: { params: Promise<{ username: string; slug: string; projectId: string }> },
 ) {
   try {
     const session = await auth();
@@ -23,10 +23,10 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { slug, projectId } = await params;
+    const { username, slug, projectId } = await params;
 
-    const report = await prisma.insightReport.findUnique({
-      where: { slug },
+    const report = await prisma.insightReport.findFirst({
+      where: { slug, author: { username } },
       select: { id: true, authorId: true },
     });
 

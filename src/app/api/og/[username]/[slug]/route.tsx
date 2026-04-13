@@ -143,13 +143,13 @@ function HeatmapStrip({
 
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ slug: string }> },
+  { params }: { params: Promise<{ username: string; slug: string }> },
 ) {
   try {
-    const { slug } = await params;
+    const { username, slug } = await params;
 
-    const report = await prisma.insightReport.findUnique({
-      where: { slug },
+    const report = await prisma.insightReport.findFirst({
+      where: { slug, author: { username } },
       include: {
         author: {
           select: {

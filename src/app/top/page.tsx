@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Search, SlidersHorizontal, Sparkles } from "lucide-react";
 import { normalizeHarnessData, type HarnessData } from "@/types/insights";
 import ShareButton from "@/components/ShareButton";
+import { buildReportUrl } from "@/lib/urls";
 
 interface TopReport {
   slug: string;
@@ -82,7 +83,7 @@ function ProfileCard({ report }: { report: TopReport }) {
 
   return (
     <Link
-      href={`/insights/${report.slug}`}
+      href={buildReportUrl(report.author.username, report.slug)}
       className="block rounded-xl border border-slate-200 bg-white p-5 transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50"
     >
       <div className="mb-3 flex items-center gap-3">
@@ -116,8 +117,8 @@ function ProfileCard({ report }: { report: TopReport }) {
         <ShareButton
           url={
             typeof window !== "undefined"
-              ? `${window.location.origin}/insights/${report.slug}`
-              : `/insights/${report.slug}`
+              ? `${window.location.origin}${buildReportUrl(report.author.username, report.slug)}`
+              : buildReportUrl(report.author.username, report.slug)
           }
           title={report.author.displayName || report.author.username}
           className="shrink-0 px-2 py-1 text-xs"

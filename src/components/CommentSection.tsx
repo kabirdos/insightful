@@ -13,6 +13,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import clsx from "clsx";
+import { buildReportSubResourceApiUrl } from "@/lib/urls";
 
 interface Comment {
   id: string;
@@ -28,6 +29,7 @@ interface Comment {
 
 interface CommentSectionProps {
   reportId: string;
+  username: string;
   slug: string;
   comments: Comment[];
   className?: string;
@@ -53,10 +55,12 @@ function formatTimeAgo(dateStr: string) {
 
 function CommentItem({
   comment,
+  username,
   slug,
   depth = 0,
 }: {
   comment: Comment;
+  username: string;
   slug: string;
   depth?: number;
 }) {
@@ -71,7 +75,7 @@ function CommentItem({
     setIsSubmitting(true);
 
     try {
-      await fetch(`/api/insights/${slug}/comments`, {
+      await fetch(buildReportSubResourceApiUrl(username, slug, "comments"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -177,6 +181,7 @@ function CommentItem({
           <CommentItem
             key={reply.id}
             comment={reply}
+            username={username}
             slug={slug}
             depth={depth + 1}
           />
@@ -187,6 +192,7 @@ function CommentItem({
 
 export default function CommentSection({
   reportId,
+  username,
   slug,
   comments: initialComments,
   className,
@@ -197,22 +203,25 @@ export default function CommentSection({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/insights/${slug}/comments`)
+    fetch(buildReportSubResourceApiUrl(username, slug, "comments"))
       .then((r) => r.json())
       .then((json) => setComments(json.data || []))
       .catch(() => {});
-  }, [slug]);
+  }, [username, slug]);
 
   async function handleSubmit() {
     if (!body.trim() || isSubmitting) return;
     setIsSubmitting(true);
 
     try {
-      const res = await fetch(`/api/insights/${slug}/comments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: body.trim() }),
-      });
+      const res = await fetch(
+        buildReportSubResourceApiUrl(username, slug, "comments"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ body: body.trim() }),
+        },
+      );
       if (res.ok) {
         const json = await res.json();
         setComments((prev) => [json.data, ...prev]);
@@ -283,7 +292,12 @@ export default function CommentSection({
       {comments.length > 0 ? (
         <div className="divide-y divide-slate-100 dark:divide-slate-800">
           {comments.map((comment) => (
-            <CommentItem key={comment.id} comment={comment} slug={slug} />
+            <CommentItem
+              key={comment.id}
+              comment={comment}
+              username={username}
+              slug={slug}
+            />
           ))}
         </div>
       ) : (

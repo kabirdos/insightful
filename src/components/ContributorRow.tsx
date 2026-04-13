@@ -3,6 +3,7 @@ import Image from "next/image";
 import { User } from "lucide-react";
 import type { SkillKey } from "@/types/insights";
 import SkillBadges from "./SkillBadges";
+import { buildReportUrl } from "@/lib/urls";
 
 interface ContributorRowProps {
   slug: string;
@@ -76,7 +77,7 @@ export default function ContributorRow({
 
   return (
     <Link
-      href={`/insights/${slug}`}
+      href={buildReportUrl(username, slug)}
       className="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 transition-all hover:border-blue-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-blue-700"
     >
       {avatarUrl ? (

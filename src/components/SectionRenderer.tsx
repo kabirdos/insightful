@@ -29,6 +29,7 @@ import type {
 import { hideSetFromArray, filterList } from "@/lib/item-visibility";
 
 interface SectionRendererProps {
+  username: string;
   slug: string;
   reportId: string;
   sectionKey: string;
@@ -221,7 +222,11 @@ function ProjectAreasSection({
 }: {
   data: { areas: ProjectArea[] };
   hidden?: Set<string>;
-  renderItemWrapper?: (key: string, itemKey: string, children: React.ReactNode) => React.ReactNode;
+  renderItemWrapper?: (
+    key: string,
+    itemKey: string,
+    children: React.ReactNode,
+  ) => React.ReactNode;
 }) {
   const areas = hidden
     ? filterList(data.areas, hidden, "projectAreas", (a) => a.name)
@@ -248,7 +253,9 @@ function ProjectAreasSection({
             </p>
           </div>
         );
-        return renderItemWrapper ? renderItemWrapper("projectAreas", itemKey, card) : card;
+        return renderItemWrapper
+          ? renderItemWrapper("projectAreas", itemKey, card)
+          : card;
       })}
     </div>
   );
@@ -261,10 +268,19 @@ function ImpressiveWorkflowsSection({
 }: {
   data: { intro: string; impressive_workflows: ImpressiveWorkflow[] };
   hidden?: Set<string>;
-  renderItemWrapper?: (key: string, itemKey: string, children: React.ReactNode) => React.ReactNode;
+  renderItemWrapper?: (
+    key: string,
+    itemKey: string,
+    children: React.ReactNode,
+  ) => React.ReactNode;
 }) {
   const workflows = hidden
-    ? filterList(data.impressive_workflows, hidden, "impressiveWorkflows", (w) => w.title)
+    ? filterList(
+        data.impressive_workflows,
+        hidden,
+        "impressiveWorkflows",
+        (w) => w.title,
+      )
     : data.impressive_workflows;
   return (
     <div className="space-y-4">
@@ -290,7 +306,9 @@ function ImpressiveWorkflowsSection({
               </p>
             </div>
           );
-          return renderItemWrapper ? renderItemWrapper("impressiveWorkflows", itemKey, card) : card;
+          return renderItemWrapper
+            ? renderItemWrapper("impressiveWorkflows", itemKey, card)
+            : card;
         })}
       </div>
     </div>
@@ -304,7 +322,11 @@ function FrictionAnalysisSection({
 }: {
   data: { intro: string; categories: FrictionCategory[] };
   hidden?: Set<string>;
-  renderItemWrapper?: (key: string, itemKey: string, children: React.ReactNode) => React.ReactNode;
+  renderItemWrapper?: (
+    key: string,
+    itemKey: string,
+    children: React.ReactNode,
+  ) => React.ReactNode;
 }) {
   const categories = hidden
     ? filterList(data.categories, hidden, "frictionAnalysis", (c) => c.category)
@@ -343,7 +365,9 @@ function FrictionAnalysisSection({
               )}
             </div>
           );
-          return renderItemWrapper ? renderItemWrapper("frictionAnalysis", itemKey, card) : card;
+          return renderItemWrapper
+            ? renderItemWrapper("frictionAnalysis", itemKey, card)
+            : card;
         })}
       </div>
     </div>
@@ -359,7 +383,11 @@ function SuggestionsSection({
     usage_patterns: UsagePattern[];
   };
   hidden?: Set<string>;
-  renderItemWrapper?: (key: string, itemKey: string, children: React.ReactNode) => React.ReactNode;
+  renderItemWrapper?: (
+    key: string,
+    itemKey: string,
+    children: React.ReactNode,
+  ) => React.ReactNode;
 }) {
   return (
     <div className="space-y-8">
@@ -495,7 +523,11 @@ function OnTheHorizonSection({
 }: {
   data: { intro: string; opportunities: HorizonOpportunity[] };
   hidden?: Set<string>;
-  renderItemWrapper?: (key: string, itemKey: string, children: React.ReactNode) => React.ReactNode;
+  renderItemWrapper?: (
+    key: string,
+    itemKey: string,
+    children: React.ReactNode,
+  ) => React.ReactNode;
 }) {
   const opportunities = hidden
     ? filterList(data.opportunities, hidden, "onTheHorizon", (o) => o.title)
@@ -540,7 +572,9 @@ function OnTheHorizonSection({
               )}
             </div>
           );
-          return renderItemWrapper ? renderItemWrapper("onTheHorizon", itemKey, card) : card;
+          return renderItemWrapper
+            ? renderItemWrapper("onTheHorizon", itemKey, card)
+            : card;
         })}
       </div>
     </div>
@@ -623,6 +657,7 @@ const sectionMeta: Record<
 };
 
 export default function SectionRenderer({
+  username,
   slug,
   reportId,
   sectionKey,
@@ -636,7 +671,9 @@ export default function SectionRenderer({
   renderItemWrapper,
 }: SectionRendererProps) {
   const meta = sectionMeta[sectionType] || sectionMeta.at_a_glance;
-  const hiddenSet = hiddenItems?.length ? hideSetFromArray(hiddenItems) : undefined;
+  const hiddenSet = hiddenItems?.length
+    ? hideSetFromArray(hiddenItems)
+    : undefined;
 
   function renderContent() {
     switch (sectionType) {
@@ -740,6 +777,7 @@ export default function SectionRenderer({
       {!readOnly && (
         <div className="mt-5 flex items-center gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
           <VoteButton
+            username={username}
             slug={slug}
             reportId={reportId}
             sectionKey={sectionKey}

@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Heart, MessageSquare, Calendar, User } from "lucide-react";
 import clsx from "clsx";
+import { buildReportUrl } from "@/lib/urls";
 
 interface InsightCardProps {
   slug: string;
@@ -105,7 +106,7 @@ export default function InsightCard({
 
   return (
     <Link
-      href={`/insights/${slug}`}
+      href={buildReportUrl(authorUsername, slug)}
       className="group block min-w-0 overflow-hidden break-words rounded-xl border border-slate-200 bg-white p-5 transition-all duration-200 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-blue-900 dark:hover:shadow-blue-500/10"
     >
       {/* Author Row */}

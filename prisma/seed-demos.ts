@@ -106,7 +106,7 @@ function insightsReport(
     detectedSkills?: string[];
   },
 ) {
-  const slug = `${username}-${opts.dateEnd.replace(/-/g, "")}-demo`;
+  const slug = `${opts.dateEnd.replace(/-/g, "")}-demo`;
   return {
     authorId,
     title: `${username}'s Claude Code Insights - ${new Date(opts.dateEnd + "T00:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" })}`,
@@ -222,7 +222,7 @@ function harnessReport(
     funDetail: string;
   },
 ) {
-  const slug = `${username}-${opts.dateEnd.replace(/-/g, "")}-harness-demo`;
+  const slug = `${opts.dateEnd.replace(/-/g, "")}-harness-demo`;
   return {
     authorId,
     title: `${username}'s Insight Harness - ${new Date(opts.dateEnd + "T00:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" })}`,
@@ -1756,9 +1756,9 @@ async function seed() {
   ];
 
   for (const data of reports) {
-    const { slug } = data;
+    const { slug, authorId } = data;
     await prisma.insightReport.upsert({
-      where: { slug },
+      where: { authorId_slug: { authorId, slug } },
       update: {},
       create: data,
     });

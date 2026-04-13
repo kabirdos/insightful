@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import {
+  buildReportApiUrl,
+  buildReportSubResourceApiUrl,
+  buildReportUrl,
+} from "@/lib/urls";
 import { useSession } from "next-auth/react";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
 import EyeToggle from "@/components/EyeToggle";
@@ -132,7 +137,7 @@ function HideableCard({
 }
 
 export default function EditReportPage() {
-  const { slug } = useParams<{ slug: string }>();
+  const { username, slug } = useParams<{ username: string; slug: string }>();
   const router = useRouter();
   const { data: session } = useSession();
   const [report, setReport] = useState<ReportData | null>(null);
@@ -152,7 +157,7 @@ export default function EditReportPage() {
     // includeHidden=true surfaces per-report hidden junction rows so
     // the owner can toggle them back on. The server enforces
     // ownership before honoring the flag.
-    fetch(`/api/insights/${slug}?includeHidden=true`)
+    fetch(`${buildReportApiUrl(username, slug)}?includeHidden=true`)
       .then((r) => r.json())
       .then((data) => {
         if (data.error) {
@@ -178,7 +183,7 @@ export default function EditReportPage() {
         setError("Failed to load report");
         setLoading(false);
       });
-  }, [slug]);
+  }, [username, slug]);
 
   // ── Project actions ────────────────────────────────────────────
   // Flip a ReportProject.hidden via PATCH. Updates local state
@@ -209,11 +214,14 @@ export default function EditReportPage() {
     );
 
     try {
-      const res = await fetch(`/api/insights/${slug}/projects/${projectId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hidden: nextHidden }),
-      });
+      const res = await fetch(
+        buildReportSubResourceApiUrl(username, slug, `projects/${projectId}`),
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hidden: nextHidden }),
+        },
+      );
       if (!res.ok) throw new Error("Failed to update project visibility");
     } catch (err) {
       // Revert on failure via functional update.
@@ -323,7 +331,7 @@ export default function EditReportPage() {
     setError(null);
 
     try {
-      const res = await fetch(`/api/insights/${slug}`, {
+      const res = await fetch(buildReportApiUrl(username, slug), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -334,7 +342,7 @@ export default function EditReportPage() {
         throw new Error(data.error || "Failed to save");
       }
 
-      router.push(`/insights/${slug}`);
+      router.push(buildReportUrl(username, slug));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save");
     } finally {
@@ -386,7 +394,7 @@ export default function EditReportPage() {
       <div className="mx-auto max-w-4xl px-4 py-8 text-center">
         <p className="text-red-600">{error}</p>
         <Link
-          href={`/insights/${slug}`}
+          href={buildReportUrl(username, slug)}
           className="mt-4 inline-block text-blue-600 hover:underline"
         >
           Back to report
@@ -400,7 +408,7 @@ export default function EditReportPage() {
       <div className="mx-auto max-w-4xl px-4 py-8 text-center">
         <p className="text-slate-600 dark:text-slate-400">Report not found.</p>
         <Link
-          href={`/insights/${slug}`}
+          href={buildReportUrl(username, slug)}
           className="mt-4 inline-block text-blue-600 hover:underline"
         >
           Back to report
@@ -417,7 +425,7 @@ export default function EditReportPage() {
           You can only edit your own reports.
         </p>
         <Link
-          href={`/insights/${slug}`}
+          href={buildReportUrl(username, slug)}
           className="mt-4 inline-block text-blue-600 hover:underline"
         >
           Back to report
@@ -435,7 +443,7 @@ export default function EditReportPage() {
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link
-            href={`/insights/${slug}`}
+            href={buildReportUrl(username, slug)}
             className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -1049,6 +1057,7 @@ export default function EditReportPage() {
                   defaultOpen={false}
                 >
                   <SectionRenderer
+                    username={username}
                     slug={slug}
                     sectionKey={section.key}
                     sectionType={section.sectionType}

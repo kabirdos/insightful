@@ -34,7 +34,7 @@ model InsightReport {
   id          String   @id @default(cuid())
   authorId    String
   title       String
-  slug        String   @unique
+  slug        String
   publishedAt DateTime @default(now())
 
   // Stats
@@ -82,6 +82,8 @@ model InsightReport {
   highlights     SectionHighlight[]
   comments       Comment[]
   annotations    AuthorAnnotation[]
+
+  @@unique([authorId, slug])
 }
 
 /// User-owned project in the library. Persists across reports.
