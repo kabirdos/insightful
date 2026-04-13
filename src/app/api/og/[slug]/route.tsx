@@ -58,6 +58,12 @@ function perWeek(total: number, days: number): number {
   return total / weeks;
 }
 
+// Darker subtitle colors so they stay readable at downsized preview
+// resolutions (Slack, Twitter mobile). Previously these were slate-400
+// and washed out.
+const LABEL = "#334155"; // slate-700
+const MUTED = "#1e293b"; // slate-800
+
 const AMBER_SCALE = ["#f1f5f9", "#fef3c7", "#fcd34d", "#f59e0b", "#b45309"];
 const GREEN_SCALE = ["#f1f5f9", "#dcfce7", "#86efac", "#22c55e", "#15803d"];
 
@@ -90,8 +96,8 @@ function synthesizeDaily(
   return out;
 }
 
-// Heatmap — bigger cells to fill space (28px, 5 gap)
-function Heatmap({
+// 14×2 wide strip — bigger cells than the earlier 4×7 layout.
+function HeatmapStrip({
   data,
   max,
   palette,
@@ -100,22 +106,30 @@ function Heatmap({
   max: number;
   palette: string[];
 }) {
+  const cell = 30;
+  const gap = 4;
+  const cols = 14;
+  const rows = 2;
   return (
-    <div style={{ display: "flex", gap: "5px" }}>
-      {Array.from({ length: 7 }).map((_, col) => (
+    <div style={{ display: "flex", gap: `${gap}px` }}>
+      {Array.from({ length: cols }).map((_, col) => (
         <div
           key={col}
-          style={{ display: "flex", flexDirection: "column", gap: "5px" }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: `${gap}px`,
+          }}
         >
-          {Array.from({ length: 4 }).map((_, row) => {
-            const idx = row * 7 + col;
+          {Array.from({ length: rows }).map((_, row) => {
+            const idx = row * cols + col;
             return (
               <div
                 key={idx}
                 style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "4px",
+                  width: `${cell}px`,
+                  height: `${cell}px`,
+                  borderRadius: "5px",
                   backgroundColor: palette[scaleIdx(data[idx], max)],
                 }}
               />
@@ -262,7 +276,6 @@ export async function GET(
           fontFamily: "Inter, sans-serif",
         }}
       >
-        {/* Accent bar */}
         <div
           style={{
             width: "100%",
@@ -272,27 +285,27 @@ export async function GET(
           }}
         />
 
-        {/* ── TOP: avatar/id (L) + tokens/wk + cost/wk (R) ── */}
+        {/* TOP: avatar/id (L) + tokens/wk + cost/wk (R) */}
         <div
           style={{
             display: "flex",
             alignItems: "flex-start",
             justifyContent: "space-between",
-            padding: "32px 56px 0 56px",
+            padding: "28px 56px 0 56px",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
             <div
               style={{
-                width: "88px",
-                height: "88px",
-                borderRadius: "44px",
+                width: "80px",
+                height: "80px",
+                borderRadius: "40px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 background: "linear-gradient(135deg, #3b82f6, #0891b2)",
                 color: "#ffffff",
-                fontSize: "42px",
+                fontSize: "38px",
                 fontWeight: 700,
                 flexShrink: 0,
               }}
@@ -304,12 +317,12 @@ export async function GET(
                 style={{
                   display: "flex",
                   alignItems: "baseline",
-                  gap: "14px",
+                  gap: "12px",
                 }}
               >
                 <span
                   style={{
-                    fontSize: "40px",
+                    fontSize: "36px",
                     fontWeight: 700,
                     color: "#0f172a",
                     lineHeight: 1,
@@ -320,7 +333,7 @@ export async function GET(
                 <span
                   style={{
                     fontSize: "24px",
-                    color: "#94a3b8",
+                    color: LABEL,
                     fontWeight: 400,
                   }}
                 >
@@ -330,9 +343,9 @@ export async function GET(
               {dateRange && (
                 <span
                   style={{
-                    fontSize: "20px",
-                    color: "#64748b",
-                    marginTop: "8px",
+                    fontSize: "21px",
+                    color: MUTED,
+                    marginTop: "6px",
                   }}
                 >
                   {dateRange}
@@ -352,7 +365,7 @@ export async function GET(
               style={{
                 fontFamily: "JetBrains Mono, monospace",
                 fontWeight: 700,
-                fontSize: "72px",
+                fontSize: "64px",
                 lineHeight: 1,
                 color: "#2563eb",
               }}
@@ -361,11 +374,11 @@ export async function GET(
             </span>
             <span
               style={{
-                fontSize: "16px",
+                fontSize: "17px",
                 fontWeight: 700,
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
-                color: "#94a3b8",
+                color: LABEL,
                 marginTop: "6px",
               }}
             >
@@ -377,14 +390,14 @@ export async function GET(
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "flex-end",
-                  marginTop: "14px",
+                  marginTop: "10px",
                 }}
               >
                 <span
                   style={{
                     fontFamily: "JetBrains Mono, monospace",
                     fontWeight: 700,
-                    fontSize: "36px",
+                    fontSize: "30px",
                     lineHeight: 1,
                     color: "#d97706",
                   }}
@@ -393,12 +406,12 @@ export async function GET(
                 </span>
                 <span
                   style={{
-                    fontSize: "13px",
+                    fontSize: "12px",
                     fontWeight: 700,
                     textTransform: "uppercase",
                     letterSpacing: "0.08em",
-                    color: "#94a3b8",
-                    marginTop: "4px",
+                    color: LABEL,
+                    marginTop: "3px",
                   }}
                 >
                   api cost / wk
@@ -408,23 +421,22 @@ export async function GET(
           </div>
         </div>
 
-        {/* ── HERO: giant lifetime tokens, fills white space ── */}
+        {/* HERO */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            padding: "18px 56px 8px 56px",
+            padding: "6px 56px 0 56px",
           }}
         >
           <span
             style={{
               fontFamily: "JetBrains Mono, monospace",
               fontWeight: 700,
-              fontSize: "140px",
+              fontSize: "116px",
               lineHeight: 1,
-              color: "#2563eb",
               backgroundImage:
                 "linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #0891b2 100%)",
               backgroundClip: "text",
@@ -435,24 +447,24 @@ export async function GET(
           </span>
           <span
             style={{
-              fontSize: "20px",
+              fontSize: "22px",
               fontWeight: 700,
               textTransform: "uppercase",
               letterSpacing: "0.12em",
-              color: "#64748b",
-              marginTop: "10px",
+              color: MUTED,
+              marginTop: "8px",
             }}
           >
             Lifetime tokens
           </span>
         </div>
 
-        {/* ── STATS: 3 cards ── */}
+        {/* STATS */}
         <div
           style={{
             display: "flex",
-            gap: "18px",
-            padding: "18px 56px 14px 56px",
+            gap: "16px",
+            padding: "10px 56px 10px 56px",
           }}
         >
           <StatCard
@@ -487,18 +499,18 @@ export async function GET(
           )}
         </div>
 
-        {/* ── HEATMAPS ── */}
-        <div
-          style={{
-            display: "flex",
-            gap: "56px",
-            padding: "6px 56px 10px 56px",
-            flex: 1,
-            alignItems: "flex-start",
-            justifyContent: "center",
-          }}
-        >
-          {isHarness && (
+        {/* HEATMAPS: two 14×2 wide strips side-by-side. */}
+        {isHarness && (
+          <div
+            style={{
+              display: "flex",
+              gap: "40px",
+              padding: "0 56px 10px 56px",
+              flex: 1,
+              alignItems: "flex-start",
+              justifyContent: "center",
+            }}
+          >
             <div style={{ display: "flex", flexDirection: "column" }}>
               <span
                 style={{
@@ -506,39 +518,43 @@ export async function GET(
                   fontWeight: 700,
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
-                  color: "#94a3b8",
-                  marginBottom: "8px",
+                  color: LABEL,
+                  marginBottom: "6px",
                 }}
               >
                 Tokens · 4w
               </span>
-              <Heatmap
+              <HeatmapStrip
                 data={tokensDaily}
                 max={tokenMax}
                 palette={AMBER_SCALE}
               />
             </div>
-          )}
-          {isHarness && costUsd > 0 && (
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <span
-                style={{
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  color: "#94a3b8",
-                  marginBottom: "8px",
-                }}
-              >
-                API cost · 4w
-              </span>
-              <Heatmap data={costDaily} max={costMax} palette={GREEN_SCALE} />
-            </div>
-          )}
-        </div>
+            {costUsd > 0 && (
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <span
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    color: LABEL,
+                    marginBottom: "6px",
+                  }}
+                >
+                  API cost · 4w
+                </span>
+                <HeatmapStrip
+                  data={costDaily}
+                  max={costMax}
+                  palette={GREEN_SCALE}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* ── FOOTER ── */}
+        {/* FOOTER */}
         <div
           style={{
             display: "flex",
@@ -548,10 +564,10 @@ export async function GET(
             borderTop: "1px solid #e2e8f0",
           }}
         >
-          <span style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a" }}>
+          <span style={{ fontSize: "30px", fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>
             InsightHarness.com
           </span>
-          <span style={{ fontSize: "14px", color: "#64748b" }}>
+          <span style={{ fontSize: "22px", fontWeight: 600, color: MUTED }}>
             See how developers use Claude Code
           </span>
         </div>
@@ -588,14 +604,14 @@ function StatCard({
         background: "#f8fafc",
         border: "1px solid #e2e8f0",
         borderRadius: "12px",
-        padding: "20px 16px",
+        padding: "16px 14px",
       }}
     >
       <span
         style={{
           fontFamily: "JetBrains Mono, monospace",
           fontWeight: 700,
-          fontSize: "56px",
+          fontSize: "52px",
           lineHeight: 1,
           color,
         }}
@@ -604,11 +620,11 @@ function StatCard({
       </span>
       <span
         style={{
-          fontSize: "14px",
+          fontSize: "16px",
           fontWeight: 700,
           textTransform: "uppercase",
           letterSpacing: "0.08em",
-          color: "#94a3b8",
+          color: LABEL,
           marginTop: "10px",
         }}
       >
@@ -630,17 +646,17 @@ function SplitStatCard({ added, removed }: { added: string; removed: string }) {
         background: "#f8fafc",
         border: "1px solid #e2e8f0",
         borderRadius: "12px",
-        padding: "20px 16px",
+        padding: "16px 14px",
       }}
     >
       <div
         style={{
           display: "flex",
           alignItems: "baseline",
-          gap: "14px",
+          gap: "12px",
           fontFamily: "JetBrains Mono, monospace",
           fontWeight: 700,
-          fontSize: "40px",
+          fontSize: "36px",
           lineHeight: 1,
         }}
       >
@@ -649,11 +665,11 @@ function SplitStatCard({ added, removed }: { added: string; removed: string }) {
       </div>
       <span
         style={{
-          fontSize: "14px",
+          fontSize: "16px",
           fontWeight: 700,
           textTransform: "uppercase",
           letterSpacing: "0.08em",
-          color: "#94a3b8",
+          color: LABEL,
           marginTop: "10px",
         }}
       >

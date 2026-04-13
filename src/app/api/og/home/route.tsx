@@ -28,9 +28,6 @@ async function loadFonts() {
   return { interFont, jetbrainsFont };
 }
 
-// Invented numbers for the marketing card. Mirrors the shape of the
-// profile card so viewers can see what uploading produces. Keep these
-// plausible but not borrowed from any real user.
 const DEMO = {
   tokensPerWeek: "2.1M",
   costPerWeek: "$13",
@@ -40,10 +37,13 @@ const DEMO = {
   linesRemoved: "-12.1k",
 };
 
+const LABEL = "#334155"; // slate-700
+const MUTED = "#1e293b"; // slate-800
+
 const AMBER_PALETTE = ["#f1f5f9", "#fef3c7", "#fcd34d", "#f59e0b", "#b45309"];
 const GREEN_PALETTE = ["#f1f5f9", "#dcfce7", "#86efac", "#22c55e", "#15803d"];
 
-// 28 hand-tuned heatmap levels (0-4) so the patterns look lived-in.
+// 28 hand-tuned levels (0-4) for the wide 14×2 strip.
 const TOKEN_LEVELS = [
   1, 2, 0, 3, 2, 0, 1, 3, 0, 2, 4, 4, 3, 2, 0, 3, 3, 2, 0, 1, 4, 2, 3, 4, 0, 3,
   4, 4,
@@ -53,23 +53,37 @@ const COST_LEVELS = [
   2, 4,
 ];
 
-function Heatmap({ levels, palette }: { levels: number[]; palette: string[] }) {
+function HeatmapStrip({
+  levels,
+  palette,
+}: {
+  levels: number[];
+  palette: string[];
+}) {
+  const cell = 30;
+  const gap = 4;
+  const cols = 14;
+  const rows = 2;
   return (
-    <div style={{ display: "flex", gap: "5px" }}>
-      {Array.from({ length: 7 }).map((_, col) => (
+    <div style={{ display: "flex", gap: `${gap}px` }}>
+      {Array.from({ length: cols }).map((_, col) => (
         <div
           key={col}
-          style={{ display: "flex", flexDirection: "column", gap: "5px" }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: `${gap}px`,
+          }}
         >
-          {Array.from({ length: 4 }).map((_, row) => {
-            const idx = row * 7 + col;
+          {Array.from({ length: rows }).map((_, row) => {
+            const idx = row * cols + col;
             return (
               <div
                 key={idx}
                 style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "4px",
+                  width: `${cell}px`,
+                  height: `${cell}px`,
+                  borderRadius: "5px",
                   backgroundColor: palette[levels[idx] ?? 0],
                 }}
               />
@@ -101,14 +115,14 @@ function StatCard({
         background: "#f8fafc",
         border: "1px solid #e2e8f0",
         borderRadius: "12px",
-        padding: "20px 16px",
+        padding: "16px 14px",
       }}
     >
       <span
         style={{
           fontFamily: "JetBrains Mono, monospace",
           fontWeight: 700,
-          fontSize: "56px",
+          fontSize: "52px",
           lineHeight: 1,
           color,
         }}
@@ -117,11 +131,11 @@ function StatCard({
       </span>
       <span
         style={{
-          fontSize: "14px",
+          fontSize: "16px",
           fontWeight: 700,
           textTransform: "uppercase",
           letterSpacing: "0.08em",
-          color: "#94a3b8",
+          color: LABEL,
           marginTop: "10px",
         }}
       >
@@ -188,7 +202,6 @@ export async function GET() {
           fontFamily: "Inter, sans-serif",
         }}
       >
-        {/* Accent bar */}
         <div
           style={{
             width: "100%",
@@ -198,39 +211,29 @@ export async function GET() {
           }}
         />
 
-        {/* ── TOP: /insight-harness logo (L) + demo tokens/wk + cost/wk (R) ── */}
+        {/* TOP: logo (L) + tokens/wk + cost/wk (R) */}
         <div
           style={{
             display: "flex",
-            alignItems: "flex-start",
+            alignItems: "center",
             justifyContent: "space-between",
-            padding: "32px 56px 0 56px",
+            padding: "28px 56px 0 56px",
           }}
         >
-          {/* Product wordmark — monospace slash-prefix reads as a
-                Claude Code command, which is how the product is
-                surfaced ("run /insights, upload it here"). */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <span
-              style={{
-                fontFamily: "JetBrains Mono, monospace",
-                fontSize: "52px",
-                fontWeight: 700,
-                color: "#0f172a",
-                lineHeight: 1,
-              }}
-            >
-              /insight-harness
-            </span>
-            <span
-              style={{
-                fontSize: "20px",
-                color: "#64748b",
-                marginTop: "4px",
-              }}
-            >
-              See how developers use Claude Code
-            </span>
+          {/* Product wordmark: colored '>' prompt + mono path. No tagline. */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: "14px",
+              fontFamily: "JetBrains Mono, monospace",
+              fontWeight: 700,
+              fontSize: "68px",
+              lineHeight: 1,
+            }}
+          >
+            <span style={{ color: "#2563eb" }}>&gt;</span>
+            <span style={{ color: "#0f172a" }}>/insight-harness</span>
           </div>
 
           <div
@@ -244,7 +247,7 @@ export async function GET() {
               style={{
                 fontFamily: "JetBrains Mono, monospace",
                 fontWeight: 700,
-                fontSize: "72px",
+                fontSize: "64px",
                 lineHeight: 1,
                 color: "#2563eb",
               }}
@@ -253,11 +256,11 @@ export async function GET() {
             </span>
             <span
               style={{
-                fontSize: "16px",
+                fontSize: "17px",
                 fontWeight: 700,
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
-                color: "#94a3b8",
+                color: LABEL,
                 marginTop: "6px",
               }}
             >
@@ -268,14 +271,14 @@ export async function GET() {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-end",
-                marginTop: "14px",
+                marginTop: "10px",
               }}
             >
               <span
                 style={{
                   fontFamily: "JetBrains Mono, monospace",
                   fontWeight: 700,
-                  fontSize: "36px",
+                  fontSize: "30px",
                   lineHeight: 1,
                   color: "#d97706",
                 }}
@@ -284,11 +287,11 @@ export async function GET() {
               </span>
               <span
                 style={{
-                  fontSize: "13px",
+                  fontSize: "15px",
                   fontWeight: 700,
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
-                  color: "#94a3b8",
+                  color: LABEL,
                   marginTop: "4px",
                 }}
               >
@@ -298,40 +301,38 @@ export async function GET() {
           </div>
         </div>
 
-        {/* ── HERO: product pitch fills the space where lifetime
-              tokens sit on the profile card ── */}
+        {/* HERO */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            padding: "16px 56px 8px 56px",
+            padding: "8px 56px 0 56px",
           }}
         >
           <span
             style={{
-              fontSize: "108px",
+              fontSize: "110px",
               fontWeight: 800,
               lineHeight: 1,
               letterSpacing: "-0.02em",
-              color: "#0f172a",
               backgroundImage:
                 "linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #0891b2 100%)",
               backgroundClip: "text",
               color: "transparent",
             }}
           >
-            See how it was built.
+            See how they build.
           </span>
         </div>
 
-        {/* ── STATS: 3 demo cards ── */}
+        {/* STATS */}
         <div
           style={{
             display: "flex",
-            gap: "18px",
-            padding: "18px 56px 14px 56px",
+            gap: "16px",
+            padding: "10px 56px 10px 56px",
           }}
         >
           <StatCard
@@ -350,17 +351,17 @@ export async function GET() {
               background: "#f8fafc",
               border: "1px solid #e2e8f0",
               borderRadius: "12px",
-              padding: "20px 16px",
+              padding: "16px 14px",
             }}
           >
             <div
               style={{
                 display: "flex",
                 alignItems: "baseline",
-                gap: "14px",
+                gap: "12px",
                 fontFamily: "JetBrains Mono, monospace",
                 fontWeight: 700,
-                fontSize: "40px",
+                fontSize: "36px",
                 lineHeight: 1,
               }}
             >
@@ -369,11 +370,11 @@ export async function GET() {
             </div>
             <span
               style={{
-                fontSize: "14px",
+                fontSize: "16px",
                 fontWeight: 700,
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
-                color: "#94a3b8",
+                color: LABEL,
                 marginTop: "10px",
               }}
             >
@@ -382,12 +383,12 @@ export async function GET() {
           </div>
         </div>
 
-        {/* ── HEATMAPS ── */}
+        {/* HEATMAPS */}
         <div
           style={{
             display: "flex",
-            gap: "56px",
-            padding: "6px 56px 10px 56px",
+            gap: "40px",
+            padding: "0 56px 10px 56px",
             flex: 1,
             alignItems: "flex-start",
             justifyContent: "center",
@@ -396,36 +397,36 @@ export async function GET() {
           <div style={{ display: "flex", flexDirection: "column" }}>
             <span
               style={{
-                fontSize: "13px",
+                fontSize: "16px",
                 fontWeight: 700,
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
-                color: "#94a3b8",
+                color: LABEL,
                 marginBottom: "8px",
               }}
             >
               Tokens · 4w
             </span>
-            <Heatmap levels={TOKEN_LEVELS} palette={AMBER_PALETTE} />
+            <HeatmapStrip levels={TOKEN_LEVELS} palette={AMBER_PALETTE} />
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <span
               style={{
-                fontSize: "13px",
+                fontSize: "16px",
                 fontWeight: 700,
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
-                color: "#94a3b8",
+                color: LABEL,
                 marginBottom: "8px",
               }}
             >
               API cost · 4w
             </span>
-            <Heatmap levels={COST_LEVELS} palette={GREEN_PALETTE} />
+            <HeatmapStrip levels={COST_LEVELS} palette={GREEN_PALETTE} />
           </div>
         </div>
 
-        {/* ── FOOTER ── */}
+        {/* FOOTER */}
         <div
           style={{
             display: "flex",
@@ -435,10 +436,10 @@ export async function GET() {
             borderTop: "1px solid #e2e8f0",
           }}
         >
-          <span style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a" }}>
+          <span style={{ fontSize: "30px", fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>
             InsightHarness.com
           </span>
-          <span style={{ fontSize: "14px", color: "#64748b" }}>
+          <span style={{ fontSize: "22px", fontWeight: 600, color: MUTED }}>
             Upload your /insights report
           </span>
         </div>
