@@ -39,6 +39,12 @@ export function slugItemKey(natural: string): string {
 
 /**
  * Build the itemKey for an item in a list, appending @index only on collision.
+ *
+ * Empty-slug fallback uses `item-${index}` (not `@${index}`) so the resulting
+ * keypath like `skillInventory.item-0` still matches parseKeypath's item-key
+ * regex (which requires a leading [a-z0-9]). Without this, hides on items
+ * whose name slugs to empty (emoji-only, non-ASCII, etc.) would silently
+ * drop in getHiddenKeypaths.
  */
 export function buildItemKey<T>(
   list: readonly T[],
@@ -46,7 +52,7 @@ export function buildItemKey<T>(
   natural: (t: T) => string,
 ): string {
   const base = slugItemKey(natural(list[index]));
-  if (!base) return `@${index}`;
+  if (!base) return `item-${index}`;
 
   const duplicates = list.filter((item) => slugItemKey(natural(item)) === base);
   if (duplicates.length <= 1) return base;
@@ -125,8 +131,8 @@ export function filterList<T>(
   if (isSectionHidden(hidden, sectionKey)) return [];
 
   // Check if there are any item-level hides for this section
-  const hasItemHides = Array.from(hidden).some(
-    (k) => k.startsWith(`${sectionKey}.`),
+  const hasItemHides = Array.from(hidden).some((k) =>
+    k.startsWith(`${sectionKey}.`),
   );
   if (!hasItemHides) return [...list];
 
@@ -148,8 +154,8 @@ export function filterRecord<T>(
   if (isSectionHidden(hidden, sectionKey)) return {} as Record<string, T>;
 
   // Check if there are any item-level hides for this section
-  const hasItemHides = Array.from(hidden).some(
-    (k) => k.startsWith(`${sectionKey}.`),
+  const hasItemHides = Array.from(hidden).some((k) =>
+    k.startsWith(`${sectionKey}.`),
   );
   if (!hasItemHides) return { ...rec };
 

@@ -50,15 +50,26 @@ describe("buildItemKey", () => {
   });
 
   it("appends @index when collision exists", () => {
-    const list = [{ name: "Refactor" }, { name: "Refactor" }, { name: "Other" }];
+    const list = [
+      { name: "Refactor" },
+      { name: "Refactor" },
+      { name: "Other" },
+    ];
     expect(buildItemKey(list, 0, (x) => x.name)).toBe("refactor@0");
     expect(buildItemKey(list, 1, (x) => x.name)).toBe("refactor@1");
     expect(buildItemKey(list, 2, (x) => x.name)).toBe("other");
   });
 
-  it("falls back to @index for empty slugs", () => {
+  it("falls back to item-<index> for empty slugs (parses cleanly via parseKeypath)", () => {
     const list = [{ name: "🎉" }];
-    expect(buildItemKey(list, 0, (x) => x.name)).toBe("@0");
+    expect(buildItemKey(list, 0, (x) => x.name)).toBe("item-0");
+  });
+
+  it("empty-slug fallback round-trips through parseKeypath", () => {
+    const list = [{ name: "🎉" }];
+    const itemKey = buildItemKey(list, 0, (x) => x.name);
+    const parsed = parseKeypath(`skillInventory.${itemKey}`);
+    expect(parsed).toEqual({ topKey: "skillInventory", itemKey: "item-0" });
   });
 });
 
@@ -110,7 +121,9 @@ describe("isSectionHidden / isItemHidden", () => {
 
   it("isItemHidden returns true for item keypath", () => {
     const hidden = hideSetFromArray(["skillInventory.parallel-refactor"]);
-    expect(isItemHidden(hidden, "skillInventory", "parallel-refactor")).toBe(true);
+    expect(isItemHidden(hidden, "skillInventory", "parallel-refactor")).toBe(
+      true,
+    );
     expect(isItemHidden(hidden, "skillInventory", "other")).toBe(false);
   });
 
@@ -121,11 +134,7 @@ describe("isSectionHidden / isItemHidden", () => {
 });
 
 describe("filterList", () => {
-  const items = [
-    { name: "Alpha" },
-    { name: "Beta" },
-    { name: "Gamma" },
-  ];
+  const items = [{ name: "Alpha" }, { name: "Beta" }, { name: "Gamma" }];
 
   it("returns all items when nothing hidden", () => {
     const hidden = hideSetFromArray([]);

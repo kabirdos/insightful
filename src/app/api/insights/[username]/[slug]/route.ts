@@ -148,6 +148,10 @@ export async function GET(
   }
 }
 
+// Author edit path: do NOT call filterReportForResponse anywhere in this PUT
+// handler. The author needs to receive the FULL harnessData (including any
+// previously hidden showcase content) so they can re-toggle visibility on
+// hidden skills via the edit flow. Filtering is the GET handler's job.
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ username: string; slug: string }> },

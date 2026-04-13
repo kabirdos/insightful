@@ -28,6 +28,9 @@
     "prisma": "^6.19.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-markdown": "^10.1.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1",
     "sanitize-html": "^2.17.2",
     "slugify": "^1.6.9",
     "unfurl.js": "^6.4.0"
