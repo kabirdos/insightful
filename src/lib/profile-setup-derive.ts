@@ -100,14 +100,17 @@ function deriveOs(harness: HarnessData): string | undefined {
   return undefined;
 }
 
+/**
+ * Derive suggestions purely from data found in the harness blob. The
+ * helper is intentionally data-only — a "Claude Code" primaryAgent default
+ * is the endpoint's responsibility, decided after status classification, so
+ * an empty harness can honestly return `{}` and produce a `no-suggestions`
+ * state upstream.
+ */
 export function deriveSetupFromHarness(
   harness: HarnessData,
 ): DerivedSetupFields {
-  const out: DerivedSetupFields = {
-    // Every uploaded insight-harness report implies the user runs Claude Code.
-    // The form only shows the suggestion when primaryAgent is still empty.
-    primaryAgent: "Claude Code",
-  };
+  const out: DerivedSetupFields = {};
 
   const primaryModel = derivePrimaryModel(harness);
   if (primaryModel) out.primaryModel = primaryModel;

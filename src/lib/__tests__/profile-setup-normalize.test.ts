@@ -82,6 +82,14 @@ describe("normalizeSetup", () => {
     expect(out?.mcpServers).toEqual(["a", "b"]);
   });
 
+  it("dedupes mcpServers while preserving first-occurrence spelling", () => {
+    const out = normalizeSetup({
+      mcpServers: ["serena", "Serena", "serena", "playwright", "serena"],
+    });
+    // Case-sensitive dedupe — treats 'serena' and 'Serena' as distinct.
+    expect(out?.mcpServers).toEqual(["serena", "Serena", "playwright"]);
+  });
+
   it("returns null if mcpServers is the only field and is empty after cleaning", () => {
     expect(normalizeSetup({ mcpServers: ["", null, "  "] })).toBeNull();
   });

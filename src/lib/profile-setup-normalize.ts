@@ -56,15 +56,21 @@ function normalizeString(
 function normalizeMcpServers(raw: unknown): string[] | undefined {
   if (!Array.isArray(raw)) return undefined;
   const cleaned: string[] = [];
+  const seen = new Set<string>();
   for (const item of raw) {
     if (typeof item !== "string") continue;
     const trimmed = item.trim();
     if (!trimmed) continue;
-    cleaned.push(
+    const capped =
       trimmed.length > PROFILE_SETUP_LIMITS.MCP_ITEM_MAX
         ? trimmed.slice(0, PROFILE_SETUP_LIMITS.MCP_ITEM_MAX)
-        : trimmed,
-    );
+        : trimmed;
+    // Dedupe case-sensitively — preserves user's intended spelling on first
+    // occurrence and prevents duplicate React keys downstream (SetupCard
+    // chips, auto-derive suggestions).
+    if (seen.has(capped)) continue;
+    seen.add(capped);
+    cleaned.push(capped);
     if (cleaned.length >= PROFILE_SETUP_LIMITS.MCP_ARRAY_MAX) break;
   }
   return cleaned.length > 0 ? cleaned : undefined;

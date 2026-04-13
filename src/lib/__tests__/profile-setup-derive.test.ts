@@ -47,9 +47,9 @@ function harness(partial: Partial<HarnessData>): HarnessData {
 }
 
 describe("deriveSetupFromHarness", () => {
-  it("returns only primaryAgent for an empty harness", () => {
+  it("returns {} for an empty harness (primaryAgent is the endpoint's job)", () => {
     const out = deriveSetupFromHarness(harness({}));
-    expect(out).toEqual({ primaryAgent: "Claude Code" });
+    expect(out).toEqual({});
   });
 
   it("falls back to models (message count) when perModelTokens is absent", () => {
@@ -161,5 +161,25 @@ describe("deriveSetupFromHarness", () => {
     const out = deriveSetupFromHarness(filtered);
     expect(out.packageManager).toBeUndefined();
     expect(out.mcpServers).toEqual(["serena"]);
+  });
+
+  it("respects stripHiddenHarnessData: hidden harnessFiles suppresses os (macOS evidence)", () => {
+    const full = harness({
+      harnessFiles: ["/Users/craig/.claude/skills/foo"],
+    });
+    // Pre-filter: we can detect os from the paths.
+    expect(deriveSetupFromHarness(full).os).toBe("macOS");
+    // Post-filter: the evidence source is gone, so no os emission.
+    const filtered = stripHiddenHarnessData(full, ["harnessFiles"]);
+    expect(deriveSetupFromHarness(filtered).os).toBeUndefined();
+  });
+
+  it("respects stripHiddenHarnessData: hidden versions suppresses os when versions is the only evidence", () => {
+    const full = harness({
+      versions: ["node-22.1.0-linux-x64"],
+    });
+    expect(deriveSetupFromHarness(full).os).toBe("Linux");
+    const filtered = stripHiddenHarnessData(full, ["versions"]);
+    expect(deriveSetupFromHarness(filtered).os).toBeUndefined();
   });
 });
