@@ -26,6 +26,14 @@ interface InsightCardProps {
   voteCount: number;
   commentCount: number;
   sectionTags?: string[];
+  totalTokens?: number | null;
+  lifetimeTokens?: number | null;
+}
+
+function formatTokensCompact(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
+  return `${Math.round(n)}`;
 }
 
 function formatDate(dateStr: string) {
@@ -100,8 +108,12 @@ export default function InsightCard({
   voteCount,
   commentCount,
   sectionTags = [],
+  totalTokens,
+  lifetimeTokens,
 }: InsightCardProps) {
   const dateRange = formatDateRange(dateRangeStart, dateRangeEnd);
+  const effectiveLifetime =
+    lifetimeTokens && lifetimeTokens > 0 ? lifetimeTokens : (totalTokens ?? 0);
 
   return (
     <Link
@@ -130,6 +142,17 @@ export default function InsightCard({
           {formatDate(publishedAt)}
         </span>
       </div>
+
+      {effectiveLifetime > 0 && (
+        <div className="mt-2">
+          <div className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text font-mono text-xl font-bold leading-none text-transparent dark:from-blue-400 dark:to-cyan-300">
+            {formatTokensCompact(effectiveLifetime)}
+          </div>
+          <div className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500">
+            lifetime tokens
+          </div>
+        </div>
+      )}
 
       {/* Title / Stats */}
       <h3 className="mt-3 text-base font-semibold text-slate-900 group-hover:text-blue-600 dark:text-slate-100 dark:group-hover:text-blue-400 line-clamp-2 break-all sm:break-normal">

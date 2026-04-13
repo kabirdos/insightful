@@ -13,6 +13,7 @@ interface InsightSummary {
   sessionCount?: number | null;
   messageCount?: number | null;
   commitCount?: number | null;
+  totalTokens?: number | null;
   whatsWorkingPreview?: string | null;
   voteCount: number;
   commentCount: number;
@@ -118,6 +119,7 @@ export default function SearchPage() {
               sessionCount={insight.sessionCount}
               messageCount={insight.messageCount}
               commitCount={insight.commitCount}
+              totalTokens={insight.totalTokens}
               whatsWorkingPreview={insight.whatsWorkingPreview}
               voteCount={insight.voteCount}
               commentCount={insight.commentCount}

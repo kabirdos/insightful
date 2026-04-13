@@ -43,6 +43,7 @@ type SortOption = "newest" | "most_voted" | "trending";
 // computed wrong api-cost/wk numbers for mixed-model profiles.
 interface HarnessStatsSlice {
   totalTokens?: number;
+  lifetimeTokens?: number;
   durationHours?: number;
   sessionCount?: number;
   commitCount?: number;
@@ -560,6 +561,12 @@ function ProfileCard({
   const identityName = insight.author.displayName || insight.author.username;
   const hasHeatmap = tokenDaily.some((v) => v > 0);
 
+  const lifetimeTokensRaw = insight.harnessData?.stats?.lifetimeTokens;
+  const lifetimeTokens =
+    lifetimeTokensRaw && lifetimeTokensRaw > 0
+      ? lifetimeTokensRaw
+      : (effectiveTokens ?? 0);
+
   return (
     <Link
       href={`/insights/${insight.slug}`}
@@ -611,6 +618,21 @@ function ProfileCard({
                 @{insight.author.username}
                 {dateRange && <> · {dateRange}</>}
               </div>
+              {lifetimeTokens > 0 && (
+                <div className="mt-1.5">
+                  <div
+                    className={clsx(
+                      "bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text font-mono font-bold leading-none text-transparent dark:from-blue-400 dark:to-cyan-300",
+                      featured ? "text-4xl" : "text-2xl",
+                    )}
+                  >
+                    {formatTokens(lifetimeTokens)}
+                  </div>
+                  <div className="mt-1 text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500">
+                    lifetime tokens
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
