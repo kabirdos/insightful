@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
@@ -156,6 +157,7 @@ function MiniDropZone({
   setDragOver,
   path,
   loading,
+  filename,
 }: {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleFileInput: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -164,6 +166,7 @@ function MiniDropZone({
   setDragOver: (v: boolean) => void;
   path: string;
   loading: boolean;
+  filename: string;
 }) {
   const [pathCopied, setPathCopied] = useState(false);
   const copyPath = async (e: React.MouseEvent) => {
@@ -200,14 +203,19 @@ function MiniDropZone({
           <div className="text-center">
             <div className="mx-auto mb-2 h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Parsing...
+              Parsing… usually takes 2–3 seconds. Extracting stats and detecting
+              sensitive data.
             </p>
           </div>
         ) : (
           <>
             <Upload className="mb-2 h-6 w-6 text-slate-400 dark:text-slate-500" />
             <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
-              Drop file here or click to browse
+              Drop{" "}
+              <code className="rounded bg-slate-200 px-1 py-0.5 font-mono text-[12px] text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                {filename}
+              </code>{" "}
+              here — or click to choose.
             </p>
             <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
               Accepts .html files
@@ -640,7 +648,9 @@ export default function UploadPage() {
     if (f && f.name.endsWith(".html")) {
       handleFile(f);
     } else {
-      setError("Please upload an HTML file");
+      setError(
+        "That's not an HTML file. Run /insight-harness in Claude Code — the report saves to ~/.claude/usage-data/insight-harness.html.",
+      );
     }
   };
 
@@ -926,14 +936,23 @@ export default function UploadPage() {
       {/* Step 1: Upload — two-column layout */}
       {step === "upload" && (
         <div>
+          <div className="mb-3">
+            <Link
+              href="/"
+              className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              ← Back to home
+            </Link>
+          </div>
           {/* Header */}
           <div className="mb-7 text-center">
             <h1 className="text-xl font-extrabold text-slate-900 dark:text-slate-100">
-              Upload Your Report
+              Turn your Claude Code session data into your profile in one
+              minute.
             </h1>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Choose your report type, generate it in Claude Code, then upload
-              the file.
+              Generate a report in Claude Code, drop the file below, and preview
+              your profile before anything goes public.
             </p>
           </div>
 
@@ -984,6 +1003,7 @@ export default function UploadPage() {
                   setDragOver={setDragOver}
                   path={INSIGHTS_PATH}
                   loading={loading}
+                  filename="report.html"
                 />
               </div>
             </div>
@@ -1046,6 +1066,7 @@ export default function UploadPage() {
                   setDragOver={setDragOverHarness}
                   path={HARNESS_PATH}
                   loading={loading}
+                  filename="insight-harness.html"
                 />
               </div>
             </div>
@@ -1064,9 +1085,9 @@ export default function UploadPage() {
                 </span>
               </div>
               <p className="text-[13px] leading-relaxed text-green-700 dark:text-green-400">
-                We automatically detect non-public information (project names,
-                file paths, emails) and let you review before sharing. Nothing
-                is published without your approval.
+                Your file stays in your browser until you click Publish. We
+                auto-flag project names, file paths, emails, and repo URLs — you
+                approve every redaction before anything goes live.
               </p>
             </div>
           </div>
