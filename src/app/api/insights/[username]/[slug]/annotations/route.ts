@@ -15,7 +15,7 @@ const SECTION_KEYS = [
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ slug: string }> },
+  { params }: { params: Promise<{ username: string; slug: string }> },
 ) {
   try {
     const session = await auth();
@@ -23,10 +23,10 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { slug } = await params;
+    const { username, slug } = await params;
 
     const report = await prisma.insightReport.findFirst({
-      where: { slug },
+      where: { slug, author: { username } },
       select: { id: true, authorId: true },
     });
 

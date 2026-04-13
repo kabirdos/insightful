@@ -18,10 +18,10 @@ const SECTION_KEYS = [
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ slug: string }> },
+  { params }: { params: Promise<{ username: string; slug: string }> },
 ) {
   try {
-    const { slug } = await params;
+    const { username, slug } = await params;
     const session = await auth();
     const userId = session?.user?.id ?? null;
 
@@ -39,7 +39,7 @@ export async function GET(
     // linesAdded, linesRemoved, fileCount. If you change this to an explicit
     // `select`, you MUST add those fields explicitly, or the UI will silently break.
     const report = await prisma.insightReport.findFirst({
-      where: { slug },
+      where: { slug, author: { username } },
       include: {
         author: {
           select: {
@@ -150,7 +150,7 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ slug: string }> },
+  { params }: { params: Promise<{ username: string; slug: string }> },
 ) {
   try {
     const session = await auth();
@@ -158,10 +158,10 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { slug } = await params;
+    const { username, slug } = await params;
 
     const report = await prisma.insightReport.findFirst({
-      where: { slug },
+      where: { slug, author: { username } },
       select: { id: true, authorId: true },
     });
 
@@ -211,7 +211,7 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ slug: string }> },
+  { params }: { params: Promise<{ username: string; slug: string }> },
 ) {
   try {
     const session = await auth();
@@ -219,10 +219,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { slug } = await params;
+    const { username, slug } = await params;
 
     const report = await prisma.insightReport.findFirst({
-      where: { slug },
+      where: { slug, author: { username } },
       select: { id: true, authorId: true },
     });
 

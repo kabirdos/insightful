@@ -15,7 +15,7 @@ const SECTION_KEYS = [
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ slug: string }> },
+  { params }: { params: Promise<{ username: string; slug: string }> },
 ) {
   try {
     const session = await auth();
@@ -23,7 +23,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { slug } = await params;
+    const { username, slug } = await params;
     const body = await request.json();
     const { sectionKey } = body;
 
@@ -35,7 +35,7 @@ export async function POST(
     }
 
     const report = await prisma.insightReport.findFirst({
-      where: { slug },
+      where: { slug, author: { username } },
       select: { id: true },
     });
 
@@ -43,8 +43,7 @@ export async function POST(
       return NextResponse.json({ error: "Insight not found" }, { status: 404 });
     }
 
-    // Upsert to avoid duplicate errors
-    await prisma.sectionVote.upsert({
+    await prisma.sectionHighlight.upsert({
       where: {
         userId_reportId_sectionKey: {
           userId: session.user.id,
@@ -60,20 +59,16 @@ export async function POST(
       update: {},
     });
 
-    const voteCount = await prisma.sectionVote.count({
-      where: { reportId: report.id, sectionKey },
-    });
-
-    return NextResponse.json({ data: { sectionKey, voteCount } });
+    return NextResponse.json({ data: { sectionKey, highlighted: true } });
   } catch (error) {
-    console.error("POST /api/insights/[slug]/vote error:", error);
-    return NextResponse.json({ error: "Failed to vote" }, { status: 500 });
+    console.error("POST /api/insights/[slug]/highlight error:", error);
+    return NextResponse.json({ error: "Failed to highlight" }, { status: 500 });
   }
 }
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ slug: string }> },
+  { params }: { params: Promise<{ username: string; slug: string }> },
 ) {
   try {
     const session = await auth();
@@ -81,7 +76,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { slug } = await params;
+    const { username, slug } = await params;
     const body = await request.json();
     const { sectionKey } = body;
 
@@ -93,7 +88,7 @@ export async function DELETE(
     }
 
     const report = await prisma.insightReport.findFirst({
-      where: { slug },
+      where: { slug, author: { username } },
       select: { id: true },
     });
 
@@ -101,7 +96,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Insight not found" }, { status: 404 });
     }
 
-    await prisma.sectionVote.deleteMany({
+    await prisma.sectionHighlight.deleteMany({
       where: {
         userId: session.user.id,
         reportId: report.id,
@@ -109,15 +104,11 @@ export async function DELETE(
       },
     });
 
-    const voteCount = await prisma.sectionVote.count({
-      where: { reportId: report.id, sectionKey },
-    });
-
-    return NextResponse.json({ data: { sectionKey, voteCount } });
+    return NextResponse.json({ data: { sectionKey, highlighted: false } });
   } catch (error) {
-    console.error("DELETE /api/insights/[slug]/vote error:", error);
+    console.error("DELETE /api/insights/[slug]/highlight error:", error);
     return NextResponse.json(
-      { error: "Failed to remove vote" },
+      { error: "Failed to remove highlight" },
       { status: 500 },
     );
   }

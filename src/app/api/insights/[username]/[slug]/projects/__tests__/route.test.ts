@@ -75,7 +75,7 @@ describe("POST /api/insights/[slug]/projects (attach)", () => {
   it("returns 401 when no session", async () => {
     mockSession(null);
     const response = await attachProjects(jsonRequest({ projectIds: ["p1"] }), {
-      params: paramsPromise({ slug: "s1" }),
+      params: paramsPromise({ username: "u1", slug: "s1" }),
     });
     expect(response.status).toBe(401);
   });
@@ -85,7 +85,7 @@ describe("POST /api/insights/[slug]/projects (attach)", () => {
     mockPrisma.insightReport.findFirst.mockResolvedValue(null);
 
     const response = await attachProjects(jsonRequest({ projectIds: ["p1"] }), {
-      params: paramsPromise({ slug: "missing" }),
+      params: paramsPromise({ username: "u1", slug: "missing" }),
     });
     expect(response.status).toBe(404);
   });
@@ -98,7 +98,7 @@ describe("POST /api/insights/[slug]/projects (attach)", () => {
     });
 
     const response = await attachProjects(jsonRequest({ projectIds: ["p1"] }), {
-      params: paramsPromise({ slug: "s1" }),
+      params: paramsPromise({ username: "u1", slug: "s1" }),
     });
     expect(response.status).toBe(403);
   });
@@ -111,7 +111,7 @@ describe("POST /api/insights/[slug]/projects (attach)", () => {
     });
 
     const response = await attachProjects(jsonRequest({ projectIds: "nope" }), {
-      params: paramsPromise({ slug: "s1" }),
+      params: paramsPromise({ username: "u1", slug: "s1" }),
     });
     expect(response.status).toBe(400);
   });
@@ -124,7 +124,7 @@ describe("POST /api/insights/[slug]/projects (attach)", () => {
     });
 
     const response = await attachProjects(jsonRequest({ projectIds: [] }), {
-      params: paramsPromise({ slug: "s1" }),
+      params: paramsPromise({ username: "u1", slug: "s1" }),
     });
     expect(response.status).toBe(200);
     const body = await response.json();
@@ -143,7 +143,7 @@ describe("POST /api/insights/[slug]/projects (attach)", () => {
     const response = await attachProjects(
       jsonRequest({ projectIds: ["p1", "p2"] }),
       {
-        params: paramsPromise({ slug: "s1" }),
+        params: paramsPromise({ username: "u1", slug: "s1" }),
       },
     );
     expect(response.status).toBe(400);
@@ -170,7 +170,7 @@ describe("POST /api/insights/[slug]/projects (attach)", () => {
     const response = await attachProjects(
       jsonRequest({ projectIds: ["p1", "p2"] }),
       {
-        params: paramsPromise({ slug: "s1" }),
+        params: paramsPromise({ username: "u1", slug: "s1" }),
       },
     );
 
@@ -199,7 +199,7 @@ describe("POST /api/insights/[slug]/projects (attach)", () => {
     ]);
 
     await attachProjects(jsonRequest({ projectIds: ["p1"] }), {
-      params: paramsPromise({ slug: "s1" }),
+      params: paramsPromise({ username: "u1", slug: "s1" }),
     });
 
     const createManyArgs = mockPrisma.reportProject.createMany.mock.calls[0][0];
@@ -213,7 +213,7 @@ describe("PATCH /api/insights/[slug]/projects/[projectId] (hide toggle)", () => 
   it("returns 401 when no session", async () => {
     mockSession(null);
     const response = await toggleHidden(jsonRequest({ hidden: true }), {
-      params: paramsPromise({ slug: "s1", projectId: "p1" }),
+      params: paramsPromise({ username: "u1", slug: "s1", projectId: "p1" }),
     });
     expect(response.status).toBe(401);
   });
@@ -223,7 +223,7 @@ describe("PATCH /api/insights/[slug]/projects/[projectId] (hide toggle)", () => 
     mockPrisma.insightReport.findFirst.mockResolvedValue(null);
 
     const response = await toggleHidden(jsonRequest({ hidden: true }), {
-      params: paramsPromise({ slug: "missing", projectId: "p1" }),
+      params: paramsPromise({ username: "u1", slug: "missing", projectId: "p1" }),
     });
     expect(response.status).toBe(404);
   });
@@ -236,7 +236,7 @@ describe("PATCH /api/insights/[slug]/projects/[projectId] (hide toggle)", () => 
     });
 
     const response = await toggleHidden(jsonRequest({ hidden: true }), {
-      params: paramsPromise({ slug: "s1", projectId: "p1" }),
+      params: paramsPromise({ username: "u1", slug: "s1", projectId: "p1" }),
     });
     expect(response.status).toBe(403);
   });
@@ -250,7 +250,7 @@ describe("PATCH /api/insights/[slug]/projects/[projectId] (hide toggle)", () => 
     mockPrisma.reportProject.findUnique.mockResolvedValue(null);
 
     const response = await toggleHidden(jsonRequest({ hidden: true }), {
-      params: paramsPromise({ slug: "s1", projectId: "p1" }),
+      params: paramsPromise({ username: "u1", slug: "s1", projectId: "p1" }),
     });
     expect(response.status).toBe(404);
   });
@@ -269,7 +269,7 @@ describe("PATCH /api/insights/[slug]/projects/[projectId] (hide toggle)", () => 
     });
 
     const response = await toggleHidden(jsonRequest({ hidden: "yes" }), {
-      params: paramsPromise({ slug: "s1", projectId: "p1" }),
+      params: paramsPromise({ username: "u1", slug: "s1", projectId: "p1" }),
     });
     expect(response.status).toBe(400);
   });
@@ -293,7 +293,7 @@ describe("PATCH /api/insights/[slug]/projects/[projectId] (hide toggle)", () => 
     });
 
     const response = await toggleHidden(jsonRequest({ hidden: true }), {
-      params: paramsPromise({ slug: "s1", projectId: "p1" }),
+      params: paramsPromise({ username: "u1", slug: "s1", projectId: "p1" }),
     });
 
     expect(response.status).toBe(200);
@@ -325,7 +325,7 @@ describe("PATCH /api/insights/[slug]/projects/[projectId] (hide toggle)", () => 
     });
 
     const response = await toggleHidden(jsonRequest({ hidden: false }), {
-      params: paramsPromise({ slug: "s1", projectId: "p1" }),
+      params: paramsPromise({ username: "u1", slug: "s1", projectId: "p1" }),
     });
 
     expect(response.status).toBe(200);
