@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
@@ -500,6 +500,10 @@ export default function UploadPage() {
   const [showCurlFallback, setShowCurlFallback] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const harnessFileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    posthog.capture("profile_upload_started");
+  }, []);
 
   const toggleSection = (key: string) => {
     setDisabledSections((prev) => ({ ...prev, [key]: !prev[key] }));
