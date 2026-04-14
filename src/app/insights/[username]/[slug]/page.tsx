@@ -223,11 +223,30 @@ export default function InsightDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>("dashboard");
+  // Set when the Dashboard's teaser card is clicked: we switch to the Skills
+  // tab AND tell SkillsShowcaseSection which accordion item to auto-open.
+  // Cleared on any manual tab change so a later direct tab-click doesn't
+  // re-open the previously requested item.
+  const [pendingSkillAnchor, setPendingSkillAnchor] = useState<string | null>(
+    null,
+  );
 
   // Scroll to top of tab content when switching tabs so readers don't
   // land mid-way through the previous panel's scroll position.
   const handleTabChange = (tab: ProfileTab) => {
     setActiveTab(tab);
+    setPendingSkillAnchor(null);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  // Teaser-card callback — routes Dashboard clicks to the Skills tab and
+  // remembers which deep-dive to open. An empty anchor means "just show the
+  // tab" (triggered by the "See all N →" header link).
+  const handleNavigateToSkill = (anchorId: string) => {
+    setActiveTab("skills");
+    setPendingSkillAnchor(anchorId || null);
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -436,9 +455,11 @@ export default function InsightDetailPage() {
                   />
                 )}
 
-              {/* Skills Teaser — top-5 shareable skills with showcase content.
-                  Renders nothing when no skill carries showcase data, so reports
-                  generated without --include-skills aren't affected. */}
+              {/* Skills Teaser — hero-thumbnail cards for the top shareable
+                  skills. Clicking one switches to the Skills tab and opens
+                  that deep-dive. Renders nothing when no skill carries
+                  showcase data, so reports generated without --include-skills
+                  aren't affected. */}
               {!isSectionHidden(hiddenSet, "skillInventory") &&
                 report.harnessData.skillInventory.length > 0 && (
                   <SkillsTeaserCard
@@ -448,34 +469,7 @@ export default function InsightDetailPage() {
                       "skillInventory",
                       (s) => s.name,
                     )}
-                  />
-                )}
-
-              {/* Skills Card Grid */}
-              {!isSectionHidden(hiddenSet, "skillInventory") &&
-                report.harnessData.skillInventory.length > 0 && (
-                  <SkillCardGrid
-                    skillInventory={filterList(
-                      report.harnessData.skillInventory,
-                      hiddenSet,
-                      "skillInventory",
-                      (s) => s.name,
-                    )}
-                  />
-                )}
-
-              {/* Full Skills Showcase — README + hero per skill, grouped by
-                  category. Rendered through SkillReadme + getSafeHeroDataUri
-                  so any unsafe markdown URL or hero data URI is stripped. */}
-              {!isSectionHidden(hiddenSet, "skillInventory") &&
-                report.harnessData.skillInventory.length > 0 && (
-                  <SkillsShowcaseSection
-                    skillInventory={filterList(
-                      report.harnessData.skillInventory,
-                      hiddenSet,
-                      "skillInventory",
-                      (s) => s.name,
-                    )}
+                    onNavigateToSkill={handleNavigateToSkill}
                   />
                 )}
 
@@ -745,6 +739,33 @@ export default function InsightDetailPage() {
                       ))}
                     </div>
                   </CollapsibleSection>
+                )}
+            </>
+          )}
+
+          {activeTab === "skills" && (
+            <>
+              {!isSectionHidden(hiddenSet, "skillInventory") &&
+                report.harnessData.skillInventory.length > 0 && (
+                  <div className="space-y-6">
+                    <SkillsShowcaseSection
+                      skillInventory={filterList(
+                        report.harnessData.skillInventory,
+                        hiddenSet,
+                        "skillInventory",
+                        (s) => s.name,
+                      )}
+                      autoOpenAnchor={pendingSkillAnchor}
+                    />
+                    <SkillCardGrid
+                      skillInventory={filterList(
+                        report.harnessData.skillInventory,
+                        hiddenSet,
+                        "skillInventory",
+                        (s) => s.name,
+                      )}
+                    />
+                  </div>
                 )}
             </>
           )}

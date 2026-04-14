@@ -1,0 +1,3247 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skills Section Redesign</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        background: #f5f5f0;
+        color: #0f172a;
+      }
+
+      /* ── Sticky Nav ── */
+      .mockup-nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: #1e1e1e;
+        color: #fff;
+        padding: 10px 16px;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+      .mockup-nav .title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-right: 12px;
+        white-space: nowrap;
+      }
+      .mockup-nav a {
+        color: #a8c8ff;
+        text-decoration: none;
+        font-size: 12px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+      }
+      .mockup-nav a:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .mockup-nav .copy-all-btn {
+        margin-left: auto;
+        background: #2563eb;
+        color: #fff;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .mockup-nav .copy-all-btn.copied {
+        background: #16a34a;
+      }
+
+      /* ── Sections ── */
+      .mockup-section {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+      .section-label {
+        background: #1e1e1e;
+        color: #fff;
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 12px;
+      }
+      .section-desc {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 20px;
+        line-height: 1.5;
+      }
+      .section-divider {
+        height: 1px;
+        background: #ddd;
+        margin: 48px 0;
+      }
+
+      .version-container {
+        position: relative;
+      }
+      .version {
+        display: none;
+      }
+      .version.active {
+        display: block;
+      }
+
+      .feedback-area {
+        margin-top: 16px;
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        padding: 12px;
+      }
+      .feedback-area label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #888;
+        margin-bottom: 6px;
+      }
+      .feedback-area textarea {
+        width: 100%;
+        min-height: 80px;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        padding: 10px;
+        font-family: inherit;
+        font-size: 14px;
+        line-height: 1.5;
+        resize: vertical;
+      }
+      .feedback-area textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .char-count {
+        font-size: 11px;
+        color: #aaa;
+        text-align: right;
+        margin-top: 4px;
+      }
+
+      .design-note {
+        background: #fffbeb;
+        border: 1px solid #fcd34d;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin: 12px 0 20px;
+        font-size: 12px;
+        color: #92400e;
+        line-height: 1.5;
+      }
+      .design-note.info {
+        background: #f0fdf4;
+        border-color: #86efac;
+        color: #166534;
+      }
+      .design-note.warn {
+        background: #fef2f2;
+        border-color: #fca5a5;
+        color: #991b1b;
+      }
+
+      /* ── Fake app chrome — mimics the real page ── */
+      .app-shell {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      }
+      .app-shell h2.section-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #0f172a;
+        margin-bottom: 16px;
+      }
+
+      /* Fake profile tab bar */
+      .profile-tabs {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+        margin-bottom: 20px;
+      }
+      .profile-tabs.four-tabs {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      .profile-tab {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 18px;
+        border-right: 1px solid #f1f5f9;
+        background: #fff;
+        cursor: pointer;
+        position: relative;
+      }
+      .profile-tab:last-child {
+        border-right: none;
+      }
+      .profile-tab.active {
+        background: #eef2ff;
+      }
+      .profile-tab.active::after {
+        content: "";
+        position: absolute;
+        inset: auto 0 0 0;
+        height: 3px;
+        background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      }
+      .tab-badge {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        background: #dbeafe;
+        color: #2563eb;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .profile-tab.active .tab-badge {
+        background: #2563eb;
+        color: #fff;
+      }
+      .profile-tab.indigo .tab-badge {
+        background: #e0e7ff;
+        color: #4f46e5;
+      }
+      .profile-tab.indigo.active .tab-badge {
+        background: #4f46e5;
+        color: #fff;
+      }
+      .profile-tab.purple .tab-badge {
+        background: #f3e8ff;
+        color: #9333ea;
+      }
+      .profile-tab.purple.active .tab-badge {
+        background: #9333ea;
+        color: #fff;
+      }
+      .profile-tab.emerald .tab-badge {
+        background: #d1fae5;
+        color: #059669;
+      }
+      .profile-tab.emerald.active .tab-badge {
+        background: #059669;
+        color: #fff;
+      }
+      .tab-info .tab-label {
+        font-size: 15px;
+        font-weight: 600;
+        color: #0f172a;
+      }
+      .profile-tab:not(.active) .tab-info .tab-label {
+        color: #475569;
+        font-weight: 500;
+      }
+      .tab-info .tab-meta {
+        font-size: 11px;
+        color: #94a3b8;
+        margin-top: 2px;
+      }
+
+      /* ── "Featured Skills" current card ── */
+      .featured-card-current {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        background: #fafafa;
+      }
+      .featured-card-current h3 {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .featured-card-current .subtitle {
+        font-size: 12px;
+        color: #64748b;
+        margin-bottom: 12px;
+      }
+      .featured-card-current .readme-wall {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 16px;
+        font-size: 13px;
+        color: #334155;
+        line-height: 1.5;
+        max-height: 500px;
+        overflow: hidden;
+        position: relative;
+      }
+      .featured-card-current .readme-wall::after {
+        content: "… and 400+ more lines ↓";
+        position: absolute;
+        inset: auto 0 0 0;
+        background: linear-gradient(transparent, rgba(255, 255, 255, 0.95) 50%);
+        padding: 40px 16px 16px;
+        text-align: center;
+        font-size: 11px;
+        color: #94a3b8;
+        font-style: italic;
+      }
+
+      /* ── Accordion ToC — OPTION B/C ── */
+      .skill-accordion {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #fff;
+        overflow: hidden;
+      }
+      .skill-accordion-item {
+        border-bottom: 1px solid #f1f5f9;
+      }
+      .skill-accordion-item:last-child {
+        border-bottom: none;
+      }
+      .skill-accordion-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        cursor: pointer;
+        background: #fff;
+        user-select: none;
+        transition: background 0.15s;
+      }
+      .skill-accordion-header:hover {
+        background: #f8fafc;
+      }
+      .skill-accordion-item.open .skill-accordion-header {
+        background: #f1f5ff;
+      }
+      .skill-chev {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        transition: transform 0.2s;
+        color: #64748b;
+      }
+      .skill-accordion-item.open .skill-chev {
+        transform: rotate(90deg);
+        color: #2563eb;
+      }
+      .skill-accordion-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0f172a;
+        flex-shrink: 0;
+      }
+      .skill-accordion-desc {
+        font-size: 12px;
+        color: #64748b;
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .skill-accordion-item.open .skill-accordion-desc {
+        white-space: normal;
+      }
+      .skill-badge-source {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 3px 7px;
+        border-radius: 4px;
+        flex-shrink: 0;
+      }
+      .skill-badge-source.custom {
+        background: #ecfdf5;
+        color: #047857;
+      }
+      .skill-badge-source.plugin {
+        background: #f3e8ff;
+        color: #7e22ce;
+      }
+      .skill-accordion-body {
+        display: none;
+        padding: 4px 20px 24px 48px;
+        background: #fafbff;
+        border-top: 1px solid #f1f5f9;
+      }
+      .skill-accordion-item.open .skill-accordion-body {
+        display: block;
+      }
+
+      /* ── Polished readme typography (matches HTML report feel) ── */
+      .readme-polished {
+        font-size: 14px;
+        line-height: 1.65;
+        color: #1e293b;
+      }
+      .readme-polished .hero-img {
+        width: 100%;
+        border-radius: 10px;
+        margin: 8px 0 16px;
+        border: 1px solid #e2e8f0;
+      }
+      .readme-polished h1,
+      .readme-polished h2,
+      .readme-polished h3 {
+        font-weight: 700;
+        color: #0f172a;
+        letter-spacing: -0.01em;
+        margin: 24px 0 10px;
+      }
+      .readme-polished h1 {
+        font-size: 22px;
+      }
+      .readme-polished h2 {
+        font-size: 17px;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 6px;
+      }
+      .readme-polished h3 {
+        font-size: 15px;
+      }
+      .readme-polished p {
+        margin: 10px 0;
+      }
+      .readme-polished code {
+        background: #f1f5f9;
+        color: #be185d;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 12.5px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      .readme-polished pre {
+        background: #0f172a;
+        color: #e2e8f0;
+        border-radius: 8px;
+        padding: 14px 16px;
+        overflow-x: auto;
+        font-size: 12.5px;
+        margin: 12px 0;
+      }
+      .readme-polished pre code {
+        background: transparent;
+        color: inherit;
+        padding: 0;
+      }
+      .readme-polished ul,
+      .readme-polished ol {
+        padding-left: 22px;
+        margin: 10px 0;
+      }
+      .readme-polished li {
+        margin: 4px 0;
+      }
+      .readme-polished blockquote {
+        border-left: 3px solid #3b82f6;
+        background: #eff6ff;
+        padding: 8px 14px;
+        color: #1e40af;
+        border-radius: 0 6px 6px 0;
+        margin: 12px 0;
+      }
+      .readme-polished table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        margin: 12px 0;
+      }
+      .readme-polished th,
+      .readme-polished td {
+        text-align: left;
+        padding: 8px 10px;
+        border: 1px solid #e2e8f0;
+      }
+      .readme-polished th {
+        background: #f8fafc;
+        font-weight: 600;
+      }
+
+      /* ── Skills & Commands compact grid (redesigned) ── */
+      .sc-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 10px;
+      }
+      .sc-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: #fff;
+        cursor: pointer;
+      }
+      .sc-card:hover {
+        border-color: #93c5fd;
+        background: #fafbff;
+      }
+      .sc-card.custom {
+        border-color: #a7f3d0;
+        background: #f0fdf4;
+      }
+      .sc-card-head {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: space-between;
+      }
+      .sc-card-name {
+        font-size: 13px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .sc-card-calls {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 6px;
+        background: #ede9fe;
+        color: #6d28d9;
+        border-radius: 999px;
+      }
+      .sc-card-source {
+        display: inline-block;
+        margin-top: 4px;
+        font-size: 9px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border: 1px solid #e2e8f0;
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+      .sc-card-desc {
+        font-size: 11.5px;
+        color: #475569;
+        margin-top: 6px;
+        line-height: 1.45;
+      }
+      .sc-card.compact .sc-card-desc {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .sc-card.expanded .sc-card-desc {
+        overflow: visible;
+        display: block;
+      }
+      .sc-chev-inline {
+        font-size: 10px;
+        color: #94a3b8;
+        margin-left: 4px;
+      }
+
+      /* ── Option-specific highlight strip ── */
+      .option-strip {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 3px 10px;
+        border-radius: 999px;
+        margin-bottom: 10px;
+      }
+      .option-strip.a {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .option-strip.b {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
+      .option-strip.c {
+        background: #f3e8ff;
+        color: #6b21a8;
+      }
+      .option-strip.d {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .sub-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 24px 0 10px;
+      }
+      .sub-header h3 {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .sub-header .count-pill {
+        font-size: 11px;
+        background: #f1f5f9;
+        color: #475569;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="mockup-nav">
+      <span class="title">Skills Section Redesign</span>
+      <a href="#current">Current</a>
+      <a href="#option-b">Option B</a>
+      <a href="#option-c">Option C</a>
+      <a href="#option-d">Option D</a>
+      <button class="copy-all-btn" onclick="copyAllFeedback()">
+        Copy All Feedback
+      </button>
+    </nav>
+
+    <!-- ══════════════════════════════════════ -->
+    <!-- SECTION 1 — CURRENT STATE -->
+    <!-- ══════════════════════════════════════ -->
+    <div class="mockup-section" data-section-id="current" id="current">
+      <span class="option-strip a">Option A · Problem Statement</span>
+      <span class="section-label">Current state</span>
+      <p class="section-desc">
+        What the Dashboard tab looks like today — "Featured Skills" expands all
+        README content inline, producing a wall of text. "Skills & Commands"
+        below shows cards with a broken/unused expand affordance and many plugin
+        entries ship with no description.
+      </p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="app-shell">
+            <!-- Today's 3-tab bar -->
+            <div class="profile-tabs">
+              <div class="profile-tab active">
+                <div class="tab-badge">▦</div>
+                <div class="tab-info">
+                  <div class="tab-label">Dashboard</div>
+                  <div class="tab-meta">metrics · charts · setup</div>
+                </div>
+              </div>
+              <div class="profile-tab indigo">
+                <div class="tab-badge">✎</div>
+                <div class="tab-info">
+                  <div class="tab-label">Write-up</div>
+                  <div class="tab-meta">by Claude</div>
+                </div>
+              </div>
+              <div class="profile-tab purple">
+                <div class="tab-badge">✦</div>
+                <div class="tab-info">
+                  <div class="tab-label">Claude Insights</div>
+                  <div class="tab-meta">by Claude</div>
+                </div>
+              </div>
+            </div>
+
+            <h2 class="section-title">Featured Skills</h2>
+            <div class="featured-card-current">
+              <h3>skill-showcase</h3>
+              <div class="subtitle">custom · last used 2 days ago</div>
+              <div class="readme-wall">
+                <strong># skill-showcase</strong>
+                <br /><br />
+                Build a single-file public HTML showcase of a collection of
+                Claude Code skills — table of contents, grouped categories,
+                per-skill README with hero image, custom-vs-plugin labeling, and
+                PII scrubbing.
+                <br /><br />
+                ## Overview This skill takes a directory of Claude Code skills
+                and produces a portable HTML file suitable for sharing.
+                Includes: table of contents, grouped categories, per-skill
+                README rendering with inlined hero image, custom-vs-plugin
+                source labeling, and a privacy pass that scrubs identifiers,
+                paths, and other PII from skill descriptions and README content.
+                <br /><br />
+                ## Usage ```bash skill-showcase --skills-dir ~/.claude/skills
+                --output ~/showcase.html ```
+                <br /><br />
+                ## Options - `--skills-dir` — path to directory containing skill
+                folders - `--output` — output file path (default:
+                ./showcase.html) - `--title` — page title (default: "My Claude
+                Skills") - `--include-categories` — comma-separated list of
+                categories to include - `--exclude-private` — skip skills marked
+                as private...
+              </div>
+            </div>
+
+            <div
+              style="
+                margin-top: 20px;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                padding: 16px;
+                background: #fff;
+              "
+            >
+              <h3
+                style="font-size: 15px; font-weight: 700; margin-bottom: 12px"
+              >
+                Skills & Commands
+              </h3>
+              <div class="sc-grid">
+                <div class="sc-card custom compact">
+                  <div class="sc-card-head">
+                    <span class="sc-card-name">ux-mockup</span>
+                    <span class="sc-card-calls">14</span>
+                  </div>
+                  <span class="sc-card-source">custom</span>
+                  <p class="sc-card-desc">
+                    Create interactive HTML mockups for UX design review with
+                    built-in feedback… <span class="sc-chev-inline">▾</span>
+                  </p>
+                </div>
+                <div class="sc-card compact">
+                  <div class="sc-card-head">
+                    <span class="sc-card-name"
+                      >compound-engineering:ce-work</span
+                    >
+                    <span class="sc-card-calls">9</span>
+                  </div>
+                  <span class="sc-card-source"
+                    >plugin:compound-engineering</span
+                  >
+                  <p
+                    class="sc-card-desc"
+                    style="color: #cbd5e1; font-style: italic"
+                  >
+                    no description <span class="sc-chev-inline">▾</span>
+                  </p>
+                </div>
+                <div class="sc-card compact">
+                  <div class="sc-card-head">
+                    <span class="sc-card-name">superpowers:brainstorming</span>
+                    <span class="sc-card-calls">6</span>
+                  </div>
+                  <span class="sc-card-source">plugin:superpowers</span>
+                  <p class="sc-card-desc">
+                    You MUST use this before any creative work - creating
+                    features, building… <span class="sc-chev-inline">▾</span>
+                  </p>
+                </div>
+                <div class="sc-card compact">
+                  <div class="sc-card-head">
+                    <span class="sc-card-name">frontend-design</span>
+                    <span class="sc-card-calls">4</span>
+                  </div>
+                  <span class="sc-card-source">custom</span>
+                  <p
+                    class="sc-card-desc"
+                    style="color: #cbd5e1; font-style: italic"
+                  >
+                    no description <span class="sc-chev-inline">▾</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="design-note warn">
+            <strong>Problems flagged:</strong>
+            <ul style="margin: 6px 0 0 18px">
+              <li>
+                Featured-Skills readme dumps every skill expanded → page is
+                forever long
+              </li>
+              <li>
+                README content is a wall of text — no section styling, no
+                readable typography
+              </li>
+              <li>
+                "Featured Skills" label is ambiguous (vs. "skills I featured a
+                write-up on")
+              </li>
+              <li>
+                Skills & Commands cards: many have no description, even when one
+                exists in metadata
+              </li>
+              <li>
+                Down-arrow chevron on S&C cards doesn't work — click does
+                nothing
+              </li>
+              <li>
+                S&C descriptions truncate at 2 lines with no way to expand
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="feedback-area">
+        <label for="fb-current">Feedback on problem framing</label>
+        <textarea
+          id="fb-current"
+          placeholder="Did I capture everything? Anything missing from the list above?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ══════════════════════════════════════ -->
+    <!-- OPTION B — Stay on Dashboard, accordion only -->
+    <!-- ══════════════════════════════════════ -->
+    <div class="mockup-section" data-section-id="option-b" id="option-b">
+      <span class="option-strip b">Option B · Minimal — stay on Dashboard</span>
+      <span class="section-label">Option B — Accordion on Dashboard</span>
+      <p class="section-desc">
+        Keep everything on the Dashboard tab. Rename "Featured Skills" →
+        <em>Featured skill write-ups</em>. Collapse every write-up by default,
+        one-at-a-time expansion. Fix Skills & Commands so descriptions always
+        render and actually expand. Smallest-diff path.
+      </p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="app-shell">
+            <div class="profile-tabs">
+              <div class="profile-tab active">
+                <div class="tab-badge">▦</div>
+                <div class="tab-info">
+                  <div class="tab-label">Dashboard</div>
+                  <div class="tab-meta">metrics · charts · setup</div>
+                </div>
+              </div>
+              <div class="profile-tab indigo">
+                <div class="tab-badge">✎</div>
+                <div class="tab-info">
+                  <div class="tab-label">Write-up</div>
+                  <div class="tab-meta">by Claude</div>
+                </div>
+              </div>
+              <div class="profile-tab purple">
+                <div class="tab-badge">✦</div>
+                <div class="tab-info">
+                  <div class="tab-label">Claude Insights</div>
+                  <div class="tab-meta">by Claude</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sub-header">
+              <h3>Featured skill write-ups</h3>
+              <span class="count-pill">3 write-ups</span>
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin-bottom: 10px">
+              Skills this developer published a detailed write-up for. Click a
+              row to read.
+            </p>
+
+            <div class="skill-accordion" data-acc>
+              <div class="skill-accordion-item">
+                <div class="skill-accordion-header" data-acc-toggle>
+                  <svg
+                    class="skill-chev"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path d="M7 5l6 5-6 5V5z" />
+                  </svg>
+                  <span class="skill-accordion-name">skill-showcase</span>
+                  <span class="skill-accordion-desc"
+                    >Build a single-file public HTML showcase of a collection of
+                    Claude Code skills — table of contents, grouped categories,
+                    per-skill README with hero image…</span
+                  >
+                  <span class="skill-badge-source custom">custom</span>
+                </div>
+                <div class="skill-accordion-body">
+                  <div class="readme-polished">
+                    <h2>Overview</h2>
+                    <p>
+                      Generates a portable, self-contained HTML file from a
+                      directory of Claude Code skills. No server, no build step
+                      — just one file you can host anywhere.
+                    </p>
+                    <h2>Usage</h2>
+                    <pre><code>skill-showcase --skills-dir ~/.claude/skills --output ~/showcase.html</code></pre>
+                    <h3>Options</h3>
+                    <ul>
+                      <li>
+                        <code>--skills-dir</code> — directory containing skill
+                        folders
+                      </li>
+                      <li><code>--output</code> — output HTML path</li>
+                      <li>
+                        <code>--exclude-private</code> — skip skills marked
+                        private
+                      </li>
+                    </ul>
+                    <blockquote>
+                      Ships with a built-in PII scrubber that masks paths,
+                      emails, and identifiers before rendering.
+                    </blockquote>
+                  </div>
+                </div>
+              </div>
+
+              <div class="skill-accordion-item">
+                <div class="skill-accordion-header" data-acc-toggle>
+                  <svg
+                    class="skill-chev"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path d="M7 5l6 5-6 5V5z" />
+                  </svg>
+                  <span class="skill-accordion-name">ux-mockup</span>
+                  <span class="skill-accordion-desc"
+                    >Create interactive HTML mockups for UX design review with
+                    built-in feedback collection, version history, viewport
+                    toggle…</span
+                  >
+                  <span class="skill-badge-source custom">custom</span>
+                </div>
+                <div class="skill-accordion-body">
+                  <div class="readme-polished">
+                    <p>
+                      Collapsed until expanded. Lazy-rendered if readme is
+                      large.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="skill-accordion-item">
+                <div class="skill-accordion-header" data-acc-toggle>
+                  <svg
+                    class="skill-chev"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path d="M7 5l6 5-6 5V5z" />
+                  </svg>
+                  <span class="skill-accordion-name">frontend-design</span>
+                  <span class="skill-accordion-desc"
+                    >Build web interfaces with genuine design quality, not AI
+                    slop. Landing pages, web apps, dashboards, admin
+                    panels…</span
+                  >
+                  <span class="skill-badge-source custom">custom</span>
+                </div>
+                <div class="skill-accordion-body">
+                  <div class="readme-polished">
+                    <p>Collapsed until expanded.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sub-header" style="margin-top: 32px">
+              <h3>All skills &amp; commands</h3>
+              <span class="count-pill">Active 18 · Unused 42</span>
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin-bottom: 10px">
+              Every skill and slash command installed in this harness. Click a
+              card to read its description.
+            </p>
+            <div class="sc-grid">
+              <div class="sc-card custom compact" data-click-expand>
+                <div class="sc-card-head">
+                  <span class="sc-card-name">ux-mockup</span>
+                  <span class="sc-card-calls">14</span>
+                </div>
+                <span class="sc-card-source">custom</span>
+                <p class="sc-card-desc">
+                  Create interactive HTML mockups for UX design review with
+                  built-in feedback collection, version history, viewport
+                  toggle…
+                </p>
+              </div>
+              <div class="sc-card compact" data-click-expand>
+                <div class="sc-card-head">
+                  <span class="sc-card-name">compound-engineering:ce-work</span>
+                  <span class="sc-card-calls">9</span>
+                </div>
+                <span class="sc-card-source">plugin:compound-engineering</span>
+                <p class="sc-card-desc">
+                  Execute work efficiently while maintaining quality and
+                  finishing features.
+                </p>
+              </div>
+              <div class="sc-card compact" data-click-expand>
+                <div class="sc-card-head">
+                  <span class="sc-card-name">superpowers:brainstorming</span>
+                  <span class="sc-card-calls">6</span>
+                </div>
+                <span class="sc-card-source">plugin:superpowers</span>
+                <p class="sc-card-desc">
+                  You MUST use this before any creative work — creating
+                  features, building components, adding functionality, or
+                  modifying behavior.
+                </p>
+              </div>
+              <div class="sc-card compact" data-click-expand>
+                <div class="sc-card-head">
+                  <span class="sc-card-name">frontend-design</span>
+                  <span class="sc-card-calls">4</span>
+                </div>
+                <span class="sc-card-source">custom</span>
+                <p class="sc-card-desc">
+                  Build web interfaces with genuine design quality, not AI slop.
+                  Landing pages, web apps, dashboards…
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="design-note info">
+            <strong>What changed vs current:</strong>
+            <ul style="margin: 6px 0 0 18px">
+              <li>
+                Renamed "Featured Skills" → "Featured skill write-ups" +
+                subtitle explains it
+              </li>
+              <li>
+                Every write-up collapsed by default; single-row ToC; click to
+                expand inline
+              </li>
+              <li>
+                README renders with typography (h2/h3/code/pre/blockquote), not
+                wall-of-text
+              </li>
+              <li>
+                "Skills & Commands" → "All skills & commands"; cards now
+                click-to-expand full description
+              </li>
+              <li>
+                Plugin skills that have descriptions in metadata actually render
+                them now
+              </li>
+              <li>
+                Skills with truly no description hide the description line
+                instead of showing "no description"
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="feedback-area">
+        <label for="fb-option-b">Feedback on Option B</label>
+        <textarea
+          id="fb-option-b"
+          placeholder="Is Dashboard-only the right call? Accordion behavior? Rename OK?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ══════════════════════════════════════ -->
+    <!-- OPTION C — Dedicated Skills tab (4th) -->
+    <!-- ══════════════════════════════════════ -->
+    <div class="mockup-section" data-section-id="option-c" id="option-c">
+      <span class="option-strip c">Option C · Dedicated Skills tab</span>
+      <span class="section-label">Option C — New "Skills" tab</span>
+      <p class="section-desc">
+        Promote skills to their own top-level tab. Dashboard stays about
+        metrics; Skills tab holds both the write-ups and the full inventory.
+        Order suggestion: Dashboard · <strong>Skills</strong> · Write-up ·
+        Claude Insights (skills come before the AI-authored tabs since they're
+        factual, not generated).
+      </p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="app-shell">
+            <div class="profile-tabs four-tabs">
+              <div class="profile-tab">
+                <div class="tab-badge">▦</div>
+                <div class="tab-info">
+                  <div class="tab-label">Dashboard</div>
+                  <div class="tab-meta">metrics · charts</div>
+                </div>
+              </div>
+              <div class="profile-tab emerald active">
+                <div class="tab-badge">⬢</div>
+                <div class="tab-info">
+                  <div class="tab-label">Skills</div>
+                  <div class="tab-meta">inventory · write-ups</div>
+                </div>
+              </div>
+              <div class="profile-tab indigo">
+                <div class="tab-badge">✎</div>
+                <div class="tab-info">
+                  <div class="tab-label">Write-up</div>
+                  <div class="tab-meta">by Claude</div>
+                </div>
+              </div>
+              <div class="profile-tab purple">
+                <div class="tab-badge">✦</div>
+                <div class="tab-info">
+                  <div class="tab-label">Claude Insights</div>
+                  <div class="tab-meta">by Claude</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Skills tab content: two stacked accordions -->
+            <div class="sub-header">
+              <h3>Featured skill write-ups</h3>
+              <span class="count-pill">3 write-ups · 1 open</span>
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin-bottom: 10px">
+              Click to expand. Heroes and full READMEs render inline.
+            </p>
+
+            <div class="skill-accordion" data-acc>
+              <div class="skill-accordion-item open">
+                <div class="skill-accordion-header" data-acc-toggle>
+                  <svg
+                    class="skill-chev"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path d="M7 5l6 5-6 5V5z" />
+                  </svg>
+                  <span class="skill-accordion-name">skill-showcase</span>
+                  <span class="skill-accordion-desc"
+                    >Build a single-file public HTML showcase of a collection of
+                    Claude Code skills…</span
+                  >
+                  <span class="skill-badge-source custom">custom</span>
+                </div>
+                <div class="skill-accordion-body">
+                  <div class="readme-polished">
+                    <svg
+                      class="hero-img"
+                      viewBox="0 0 800 200"
+                      xmlns="http://www.w3.org/2000/svg"
+                      style="
+                        background: linear-gradient(135deg, #1e293b, #4f46e5);
+                        height: auto;
+                      "
+                    >
+                      <text
+                        x="50%"
+                        y="55%"
+                        font-size="28"
+                        font-weight="700"
+                        fill="#fff"
+                        text-anchor="middle"
+                        font-family="Inter"
+                      >
+                        skill-showcase hero
+                      </text>
+                    </svg>
+                    <h2>Overview</h2>
+                    <p>
+                      Turn a folder of Claude skills into one self-contained
+                      HTML file. Works offline. Ships PII-scrubbed by default.
+                    </p>
+                    <h2>Usage</h2>
+                    <pre><code>skill-showcase --skills-dir ~/.claude/skills --output ~/showcase.html</code></pre>
+                    <h2>Options</h2>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Flag</th>
+                          <th>Purpose</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td><code>--skills-dir</code></td>
+                          <td>Directory of skill folders</td>
+                        </tr>
+                        <tr>
+                          <td><code>--output</code></td>
+                          <td>Output HTML path</td>
+                        </tr>
+                        <tr>
+                          <td><code>--exclude-private</code></td>
+                          <td>Skip private skills</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <blockquote>
+                      Includes a built-in scrubber that masks paths, emails, and
+                      identifiers.
+                    </blockquote>
+                  </div>
+                </div>
+              </div>
+              <div class="skill-accordion-item">
+                <div class="skill-accordion-header" data-acc-toggle>
+                  <svg
+                    class="skill-chev"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path d="M7 5l6 5-6 5V5z" />
+                  </svg>
+                  <span class="skill-accordion-name">ux-mockup</span>
+                  <span class="skill-accordion-desc"
+                    >Create interactive HTML mockups for UX design review…</span
+                  >
+                  <span class="skill-badge-source custom">custom</span>
+                </div>
+                <div class="skill-accordion-body">
+                  <div class="readme-polished"><p>Expand to read.</p></div>
+                </div>
+              </div>
+              <div class="skill-accordion-item">
+                <div class="skill-accordion-header" data-acc-toggle>
+                  <svg
+                    class="skill-chev"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path d="M7 5l6 5-6 5V5z" />
+                  </svg>
+                  <span class="skill-accordion-name">frontend-design</span>
+                  <span class="skill-accordion-desc"
+                    >Build web interfaces with genuine design quality, not AI
+                    slop…</span
+                  >
+                  <span class="skill-badge-source custom">custom</span>
+                </div>
+                <div class="skill-accordion-body">
+                  <div class="readme-polished"><p>Expand to read.</p></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sub-header" style="margin-top: 32px">
+              <h3>All skills &amp; commands</h3>
+              <span class="count-pill">Active 18 · Unused 42</span>
+            </div>
+            <div class="sc-grid">
+              <div class="sc-card custom compact">
+                <div class="sc-card-head">
+                  <span class="sc-card-name">ux-mockup</span
+                  ><span class="sc-card-calls">14</span>
+                </div>
+                <span class="sc-card-source">custom</span>
+                <p class="sc-card-desc">
+                  Create interactive HTML mockups for UX design review with
+                  feedback collection…
+                </p>
+              </div>
+              <div class="sc-card compact">
+                <div class="sc-card-head">
+                  <span class="sc-card-name">ce-work</span
+                  ><span class="sc-card-calls">9</span>
+                </div>
+                <span class="sc-card-source">plugin:compound-engineering</span>
+                <p class="sc-card-desc">
+                  Execute work efficiently while maintaining quality and
+                  finishing features.
+                </p>
+              </div>
+              <div class="sc-card compact">
+                <div class="sc-card-head">
+                  <span class="sc-card-name">brainstorming</span
+                  ><span class="sc-card-calls">6</span>
+                </div>
+                <span class="sc-card-source">plugin:superpowers</span>
+                <p class="sc-card-desc">
+                  Use before any creative work — explores intent, requirements,
+                  design before implementation.
+                </p>
+              </div>
+              <div class="sc-card compact">
+                <div class="sc-card-head">
+                  <span class="sc-card-name">frontend-design</span
+                  ><span class="sc-card-calls">4</span>
+                </div>
+                <span class="sc-card-source">custom</span>
+                <p class="sc-card-desc">
+                  Build web interfaces with genuine design quality, not AI slop.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="design-note info">
+            <strong>What changed vs B:</strong>
+            <ul style="margin: 6px 0 0 18px">
+              <li>
+                Skills promoted to own tab — Dashboard stays focused on metrics
+              </li>
+              <li>
+                Position: between Dashboard and Write-up (factual content before
+                AI-authored)
+              </li>
+              <li>
+                Emerald color — distinct from blue/indigo/purple, signals "raw
+                inventory"
+              </li>
+              <li>
+                Default state shows one write-up open so visitors see what
+                write-ups <em>are</em>
+              </li>
+              <li>
+                Deep link support: <code>#skill-showcase</code> routes to Skills
+                tab + opens that accordion item
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="feedback-area">
+        <label for="fb-option-c">Feedback on Option C</label>
+        <textarea
+          id="fb-option-c"
+          placeholder="New tab — yes or no? Tab order? Name? Color?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ══════════════════════════════════════ -->
+    <!-- OPTION D — Polished readme typography (focus view) -->
+    <!-- ══════════════════════════════════════ -->
+    <div class="mockup-section" data-section-id="option-d" id="option-d">
+      <span class="option-strip d">Option D · Readme typography</span>
+      <span class="section-label">Option D — Polished readme rendering</span>
+      <p class="section-desc">
+        Regardless of where the skills live (B or C), the actual README content
+        needs the HTML-report treatment — real headings, code blocks, tables,
+        blockquotes, hero image at top. This is what one expanded write-up
+        should feel like when open.
+      </p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="app-shell">
+            <div class="readme-polished">
+              <svg
+                class="hero-img"
+                viewBox="0 0 800 220"
+                xmlns="http://www.w3.org/2000/svg"
+                style="
+                  background: linear-gradient(
+                    135deg,
+                    #0f172a,
+                    #3b82f6 70%,
+                    #8b5cf6
+                  );
+                  height: auto;
+                "
+              >
+                <text
+                  x="50%"
+                  y="52%"
+                  font-size="32"
+                  font-weight="800"
+                  fill="#fff"
+                  text-anchor="middle"
+                  font-family="Inter"
+                >
+                  skill-showcase
+                </text>
+                <text
+                  x="50%"
+                  y="72%"
+                  font-size="14"
+                  fill="#cbd5e1"
+                  text-anchor="middle"
+                  font-family="Inter"
+                >
+                  Portable HTML for a folder of skills
+                </text>
+              </svg>
+              <h1>skill-showcase</h1>
+              <p>
+                <em
+                  >Build a single-file public HTML showcase of a collection of
+                  Claude Code skills — table of contents, grouped categories,
+                  per-skill README with hero image, custom-vs-plugin labeling,
+                  and PII scrubbing.</em
+                >
+              </p>
+
+              <h2>Overview</h2>
+              <p>
+                Takes a directory of skills and produces
+                <strong>one portable HTML file</strong> you can host anywhere.
+                No build step. No runtime dependencies. Designed for sharing
+                your Claude Code setup publicly without leaking identifiers.
+              </p>
+
+              <h2>Quick start</h2>
+              <pre><code>skill-showcase \
+  --skills-dir ~/.claude/skills \
+  --output ~/showcase.html</code></pre>
+
+              <h2>Flags</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Flag</th>
+                    <th>Default</th>
+                    <th>Purpose</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>--skills-dir</code></td>
+                    <td><code>~/.claude/skills</code></td>
+                    <td>Directory containing skill folders</td>
+                  </tr>
+                  <tr>
+                    <td><code>--output</code></td>
+                    <td><code>./showcase.html</code></td>
+                    <td>Output HTML path</td>
+                  </tr>
+                  <tr>
+                    <td><code>--title</code></td>
+                    <td>"My Claude Skills"</td>
+                    <td>Page title</td>
+                  </tr>
+                  <tr>
+                    <td><code>--exclude-private</code></td>
+                    <td><code>false</code></td>
+                    <td>Skip skills marked private</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <h2>Privacy</h2>
+              <blockquote>
+                Ships with a built-in scrubber that masks filesystem paths,
+                email addresses, API keys, and usernames before rendering. Safe
+                to publish.
+              </blockquote>
+
+              <h3>What gets scrubbed</h3>
+              <ul>
+                <li>
+                  Absolute paths under <code>/Users/*</code>,
+                  <code>/home/*</code>
+                </li>
+                <li>Email addresses and phone numbers</li>
+                <li>Anything matching known API-key prefixes</li>
+                <li>Git remote URLs with credentials</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="design-note info">
+            <strong>Ingredients:</strong>
+            Inter font · h1 22px / h2 17px with rule / h3 15px · inline
+            <code>code</code> pink-on-slate · fenced <code>pre</code> dark slate
+            · styled tables and blockquotes · hero image at 10px radius. All
+            already safe via existing <code>rehype-sanitize</code> schema — this
+            is CSS-only.
+          </div>
+        </div>
+      </div>
+
+      <div class="feedback-area">
+        <label for="fb-option-d">Feedback on readme typography</label>
+        <textarea
+          id="fb-option-d"
+          placeholder="Typography feel right? Too much? Not enough?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ══════════════════════════════════════ -->
+    <!-- OPTION E — Dashboard teaser strip (horizontal cards) -->
+    <!-- ══════════════════════════════════════ -->
+    <div class="mockup-section" data-section-id="option-e" id="option-e">
+      <span class="option-strip c">Option E · Dashboard teaser strip</span>
+      <span class="section-label"
+        >Option E — Write-up cards on Dashboard → open Skills tab</span
+      >
+      <p class="section-desc">
+        Keep Skills as a dedicated tab (Option C confirmed). On the Dashboard,
+        render write-ups as a horizontal strip of visual cards with hero
+        thumbnails, name, one-line description, and an unmistakable
+        <em>"Read write-up →"</em> CTA. Each card opens the Skills tab and
+        scrolls to that skill. Compact on Dashboard, unavoidable.
+      </p>
+
+      <div class="version-container">
+        <div class="version" data-version="1">
+          <div class="app-shell">
+            <div class="profile-tabs four-tabs">
+              <div class="profile-tab active">
+                <div class="tab-badge">▦</div>
+                <div class="tab-info">
+                  <div class="tab-label">Dashboard</div>
+                  <div class="tab-meta">metrics · charts</div>
+                </div>
+              </div>
+              <div class="profile-tab emerald">
+                <div class="tab-badge">⬢</div>
+                <div class="tab-info">
+                  <div class="tab-label">Skills</div>
+                  <div class="tab-meta">inventory · write-ups</div>
+                </div>
+              </div>
+              <div class="profile-tab indigo">
+                <div class="tab-badge">✎</div>
+                <div class="tab-info">
+                  <div class="tab-label">Write-up</div>
+                  <div class="tab-meta">by Claude</div>
+                </div>
+              </div>
+              <div class="profile-tab purple">
+                <div class="tab-badge">✦</div>
+                <div class="tab-info">
+                  <div class="tab-label">Claude Insights</div>
+                  <div class="tab-meta">by Claude</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sub-header">
+              <h3>
+                Skill write-ups
+                <span
+                  style="
+                    font-size: 11px;
+                    color: #059669;
+                    font-weight: 700;
+                    padding: 2px 8px;
+                    background: #d1fae5;
+                    border-radius: 999px;
+                    margin-left: 6px;
+                  "
+                  >3 published</span
+                >
+              </h3>
+              <a
+                href="#option-e"
+                style="
+                  font-size: 12px;
+                  color: #2563eb;
+                  text-decoration: none;
+                  font-weight: 600;
+                "
+                >See all in Skills tab →</a
+              >
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin-bottom: 14px">
+              Curated write-ups this developer published. Tap any card to read
+              in the Skills tab.
+            </p>
+
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+                gap: 12px;
+              "
+            >
+              <!-- Teaser card 1 -->
+              <a
+                href="#"
+                style="
+                  display: block;
+                  text-decoration: none;
+                  color: inherit;
+                  border: 1px solid #e2e8f0;
+                  border-radius: 12px;
+                  overflow: hidden;
+                  background: #fff;
+                  transition: all 0.15s;
+                  position: relative;
+                "
+                onmouseover="
+                  this.style.borderColor = '#10b981';
+                  this.style.boxShadow = '0 4px 12px rgba(16,185,129,0.15)';
+                  this.style.transform = 'translateY(-2px)';
+                "
+                onmouseout="
+                  this.style.borderColor = '#e2e8f0';
+                  this.style.boxShadow = 'none';
+                  this.style.transform = 'none';
+                "
+              >
+                <svg
+                  viewBox="0 0 400 120"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style="
+                    width: 100%;
+                    display: block;
+                    background: linear-gradient(135deg, #0f172a, #4f46e5);
+                  "
+                >
+                  <text
+                    x="50%"
+                    y="58%"
+                    font-size="20"
+                    font-weight="700"
+                    fill="#fff"
+                    text-anchor="middle"
+                    font-family="Inter"
+                  >
+                    skill-showcase
+                  </text>
+                </svg>
+                <div style="padding: 12px 14px">
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 6px;
+                      margin-bottom: 4px;
+                    "
+                  >
+                    <span
+                      style="font-size: 14px; font-weight: 700; color: #0f172a"
+                      >skill-showcase</span
+                    >
+                    <span class="skill-badge-source custom">custom</span>
+                  </div>
+                  <p
+                    style="
+                      font-size: 12px;
+                      color: #475569;
+                      line-height: 1.45;
+                      margin-bottom: 10px;
+                      display: -webkit-box;
+                      -webkit-line-clamp: 2;
+                      -webkit-box-orient: vertical;
+                      overflow: hidden;
+                    "
+                  >
+                    Build a portable single-file HTML showcase of your Claude
+                    Code skills.
+                  </p>
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 4px;
+                      font-size: 12px;
+                      font-weight: 700;
+                      color: #059669;
+                    "
+                  >
+                    Read write-up <span>→</span>
+                  </div>
+                </div>
+              </a>
+
+              <a
+                href="#"
+                style="
+                  display: block;
+                  text-decoration: none;
+                  color: inherit;
+                  border: 1px solid #e2e8f0;
+                  border-radius: 12px;
+                  overflow: hidden;
+                  background: #fff;
+                  transition: all 0.15s;
+                "
+                onmouseover="
+                  this.style.borderColor = '#10b981';
+                  this.style.boxShadow = '0 4px 12px rgba(16,185,129,0.15)';
+                  this.style.transform = 'translateY(-2px)';
+                "
+                onmouseout="
+                  this.style.borderColor = '#e2e8f0';
+                  this.style.boxShadow = 'none';
+                  this.style.transform = 'none';
+                "
+              >
+                <svg
+                  viewBox="0 0 400 120"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style="
+                    width: 100%;
+                    display: block;
+                    background: linear-gradient(135deg, #7c2d12, #ea580c);
+                  "
+                >
+                  <text
+                    x="50%"
+                    y="58%"
+                    font-size="20"
+                    font-weight="700"
+                    fill="#fff"
+                    text-anchor="middle"
+                    font-family="Inter"
+                  >
+                    ux-mockup
+                  </text>
+                </svg>
+                <div style="padding: 12px 14px">
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 6px;
+                      margin-bottom: 4px;
+                    "
+                  >
+                    <span
+                      style="font-size: 14px; font-weight: 700; color: #0f172a"
+                      >ux-mockup</span
+                    >
+                    <span class="skill-badge-source custom">custom</span>
+                  </div>
+                  <p
+                    style="
+                      font-size: 12px;
+                      color: #475569;
+                      line-height: 1.45;
+                      margin-bottom: 10px;
+                      display: -webkit-box;
+                      -webkit-line-clamp: 2;
+                      -webkit-box-orient: vertical;
+                      overflow: hidden;
+                    "
+                  >
+                    Interactive HTML mockups for UX review with feedback
+                    collection + viewport toggle.
+                  </p>
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 4px;
+                      font-size: 12px;
+                      font-weight: 700;
+                      color: #059669;
+                    "
+                  >
+                    Read write-up <span>→</span>
+                  </div>
+                </div>
+              </a>
+
+              <a
+                href="#"
+                style="
+                  display: block;
+                  text-decoration: none;
+                  color: inherit;
+                  border: 1px solid #e2e8f0;
+                  border-radius: 12px;
+                  overflow: hidden;
+                  background: #fff;
+                  transition: all 0.15s;
+                "
+                onmouseover="
+                  this.style.borderColor = '#10b981';
+                  this.style.boxShadow = '0 4px 12px rgba(16,185,129,0.15)';
+                  this.style.transform = 'translateY(-2px)';
+                "
+                onmouseout="
+                  this.style.borderColor = '#e2e8f0';
+                  this.style.boxShadow = 'none';
+                  this.style.transform = 'none';
+                "
+              >
+                <svg
+                  viewBox="0 0 400 120"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style="
+                    width: 100%;
+                    display: block;
+                    background: linear-gradient(135deg, #164e63, #06b6d4);
+                  "
+                >
+                  <text
+                    x="50%"
+                    y="58%"
+                    font-size="20"
+                    font-weight="700"
+                    fill="#fff"
+                    text-anchor="middle"
+                    font-family="Inter"
+                  >
+                    frontend-design
+                  </text>
+                </svg>
+                <div style="padding: 12px 14px">
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 6px;
+                      margin-bottom: 4px;
+                    "
+                  >
+                    <span
+                      style="font-size: 14px; font-weight: 700; color: #0f172a"
+                      >frontend-design</span
+                    >
+                    <span class="skill-badge-source custom">custom</span>
+                  </div>
+                  <p
+                    style="
+                      font-size: 12px;
+                      color: #475569;
+                      line-height: 1.45;
+                      margin-bottom: 10px;
+                      display: -webkit-box;
+                      -webkit-line-clamp: 2;
+                      -webkit-box-orient: vertical;
+                      overflow: hidden;
+                    "
+                  >
+                    Build web interfaces with genuine design quality, not AI
+                    slop.
+                  </p>
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 4px;
+                      font-size: 12px;
+                      font-weight: 700;
+                      color: #059669;
+                    "
+                  >
+                    Read write-up <span>→</span>
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <div class="design-note info">
+            <strong>Why this works:</strong>
+            <ul style="margin: 6px 0 0 18px">
+              <li>Hero images act as visual anchors — impossible to miss</li>
+              <li>"Read write-up →" CTA is explicit language, no guessing</li>
+              <li>
+                Whole card hover lifts — signals clickability before you read
+                the CTA
+              </li>
+              <li>
+                "See all in Skills tab →" header link = alternate entry point
+              </li>
+              <li>
+                Clicking a card triggers tab switch + scroll; mental model:
+                "open this"
+              </li>
+              <li>
+                Dashboard stays short — 3 cards in a grid, not 3 full READMEs
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="version active" data-version="2">
+          <div class="app-shell">
+            <div class="profile-tabs four-tabs">
+              <div class="profile-tab active">
+                <div class="tab-badge">▦</div>
+                <div class="tab-info">
+                  <div class="tab-label">Dashboard</div>
+                  <div class="tab-meta">metrics · charts</div>
+                </div>
+              </div>
+              <div class="profile-tab emerald">
+                <div class="tab-badge">⬢</div>
+                <div class="tab-info">
+                  <div class="tab-label">Skills</div>
+                  <div class="tab-meta">inventory · deep dives</div>
+                </div>
+              </div>
+              <div class="profile-tab indigo">
+                <div class="tab-badge">✎</div>
+                <div class="tab-info">
+                  <div class="tab-label">Write-up</div>
+                  <div class="tab-meta">by Claude</div>
+                </div>
+              </div>
+              <div class="profile-tab purple">
+                <div class="tab-badge">✦</div>
+                <div class="tab-info">
+                  <div class="tab-label">Claude Insights</div>
+                  <div class="tab-meta">by Claude</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sub-header">
+              <h3>
+                Skill deep dives
+                <span
+                  style="
+                    font-size: 11px;
+                    color: #059669;
+                    font-weight: 700;
+                    padding: 2px 8px;
+                    background: #d1fae5;
+                    border-radius: 999px;
+                    margin-left: 6px;
+                  "
+                  >3 published</span
+                >
+              </h3>
+              <a
+                href="#option-e"
+                style="
+                  font-size: 12px;
+                  color: #2563eb;
+                  text-decoration: none;
+                  font-weight: 600;
+                "
+                >See all 3 in Skills tab →</a
+              >
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin-bottom: 14px">
+              In-depth explanations this developer published for specific
+              skills. Tap a card to read.
+            </p>
+
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+                gap: 12px;
+              "
+            >
+              <a
+                href="#"
+                style="
+                  display: block;
+                  text-decoration: none;
+                  color: inherit;
+                  border: 1px solid #e2e8f0;
+                  border-radius: 12px;
+                  overflow: hidden;
+                  background: #fff;
+                  transition: all 0.15s;
+                "
+                onmouseover="
+                  this.style.borderColor = '#10b981';
+                  this.style.boxShadow = '0 4px 12px rgba(16,185,129,0.15)';
+                  this.style.transform = 'translateY(-2px)';
+                "
+                onmouseout="
+                  this.style.borderColor = '#e2e8f0';
+                  this.style.boxShadow = 'none';
+                  this.style.transform = 'none';
+                "
+              >
+                <svg
+                  viewBox="0 0 400 120"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style="
+                    width: 100%;
+                    display: block;
+                    background: linear-gradient(135deg, #0f172a, #4f46e5);
+                  "
+                >
+                  <text
+                    x="50%"
+                    y="58%"
+                    font-size="20"
+                    font-weight="700"
+                    fill="#fff"
+                    text-anchor="middle"
+                    font-family="Inter"
+                  >
+                    skill-showcase
+                  </text>
+                </svg>
+                <div style="padding: 12px 14px">
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 6px;
+                      margin-bottom: 4px;
+                    "
+                  >
+                    <span
+                      style="font-size: 14px; font-weight: 700; color: #0f172a"
+                      >skill-showcase</span
+                    >
+                    <span class="skill-badge-source custom">custom</span>
+                  </div>
+                  <p
+                    style="
+                      font-size: 12px;
+                      color: #475569;
+                      line-height: 1.45;
+                      margin-bottom: 10px;
+                      display: -webkit-box;
+                      -webkit-line-clamp: 2;
+                      -webkit-box-orient: vertical;
+                      overflow: hidden;
+                    "
+                  >
+                    Build a portable single-file HTML showcase of your Claude
+                    Code skills.
+                  </p>
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 4px;
+                      font-size: 12px;
+                      font-weight: 700;
+                      color: #059669;
+                    "
+                  >
+                    Read deep dive <span>→</span>
+                  </div>
+                </div>
+              </a>
+
+              <a
+                href="#"
+                style="
+                  display: block;
+                  text-decoration: none;
+                  color: inherit;
+                  border: 1px solid #e2e8f0;
+                  border-radius: 12px;
+                  overflow: hidden;
+                  background: #fff;
+                  transition: all 0.15s;
+                "
+                onmouseover="
+                  this.style.borderColor = '#10b981';
+                  this.style.boxShadow = '0 4px 12px rgba(16,185,129,0.15)';
+                  this.style.transform = 'translateY(-2px)';
+                "
+                onmouseout="
+                  this.style.borderColor = '#e2e8f0';
+                  this.style.boxShadow = 'none';
+                  this.style.transform = 'none';
+                "
+              >
+                <svg
+                  viewBox="0 0 400 120"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style="
+                    width: 100%;
+                    display: block;
+                    background: linear-gradient(135deg, #7c2d12, #ea580c);
+                  "
+                >
+                  <text
+                    x="50%"
+                    y="58%"
+                    font-size="20"
+                    font-weight="700"
+                    fill="#fff"
+                    text-anchor="middle"
+                    font-family="Inter"
+                  >
+                    ux-mockup
+                  </text>
+                </svg>
+                <div style="padding: 12px 14px">
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 6px;
+                      margin-bottom: 4px;
+                    "
+                  >
+                    <span
+                      style="font-size: 14px; font-weight: 700; color: #0f172a"
+                      >ux-mockup</span
+                    >
+                    <span class="skill-badge-source custom">custom</span>
+                  </div>
+                  <p
+                    style="
+                      font-size: 12px;
+                      color: #475569;
+                      line-height: 1.45;
+                      margin-bottom: 10px;
+                      display: -webkit-box;
+                      -webkit-line-clamp: 2;
+                      -webkit-box-orient: vertical;
+                      overflow: hidden;
+                    "
+                  >
+                    Interactive HTML mockups for UX review with feedback
+                    collection + viewport toggle.
+                  </p>
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 4px;
+                      font-size: 12px;
+                      font-weight: 700;
+                      color: #059669;
+                    "
+                  >
+                    Read deep dive <span>→</span>
+                  </div>
+                </div>
+              </a>
+
+              <a
+                href="#"
+                style="
+                  display: block;
+                  text-decoration: none;
+                  color: inherit;
+                  border: 1px solid #e2e8f0;
+                  border-radius: 12px;
+                  overflow: hidden;
+                  background: #fff;
+                  transition: all 0.15s;
+                "
+                onmouseover="
+                  this.style.borderColor = '#10b981';
+                  this.style.boxShadow = '0 4px 12px rgba(16,185,129,0.15)';
+                  this.style.transform = 'translateY(-2px)';
+                "
+                onmouseout="
+                  this.style.borderColor = '#e2e8f0';
+                  this.style.boxShadow = 'none';
+                  this.style.transform = 'none';
+                "
+              >
+                <svg
+                  viewBox="0 0 400 120"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style="
+                    width: 100%;
+                    display: block;
+                    background: linear-gradient(135deg, #164e63, #06b6d4);
+                  "
+                >
+                  <text
+                    x="50%"
+                    y="58%"
+                    font-size="20"
+                    font-weight="700"
+                    fill="#fff"
+                    text-anchor="middle"
+                    font-family="Inter"
+                  >
+                    frontend-design
+                  </text>
+                </svg>
+                <div style="padding: 12px 14px">
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 6px;
+                      margin-bottom: 4px;
+                    "
+                  >
+                    <span
+                      style="font-size: 14px; font-weight: 700; color: #0f172a"
+                      >frontend-design</span
+                    >
+                    <span class="skill-badge-source custom">custom</span>
+                  </div>
+                  <p
+                    style="
+                      font-size: 12px;
+                      color: #475569;
+                      line-height: 1.45;
+                      margin-bottom: 10px;
+                      display: -webkit-box;
+                      -webkit-line-clamp: 2;
+                      -webkit-box-orient: vertical;
+                      overflow: hidden;
+                    "
+                  >
+                    Build web interfaces with genuine design quality, not AI
+                    slop.
+                  </p>
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 4px;
+                      font-size: 12px;
+                      font-weight: 700;
+                      color: #059669;
+                    "
+                  >
+                    Read deep dive <span>→</span>
+                  </div>
+                </div>
+              </a>
+            </div>
+
+            <!-- Naming variants shown inline for comparison -->
+            <div
+              style="
+                margin-top: 28px;
+                border: 1px dashed #cbd5e1;
+                border-radius: 12px;
+                padding: 16px;
+                background: #fafafa;
+              "
+            >
+              <div
+                style="
+                  font-size: 10px;
+                  font-weight: 800;
+                  text-transform: uppercase;
+                  letter-spacing: 0.1em;
+                  color: #64748b;
+                  margin-bottom: 12px;
+                "
+              >
+                Header naming — pick one
+              </div>
+              <div
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px"
+              >
+                <div
+                  style="
+                    background: #fff;
+                    border: 2px solid #10b981;
+                    border-radius: 8px;
+                    padding: 10px 12px;
+                  "
+                >
+                  <div
+                    style="font-size: 15px; font-weight: 700; color: #0f172a"
+                  >
+                    Skill deep dives
+                    <span
+                      style="
+                        font-size: 10px;
+                        color: #059669;
+                        font-weight: 700;
+                        padding: 2px 6px;
+                        background: #d1fae5;
+                        border-radius: 999px;
+                      "
+                      >3 published</span
+                    >
+                  </div>
+                  <div
+                    style="
+                      font-size: 11px;
+                      color: #059669;
+                      margin-top: 4px;
+                      font-weight: 600;
+                    "
+                  >
+                    ✓ Claude's pick — signals depth, no "write-up" overlap with
+                    Claude tab
+                  </div>
+                </div>
+                <div
+                  style="
+                    background: #fff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    padding: 10px 12px;
+                  "
+                >
+                  <div
+                    style="font-size: 15px; font-weight: 700; color: #0f172a"
+                  >
+                    Skill showcase
+                    <span
+                      style="
+                        font-size: 10px;
+                        color: #64748b;
+                        font-weight: 700;
+                        padding: 2px 6px;
+                        background: #f1f5f9;
+                        border-radius: 999px;
+                      "
+                      >3 featured</span
+                    >
+                  </div>
+                  <div style="font-size: 11px; color: #64748b; margin-top: 4px">
+                    Matches existing code naming — neutral, brand-aligned with
+                    insightharness
+                  </div>
+                </div>
+                <div
+                  style="
+                    background: #fff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    padding: 10px 12px;
+                  "
+                >
+                  <div
+                    style="font-size: 15px; font-weight: 700; color: #0f172a"
+                  >
+                    Skill spotlights
+                    <span
+                      style="
+                        font-size: 10px;
+                        color: #64748b;
+                        font-weight: 700;
+                        padding: 2px 6px;
+                        background: #f1f5f9;
+                        border-radius: 999px;
+                      "
+                      >3 highlighted</span
+                    >
+                  </div>
+                  <div style="font-size: 11px; color: #64748b; margin-top: 4px">
+                    Curation signal — "these are the ones I'm drawing attention
+                    to"
+                  </div>
+                </div>
+                <div
+                  style="
+                    background: #fff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    padding: 10px 12px;
+                  "
+                >
+                  <div
+                    style="font-size: 15px; font-weight: 700; color: #0f172a"
+                  >
+                    Skill explainers
+                    <span
+                      style="
+                        font-size: 10px;
+                        color: #64748b;
+                        font-weight: 700;
+                        padding: 2px 6px;
+                        background: #f1f5f9;
+                        border-radius: 999px;
+                      "
+                      >3 available</span
+                    >
+                  </div>
+                  <div style="font-size: 11px; color: #64748b; margin-top: 4px">
+                    Utilitarian — sounds like docs/tutorials
+                  </div>
+                </div>
+              </div>
+              <div style="margin-top: 10px; font-size: 11px; color: #64748b">
+                CTA on each card would match: "Read deep dive →" / "Read
+                showcase →" / "Read spotlight →" / "Read explainer →"
+              </div>
+            </div>
+          </div>
+
+          <div class="design-note info">
+            <strong>v2 changes vs v1:</strong>
+            <ul style="margin: 6px 0 0 18px">
+              <li>Header link now shows count: "See all 3 in Skills tab →"</li>
+              <li>
+                Renamed "Skill write-ups" → "Skill deep dives" (avoids Write-up
+                tab collision)
+              </li>
+              <li>CTA on each card: "Read write-up" → "Read deep dive"</li>
+              <li>
+                Skills tab meta text also updated: "inventory · deep dives"
+              </li>
+              <li>
+                Count pill reads "3 published" — matches author intent of
+                "things I chose to publish"
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="feedback-area">
+        <label for="fb-option-e">Feedback on Option E</label>
+        <textarea
+          id="fb-option-e"
+          placeholder="Does the hero thumbnail card + 'Read write-up →' CTA solve the discoverability concern?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ══════════════════════════════════════ -->
+    <!-- OPTION F — Inline-first write-up + rest as ToC -->
+    <!-- ══════════════════════════════════════ -->
+    <div class="mockup-section" data-section-id="option-f" id="option-f">
+      <span class="option-strip c">Option F · Inline preview + ToC</span>
+      <span class="section-label"
+        >Option F — First write-up inline, rest link to Skills tab</span
+      >
+      <p class="section-desc">
+        Show ONE write-up inline on the Dashboard (the most-used or most-recent
+        one) with the full polished typography from Option D. Under it, list the
+        remaining write-ups as a compact ToC that links to the Skills tab.
+        Reader sees <em>what a write-up is</em> without needing to switch tabs —
+        but the page stays bounded to one readme, not three.
+      </p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="app-shell">
+            <div class="profile-tabs four-tabs">
+              <div class="profile-tab active">
+                <div class="tab-badge">▦</div>
+                <div class="tab-info">
+                  <div class="tab-label">Dashboard</div>
+                  <div class="tab-meta">metrics · charts</div>
+                </div>
+              </div>
+              <div class="profile-tab emerald">
+                <div class="tab-badge">⬢</div>
+                <div class="tab-info">
+                  <div class="tab-label">Skills</div>
+                  <div class="tab-meta">inventory · write-ups</div>
+                </div>
+              </div>
+              <div class="profile-tab indigo">
+                <div class="tab-badge">✎</div>
+                <div class="tab-info">
+                  <div class="tab-label">Write-up</div>
+                </div>
+              </div>
+              <div class="profile-tab purple">
+                <div class="tab-badge">✦</div>
+                <div class="tab-info">
+                  <div class="tab-label">Claude Insights</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sub-header">
+              <h3>Featured write-up</h3>
+              <a
+                href="#"
+                style="
+                  font-size: 12px;
+                  color: #2563eb;
+                  text-decoration: none;
+                  font-weight: 600;
+                "
+                >See all 3 in Skills tab →</a
+              >
+            </div>
+
+            <div
+              style="
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                padding: 20px;
+                background: #fff;
+              "
+            >
+              <div class="readme-polished">
+                <svg
+                  class="hero-img"
+                  viewBox="0 0 800 160"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style="
+                    background: linear-gradient(135deg, #0f172a, #4f46e5);
+                    height: auto;
+                  "
+                >
+                  <text
+                    x="50%"
+                    y="58%"
+                    font-size="26"
+                    font-weight="800"
+                    fill="#fff"
+                    text-anchor="middle"
+                    font-family="Inter"
+                  >
+                    skill-showcase
+                  </text>
+                </svg>
+                <h1 style="margin-top: 6px">skill-showcase</h1>
+                <p>
+                  <em
+                    >Build a single-file public HTML showcase of a collection of
+                    Claude Code skills.</em
+                  >
+                </p>
+                <h2>Overview</h2>
+                <p>
+                  Turns a folder of skills into one portable HTML file. No build
+                  step. Ships PII-scrubbed by default.
+                </p>
+                <h2>Quick start</h2>
+                <pre><code>skill-showcase --skills-dir ~/.claude/skills --output ~/showcase.html</code></pre>
+              </div>
+            </div>
+
+            <div class="sub-header" style="margin-top: 28px">
+              <h3>More write-ups</h3>
+              <span class="count-pill">2 more</span>
+            </div>
+            <div
+              style="
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                background: #fff;
+                overflow: hidden;
+              "
+            >
+              <a
+                href="#"
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  padding: 14px 16px;
+                  text-decoration: none;
+                  color: inherit;
+                  border-bottom: 1px solid #f1f5f9;
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  style="
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 6px;
+                    flex-shrink: 0;
+                    background: linear-gradient(135deg, #7c2d12, #ea580c);
+                  "
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <text
+                    x="50%"
+                    y="58%"
+                    font-size="10"
+                    font-weight="700"
+                    fill="#fff"
+                    text-anchor="middle"
+                    font-family="Inter"
+                  >
+                    UX
+                  </text>
+                </svg>
+                <div style="flex: 1; min-width: 0">
+                  <div
+                    style="font-size: 14px; font-weight: 600; color: #0f172a"
+                  >
+                    ux-mockup
+                  </div>
+                  <div
+                    style="
+                      font-size: 12px;
+                      color: #64748b;
+                      overflow: hidden;
+                      text-overflow: ellipsis;
+                      white-space: nowrap;
+                    "
+                  >
+                    Interactive HTML mockups for UX design review…
+                  </div>
+                </div>
+                <span class="skill-badge-source custom">custom</span>
+                <span style="font-size: 12px; color: #2563eb; font-weight: 600"
+                  >Read →</span
+                >
+              </a>
+              <a
+                href="#"
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  padding: 14px 16px;
+                  text-decoration: none;
+                  color: inherit;
+                "
+              >
+                <svg
+                  viewBox="0 0 48 48"
+                  style="
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 6px;
+                    flex-shrink: 0;
+                    background: linear-gradient(135deg, #164e63, #06b6d4);
+                  "
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <text
+                    x="50%"
+                    y="58%"
+                    font-size="10"
+                    font-weight="700"
+                    fill="#fff"
+                    text-anchor="middle"
+                    font-family="Inter"
+                  >
+                    FE
+                  </text>
+                </svg>
+                <div style="flex: 1; min-width: 0">
+                  <div
+                    style="font-size: 14px; font-weight: 600; color: #0f172a"
+                  >
+                    frontend-design
+                  </div>
+                  <div
+                    style="
+                      font-size: 12px;
+                      color: #64748b;
+                      overflow: hidden;
+                      text-overflow: ellipsis;
+                      white-space: nowrap;
+                    "
+                  >
+                    Build web interfaces with genuine design quality, not AI
+                    slop…
+                  </div>
+                </div>
+                <span class="skill-badge-source custom">custom</span>
+                <span style="font-size: 12px; color: #2563eb; font-weight: 600"
+                  >Read →</span
+                >
+              </a>
+            </div>
+          </div>
+
+          <div class="design-note info">
+            <strong>Trade-off:</strong> visitors see real content without
+            leaving Dashboard (no "jump to another tab" discomfort), but the
+            page is longer than E. Good when you have 3+ write-ups; less good
+            when you have 10. Which is picked as "Featured"? Author-selected or
+            highest-used.
+          </div>
+        </div>
+      </div>
+
+      <div class="feedback-area">
+        <label for="fb-option-f">Feedback on Option F</label>
+        <textarea
+          id="fb-option-f"
+          placeholder="Is showing one inline the right compromise? Who picks the featured one?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ══════════════════════════════════════ -->
+    <!-- OPTION G — Slide-over drawer (no tab switch) -->
+    <!-- ══════════════════════════════════════ -->
+    <div class="mockup-section" data-section-id="option-g" id="option-g">
+      <span class="option-strip c">Option G · Slide-over drawer</span>
+      <span class="section-label"
+        >Option G — Click card → slide-over drawer on Dashboard</span
+      >
+      <p class="section-desc">
+        Same teaser cards as Option E, but instead of switching to the Skills
+        tab, clicking one slides a drawer in from the right with the full
+        write-up. User never leaves Dashboard. Drawer has an "Open in Skills
+        tab" link for full-page view. Resolves the "feels unorthodox to jump
+        tabs" concern.
+      </p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="app-shell" style="position: relative; overflow: hidden">
+            <div class="profile-tabs four-tabs">
+              <div class="profile-tab active">
+                <div class="tab-badge">▦</div>
+                <div class="tab-info">
+                  <div class="tab-label">Dashboard</div>
+                </div>
+              </div>
+              <div class="profile-tab emerald">
+                <div class="tab-badge">⬢</div>
+                <div class="tab-info"><div class="tab-label">Skills</div></div>
+              </div>
+              <div class="profile-tab indigo">
+                <div class="tab-badge">✎</div>
+                <div class="tab-info">
+                  <div class="tab-label">Write-up</div>
+                </div>
+              </div>
+              <div class="profile-tab purple">
+                <div class="tab-badge">✦</div>
+                <div class="tab-info">
+                  <div class="tab-label">Claude Insights</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="position: relative; min-height: 500px">
+              <!-- Dimmed dashboard behind -->
+              <div style="opacity: 0.45; pointer-events: none">
+                <div class="sub-header"><h3>Skill write-ups</h3></div>
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 12px;
+                  "
+                >
+                  <div
+                    style="
+                      border: 1px solid #e2e8f0;
+                      border-radius: 12px;
+                      overflow: hidden;
+                      background: #fff;
+                    "
+                  >
+                    <div
+                      style="
+                        height: 80px;
+                        background: linear-gradient(135deg, #0f172a, #4f46e5);
+                      "
+                    ></div>
+                    <div style="padding: 10px">
+                      <div style="font-size: 13px; font-weight: 700">
+                        skill-showcase
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      border: 1px solid #e2e8f0;
+                      border-radius: 12px;
+                      overflow: hidden;
+                      background: #fff;
+                    "
+                  >
+                    <div
+                      style="
+                        height: 80px;
+                        background: linear-gradient(135deg, #7c2d12, #ea580c);
+                      "
+                    ></div>
+                    <div style="padding: 10px">
+                      <div style="font-size: 13px; font-weight: 700">
+                        ux-mockup
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      border: 1px solid #e2e8f0;
+                      border-radius: 12px;
+                      overflow: hidden;
+                      background: #fff;
+                    "
+                  >
+                    <div
+                      style="
+                        height: 80px;
+                        background: linear-gradient(135deg, #164e63, #06b6d4);
+                      "
+                    ></div>
+                    <div style="padding: 10px">
+                      <div style="font-size: 13px; font-weight: 700">
+                        frontend-design
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Slide-over drawer -->
+              <div
+                style="
+                  position: absolute;
+                  top: 0;
+                  right: -20px;
+                  width: 60%;
+                  max-width: 560px;
+                  background: #fff;
+                  border-left: 1px solid #e2e8f0;
+                  box-shadow: -10px 0 30px rgba(15, 23, 42, 0.15);
+                  border-radius: 12px 0 0 12px;
+                  height: 100%;
+                  overflow-y: auto;
+                "
+              >
+                <div
+                  style="
+                    position: sticky;
+                    top: 0;
+                    background: #fff;
+                    border-bottom: 1px solid #f1f5f9;
+                    padding: 12px 18px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <span style="font-size: 15px; font-weight: 700"
+                      >skill-showcase</span
+                    >
+                    <span class="skill-badge-source custom">custom</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px">
+                    <a
+                      href="#"
+                      style="
+                        font-size: 12px;
+                        color: #2563eb;
+                        text-decoration: none;
+                        font-weight: 600;
+                      "
+                      >Open in Skills tab ↗</a
+                    >
+                    <button
+                      style="
+                        background: none;
+                        border: none;
+                        font-size: 20px;
+                        cursor: pointer;
+                        color: #64748b;
+                        line-height: 1;
+                      "
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+                <div style="padding: 18px">
+                  <div class="readme-polished">
+                    <svg
+                      class="hero-img"
+                      viewBox="0 0 800 140"
+                      xmlns="http://www.w3.org/2000/svg"
+                      style="
+                        background: linear-gradient(135deg, #0f172a, #4f46e5);
+                        height: auto;
+                      "
+                    >
+                      <text
+                        x="50%"
+                        y="58%"
+                        font-size="24"
+                        font-weight="800"
+                        fill="#fff"
+                        text-anchor="middle"
+                        font-family="Inter"
+                      >
+                        skill-showcase
+                      </text>
+                    </svg>
+                    <h2>Overview</h2>
+                    <p>
+                      Turn a folder of Claude skills into one self-contained
+                      HTML file. Works offline. Ships PII-scrubbed.
+                    </p>
+                    <h2>Quick start</h2>
+                    <pre><code>skill-showcase --skills-dir ~/.claude/skills</code></pre>
+                    <h2>Flags</h2>
+                    <ul>
+                      <li><code>--output</code> — destination path</li>
+                      <li>
+                        <code>--exclude-private</code> — skip private skills
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="design-note info">
+            <strong>Why this works / doesn't:</strong>
+            <ul style="margin: 6px 0 0 18px">
+              <li>
+                ✅ No unexpected tab switch — user stays where they clicked
+              </li>
+              <li>
+                ✅ Still offers Skills tab for deep browsing ("Open in Skills
+                tab ↗")
+              </li>
+              <li>
+                ✅ Shareable deep-link:
+                <code>?skill=skill-showcase</code> auto-opens drawer
+              </li>
+              <li>
+                ⚠️ Drawer on mobile becomes full-screen sheet — needs extra
+                design pass
+              </li>
+              <li>
+                ⚠️ Two places showing the same content (drawer + Skills tab) =
+                risk of feeling redundant
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="feedback-area">
+        <label for="fb-option-g">Feedback on Option G</label>
+        <textarea
+          id="fb-option-g"
+          placeholder="Drawer vs tab switch — which feels more natural?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ══════════════════════════════════════ -->
+    <!-- OPTION H — No separate tab, Dashboard-only with visual prominence -->
+    <!-- ══════════════════════════════════════ -->
+    <div class="mockup-section" data-section-id="option-h" id="option-h">
+      <span class="option-strip b">Option H · Counter-option: no new tab</span>
+      <span class="section-label"
+        >Option H — Skip the tab, go visual on Dashboard</span
+      >
+      <p class="section-desc">
+        Counterpoint to C/E/F/G: maybe a new tab <em>is</em> overkill. Make the
+        Dashboard write-up section visually unmissable (full-bleed hero strip
+        with thumbnails) but keep all content in-place via accordion. Page is
+        longer, but discoverability is guaranteed and there's no tab-switch
+        friction. Test case for "is the extra tab actually earning its weight?"
+      </p>
+
+      <div class="version-container">
+        <div class="version active" data-version="1">
+          <div class="app-shell">
+            <div class="profile-tabs">
+              <div class="profile-tab active">
+                <div class="tab-badge">▦</div>
+                <div class="tab-info">
+                  <div class="tab-label">Dashboard</div>
+                  <div class="tab-meta">metrics · charts · skills</div>
+                </div>
+              </div>
+              <div class="profile-tab indigo">
+                <div class="tab-badge">✎</div>
+                <div class="tab-info">
+                  <div class="tab-label">Write-up</div>
+                </div>
+              </div>
+              <div class="profile-tab purple">
+                <div class="tab-badge">✦</div>
+                <div class="tab-info">
+                  <div class="tab-label">Claude Insights</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Big visual banner — impossible to miss -->
+            <div
+              style="
+                border: 2px solid transparent;
+                background:
+                  linear-gradient(#fff, #fff) padding-box,
+                  linear-gradient(135deg, #10b981, #3b82f6) border-box;
+                border-radius: 14px;
+                padding: 18px;
+                margin-bottom: 20px;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  margin-bottom: 14px;
+                "
+              >
+                <div>
+                  <div
+                    style="
+                      font-size: 11px;
+                      font-weight: 800;
+                      text-transform: uppercase;
+                      letter-spacing: 0.1em;
+                      color: #059669;
+                      margin-bottom: 4px;
+                    "
+                  >
+                    ✦ Featured write-ups
+                  </div>
+                  <h3 style="font-size: 17px; font-weight: 700">
+                    3 skills published by this developer
+                  </h3>
+                </div>
+              </div>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(3, 1fr);
+                  gap: 10px;
+                "
+              >
+                <button
+                  style="
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
+                    overflow: hidden;
+                    background: #fff;
+                    cursor: pointer;
+                    padding: 0;
+                    text-align: left;
+                  "
+                >
+                  <svg
+                    viewBox="0 0 400 80"
+                    style="
+                      width: 100%;
+                      display: block;
+                      background: linear-gradient(135deg, #0f172a, #4f46e5);
+                    "
+                  >
+                    <text
+                      x="50%"
+                      y="60%"
+                      font-size="16"
+                      font-weight="700"
+                      fill="#fff"
+                      text-anchor="middle"
+                      font-family="Inter"
+                    >
+                      skill-showcase
+                    </text>
+                  </svg>
+                  <div style="padding: 8px 10px">
+                    <div style="font-size: 12px; font-weight: 700">
+                      skill-showcase
+                    </div>
+                  </div>
+                </button>
+                <button
+                  style="
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
+                    overflow: hidden;
+                    background: #fff;
+                    cursor: pointer;
+                    padding: 0;
+                    text-align: left;
+                  "
+                >
+                  <svg
+                    viewBox="0 0 400 80"
+                    style="
+                      width: 100%;
+                      display: block;
+                      background: linear-gradient(135deg, #7c2d12, #ea580c);
+                    "
+                  >
+                    <text
+                      x="50%"
+                      y="60%"
+                      font-size="16"
+                      font-weight="700"
+                      fill="#fff"
+                      text-anchor="middle"
+                      font-family="Inter"
+                    >
+                      ux-mockup
+                    </text>
+                  </svg>
+                  <div style="padding: 8px 10px">
+                    <div style="font-size: 12px; font-weight: 700">
+                      ux-mockup
+                    </div>
+                  </div>
+                </button>
+                <button
+                  style="
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
+                    overflow: hidden;
+                    background: #fff;
+                    cursor: pointer;
+                    padding: 0;
+                    text-align: left;
+                  "
+                >
+                  <svg
+                    viewBox="0 0 400 80"
+                    style="
+                      width: 100%;
+                      display: block;
+                      background: linear-gradient(135deg, #164e63, #06b6d4);
+                    "
+                  >
+                    <text
+                      x="50%"
+                      y="60%"
+                      font-size="16"
+                      font-weight="700"
+                      fill="#fff"
+                      text-anchor="middle"
+                      font-family="Inter"
+                    >
+                      frontend-design
+                    </text>
+                  </svg>
+                  <div style="padding: 8px 10px">
+                    <div style="font-size: 12px; font-weight: 700">
+                      frontend-design
+                    </div>
+                  </div>
+                </button>
+              </div>
+              <p style="font-size: 12px; color: #64748b; margin-top: 12px">
+                Click a thumbnail to jump to its write-up below ↓
+              </p>
+            </div>
+
+            <div class="skill-accordion">
+              <div class="skill-accordion-item">
+                <div class="skill-accordion-header" data-acc-toggle>
+                  <svg
+                    class="skill-chev"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path d="M7 5l6 5-6 5V5z" />
+                  </svg>
+                  <span class="skill-accordion-name">skill-showcase</span>
+                  <span class="skill-accordion-desc"
+                    >Build a single-file public HTML showcase…</span
+                  >
+                  <span class="skill-badge-source custom">custom</span>
+                </div>
+                <div class="skill-accordion-body">
+                  <div class="readme-polished"><p>Expand to read.</p></div>
+                </div>
+              </div>
+              <div class="skill-accordion-item">
+                <div class="skill-accordion-header" data-acc-toggle>
+                  <svg
+                    class="skill-chev"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path d="M7 5l6 5-6 5V5z" />
+                  </svg>
+                  <span class="skill-accordion-name">ux-mockup</span>
+                  <span class="skill-accordion-desc"
+                    >Interactive HTML mockups for UX review…</span
+                  >
+                  <span class="skill-badge-source custom">custom</span>
+                </div>
+                <div class="skill-accordion-body">
+                  <div class="readme-polished"><p>Expand to read.</p></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="design-note">
+            <strong>Trade-off:</strong> discoverability is 100% but the page is
+            now the longest of any option. Works if you trust users to
+            scroll-then-click-to-expand. Doesn't scale past ~5 write-ups. Good
+            stress-test: do we actually need the Skills tab, or is this enough?
+          </div>
+        </div>
+      </div>
+
+      <div class="feedback-area">
+        <label for="fb-option-h">Feedback on Option H</label>
+        <textarea
+          id="fb-option-h"
+          placeholder="Does this make the tab unnecessary, or does it prove you still want the tab?"
+        ></textarea>
+        <div class="char-count"></div>
+      </div>
+    </div>
+
+    <div style="height: 80px"></div>
+
+    <script>
+      // Accordion toggle: click row to open/close
+      document.querySelectorAll("[data-acc-toggle]").forEach((hdr) => {
+        hdr.addEventListener("click", () => {
+          const item = hdr.closest(".skill-accordion-item");
+          item.classList.toggle("open");
+        });
+      });
+
+      // S&C card click-to-expand
+      document.querySelectorAll("[data-click-expand]").forEach((card) => {
+        card.addEventListener("click", () => {
+          card.classList.toggle("expanded");
+          card.classList.toggle("compact");
+        });
+      });
+
+      function copyAllFeedback() {
+        const feedback = {};
+        document.querySelectorAll(".mockup-section").forEach((section) => {
+          const id = section.dataset.sectionId;
+          const textarea = section.querySelector("textarea");
+          if (textarea && textarea.value.trim()) {
+            feedback[id] = { feedback: textarea.value.trim() };
+          }
+        });
+        if (Object.keys(feedback).length === 0) {
+          alert("No feedback entered yet.");
+          return;
+        }
+        const json = JSON.stringify(
+          {
+            mockup: document.title,
+            timestamp: new Date().toISOString(),
+            sections: feedback,
+          },
+          null,
+          2,
+        );
+        navigator.clipboard.writeText(json).then(() => {
+          const btn = document.querySelector(".copy-all-btn");
+          btn.textContent = "Copied!";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = "Copy All Feedback";
+            btn.classList.remove("copied");
+          }, 2000);
+        });
+      }
+
+      document.querySelectorAll(".feedback-area textarea").forEach((ta) => {
+        const counter = ta.parentElement.querySelector(".char-count");
+        if (!counter) return;
+        ta.addEventListener("input", () => {
+          counter.textContent = ta.value.length
+            ? `${ta.value.length} chars`
+            : "";
+        });
+      });
+    </script>
+  </body>
+</html>
