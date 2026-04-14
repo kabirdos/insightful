@@ -124,12 +124,17 @@ function ProjectCard({ link }: { link: ProjectCardData }) {
   return (
     <div
       className={clsx(
-        "group relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow dark:border-slate-700 dark:bg-slate-800/50",
+        "group relative flex overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow dark:border-slate-700 dark:bg-slate-800/50",
         hoverClass,
       )}
     >
       {showImage && safeOgImage && (
-        <div className="relative aspect-[16/7] w-full overflow-hidden bg-slate-100 dark:bg-slate-900">
+        // Horizontal thumbnail: fixed width, aspect ratio matches the
+        // OG 1200×630 standard (40:21), and object-contain so the full
+        // image is always visible — no cropping. Letterboxing falls
+        // back to a neutral slate fill. Hidden on the smallest screens
+        // to keep the card compact on phones.
+        <div className="relative my-3 ml-3 hidden aspect-[40/21] w-32 shrink-0 self-center overflow-hidden rounded-md bg-slate-100 dark:bg-slate-900 sm:block">
           {/* Plain <img> on purpose — OG images come from arbitrary
               third-party hosts and next/image would require wildcard
               remotePatterns in next.config.ts. URL has been gated by
@@ -138,14 +143,14 @@ function ProjectCard({ link }: { link: ProjectCardData }) {
           <img
             src={safeOgImage}
             alt=""
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
             onError={() => setImageFailed(true)}
             loading="lazy"
             referrerPolicy="no-referrer"
           />
         </div>
       )}
-      <div className="p-3">
+      <div className="min-w-0 flex-1 p-3">
         {showSiteRow && (
           <div className="mb-1 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
             {safeFavicon && (

@@ -445,21 +445,13 @@ export default function InsightDetailPage() {
                 <HowIWorkCluster harnessData={report.harnessData} />
               )}
 
-              {/* Workflow Diagrams */}
-              {report.harnessData.workflowData &&
-                !isSectionHidden(hiddenSet, "workflowData") && (
-                  <WorkflowDiagram
-                    workflowData={report.harnessData.workflowData}
-                    agentDispatch={report.harnessData.agentDispatch}
-                    authorHandle={report.author.username}
-                  />
-                )}
-
               {/* Skills Teaser — hero-thumbnail cards for the top shareable
                   skills. Clicking one switches to the Skills tab and opens
                   that deep-dive. Renders nothing when no skill carries
                   showcase data, so reports generated without --include-skills
-                  aren't affected. */}
+                  aren't affected. Placed between How-I-Work and the
+                  workflow diagram so the deep-dives sit next to the
+                  behavioral context that motivates them. */}
               {!isSectionHidden(hiddenSet, "skillInventory") &&
                 report.harnessData.skillInventory.length > 0 && (
                   <SkillsTeaserCard
@@ -470,6 +462,16 @@ export default function InsightDetailPage() {
                       (s) => s.name,
                     )}
                     onNavigateToSkill={handleNavigateToSkill}
+                  />
+                )}
+
+              {/* Workflow Diagrams */}
+              {report.harnessData.workflowData &&
+                !isSectionHidden(hiddenSet, "workflowData") && (
+                  <WorkflowDiagram
+                    workflowData={report.harnessData.workflowData}
+                    agentDispatch={report.harnessData.agentDispatch}
+                    authorHandle={report.author.username}
                   />
                 )}
 
