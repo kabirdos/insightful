@@ -2,7 +2,7 @@
 
 import clsx from "clsx";
 
-export type ProfileTab = "dashboard" | "writeup" | "insights";
+export type ProfileTab = "dashboard" | "skills" | "writeup" | "insights";
 
 interface TabDef {
   key: ProfileTab;
@@ -109,6 +109,32 @@ function WriteupIcon({ className }: { className?: string }) {
   );
 }
 
+function SkillsIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      aria-hidden="true"
+    >
+      {/* Hexagon shell — echoes the "module/building-block" metaphor. */}
+      <path
+        d="M12 2.75 20 7.25V16.75L12 21.25 4 16.75V7.25L12 2.75Z"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinejoin="round"
+      />
+      {/* Inner stacked slabs — suggest a mini-library of skills. */}
+      <path
+        d="M8 10.5h8M8 13h6M8 15.5h4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function InsightsIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -150,6 +176,17 @@ const TABS: TabDef[] = [
     Icon: DashboardIcon,
   },
   {
+    key: "skills",
+    label: "Skills",
+    meta: "inventory · deep dives",
+    idleBg: "bg-emerald-100 dark:bg-emerald-900/30",
+    idleText: "text-emerald-600 dark:text-emerald-400",
+    activeFill: "bg-emerald-50 dark:bg-emerald-950/30",
+    activeBadgeBg: "bg-emerald-600",
+    activeShadow: "shadow-[0_4px_10px_-3px_rgba(5,150,105,0.45)]",
+    Icon: SkillsIcon,
+  },
+  {
     key: "writeup",
     label: "Write-up",
     byClaude: true,
@@ -183,7 +220,7 @@ export default function ProfileTabs({ active, onChange }: ProfileTabsProps) {
     <div
       role="tablist"
       aria-label="Profile sections"
-      className="relative mb-6 grid grid-cols-1 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/50 sm:grid-cols-3"
+      className="relative mb-6 grid grid-cols-1 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/50 sm:grid-cols-2 lg:grid-cols-4"
     >
       {TABS.map((tab) => {
         const isActive = active === tab.key;

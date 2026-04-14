@@ -54,14 +54,14 @@ function SkillCard({
       >
         {skill.source}
       </div>
-      {skill.description && (
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          aria-expanded={expanded}
-          aria-label={expanded ? "Collapse description" : "Expand description"}
-          className="group mt-2 flex w-full items-start gap-1.5 text-left"
-        >
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+        aria-label={expanded ? "Collapse description" : "Expand description"}
+        className="group mt-2 flex w-full items-start gap-1.5 text-left"
+      >
+        {skill.description ? (
           <p
             className={`flex-1 text-xs leading-relaxed transition-all ${
               expanded ? "" : "line-clamp-2"
@@ -73,30 +73,34 @@ function SkillCard({
           >
             {skill.description}
           </p>
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 12 12"
-            fill="none"
-            className={`mt-0.5 shrink-0 transition-transform duration-200 ${
-              expanded ? "rotate-180" : ""
-            } ${
-              dimmed
-                ? "text-slate-400 dark:text-slate-500"
-                : "text-slate-500 dark:text-slate-400"
-            }`}
-            aria-hidden="true"
-          >
-            <path
-              d="M3 4.5l3 3 3-3"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-      )}
+        ) : (
+          <p className="flex-1 text-xs italic text-slate-400 dark:text-slate-500">
+            No description provided
+          </p>
+        )}
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
+          className={`mt-0.5 shrink-0 transition-transform duration-200 ${
+            expanded ? "rotate-180" : ""
+          } ${
+            dimmed
+              ? "text-slate-400 dark:text-slate-500"
+              : "text-slate-500 dark:text-slate-400"
+          }`}
+          aria-hidden="true"
+        >
+          <path
+            d="M3 4.5l3 3 3-3"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
     </div>
   );
 }
@@ -112,7 +116,7 @@ export default function SkillCardGrid({ skillInventory }: SkillCardGridProps) {
   return (
     <div className="mb-6 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/50">
       <h3 className="mb-4 text-[15px] font-bold text-slate-900 dark:text-slate-100">
-        Skills & Commands
+        All skills &amp; commands
       </h3>
 
       {/* Active skills */}
