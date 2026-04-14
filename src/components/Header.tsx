@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useSession, signIn, signOut } from "next-auth/react";
 import {
   Menu,
@@ -27,6 +28,8 @@ const navLinks = [
 
 export default function Header() {
   const { data: session, status } = useSession();
+  const pathname = usePathname();
+  const onUploadPage = pathname === "/upload";
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -81,7 +84,13 @@ export default function Header() {
             <>
               <Link
                 href="/upload"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                aria-current={onUploadPage ? "page" : undefined}
+                className={clsx(
+                  "inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                  onUploadPage
+                    ? "bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700"
+                    : "bg-blue-600 text-white hover:bg-blue-700",
+                )}
               >
                 <Upload className="h-4 w-4" />
                 Upload
@@ -194,7 +203,13 @@ export default function Header() {
                 <Link
                   href="/upload"
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-blue-600 dark:text-blue-400"
+                  aria-current={onUploadPage ? "page" : undefined}
+                  className={clsx(
+                    "flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium",
+                    onUploadPage
+                      ? "text-slate-700 dark:text-slate-300"
+                      : "text-blue-600 dark:text-blue-400",
+                  )}
                 >
                   <Upload className="h-4 w-4" />
                   Upload Report
