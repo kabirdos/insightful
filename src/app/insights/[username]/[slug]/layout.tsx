@@ -42,7 +42,7 @@ export async function generateMetadata({
 
   const parts: string[] = [];
   if (report.totalTokens) {
-    parts.push(`${formatTokens(report.totalTokens)} tokens`);
+    parts.push(`${formatTokens(Number(report.totalTokens))} tokens`);
   }
   if (report.sessionCount) {
     parts.push(`${report.sessionCount} sessions`);

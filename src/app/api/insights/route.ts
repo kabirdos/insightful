@@ -393,7 +393,10 @@ export async function POST(request: Request) {
           chartData: chartData ?? undefined,
           detectedSkills: detectedSkills ?? [],
           reportType: reportType ?? "insights",
-          totalTokens: totalTokens ?? null,
+          totalTokens:
+            typeof totalTokens === "number" && Number.isFinite(totalTokens)
+              ? BigInt(Math.trunc(totalTokens))
+              : null,
           durationHours: durationHours ?? null,
           avgSessionMinutes: avgSessionMinutes ?? null,
           prCount: prCount ?? null,

@@ -56,7 +56,7 @@ model InsightReport {
 
   // v3: Harness report fields
   reportType            String   @default("insights")
-  totalTokens           Int?
+  totalTokens           BigInt?
   durationHours         Int?
   avgSessionMinutes     Float?
   prCount               Int?

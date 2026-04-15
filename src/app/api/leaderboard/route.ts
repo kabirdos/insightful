@@ -73,7 +73,7 @@ export async function GET(request: Request) {
       const hd = r.harnessData as {
         stats?: { lifetimeTokens?: number };
       } | null;
-      const total = r.totalTokens ?? 0;
+      const total = r.totalTokens !== null ? Number(r.totalTokens) : 0;
       const lifetime = hd?.stats?.lifetimeTokens ?? total;
       const days = r.dayCount ?? 0;
       const weeks = days > 0 ? days / 7 : 0;
