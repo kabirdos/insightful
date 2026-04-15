@@ -194,6 +194,18 @@ describe("GET /api/insights/[username]/[slug] — non-owner visibility", () => {
     // The hidden-fetch branch must NOT have executed for a non-owner.
     expect(mockPrisma.reportProject.findMany).not.toHaveBeenCalled();
 
+    // The primary findFirst MUST pass `where: { hidden: false }` on the
+    // reportProjects include, so hidden rows are filtered at the DB query
+    // layer — not relying on a downstream in-memory filter that could be
+    // removed by accident. Without this assertion the test is self-
+    // fulfilling: the fixture happens to contain no hidden rows, so
+    // dropping the Prisma where clause would not regress the other
+    // assertions below.
+    const findFirstArgs = mockPrisma.insightReport.findFirst.mock.calls[0]?.[0];
+    expect(findFirstArgs?.include?.reportProjects?.where).toEqual({
+      hidden: false,
+    });
+
     const projectIds = body.data.reportProjects.map(
       (rp: { projectId: string }) => rp.projectId,
     );
