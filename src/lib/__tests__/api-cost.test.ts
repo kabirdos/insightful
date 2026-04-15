@@ -251,6 +251,143 @@ describe("estimateApiCostUsd", () => {
   });
 });
 
+describe("estimateApiCostUsd — 4-way cache-aware Path 1", () => {
+  // Sonnet 4.6: $3/MTok input, $15/MTok output → cache_read 10% = $0.30/MTok,
+  // cache_create 125% = $3.75/MTok. Opus 4.6: $5 input, $25 output →
+  // cache_read $0.50/MTok, cache_create $6.25/MTok.
+
+  it("cache_read billed at 10% of the input rate (90% discount)", () => {
+    const readOnly = estimateApiCostUsd(undefined, 0, {
+      "claude-sonnet-4-6": {
+        input: 0,
+        output: 0,
+        cache_read: 1_000_000,
+        cache_create: 0,
+      },
+    });
+    const inputOnly = estimateApiCostUsd(undefined, 0, {
+      "claude-sonnet-4-6": {
+        input: 1_000_000,
+        output: 0,
+        cache_read: 0,
+        cache_create: 0,
+      },
+    });
+    expect(readOnly).toBeCloseTo(0.3, 5);
+    expect(inputOnly).toBeCloseTo(3.0, 5);
+    expect(readOnly / inputOnly).toBeCloseTo(0.1, 5);
+  });
+
+  it("cache_create billed at 125% of the input rate (25% premium)", () => {
+    const createOnly = estimateApiCostUsd(undefined, 0, {
+      "claude-sonnet-4-6": {
+        input: 0,
+        output: 0,
+        cache_read: 0,
+        cache_create: 1_000_000,
+      },
+    });
+    expect(createOnly).toBeCloseTo(3.75, 5);
+  });
+
+  it("sums all 4 categories correctly for a single model", () => {
+    // Sonnet 4.6: 100K input, 50K output, 1M cache_read, 200K cache_create
+    // = 0.1 * 3 + 0.05 * 15 + 1 * 0.3 + 0.2 * 3.75
+    // = 0.30 + 0.75 + 0.30 + 0.75 = 2.10
+    const cost = estimateApiCostUsd(undefined, 0, {
+      "claude-sonnet-4-6": {
+        input: 100_000,
+        output: 50_000,
+        cache_read: 1_000_000,
+        cache_create: 200_000,
+      },
+    });
+    expect(cost).toBeCloseTo(2.1, 5);
+  });
+
+  it("mixes multiple models with independent per-category breakdowns", () => {
+    // Sonnet: 1M cache_read = $0.30
+    // Opus:   1M cache_read = $0.50 (input rate $5 * 10%)
+    const cost = estimateApiCostUsd(undefined, 0, {
+      "claude-sonnet-4-6": {
+        input: 0,
+        output: 0,
+        cache_read: 1_000_000,
+        cache_create: 0,
+      },
+      "claude-opus-4-6": {
+        input: 0,
+        output: 0,
+        cache_read: 1_000_000,
+        cache_create: 0,
+      },
+    });
+    expect(cost).toBeCloseTo(0.8, 5);
+  });
+
+  it("prefers Path 1 (perModelTokens) over Path 2 (modelTokens) when both present", () => {
+    // Path 2 would charge a 1M Sonnet blended ≈ $6.60.
+    // Path 1 charges the same tokens shaped as pure cache_read ≈ $0.30.
+    const cost = estimateApiCostUsd(
+      { "claude-sonnet-4-6": 1_000_000 },
+      1_000_000,
+      {
+        "claude-sonnet-4-6": {
+          input: 0,
+          output: 0,
+          cache_read: 1_000_000,
+          cache_create: 0,
+        },
+      },
+    );
+    expect(cost).toBeCloseTo(0.3, 5);
+  });
+
+  it("falls back to Path 2 when perModelTokens is empty or all zero", () => {
+    const empty = estimateApiCostUsd(
+      { "claude-sonnet-4-6": 1_000_000 },
+      1_000_000,
+      {},
+    );
+    const allZero = estimateApiCostUsd(
+      { "claude-sonnet-4-6": 1_000_000 },
+      1_000_000,
+      {
+        "claude-sonnet-4-6": {
+          input: 0,
+          output: 0,
+          cache_read: 0,
+          cache_create: 0,
+        },
+      },
+    );
+    const path2 = estimateApiCostUsd(
+      { "claude-sonnet-4-6": 1_000_000 },
+      1_000_000,
+    );
+    expect(empty).toBe(path2);
+    expect(allZero).toBe(path2);
+    expect(empty).toBeGreaterThan(0);
+  });
+
+  it("cache-dominated workload lands in the right order of magnitude", () => {
+    // Realistic cache-heavy Opus 4.6 workload: 50M throughput with a
+    // typical distribution (88% cache_read, 7% cache_create, 3% output,
+    // 2% input). Matches what heavy users actually see.
+    const cost = estimateApiCostUsd(undefined, 0, {
+      "claude-opus-4-6": {
+        input: 1_000_000,
+        output: 1_500_000,
+        cache_read: 44_000_000,
+        cache_create: 3_500_000,
+      },
+    });
+    // = 1 * 5 + 1.5 * 25 + 44 * 0.5 + 3.5 * 6.25
+    // = 5 + 37.5 + 22 + 21.875 = 86.375
+    expect(cost).toBeCloseTo(86.375, 3);
+  });
+});
+
 describe("getPricingAsOf", () => {
   it("returns an ISO date (YYYY-MM-DD) from the pricing snapshot", () => {
     expect(getPricingAsOf()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
