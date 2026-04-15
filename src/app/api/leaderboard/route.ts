@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
+import { filterReportForListFeed } from "@/lib/filter-report-response";
 
 export interface LeaderboardRow {
   rank: number;
@@ -50,6 +51,7 @@ export async function GET(request: Request) {
         linesRemoved: true,
         dayCount: true,
         harnessData: true,
+        hiddenHarnessSections: true,
         author: {
           select: {
             username: true,
@@ -76,6 +78,20 @@ export async function GET(request: Request) {
       const days = r.dayCount ?? 0;
       const weeks = days > 0 ? days / 7 : 0;
       const weeklyRate = weeks > 0 ? total / weeks : 0;
+      // Honor hiddenHarnessSections so users who hid "gitPatterns" on the
+      // edit page don't leak their line counts on the public leaderboard.
+      // Delegates to the same list-feed filter used by /api/insights and
+      // /api/top so the harnessData fallback path stays in lockstep across
+      // read surfaces. Additionally we zero the scalar columns when
+      // gitPatterns is hidden, since resolveLines* prefers the scalar and
+      // the scalar isn't stripped by the shared filter (demo/seeded data
+      // path — see src/lib/lines-of-code.ts).
+      const filtered = filterReportForListFeed({
+        harnessData: r.harnessData,
+        hiddenHarnessSections: r.hiddenHarnessSections,
+      });
+      const gitHidden =
+        r.hiddenHarnessSections?.includes("gitPatterns") ?? false;
       return {
         username: r.author.username,
         displayName: r.author.displayName,
@@ -84,14 +100,18 @@ export async function GET(request: Request) {
         totalTokens: total,
         sessionCount: r.sessionCount ?? 0,
         durationHours: r.durationHours ?? 0,
-        linesAdded: resolveLinesAdded({
-          linesAdded: r.linesAdded,
-          harnessData: r.harnessData as never,
-        }),
-        linesRemoved: resolveLinesRemoved({
-          linesRemoved: r.linesRemoved,
-          harnessData: r.harnessData as never,
-        }),
+        linesAdded: gitHidden
+          ? 0
+          : resolveLinesAdded({
+              linesAdded: r.linesAdded,
+              harnessData: filtered.harnessData as never,
+            }),
+        linesRemoved: gitHidden
+          ? 0
+          : resolveLinesRemoved({
+              linesRemoved: r.linesRemoved,
+              harnessData: filtered.harnessData as never,
+            }),
         dayCount: r.dayCount,
         publishedAt: r.publishedAt.toISOString(),
         weeklyRate,
