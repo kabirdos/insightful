@@ -88,7 +88,7 @@ const EMPTY_FORM: ProjectFormInput = {
 };
 
 const INSIGHTS_PATH = "~/.claude/usage-data/report.html";
-const HARNESS_PATH = "~/.claude/usage-data/insight-harness.html";
+const HARNESS_PATH = "~/.claude/insight-harness/report.html";
 
 const SAMPLE_PROFILE_USERNAME = "kabirdos";
 const SAMPLE_PROFILE_SLUG = "20260413-e3n48n";
@@ -669,7 +669,7 @@ export default function UploadPage() {
       handleFile(f);
     } else {
       setError(
-        "That's not an HTML file. Run /insight-harness in Claude Code — the report saves to ~/.claude/usage-data/insight-harness.html.",
+        "That's not an HTML file. Run /insight-harness in Claude Code — the report saves to ~/.claude/insight-harness/report.html.",
       );
     }
   };
@@ -1143,7 +1143,7 @@ export default function UploadPage() {
                 setDragOver={setDragOverHarness}
                 path={HARNESS_PATH}
                 loading={loading}
-                filename="insight-harness.html"
+                filename="report.html"
               />
             </div>
           </div>
