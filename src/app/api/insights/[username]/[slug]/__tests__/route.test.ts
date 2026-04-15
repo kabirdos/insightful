@@ -305,6 +305,169 @@ describe("GET /api/insights/[username]/[slug] — owner visibility", () => {
   });
 });
 
+// ── Hidden harness sections — extended coverage for hooks + skills ──
+
+describe("GET /api/insights/[username]/[slug] — hidden harness sections (extended)", () => {
+  // PR #113 already asserts `plugins` is empty when hidden for non-owners.
+  // These tests extend that coverage to the other strippable section-level
+  // keys users most commonly hide (hookDefinitions, skillInventory) and
+  // pair each with the owner-with-includeHidden positive case so we can
+  // tell stripping from absence.
+
+  function buildReportWithHiddenSections(
+    authorId: string,
+    hiddenSections: string[],
+  ) {
+    const fixture = buildReportFixture(authorId);
+    return {
+      ...fixture,
+      hiddenHarnessSections: hiddenSections,
+      harnessData: {
+        ...buildHarnessDataFixture(),
+        skillInventory: [{ name: "secret-skill" }],
+        hookDefinitions: [
+          { event: "PreToolUse", matcher: "Bash", command: "secret" },
+        ],
+        plugins: [{ name: "secret-plugin" }],
+      },
+    };
+  }
+
+  it("strips hidden skillInventory for non-owners but preserves it for owner+includeHidden", async () => {
+    // Non-owner view
+    mockSession("user-2");
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportWithHiddenSections("user-1", ["skillInventory"]),
+    );
+    let response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    let body = await response.json();
+    // stripHiddenHarnessData empties rather than deletes hidden keys.
+    // NOTE: if harnessData is fully stripped from GET (see privacy tests
+    // above), this assertion becomes "harnessData absent" — both outcomes
+    // satisfy the "non-owner cannot see hidden skillInventory" contract.
+    if (body.data.harnessData !== undefined) {
+      expect(body.data.harnessData.skillInventory).toEqual([]);
+    }
+
+    // Owner with includeHidden gets the real data back
+    vi.clearAllMocks();
+    mockSession("user-1");
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportWithHiddenSections("user-1", ["skillInventory"]),
+    );
+    mockPrisma.reportProject.findMany.mockResolvedValue([]);
+    response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1?includeHidden=true"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    body = await response.json();
+    expect(body.data.harnessData.skillInventory).toEqual([
+      { name: "secret-skill" },
+    ]);
+  });
+
+  it("strips hidden hookDefinitions for non-owners but preserves it for owner+includeHidden", async () => {
+    mockSession("user-2");
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportWithHiddenSections("user-1", ["hookDefinitions"]),
+    );
+    let response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    let body = await response.json();
+    if (body.data.harnessData !== undefined) {
+      expect(body.data.harnessData.hookDefinitions).toEqual([]);
+    }
+
+    vi.clearAllMocks();
+    mockSession("user-1");
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportWithHiddenSections("user-1", ["hookDefinitions"]),
+    );
+    mockPrisma.reportProject.findMany.mockResolvedValue([]);
+    response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1?includeHidden=true"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    body = await response.json();
+    expect(body.data.harnessData.hookDefinitions).toEqual([
+      { event: "PreToolUse", matcher: "Bash", command: "secret" },
+    ]);
+  });
+});
+
+// ── Hidden reportProjects — non-owner default-off path ──────────────
+
+describe("GET /api/insights/[username]/[slug] — hidden reportProjects (non-owner, no flag)", () => {
+  // PR #113 covers the non-owner WITH ?includeHidden=true case. This
+  // fills in the mirror: a non-owner who omits the flag must still only
+  // ever see visible rows. The route-level Prisma `where: { hidden: false }`
+  // enforces this structurally, but a regression that flipped the where
+  // clause based on auth state would slip past the existing test.
+
+  it("does not fetch hidden rows and never exposes them when a non-owner omits ?includeHidden", async () => {
+    mockSession("user-2");
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportFixture("user-1"),
+    );
+
+    const response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    expect(mockPrisma.reportProject.findMany).not.toHaveBeenCalled();
+
+    // Same self-fulfilling-mock defense as PR #113: pin the primary
+    // findFirst query shape so a regression that dropped the Prisma
+    // `where: { hidden: false }` include filter would actually fail
+    // here, instead of silently passing because the fixture happens to
+    // contain only visible rows.
+    const findFirstArgs = mockPrisma.insightReport.findFirst.mock.calls[0]?.[0];
+    expect(findFirstArgs?.include?.reportProjects?.where).toEqual({
+      hidden: false,
+    });
+
+    const projectIds = body.data.reportProjects.map(
+      (rp: { projectId: string }) => rp.projectId,
+    );
+    expect(projectIds).toContain("p-visible");
+    expect(projectIds).not.toContain("p-hidden");
+  });
+
+  it("does not fetch hidden rows for an anonymous viewer without the flag", async () => {
+    mockSession(null);
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportFixture("user-1"),
+    );
+
+    const response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    expect(mockPrisma.reportProject.findMany).not.toHaveBeenCalled();
+
+    const findFirstArgs = mockPrisma.insightReport.findFirst.mock.calls[0]?.[0];
+    expect(findFirstArgs?.include?.reportProjects?.where).toEqual({
+      hidden: false,
+    });
+
+    const projectIds = body.data.reportProjects.map(
+      (rp: { projectId: string }) => rp.projectId,
+    );
+    expect(projectIds).not.toContain("p-hidden");
+  });
+});
+
 // ── List feed ───────────────────────────────────────────────────────
 
 // TODO(issue-108): The list-feed path is not reachable from this detail
