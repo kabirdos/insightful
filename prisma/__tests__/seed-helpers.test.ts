@@ -3,6 +3,7 @@ import {
   computeDefaultAgentDispatch,
   computeDefaultBranchPrefixes,
   computeDefaultHookFrequency,
+  computeDefaultPerModelTokens,
   defaultProjectSeedFor,
 } from "../seed-helpers";
 
@@ -159,5 +160,45 @@ describe("defaultProjectSeedFor", () => {
 
   it("Sam has exactly one project (the junior dev)", () => {
     expect(defaultProjectSeedFor("sam")).toHaveLength(1);
+  });
+});
+
+describe("computeDefaultPerModelTokens", () => {
+  it("per-model sums equal the target total-throughput", () => {
+    const total = 42_000_000;
+    const out = computeDefaultPerModelTokens(total, {
+      "claude-sonnet-4-6": 700,
+      "claude-opus-4-6": 300,
+    });
+    const sum = Object.values(out).reduce(
+      (acc, b) => acc + b.input + b.output + b.cache_read + b.cache_create,
+      0,
+    );
+    expect(sum).toBe(total);
+  });
+
+  it("distributes across categories with cache_read dominant", () => {
+    const out = computeDefaultPerModelTokens(10_000_000, {
+      "claude-sonnet-4-6": 1,
+    });
+    const b = out["claude-sonnet-4-6"];
+    expect(b.cache_read).toBeGreaterThan(b.input + b.output + b.cache_create);
+    expect(b.cache_read / 10_000_000).toBeGreaterThan(0.7);
+  });
+
+  it("respects model shares within ~1 token of rounding", () => {
+    const out = computeDefaultPerModelTokens(1_000_000, {
+      a: 3,
+      b: 1,
+    });
+    const sumA =
+      out.a.input + out.a.output + out.a.cache_read + out.a.cache_create;
+    const sumB =
+      out.b.input + out.b.output + out.b.cache_read + out.b.cache_create;
+    expect(sumA).toBeGreaterThan(sumB * 2.5);
+  });
+
+  it("handles empty model map gracefully", () => {
+    expect(computeDefaultPerModelTokens(100, {})).toEqual({});
   });
 });

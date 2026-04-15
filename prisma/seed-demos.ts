@@ -11,6 +11,7 @@ import {
   computeDefaultAgentDispatch,
   computeDefaultBranchPrefixes,
   computeDefaultHookFrequency,
+  computeDefaultPerModelTokens,
   defaultProjectSeedFor,
 } from "./seed-helpers";
 
@@ -304,6 +305,11 @@ function harnessReport(
       cliTools: opts.cliTools,
       languages: opts.languages,
       models: opts.models,
+      // 4-way breakdown for the USD cost estimator's accurate Path 1.
+      // Sums to opts.tokens so the stored totalTokens and the sum of
+      // perModelTokens stay consistent (the backfill script relies on
+      // this invariant to recompute totalTokens from perModelTokens).
+      perModelTokens: computeDefaultPerModelTokens(opts.tokens, opts.models),
       permissionModes: opts.permissionModes ?? { plan: 60, auto: 40 },
       mcpServers: opts.mcpServers ?? {},
       gitPatterns: {
@@ -460,7 +466,10 @@ async function seed() {
       days: 30,
       linesAdded: 28400,
       linesRemoved: 9200,
-      tokens: 4200000,
+      // Full-throughput 30d total (Option B — input + output + cache_read +
+      // cache_creation). Old value was ~4.2M input+output only; heavy
+      // agentic Fire-and-Forget usage pushes that 15-20x with cache traffic.
+      tokens: 72_000_000,
       durationHours: 86,
       avgSession: 36,
       skills: 18,
@@ -745,7 +754,8 @@ async function seed() {
       days: 27,
       linesAdded: 12300,
       linesRemoved: 3800,
-      tokens: 2800000,
+      // Directive / SaaS builder — moderate caching, ~15x scale-up.
+      tokens: 42_000_000,
       durationHours: 52,
       avgSession: 47,
       skills: 24,
@@ -1057,7 +1067,8 @@ async function seed() {
       days: 30,
       linesAdded: 22100,
       linesRemoved: 8400,
-      tokens: 3500000,
+      // Heavy agent work + long-context embeddings → aggressive caching.
+      tokens: 65_000_000,
       durationHours: 72,
       avgSession: 44,
       skills: 12,
@@ -1315,7 +1326,8 @@ async function seed() {
       days: 28,
       linesAdded: 22100,
       linesRemoved: 6800,
-      tokens: 3100000,
+      // Infra / incident tooling — collaborative, plenty of context reuse.
+      tokens: 48_000_000,
       durationHours: 54,
       avgSession: 28,
       skills: 9,
@@ -1467,7 +1479,8 @@ async function seed() {
       days: 27,
       linesAdded: 8900,
       linesRemoved: 3100,
-      tokens: 2400000,
+      // Freelance / Rails — collaborative, medium cache ratio.
+      tokens: 32_000_000,
       durationHours: 38,
       avgSession: 25,
       skills: 7,
@@ -1636,7 +1649,8 @@ async function seed() {
       days: 21,
       linesAdded: 4200,
       linesRemoved: 800,
-      tokens: 780000,
+      // New to Claude Code, short exploratory sessions, lighter caching.
+      tokens: 9_500_000,
       durationHours: 18,
       avgSession: 22,
       skills: 4,
