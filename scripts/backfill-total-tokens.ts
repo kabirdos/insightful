@@ -15,6 +15,7 @@
  *   npx tsx scripts/backfill-total-tokens.ts --apply    # write changes
  */
 
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -52,6 +53,7 @@ async function main() {
 
   let candidates = 0;
   let skipped = 0;
+  let hiddenSkipped = 0;
   let unchanged = 0;
   const rows: Array<{
     id: string;
@@ -72,8 +74,16 @@ async function main() {
       skipped++;
       continue;
     }
+    // `totalTokens` is on the PUT allowlist and the schema marks it
+    // nullable — the convention for "author hid this stat" is null, not
+    // zero. Writing a fresh value would unhide data the author
+    // intentionally redacted, so skip those rows entirely.
+    if (report.totalTokens === null) {
+      hiddenSkipped++;
+      continue;
+    }
     const next = sumThroughput(perModel);
-    const old = report.totalTokens ?? 0;
+    const old = report.totalTokens;
     if (next <= 0 || next === old) {
       unchanged++;
       continue;
@@ -91,7 +101,7 @@ async function main() {
 
   console.log(`\nScanned ${reports.length} reports`);
   console.log(
-    `  ${candidates} need updating · ${unchanged} already match · ${skipped} lack perModelTokens (skipped)`,
+    `  ${candidates} need updating · ${unchanged} already match · ${skipped} lack perModelTokens (skipped) · ${hiddenSkipped} author-hidden (skipped)`,
   );
 
   if (candidates === 0) {
