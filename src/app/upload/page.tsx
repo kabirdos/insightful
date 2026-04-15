@@ -510,6 +510,7 @@ export default function UploadPage() {
   };
 
   const handleFile = async (f: File) => {
+    posthog.capture("profile_upload_started");
     setLoading(true);
     setError(null);
 
