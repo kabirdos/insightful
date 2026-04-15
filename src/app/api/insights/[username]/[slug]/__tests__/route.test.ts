@@ -305,6 +305,255 @@ describe("GET /api/insights/[username]/[slug] — owner visibility", () => {
   });
 });
 
+// ── harnessData privacy — must never leak (issue #110, moved from #106) ──
+
+/**
+ * Recursively walks a JSON-serializable value and returns every path at
+ * which a `harnessData` key appears. Empty array means no leak.
+ *
+ * The issue's privacy contract is "the raw stored harnessData payload is
+ * never present in the GET response, for any viewer". A simple top-level
+ * check is not enough — a future refactor could nest it under another key
+ * (e.g. response.data.report.harnessData) and regress silently. This walker
+ * catches those cases.
+ */
+function findHarnessDataPaths(value: unknown, path = "$"): string[] {
+  if (value === null || typeof value !== "object") return [];
+  const hits: string[] = [];
+  if (Array.isArray(value)) {
+    value.forEach((item, i) => {
+      hits.push(...findHarnessDataPaths(item, `${path}[${i}]`));
+    });
+    return hits;
+  }
+  for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+    const child = `${path}.${key}`;
+    if (key === "harnessData") hits.push(child);
+    hits.push(...findHarnessDataPaths(v, child));
+  }
+  return hits;
+}
+
+describe("GET /api/insights/[username]/[slug] — harnessData privacy", () => {
+  // Per issue #110 (moved from #106): harnessData is the raw parsed
+  // harness payload stored on the row. It must not ship in the GET
+  // response for ANY viewer — owner, non-owner, or anonymous. The
+  // detail page and edit page are expected to render from the parsed
+  // narrative sections + scalar v2 fields, not the raw harnessData blob.
+  //
+  // NOTE: as of this commit, the route does NOT strip harnessData for
+  // any viewer — see route.ts lines ~125-132. filterReportForResponse
+  // only masks sub-fields INSIDE harnessData when a section is hidden;
+  // it never drops the whole key. These three tests are marked `it.skip`
+  // because they currently fail (confirming the leak). Unskip them in
+  // the fix PR that adds a `delete filtered.harnessData` (or equivalent)
+  // before the response is returned. See PR body for high-priority leak
+  // note.
+
+  it.skip("never ships harnessData to a non-owner", async () => {
+    mockSession("user-2");
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportFixture("user-1"),
+    );
+
+    const response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    // Recursive walker: no key named `harnessData` at any nesting depth.
+    expect(findHarnessDataPaths(body)).toEqual([]);
+    // Serialized belt-and-braces check: the literal key must not appear
+    // anywhere in the JSON body, even inside stringified nested content.
+    expect(JSON.stringify(body)).not.toContain('"harnessData"');
+  });
+
+  it.skip("never ships harnessData to an anonymous viewer", async () => {
+    mockSession(null);
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportFixture("user-1"),
+    );
+
+    const response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    expect(findHarnessDataPaths(body)).toEqual([]);
+    expect(JSON.stringify(body)).not.toContain('"harnessData"');
+  });
+
+  it.skip("never ships harnessData to the owner either (owner edit path uses PUT/other routes, not this GET)", async () => {
+    // Even the owner should not receive the raw harnessData blob on a
+    // plain GET. The owner's edit page is a different data path; this
+    // detail GET is the read-view boundary.
+    mockSession("user-1");
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportFixture("user-1"),
+    );
+
+    const response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    expect(findHarnessDataPaths(body)).toEqual([]);
+    expect(JSON.stringify(body)).not.toContain('"harnessData"');
+  });
+});
+
+// ── Hidden harness sections — extended coverage for hooks + skills ──
+
+describe("GET /api/insights/[username]/[slug] — hidden harness sections (extended)", () => {
+  // PR #113 already asserts `plugins` is empty when hidden for non-owners.
+  // These tests extend that coverage to the other strippable section-level
+  // keys users most commonly hide (hookDefinitions, skillInventory) and
+  // pair each with the owner-with-includeHidden positive case so we can
+  // tell stripping from absence.
+
+  function buildReportWithHiddenSections(
+    authorId: string,
+    hiddenSections: string[],
+  ) {
+    const fixture = buildReportFixture(authorId);
+    return {
+      ...fixture,
+      hiddenHarnessSections: hiddenSections,
+      harnessData: {
+        ...buildHarnessDataFixture(),
+        skillInventory: [{ name: "secret-skill" }],
+        hookDefinitions: [
+          { event: "PreToolUse", matcher: "Bash", command: "secret" },
+        ],
+        plugins: [{ name: "secret-plugin" }],
+      },
+    };
+  }
+
+  it("strips hidden skillInventory for non-owners but preserves it for owner+includeHidden", async () => {
+    // Non-owner view
+    mockSession("user-2");
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportWithHiddenSections("user-1", ["skillInventory"]),
+    );
+    let response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    let body = await response.json();
+    // stripHiddenHarnessData empties rather than deletes hidden keys.
+    // NOTE: if harnessData is fully stripped from GET (see privacy tests
+    // above), this assertion becomes "harnessData absent" — both outcomes
+    // satisfy the "non-owner cannot see hidden skillInventory" contract.
+    if (body.data.harnessData !== undefined) {
+      expect(body.data.harnessData.skillInventory).toEqual([]);
+    }
+
+    // Owner with includeHidden gets the real data back
+    vi.clearAllMocks();
+    mockSession("user-1");
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportWithHiddenSections("user-1", ["skillInventory"]),
+    );
+    mockPrisma.reportProject.findMany.mockResolvedValue([]);
+    response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1?includeHidden=true"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    body = await response.json();
+    expect(body.data.harnessData.skillInventory).toEqual([
+      { name: "secret-skill" },
+    ]);
+  });
+
+  it("strips hidden hookDefinitions for non-owners but preserves it for owner+includeHidden", async () => {
+    mockSession("user-2");
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportWithHiddenSections("user-1", ["hookDefinitions"]),
+    );
+    let response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    let body = await response.json();
+    if (body.data.harnessData !== undefined) {
+      expect(body.data.harnessData.hookDefinitions).toEqual([]);
+    }
+
+    vi.clearAllMocks();
+    mockSession("user-1");
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportWithHiddenSections("user-1", ["hookDefinitions"]),
+    );
+    mockPrisma.reportProject.findMany.mockResolvedValue([]);
+    response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1?includeHidden=true"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    body = await response.json();
+    expect(body.data.harnessData.hookDefinitions).toEqual([
+      { event: "PreToolUse", matcher: "Bash", command: "secret" },
+    ]);
+  });
+});
+
+// ── Hidden reportProjects — non-owner default-off path ──────────────
+
+describe("GET /api/insights/[username]/[slug] — hidden reportProjects (non-owner, no flag)", () => {
+  // PR #113 covers the non-owner WITH ?includeHidden=true case. This
+  // fills in the mirror: a non-owner who omits the flag must still only
+  // ever see visible rows. The route-level Prisma `where: { hidden: false }`
+  // enforces this structurally, but a regression that flipped the where
+  // clause based on auth state would slip past the existing test.
+
+  it("does not fetch hidden rows and never exposes them when a non-owner omits ?includeHidden", async () => {
+    mockSession("user-2");
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportFixture("user-1"),
+    );
+
+    const response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    expect(mockPrisma.reportProject.findMany).not.toHaveBeenCalled();
+    const projectIds = body.data.reportProjects.map(
+      (rp: { projectId: string }) => rp.projectId,
+    );
+    expect(projectIds).toContain("p-visible");
+    expect(projectIds).not.toContain("p-hidden");
+  });
+
+  it("does not fetch hidden rows for an anonymous viewer without the flag", async () => {
+    mockSession(null);
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportFixture("user-1"),
+    );
+
+    const response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    expect(mockPrisma.reportProject.findMany).not.toHaveBeenCalled();
+    const projectIds = body.data.reportProjects.map(
+      (rp: { projectId: string }) => rp.projectId,
+    );
+    expect(projectIds).not.toContain("p-hidden");
+  });
+});
+
 // ── List feed ───────────────────────────────────────────────────────
 
 // TODO(issue-108): The list-feed path is not reachable from this detail
