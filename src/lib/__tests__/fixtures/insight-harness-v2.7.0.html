@@ -1,0 +1,259 @@
+<!doctype html>
+<!--
+  Hand-crafted fixture matching the insight-harness v2.7.0 report shape.
+
+  Why hand-crafted instead of a real scrubbed report:
+    - Real reports are 1.4MB+ which is too large to commit as a test fixture.
+    - This fixture covers every field required by parseHarnessHtml +
+      parseInsightsHtml that the /api/upload route exercises.
+    - All numbers are deliberately synthetic — they encode no real activity.
+
+  v2.7.0 surface covered:
+    - script#insight-harness-integrity (detection trigger)
+    - script#harness-data with full HarnessData JSON shape
+    - skillVersion: "2.7.0"
+    - skillInventory, hookDefinitions, plugins, featurePills,
+      enhancedStats, fileOpStyle, gitPatterns, writeupSections
+    - #tab-insights with .subtitle / .stat row / .narrative so
+      parseInsightsHtml can derive sessionCount, dateRange, commitCount,
+      and enhancedStats from the embedded insights view.
+-->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>insight-harness v2.7.0 fixture</title>
+  </head>
+  <body>
+    <!-- Harness-level integrity manifest. Presence of this script tag is what
+       isHarnessReport() keys on, so it must be intact. -->
+    <script type="application/json" id="insight-harness-integrity">
+      { "hash": "fixture-integrity-2026-04-14" }
+    </script>
+
+    <!-- Embedded /insights tab — this is the slice that parseInsightsHtml runs
+       against (the route extracts #tab-insights and re-wraps it). The selectors
+       below mirror what the real insight-harness template emits.
+
+       IMPORTANT: the scalar numbers below are intentionally DIFFERENT from
+       the harness-data JSON below (sessionCount, commitCount, lines, etc.).
+       This lets the route test prove that /api/upload prefers the harness
+       blob over the embedded insights parse for the merged stats payload —
+       a regression that drops the override would surface immediately. -->
+    <div id="tab-insights" class="tab-content">
+      <div class="header">
+        <h1>Claude Code Insights</h1>
+        <div class="subtitle">
+          1,200 messages across 80 sessions (88 total) | 2026-03-15 to
+          2026-04-14
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-label">Lines</div>
+          <div class="stat-value">+9,000/-2,000</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Files</div>
+          <div class="stat-value">110</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Days</div>
+          <div class="stat-value">28</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Msgs/day</div>
+          <div class="stat-value">35.0</div>
+        </div>
+      </div>
+
+      <div class="narrative">
+        Across 28 days of work you landed 41 commits and shipped a steady
+        cadence of small, reviewable changes. The dominant pattern is short
+        turn-taking with the agent on well-scoped tasks. You used a git worktree
+        workflow heavily and configured hooks for formatting.
+      </div>
+
+      <!-- Chart cards — parseChartData keys on .chart-card > .chart-title
+         + .bar-row. Including a "Top tools used" card so the route test
+         can assert toolUsage rows actually came back non-empty. -->
+      <div class="chart-card">
+        <div class="chart-title">Top tools used</div>
+        <div class="bar-row">
+          <span class="bar-label">Bash</span>
+          <span class="bar-value">5,200</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">Read</span>
+          <span class="bar-value">2,400</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">Edit</span>
+          <span class="bar-value">1,800</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">Agent</span>
+          <span class="bar-value">612</span>
+        </div>
+      </div>
+
+      <!-- Minimal section markers so parseInsightsHtml's section walker doesn't
+         crash on missing structure. Empty content is fine — the assertions in
+         the route test only check stats + harnessData, not the deep insights tree. -->
+      <div class="container"></div>
+    </div>
+
+    <!-- Harness data blob — full v2.7.0 HarnessData shape. -->
+    <script type="application/json" id="harness-data">
+      {
+        "stats": {
+          "totalTokens": 4500000000,
+          "lifetimeTokens": 9800000000,
+          "durationHours": 220.5,
+          "avgSessionMinutes": 165.4,
+          "skillsUsedCount": 38,
+          "hooksCount": 7,
+          "prCount": 134,
+          "sessionCount": 95,
+          "commitCount": 47
+        },
+        "autonomy": {
+          "label": "Fire-and-Forget",
+          "description": "1 human turn per 8 Claude turns",
+          "userMessages": 2400,
+          "assistantMessages": 19200,
+          "turnCount": 950,
+          "errorRate": "3.8%"
+        },
+        "featurePills": [
+          { "name": "Status Line", "active": true, "value": "" },
+          { "name": "Task Agents", "active": true, "value": "44%" },
+          { "name": "MCP", "active": true, "value": "5%" },
+          { "name": "Web Search", "active": true, "value": "7%" },
+          { "name": "Sub-Agents", "active": true, "value": "612" },
+          { "name": "Tasks", "active": true, "value": "290" },
+          { "name": "Plan Mode", "active": false, "value": "0" },
+          { "name": "Compactions", "active": true, "value": "4" }
+        ],
+        "toolUsage": {
+          "Bash": 5200,
+          "Read": 2400,
+          "Edit": 1800,
+          "Agent": 612,
+          "Grep": 540,
+          "Write": 480,
+          "Skill": 165,
+          "Glob": 170
+        },
+        "skillInventory": [
+          {
+            "name": "commit",
+            "calls": 22,
+            "source": "custom",
+            "description": "Auto-commit helper"
+          },
+          {
+            "name": "review-pr",
+            "calls": 14,
+            "source": "plugin",
+            "description": "PR reviewer agent"
+          },
+          {
+            "name": "writing-plans",
+            "calls": 9,
+            "source": "plugin",
+            "description": "Plan author"
+          },
+          {
+            "name": "skill-showcase",
+            "calls": 4,
+            "source": "custom",
+            "description": "Skill showcase site builder"
+          }
+        ],
+        "hookDefinitions": [
+          {
+            "event": "PreToolUse",
+            "matcher": "Bash",
+            "script": "validate-bash.sh"
+          },
+          {
+            "event": "PostToolUse",
+            "matcher": "Edit",
+            "script": "format-on-save.sh"
+          },
+          {
+            "event": "SessionStart",
+            "matcher": "*",
+            "script": "load-handoff.sh"
+          }
+        ],
+        "hookFrequency": {
+          "PreToolUse": 320,
+          "PostToolUse": 88,
+          "SessionStart": 42
+        },
+        "plugins": [
+          {
+            "name": "superpowers",
+            "version": "2.1.0",
+            "marketplace": "compound-engineering",
+            "active": true
+          },
+          {
+            "name": "code-review",
+            "version": "0.4.2",
+            "marketplace": "compound-engineering",
+            "active": true
+          }
+        ],
+        "harnessFiles": [
+          "CLAUDE.md",
+          ".claude/settings.json",
+          ".claude/keybindings.json"
+        ],
+        "fileOpStyle": {
+          "readPct": 50,
+          "editPct": 38,
+          "writePct": 12,
+          "grepCount": 540,
+          "globCount": 170,
+          "style": "Surgical Editor"
+        },
+        "agentDispatch": null,
+        "cliTools": { "git": 220, "npm": 45, "gh": 90 },
+        "languages": { "TypeScript": 70, "Python": 18, "Markdown": 12 },
+        "models": { "claude-sonnet-4-5": 80, "claude-opus-4-6": 20 },
+        "permissionModes": { "allowedTools": 12 },
+        "mcpServers": { "playwright": 60, "filesystem": 25 },
+        "gitPatterns": {
+          "prCount": 134,
+          "commitCount": 47,
+          "linesAdded": "12500",
+          "branchPrefixes": { "feat/": 18, "fix/": 22, "test/": 4, "chore/": 3 }
+        },
+        "versions": ["2.1.110", "2.1.111", "2.1.112"],
+        "writeupSections": [
+          {
+            "title": "Workflow Analysis",
+            "contentHtml": "<p>You favor short, surgical edits over large rewrites.</p>"
+          },
+          {
+            "title": "Tool Preferences",
+            "contentHtml": "<p>Strong preference for Edit + Grep over Write.</p>"
+          }
+        ],
+        "workflowData": null,
+        "integrityHash": "fixture-integrity-2026-04-14",
+        "skillVersion": "2.7.0",
+        "enhancedStats": {
+          "linesAdded": 12500,
+          "linesRemoved": 3100,
+          "fileCount": 142,
+          "dayCount": 30,
+          "msgsPerDay": 40.0
+        }
+      }
+    </script>
+  </body>
+</html>
