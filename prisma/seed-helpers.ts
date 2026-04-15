@@ -6,6 +6,49 @@
  * instantiation that seed-demos.ts does at module load.
  */
 
+export interface ModelTokenBreakdown {
+  input: number;
+  output: number;
+  cache_read: number;
+  cache_create: number;
+}
+
+/**
+ * Build a plausible 4-way perModelTokens breakdown from a total-throughput
+ * target and per-model shares. Distribution matches what real Claude Code
+ * reports produce: cache_read dominates at ~88%, input + output are a few
+ * percent each, cache_create fills the rest. Keeps the per-model sum
+ * consistent with totalTokens and gives the USD cost estimator realistic
+ * Path 1 inputs.
+ */
+export function computeDefaultPerModelTokens(
+  totalThroughput: number,
+  modelShares: Record<string, number>,
+): Record<string, ModelTokenBreakdown> {
+  const totalShare = Object.values(modelShares).reduce((a, b) => a + b, 0) || 1;
+  const entries = Object.entries(modelShares);
+  const result: Record<string, ModelTokenBreakdown> = {};
+  let runningTotal = 0;
+  entries.forEach(([model, share], i) => {
+    const isLast = i === entries.length - 1;
+    const modelTotal = isLast
+      ? Math.max(0, totalThroughput - runningTotal)
+      : Math.round((share / totalShare) * totalThroughput);
+    runningTotal += modelTotal;
+    const input = Math.round(modelTotal * 0.015);
+    const output = Math.round(modelTotal * 0.035);
+    const cacheCreate = Math.round(modelTotal * 0.07);
+    const cacheRead = Math.max(0, modelTotal - input - output - cacheCreate);
+    result[model] = {
+      input,
+      output,
+      cache_read: cacheRead,
+      cache_create: cacheCreate,
+    };
+  });
+  return result;
+}
+
 export interface DefaultAgentDispatch {
   totalAgents: number;
   types: Record<string, number>;
