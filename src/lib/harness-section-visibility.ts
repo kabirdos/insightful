@@ -96,22 +96,24 @@ export function stripHiddenHarnessData(
 
   const copy: HarnessData = {
     ...data,
-    toolUsage: { ...data.toolUsage },
-    skillInventory: [...data.skillInventory],
-    hookDefinitions: [...data.hookDefinitions],
-    plugins: [...data.plugins],
-    harnessFiles: [...data.harnessFiles],
-    cliTools: { ...data.cliTools },
-    languages: { ...data.languages },
-    models: { ...data.models },
-    permissionModes: { ...data.permissionModes },
-    mcpServers: { ...data.mcpServers },
+    toolUsage: { ...(data.toolUsage ?? {}) },
+    skillInventory: [...(data.skillInventory ?? [])],
+    hookDefinitions: [...(data.hookDefinitions ?? [])],
+    plugins: [...(data.plugins ?? [])],
+    harnessFiles: [...(data.harnessFiles ?? [])],
+    cliTools: { ...(data.cliTools ?? {}) },
+    languages: { ...(data.languages ?? {}) },
+    models: { ...(data.models ?? {}) },
+    permissionModes: { ...(data.permissionModes ?? {}) },
+    mcpServers: { ...(data.mcpServers ?? {}) },
     gitPatterns: {
-      ...data.gitPatterns,
-      branchPrefixes: { ...data.gitPatterns.branchPrefixes },
+      prCount: data.gitPatterns?.prCount ?? 0,
+      commitCount: data.gitPatterns?.commitCount ?? 0,
+      linesAdded: data.gitPatterns?.linesAdded ?? "0",
+      branchPrefixes: { ...(data.gitPatterns?.branchPrefixes ?? {}) },
     },
-    versions: [...data.versions],
-    writeupSections: [...data.writeupSections],
+    versions: [...(data.versions ?? [])],
+    writeupSections: [...(data.writeupSections ?? [])],
   };
 
   // First pass: handle section-level (top-key) hides
@@ -206,12 +208,7 @@ export function stripHiddenHarnessData(
     );
   }
   if (!isSectionHidden(hidden, "versions")) {
-    copy.versions = filterList(
-      copy.versions,
-      hidden,
-      "versions",
-      (v) => v,
-    );
+    copy.versions = filterList(copy.versions, hidden, "versions", (v) => v);
   }
   if (!isSectionHidden(hidden, "toolUsage")) {
     copy.toolUsage = filterRecord(copy.toolUsage, hidden, "toolUsage");
@@ -235,16 +232,8 @@ export function stripHiddenHarnessData(
   if (copy.agentDispatch && !isSectionHidden(hidden, "agentDispatch")) {
     copy.agentDispatch = {
       ...copy.agentDispatch,
-      types: filterRecord(
-        copy.agentDispatch.types,
-        hidden,
-        "agentDispatch",
-      ),
-      models: filterRecord(
-        copy.agentDispatch.models,
-        hidden,
-        "agentDispatch",
-      ),
+      types: filterRecord(copy.agentDispatch.types, hidden, "agentDispatch"),
+      models: filterRecord(copy.agentDispatch.models, hidden, "agentDispatch"),
     };
   }
 
