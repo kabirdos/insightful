@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { TrendingUp, Clock, Flame, Upload } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Clock, Flame, Upload, Trophy } from "lucide-react";
 import Link from "next/link";
 import ShareButton from "@/components/ShareButton";
 import Image from "next/image";
 import clsx from "clsx";
+import LeaderboardRow from "@/components/LeaderboardRow";
+import type { LeaderboardRow as LeaderboardRowData } from "@/app/api/leaderboard/route";
 import {
   normalizeSkills,
   SKILL_METADATA,
@@ -33,7 +35,8 @@ function parseSkillSource(skill: string): {
   };
 }
 
-type SortOption = "newest" | "most_voted" | "trending";
+type SortOption = "newest" | "leaderboard" | "trending";
+type LeaderboardRank = "lifetime" | "weekly";
 
 // ── Data shape ──────────────────────────────────────────────
 // Narrow view of HarnessData the homepage card actually reads.
@@ -326,7 +329,7 @@ const sortOptions: {
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
   { value: "newest", label: "Newest", icon: Clock },
-  { value: "most_voted", label: "Most Voted", icon: TrendingUp },
+  { value: "leaderboard", label: "Leaderboard", icon: Trophy },
   { value: "trending", label: "Trending", icon: Flame },
 ];
 
@@ -909,16 +912,102 @@ function ProfileCard({
   );
 }
 
+// ── Leaderboard ─────────────────────────────────────────────
+function Leaderboard({
+  rows,
+  rank,
+  onRankChange,
+  loading,
+  hasMore,
+  sentinelRef,
+}: {
+  rows: LeaderboardRowData[];
+  rank: LeaderboardRank;
+  onRankChange: (r: LeaderboardRank) => void;
+  loading: boolean;
+  hasMore: boolean;
+  sentinelRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const ranks: { value: LeaderboardRank; label: string }[] = [
+    { value: "lifetime", label: "Lifetime" },
+    { value: "weekly", label: "Weekly" },
+  ];
+  const showInitialSkeleton = loading && rows.length === 0;
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+          Ranked by {rank === "weekly" ? "tokens / week" : "lifetime tokens"}
+        </p>
+        <div className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5 text-xs dark:border-slate-700 dark:bg-slate-900">
+          {ranks.map((r) => (
+            <button
+              key={r.value}
+              onClick={() => onRankChange(r.value)}
+              className={clsx(
+                "rounded-md px-3 py-1 font-medium transition-colors",
+                rank === r.value
+                  ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+                  : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200",
+              )}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {showInitialSkeleton ? (
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-[68px] animate-pulse rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+            />
+          ))}
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            No eligible reports yet.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {rows.map((row) => (
+            <LeaderboardRow key={`${row.username}-${row.rank}`} row={row} />
+          ))}
+          {hasMore && (
+            <div
+              ref={sentinelRef}
+              className="py-6 text-center text-xs text-slate-400 dark:text-slate-500"
+            >
+              {loading ? "Loading…" : "Scroll for more"}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Page ────────────────────────────────────────────────────
 export default function HomePage() {
   const [insights, setInsights] = useState<InsightSummary[]>([]);
   const [sort, setSort] = useState<SortOption>("newest");
   const [loading, setLoading] = useState(true);
+  const [leaderRank, setLeaderRank] = useState<LeaderboardRank>("lifetime");
+  const [leaderRows, setLeaderRows] = useState<LeaderboardRowData[]>([]);
+  const [leaderPage, setLeaderPage] = useState(1);
+  const [leaderHasMore, setLeaderHasMore] = useState(false);
+  const [leaderLoading, setLeaderLoading] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   // Loading is flipped true in the sort-change handler below; the initial
   // render already starts with loading=true, so the effect never needs to
   // set it synchronously (which would trip react-hooks/set-state-in-effect).
   useEffect(() => {
+    if (sort === "leaderboard") return;
     // Fetch a wider window than we display so the client-side author
     // dedupe (below) doesn't leave the "Recent Profiles" grid short
     // when one author has multiple recent reports. 30 > default 20
@@ -952,6 +1041,56 @@ export default function HomePage() {
       .catch(() => setInsights([]))
       .finally(() => setLoading(false));
   }, [sort]);
+
+  // Leaderboard fetch — resets on tab/rank change, appends on page bump.
+  useEffect(() => {
+    if (sort !== "leaderboard") return;
+    let cancelled = false;
+    fetch(`/api/leaderboard?rank=${leaderRank}&page=${leaderPage}&limit=10`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (cancelled) return;
+        const rows = (json.data ?? []) as LeaderboardRowData[];
+        setLeaderRows((prev) => (leaderPage === 1 ? rows : [...prev, ...rows]));
+        const pagination = json.pagination as
+          | { page: number; totalPages: number }
+          | undefined;
+        setLeaderHasMore(
+          pagination ? pagination.page < pagination.totalPages : false,
+        );
+      })
+      .catch(() => {
+        if (cancelled) return;
+        if (leaderPage === 1) setLeaderRows([]);
+        setLeaderHasMore(false);
+      })
+      .finally(() => {
+        if (!cancelled) setLeaderLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sort, leaderRank, leaderPage]);
+
+  // Infinite-scroll sentinel for leaderboard. Only observes while the
+  // leaderboard tab is active and more pages exist.
+  useEffect(() => {
+    if (sort !== "leaderboard") return;
+    if (!leaderHasMore || leaderLoading) return;
+    const node = sentinelRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setLeaderLoading(true);
+          setLeaderPage((p) => p + 1);
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [sort, leaderHasMore, leaderLoading]);
 
   // Dedupe by author so the featured person doesn't also appear in the
   // "Recent Profiles" grid. One card per author.
@@ -1005,7 +1144,14 @@ export default function HomePage() {
                 key={value}
                 onClick={() => {
                   if (value === sort) return;
-                  setLoading(true);
+                  if (value === "leaderboard") {
+                    setLeaderRows([]);
+                    setLeaderPage(1);
+                    setLeaderHasMore(false);
+                    setLeaderLoading(true);
+                  } else {
+                    setLoading(true);
+                  }
                   setSort(value);
                 }}
                 className={clsx(
@@ -1022,7 +1168,23 @@ export default function HomePage() {
           </div>
         </div>
 
-        {loading ? (
+        {sort === "leaderboard" ? (
+          <Leaderboard
+            rows={leaderRows}
+            rank={leaderRank}
+            onRankChange={(r) => {
+              if (r === leaderRank) return;
+              setLeaderRows([]);
+              setLeaderPage(1);
+              setLeaderHasMore(false);
+              setLeaderLoading(true);
+              setLeaderRank(r);
+            }}
+            loading={leaderLoading}
+            hasMore={leaderHasMore}
+            sentinelRef={sentinelRef}
+          />
+        ) : loading ? (
           <div className="grid gap-4 lg:grid-cols-2">
             {Array.from({ length: 4 }).map((_, i) => (
               <div
