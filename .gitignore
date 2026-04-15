@@ -43,6 +43,10 @@ yarn-error.log*
 
 # git worktrees
 .worktrees/
+.claude/worktrees/
+
+# Claude Code runtime state (locks, ephemeral)
+.claude/scheduled_tasks.lock
 
 # typescript
 *.tsbuildinfo
