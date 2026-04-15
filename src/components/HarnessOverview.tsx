@@ -35,7 +35,10 @@ export default function HarnessOverview({ harnessData }: HarnessOverviewProps) {
         </div>
         <div className="flex flex-wrap gap-6">
           {stats.totalTokens > 0 && (
-            <StatCell value={formatNumber(stats.totalTokens)} label="Tokens" />
+            <StatCell
+              value={formatNumber(stats.totalTokens)}
+              label="Billable Tokens"
+            />
           )}
           {stats.durationHours > 0 && (
             <StatCell value={`${stats.durationHours}h`} label="Duration" />

@@ -455,7 +455,7 @@ export async function GET(
               marginTop: "10px",
             }}
           >
-            Lifetime tokens
+            Lifetime billable tokens
           </span>
         </div>
 

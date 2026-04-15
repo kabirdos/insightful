@@ -243,7 +243,7 @@ export default function HeroStats({
             {formatNumber(lifetimeTokens)}
           </div>
           <div className="mt-2 text-[13px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-slate-400">
-            Lifetime Tokens
+            Lifetime Billable Tokens
           </div>
           {stats.totalTokens > 0 && stats.totalTokens !== lifetimeTokens && (
             <div className="mt-1.5 text-[13px] font-medium text-slate-400 dark:text-slate-500">
@@ -256,7 +256,7 @@ export default function HeroStats({
         {stats.totalTokens > 0 && (
           <StatCard
             value={formatNumber(stats.totalTokens)}
-            label="Tokens"
+            label="Billable Tokens"
             rate={perWeek(stats.totalTokens, dayCount)}
             numericSeed={stats.totalTokens}
           />

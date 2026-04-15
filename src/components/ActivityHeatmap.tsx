@@ -378,9 +378,9 @@ export default function ActivityHeatmap({
           ariaValueLabel="sessions"
         />
         <GridHeatmap
-          title="Tokens"
+          title="Billable Tokens"
           bigNumber={formatTokens(totalTokensSum)}
-          bigNumberLabel="total tokens"
+          bigNumberLabel="total billable tokens"
           scale="amber"
           data={tokensDaily}
           formatValue={(n) => (n > 0 ? formatTokens(n) : "")}

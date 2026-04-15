@@ -117,9 +117,12 @@ export default function LeaderboardRow({ row }: { row: LeaderboardRowData }) {
 
       {/* Stats — collapse to lifetime-only on mobile */}
       <div className="flex items-center gap-5 sm:gap-6">
-        <Stat label="Lifetime" value={formatTokens(row.lifetimeTokens)} />
+        <Stat
+          label="Lifetime Billable"
+          value={formatTokens(row.lifetimeTokens)}
+        />
         <div className="hidden sm:block">
-          <Stat label="30d Tokens" value={formatTokens(row.totalTokens)} />
+          <Stat label="30d Billable" value={formatTokens(row.totalTokens)} />
         </div>
         <div className="hidden md:block">
           <Stat label="Sessions" value={row.sessionCount.toLocaleString()} />
