@@ -526,6 +526,17 @@ describe("GET /api/insights/[username]/[slug] — hidden reportProjects (non-own
     const body = await response.json();
 
     expect(mockPrisma.reportProject.findMany).not.toHaveBeenCalled();
+
+    // Same self-fulfilling-mock defense as PR #113: pin the primary
+    // findFirst query shape so a regression that dropped the Prisma
+    // `where: { hidden: false }` include filter would actually fail
+    // here, instead of silently passing because the fixture happens to
+    // contain only visible rows.
+    const findFirstArgs = mockPrisma.insightReport.findFirst.mock.calls[0]?.[0];
+    expect(findFirstArgs?.include?.reportProjects?.where).toEqual({
+      hidden: false,
+    });
+
     const projectIds = body.data.reportProjects.map(
       (rp: { projectId: string }) => rp.projectId,
     );
@@ -547,6 +558,12 @@ describe("GET /api/insights/[username]/[slug] — hidden reportProjects (non-own
     const body = await response.json();
 
     expect(mockPrisma.reportProject.findMany).not.toHaveBeenCalled();
+
+    const findFirstArgs = mockPrisma.insightReport.findFirst.mock.calls[0]?.[0];
+    expect(findFirstArgs?.include?.reportProjects?.where).toEqual({
+      hidden: false,
+    });
+
     const projectIds = body.data.reportProjects.map(
       (rp: { projectId: string }) => rp.projectId,
     );
