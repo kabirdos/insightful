@@ -15,7 +15,10 @@ export interface InsightReportListItemContract {
   fileCount: number | null;
   // v3: Harness fields
   reportType: string;
-  totalTokens: number | null;
+  // Stored as BigInt in Postgres; BigInt.toJSON (patched in src/lib/db.ts)
+  // serializes it to a plain number over the wire. Server code may see
+  // bigint, client code always sees number after JSON.parse.
+  totalTokens: number | bigint | null;
   autonomyLabel: string | null;
 }
 

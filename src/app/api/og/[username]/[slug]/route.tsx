@@ -175,7 +175,7 @@ export async function GET(
     const initial = displayName[0]?.toUpperCase() ?? "?";
     const dayCount = report.dayCount ?? 28;
 
-    const totalTokens = h?.stats.totalTokens || report.totalTokens || 0;
+    const totalTokens = Number(h?.stats.totalTokens || report.totalTokens || 0);
     const tokensPerWeek = perWeek(totalTokens, dayCount);
 
     const costUsd = estimateApiCostUsd(
