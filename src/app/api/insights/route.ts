@@ -240,6 +240,26 @@ export async function POST(request: Request) {
       hiddenHarnessSections,
     } = body;
 
+    // Validate totalTokens — must be a non-negative safe integer if provided.
+    // Reject 400 instead of silently coercing bad input to null, which would
+    // hide a client/extractor bug behind a quiet stat loss.
+    if (totalTokens !== undefined && totalTokens !== null) {
+      if (
+        typeof totalTokens !== "number" ||
+        !Number.isFinite(totalTokens) ||
+        !Number.isSafeInteger(totalTokens) ||
+        totalTokens < 0
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "totalTokens must be a non-negative safe integer (or null/omitted)",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     // Auto-generate title if not provided
     const title =
       providedTitle ||
@@ -394,9 +414,7 @@ export async function POST(request: Request) {
           detectedSkills: detectedSkills ?? [],
           reportType: reportType ?? "insights",
           totalTokens:
-            typeof totalTokens === "number" && Number.isFinite(totalTokens)
-              ? BigInt(Math.trunc(totalTokens))
-              : null,
+            typeof totalTokens === "number" ? BigInt(totalTokens) : null,
           durationHours: durationHours ?? null,
           avgSessionMinutes: avgSessionMinutes ?? null,
           prCount: prCount ?? null,
