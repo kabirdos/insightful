@@ -109,6 +109,46 @@ describe("POST /api/upload — input validation", () => {
     );
     expect(response.status).toBe(400);
   });
+
+  it("returns 400 when the body is not multipart/form-data", async () => {
+    // Passing a JSON body to a route that expects FormData trips
+    // request.formData() → TypeError. Without an inner guard this
+    // bubbles to the outer catch as a 500. Lock it to 4xx so a 5xx
+    // regression never ships for this foot-gun class.
+    mockSession("user-1");
+    const request = new Request("http://localhost/api/upload", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ not: "formData" }),
+    });
+    const response = await uploadPOST(request);
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(typeof body.error).toBe("string");
+    expect(body.error.length).toBeGreaterThan(0);
+  });
+
+  it("returns 400 when the file exceeds the 10MB cap", async () => {
+    // The route enforces `file.size > 10 * 1024 * 1024` at route.ts
+    // line 78-83. A 10MB+1 payload must bounce with 4xx (documented
+    // as 400 today) — never a 500 from running a giant HTML through
+    // cheerio.
+    mockSession("user-1");
+    const OVERSIZED = "x".repeat(10 * 1024 * 1024 + 1);
+    const formData = new FormData();
+    formData.append(
+      "file",
+      new File([OVERSIZED], "big.html", { type: "text/html" }),
+    );
+    const request = new Request("http://localhost/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+    const response = await uploadPOST(request);
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toMatch(/too large|10MB/i);
+  });
 });
 
 describe("POST /api/upload — v2.7.0 harness fixture happy path", () => {

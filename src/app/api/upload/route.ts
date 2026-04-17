@@ -57,7 +57,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const formData = await request.formData();
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch {
+      return NextResponse.json(
+        { error: "Request body must be multipart/form-data" },
+        { status: 400 },
+      );
+    }
     const file = formData.get("file");
 
     if (!file || !(file instanceof File)) {
