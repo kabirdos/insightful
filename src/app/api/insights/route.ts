@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import type { InsightReportListItemContract } from "@/types/api-contracts";
@@ -6,6 +7,71 @@ import { normalizeHarnessData } from "@/types/insights";
 import type { Prisma } from "@prisma/client";
 import { fetchLinkPreview } from "@/lib/link-preview";
 import { filterReportForListFeed } from "@/lib/filter-report-response";
+
+// Optional-nullable scalar helpers used across the POST body schema.
+// Every stat field is nullable in the DB — we reject only garbage
+// *types* (e.g. string where number is expected), never omission.
+const optionalNullableInt = z
+  .number()
+  .int()
+  .nonnegative()
+  .nullable()
+  .optional();
+const optionalNullableNumber = z.number().nonnegative().nullable().optional();
+const optionalNullableString = z.string().nullable().optional();
+const optionalJsonObject = z
+  .record(z.string(), z.unknown())
+  .nullable()
+  .optional();
+
+const projectLinkSchema = z.object({
+  name: z.string().min(1),
+  githubUrl: z.string().optional(),
+  liveUrl: z.string().optional(),
+  description: z.string().optional(),
+});
+
+/**
+ * Validation schema for POST /api/insights. Required fields are only
+ * those a published report cannot meaningfully exist without; every
+ * other scalar is type-checked when present but may be omitted or
+ * null. `title` is optional because the handler falls back to a
+ * server-generated default when absent. totalTokens used to have an
+ * ad-hoc guard at the top of the handler; it's expressed here.
+ */
+const createInsightReportSchema = z.object({
+  title: z.string().min(1).optional(),
+  sessionCount: optionalNullableInt,
+  messageCount: optionalNullableInt,
+  commitCount: optionalNullableInt,
+  dateRangeStart: optionalNullableString,
+  dateRangeEnd: optionalNullableString,
+  linesAdded: optionalNullableInt,
+  linesRemoved: optionalNullableInt,
+  fileCount: optionalNullableInt,
+  dayCount: optionalNullableInt,
+  msgsPerDay: optionalNullableNumber,
+  atAGlance: optionalJsonObject,
+  interactionStyle: optionalJsonObject,
+  projectAreas: optionalJsonObject,
+  impressiveWorkflows: optionalJsonObject,
+  frictionAnalysis: optionalJsonObject,
+  suggestions: optionalJsonObject,
+  onTheHorizon: optionalJsonObject,
+  funEnding: optionalJsonObject,
+  chartData: optionalJsonObject,
+  detectedSkills: z.array(z.string()).optional(),
+  projectLinks: z.array(projectLinkSchema).optional(),
+  projectIds: z.array(z.string()).optional(),
+  reportType: z.string().optional(),
+  totalTokens: z.number().int().nonnegative().nullable().optional(),
+  durationHours: optionalNullableInt,
+  avgSessionMinutes: optionalNullableNumber,
+  prCount: optionalNullableInt,
+  autonomyLabel: optionalNullableString,
+  harnessData: z.unknown().optional(),
+  hiddenHarnessSections: z.array(z.string()).optional(),
+});
 const SECTION_KEYS = [
   "atAGlance",
   "interactionStyle",
@@ -203,7 +269,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const body = await request.json();
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Request body must be valid JSON" },
+        { status: 400 },
+      );
+    }
+
+    const parsed = createInsightReportSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      const field = first.path.join(".") || "(root)";
+      return NextResponse.json(
+        {
+          error: `Invalid request body: ${field} — ${first.message}`,
+          issues: parsed.error.issues.map((i) => ({
+            path: i.path,
+            message: i.message,
+          })),
+        },
+        { status: 400 },
+      );
+    }
 
     const {
       title: providedTitle,
@@ -229,7 +319,6 @@ export async function POST(request: Request) {
       projectIds,
       chartData,
       detectedSkills,
-      // v3: Harness fields
       reportType,
       totalTokens,
       durationHours,
@@ -238,27 +327,7 @@ export async function POST(request: Request) {
       autonomyLabel,
       harnessData,
       hiddenHarnessSections,
-    } = body;
-
-    // Validate totalTokens — must be a non-negative safe integer if provided.
-    // Reject 400 instead of silently coercing bad input to null, which would
-    // hide a client/extractor bug behind a quiet stat loss.
-    if (totalTokens !== undefined && totalTokens !== null) {
-      if (
-        typeof totalTokens !== "number" ||
-        !Number.isFinite(totalTokens) ||
-        !Number.isSafeInteger(totalTokens) ||
-        totalTokens < 0
-      ) {
-        return NextResponse.json(
-          {
-            error:
-              "totalTokens must be a non-negative safe integer (or null/omitted)",
-          },
-          { status: 400 },
-        );
-      }
-    }
+    } = parsed.data;
 
     // Auto-generate title if not provided
     const title =
@@ -402,15 +471,18 @@ export async function POST(request: Request) {
           fileCount: fileCount ?? null,
           dayCount: dayCount ?? null,
           msgsPerDay: msgsPerDay ?? null,
-          atAGlance: atAGlance ?? undefined,
-          interactionStyle: interactionStyle ?? undefined,
-          projectAreas: projectAreas ?? undefined,
-          impressiveWorkflows: impressiveWorkflows ?? undefined,
-          frictionAnalysis: frictionAnalysis ?? undefined,
-          suggestions: suggestions ?? undefined,
-          onTheHorizon: onTheHorizon ?? undefined,
-          funEnding: funEnding ?? undefined,
-          chartData: chartData ?? undefined,
+          atAGlance: (atAGlance as Prisma.InputJsonValue) ?? undefined,
+          interactionStyle:
+            (interactionStyle as Prisma.InputJsonValue) ?? undefined,
+          projectAreas: (projectAreas as Prisma.InputJsonValue) ?? undefined,
+          impressiveWorkflows:
+            (impressiveWorkflows as Prisma.InputJsonValue) ?? undefined,
+          frictionAnalysis:
+            (frictionAnalysis as Prisma.InputJsonValue) ?? undefined,
+          suggestions: (suggestions as Prisma.InputJsonValue) ?? undefined,
+          onTheHorizon: (onTheHorizon as Prisma.InputJsonValue) ?? undefined,
+          funEnding: (funEnding as Prisma.InputJsonValue) ?? undefined,
+          chartData: (chartData as Prisma.InputJsonValue) ?? undefined,
           detectedSkills: detectedSkills ?? [],
           reportType: reportType ?? "insights",
           totalTokens:
