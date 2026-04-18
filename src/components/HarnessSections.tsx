@@ -1,15 +1,12 @@
 import type { HarnessData } from "@/types/insights";
 import CollapsibleSection from "./CollapsibleSection";
+import { formatCompactNumber, formatInteger } from "@/lib/number-format";
 
 interface HarnessSectionsProps {
   harnessData: HarnessData;
 }
 
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
-}
+const formatNumber = formatCompactNumber;
 
 function BarChart({
   data,
@@ -378,13 +375,13 @@ export default function HarnessSections({ harnessData }: HarnessSectionsProps) {
           <div className="mb-3 flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400">
             <span>
               <strong className="text-slate-900 dark:text-slate-100">
-                {gitPatterns.prCount}
+                {formatInteger(gitPatterns.prCount)}
               </strong>{" "}
               PRs
             </span>
             <span>
               <strong className="text-slate-900 dark:text-slate-100">
-                {gitPatterns.commitCount}
+                {formatInteger(gitPatterns.commitCount)}
               </strong>{" "}
               commits
             </span>

@@ -2,6 +2,10 @@
 
 import React, { useMemo } from "react";
 import { estimateApiCostUsd } from "@/lib/api-cost";
+import {
+  formatCompactNumber,
+  formatCompactCurrency,
+} from "@/lib/number-format";
 
 interface DailyData {
   date: string;
@@ -162,19 +166,12 @@ function generateDailyData(
 }
 
 function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
-  return n.toString();
+  return formatCompactNumber(n);
 }
 
 function formatCost(n: number): string {
   if (n === 0) return "0";
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
-  if (n >= 100) return `$${Math.round(n)}`;
-  if (n >= 10) return `$${n.toFixed(0)}`;
-  if (n >= 1) return `$${n.toFixed(1)}`;
-  return `$${n.toFixed(2)}`;
+  return formatCompactCurrency(n);
 }
 
 // Cost estimation now lives in src/lib/api-cost.ts so it can be shared

@@ -1,14 +1,11 @@
 import type { HarnessData } from "@/types/insights";
+import { formatCompactNumber, formatInteger } from "@/lib/number-format";
 
 interface HarnessOverviewProps {
   harnessData: HarnessData;
 }
 
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
-}
+const formatNumber = formatCompactNumber;
 
 function StatCell({ value, label }: { value: string; label: string }) {
   return (
@@ -50,10 +47,10 @@ export default function HarnessOverview({ harnessData }: HarnessOverviewProps) {
             <StatCell value={stats.skillsUsedCount.toString()} label="Skills" />
           )}
           {stats.hooksCount > 0 && (
-            <StatCell value={stats.hooksCount.toString()} label="Hooks" />
+            <StatCell value={formatInteger(stats.hooksCount)} label="Hooks" />
           )}
           {stats.prCount > 0 && (
-            <StatCell value={stats.prCount.toString()} label="PRs" />
+            <StatCell value={formatInteger(stats.prCount)} label="PRs" />
           )}
         </div>
       </div>
