@@ -111,6 +111,35 @@ describe("POST /api/upload — input validation", () => {
   });
 });
 
+describe("POST /api/upload — legacy harness format (pre-2.5.0)", () => {
+  // A pre-2.5.0 harness report has the integrity script tag (so it's
+  // detected as a harness report) but its embedded JSON is missing the
+  // required `stats` / `autonomy` / `featurePills` keys that
+  // normalizeHarnessData enforces. parseHarnessHtml throws; the route's
+  // try/catch around parseHarnessHtml (route.ts:115-128) translates that
+  // into a 400, not a 500. This locks that boundary in.
+  const LEGACY_HARNESS_HTML = `<!doctype html>
+<html>
+  <body>
+    <script type="application/json" id="insight-harness-integrity">
+      { "hash": "legacy-fixture" }
+    </script>
+    <script type="application/json" id="harness-data">
+      { "skillVersion": "2.4.0" }
+    </script>
+    <div id="tab-insights"></div>
+  </body>
+</html>`;
+
+  it("returns 400 (not 500) with a schema-mismatch error message", async () => {
+    mockSession("user-1");
+    const response = await uploadPOST(uploadRequest(LEGACY_HARNESS_HTML));
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toMatch(/required fields|HarnessData/i);
+  });
+});
+
 describe("POST /api/upload — v2.7.0 harness fixture happy path", () => {
   it("parses the fixture end-to-end and returns reportType=insight-harness", async () => {
     mockSession("user-1");
