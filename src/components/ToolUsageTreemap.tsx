@@ -1,5 +1,7 @@
 "use client";
 
+import { formatCompactNumber as formatNumber } from "@/lib/number-format";
+
 interface ToolUsageTreemapProps {
   toolUsage: Record<string, number>;
 }
@@ -23,11 +25,6 @@ function getToolBg(name: string): string {
 
 function getToolCategory(name: string): string {
   return TOOL_CATEGORIES[name]?.label ?? "other";
-}
-
-function formatNumber(n: number): string {
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toString();
 }
 
 export default function ToolUsageTreemap({ toolUsage }: ToolUsageTreemapProps) {

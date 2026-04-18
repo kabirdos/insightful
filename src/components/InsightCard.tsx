@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Heart, MessageSquare, Calendar, User } from "lucide-react";
 import clsx from "clsx";
 import { buildReportUrl } from "@/lib/urls";
+import { formatCompactNumber as formatTokensCompact } from "@/lib/number-format";
 
 interface InsightCardProps {
   slug: string;
@@ -29,12 +30,6 @@ interface InsightCardProps {
   sectionTags?: string[];
   totalTokens?: number | null;
   lifetimeTokens?: number | null;
-}
-
-function formatTokensCompact(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
-  return `${Math.round(n)}`;
 }
 
 function formatDate(dateStr: string) {

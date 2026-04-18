@@ -17,6 +17,10 @@ import { homepage as copy } from "@/content/homepage";
 import { estimateApiCostUsd } from "@/lib/api-cost";
 import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 import { buildReportUrl } from "@/lib/urls";
+import {
+  formatCompactNumber,
+  formatCompactCurrency,
+} from "@/lib/number-format";
 
 // Parse a skill identifier into its plugin source and short name.
 // Skills are in the form "plugin-name:skill-name" or just "skill-name" (custom).
@@ -111,34 +115,14 @@ interface InsightSummary {
 }
 
 // ── Helpers: formatting ─────────────────────────────────────
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
-  return `${Math.round(n)}`;
-}
-
-function formatCost(n: number): string {
-  if (n === 0) return "$0";
-  if (n >= 100) return `$${Math.round(n)}`;
-  if (n >= 10) return `$${n.toFixed(0)}`;
-  if (n >= 1) return `$${n.toFixed(1)}`;
-  return `$${n.toFixed(2)}`;
-}
+const formatTokens = formatCompactNumber;
+const formatLines = formatCompactNumber;
+const formatCost = formatCompactCurrency;
 
 function formatHours(n: number): string {
   if (n >= 100) return `${Math.round(n)}h`;
   if (n >= 10) return `${n.toFixed(0)}h`;
   return `${n.toFixed(1)}h`;
-}
-
-// Compact formatter for lines-of-code counts. Keeps one decimal in the
-// k-range so values like 18,400 render as "18.4k" (matching the format
-// called out in issue #24) and stay readable in the narrow vanity strip.
-function formatLines(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 100_000) return `${Math.round(n / 1_000)}k`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return Math.round(n).toLocaleString();
 }
 
 function perWeek(

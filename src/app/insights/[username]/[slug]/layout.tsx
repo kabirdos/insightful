@@ -1,12 +1,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { buildOgImageUrl } from "@/lib/urls";
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}k`;
-  return n.toLocaleString();
-}
+import { formatCompactNumber as formatTokens } from "@/lib/number-format";
 
 export async function generateMetadata({
   params,

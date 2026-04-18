@@ -8,6 +8,7 @@ import { Search, SlidersHorizontal, Sparkles } from "lucide-react";
 import { normalizeHarnessData, type HarnessData } from "@/types/insights";
 import ShareButton from "@/components/ShareButton";
 import { buildReportUrl } from "@/lib/urls";
+import { formatCompactNumber as formatNumber } from "@/lib/number-format";
 
 interface TopReport {
   slug: string;
@@ -31,20 +32,13 @@ interface TopReport {
   };
 }
 
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
-}
-
 function perWeek(value: number | null, dayCount: number | null): string | null {
   if (!value || !dayCount || dayCount === 0) return null;
   const weeks = dayCount / 7;
   if (weeks === 0) return null;
   const rate = value / weeks;
-  if (rate >= 1_000_000) return `${(rate / 1_000_000).toFixed(1)}M`;
-  if (rate >= 1_000) return `${(rate / 1_000).toFixed(1)}K`;
-  return rate < 10 ? rate.toFixed(1) : Math.round(rate).toLocaleString();
+  if (rate < 10) return rate.toFixed(1);
+  return formatNumber(rate);
 }
 
 const SORT_OPTIONS = [

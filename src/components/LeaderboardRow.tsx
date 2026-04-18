@@ -5,19 +5,10 @@ import Image from "next/image";
 import clsx from "clsx";
 import { buildProfileUrl } from "@/lib/urls";
 import type { LeaderboardRow as LeaderboardRowData } from "@/app/api/leaderboard/route";
+import { formatCompactNumber } from "@/lib/number-format";
 
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
-  return `${Math.round(n)}`;
-}
-
-function formatLines(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 100_000) return `${Math.round(n / 1_000)}k`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return Math.round(n).toLocaleString();
-}
+const formatTokens = formatCompactNumber;
+const formatLines = formatCompactNumber;
 
 function Stat({
   label,

@@ -1,6 +1,7 @@
 "use client";
 
 import type { HarnessGitPatterns } from "@/types/insights";
+import { formatInteger } from "@/lib/number-format";
 
 interface GitPatternsDisplayProps {
   gitPatterns: HarnessGitPatterns;
@@ -118,7 +119,7 @@ export default function GitPatternsDisplay({
             {gitPatterns.prCount > 0 && (
               <div className="text-center">
                 <div className="text-[28px] font-extrabold text-blue-500">
-                  {gitPatterns.prCount}
+                  {formatInteger(gitPatterns.prCount)}
                 </div>
                 <div className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
                   PRs
@@ -128,7 +129,7 @@ export default function GitPatternsDisplay({
             {gitPatterns.commitCount > 0 && (
               <div className="text-center">
                 <div className="text-[28px] font-extrabold text-blue-700 dark:text-blue-400">
-                  {gitPatterns.commitCount}
+                  {formatInteger(gitPatterns.commitCount)}
                 </div>
                 <div className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
                   Commits
