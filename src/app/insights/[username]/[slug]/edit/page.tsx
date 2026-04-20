@@ -529,16 +529,6 @@ export default function EditReportPage() {
             <HowIWorkCluster harnessData={harnessData} />
           </HideableCard>
 
-          {Object.keys(harnessData.toolUsage).length > 0 && (
-            <HideableCard
-              title="Tool Usage"
-              hidden={!!hiddenSections["toolUsage"]}
-              onToggle={() => toggleSection("toolUsage")}
-            >
-              <ToolUsageTreemap toolUsage={harnessData.toolUsage} />
-            </HideableCard>
-          )}
-
           {harnessData.workflowData && (
             <HideableCard
               title="Workflow Diagrams"
@@ -634,6 +624,16 @@ export default function EditReportPage() {
                   })}
                 </div>
               </CollapsibleSection>
+            </HideableCard>
+          )}
+
+          {Object.keys(harnessData.toolUsage).length > 0 && (
+            <HideableCard
+              title="Tool Usage"
+              hidden={!!hiddenSections["toolUsage"]}
+              onToggle={() => toggleSection("toolUsage")}
+            >
+              <ToolUsageTreemap toolUsage={harnessData.toolUsage} />
             </HideableCard>
           )}
 

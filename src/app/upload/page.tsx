@@ -1602,17 +1602,6 @@ export default function UploadPage() {
                 <HowIWorkCluster harnessData={parsed.harnessData} />
               </RedactableSection>
 
-              {/* Tool Usage Treemap */}
-              {Object.keys(parsed.harnessData.toolUsage).length > 0 && (
-                <RedactableSection
-                  title="Tool Usage"
-                  enabled={!disabledSections["toolUsage"]}
-                  onToggle={() => toggleSection("toolUsage")}
-                >
-                  <ToolUsageTreemap toolUsage={parsed.harnessData.toolUsage} />
-                </RedactableSection>
-              )}
-
               {/* Workflow Diagrams */}
               {parsed.harnessData.workflowData && (
                 <RedactableSection
@@ -1722,6 +1711,17 @@ export default function UploadPage() {
                       ))}
                     </div>
                   </CollapsibleSection>
+                </RedactableSection>
+              )}
+
+              {/* Tool Usage Treemap */}
+              {Object.keys(parsed.harnessData.toolUsage).length > 0 && (
+                <RedactableSection
+                  title="Tool Usage"
+                  enabled={!disabledSections["toolUsage"]}
+                  onToggle={() => toggleSection("toolUsage")}
+                >
+                  <ToolUsageTreemap toolUsage={parsed.harnessData.toolUsage} />
                 </RedactableSection>
               )}
 
