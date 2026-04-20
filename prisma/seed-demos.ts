@@ -164,6 +164,7 @@ function harnessReport(
     linesAdded: number;
     linesRemoved: number;
     tokens: number;
+    lifetimeTokens: number;
     durationHours: number;
     avgSession: number;
     skills: number;
@@ -266,11 +267,14 @@ function harnessReport(
     harnessData: {
       stats: {
         totalTokens: opts.tokens,
+        lifetimeTokens: opts.lifetimeTokens,
         durationHours: opts.durationHours,
         avgSessionMinutes: opts.avgSession,
         skillsUsedCount: opts.skills,
         hooksCount: opts.hooks,
         prCount: opts.prs,
+        sessionCount: opts.sessions,
+        commitCount: opts.commits,
       },
       autonomy: {
         label: opts.autonomyLabel,
@@ -470,6 +474,9 @@ async function seed() {
       // cache_creation). Old value was ~4.2M input+output only; heavy
       // agentic Fire-and-Forget usage pushes that 15-20x with cache traffic.
       tokens: 72_000_000,
+      // Lifetime ≈ 3.3× last-30d — Mika is a long-tenure power user, so
+      // most historical sessions sit behind the 30-day window.
+      lifetimeTokens: 240_000_000,
       durationHours: 86,
       avgSession: 36,
       skills: 18,
@@ -756,6 +763,8 @@ async function seed() {
       linesRemoved: 3800,
       // Directive / SaaS builder — moderate caching, ~15x scale-up.
       tokens: 42_000_000,
+      // Lifetime ≈ 2.7× — consistent focused SaaS work over several months.
+      lifetimeTokens: 115_000_000,
       durationHours: 52,
       avgSession: 47,
       skills: 24,
@@ -1069,6 +1078,9 @@ async function seed() {
       linesRemoved: 8400,
       // Heavy agent work + long-context embeddings → aggressive caching.
       tokens: 65_000_000,
+      // Lifetime ≈ 3.0× — heavy agent + long-context embedding usage
+      // accumulates large cache_read volumes over time.
+      lifetimeTokens: 195_000_000,
       durationHours: 72,
       avgSession: 44,
       skills: 12,
@@ -1328,6 +1340,8 @@ async function seed() {
       linesRemoved: 6800,
       // Infra / incident tooling — collaborative, plenty of context reuse.
       tokens: 48_000_000,
+      // Lifetime ≈ 2.5× — steady collaborative use across incident response work.
+      lifetimeTokens: 120_000_000,
       durationHours: 54,
       avgSession: 28,
       skills: 9,
@@ -1481,6 +1495,9 @@ async function seed() {
       linesRemoved: 3100,
       // Freelance / Rails — collaborative, medium cache ratio.
       tokens: 32_000_000,
+      // Lifetime ≈ 2.25× — part-time freelance cadence, lower tenure than
+      // the heavy full-time personas.
+      lifetimeTokens: 72_000_000,
       durationHours: 38,
       avgSession: 25,
       skills: 7,
@@ -1651,6 +1668,9 @@ async function seed() {
       linesRemoved: 800,
       // New to Claude Code, short exploratory sessions, lighter caching.
       tokens: 9_500_000,
+      // Lifetime ≈ 1.1× — Sam only started recently, so the 30-day window
+      // IS most of his lifetime usage. A "new user" marker visually.
+      lifetimeTokens: 10_500_000,
       durationHours: 18,
       avgSession: 22,
       skills: 4,
