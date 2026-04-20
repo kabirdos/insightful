@@ -1,3 +1,0 @@
-ALTER TABLE "InsightReport"
-  ADD COLUMN IF NOT EXISTS "chartData" JSONB,
-  ADD COLUMN IF NOT EXISTS "detectedSkills" TEXT[] NOT NULL DEFAULT '{}';
