@@ -180,6 +180,20 @@ describe("POST /api/insights — body-level validation", () => {
     const response = await insightsPOST(postRequest({ sessionCount: null }));
     expect(response.status).not.toBe(400);
   });
+
+  it("accepts fractional durationHours (extract.py emits 220.5; DB is Int)", async () => {
+    // Hot-bug regression: the v2.7.0 extractor produces fractional
+    // hours (the fixture has 220.5). Before this fix the schema
+    // required int and rejected real reports with 400 'Invalid
+    // request body: durationHours — Invalid input: expected int,
+    // received number'. The save site now rounds to satisfy the Int
+    // column.
+    mockSessionAndUser("user-1");
+    const response = await insightsPOST(
+      postRequest({ sessionCount: 1, durationHours: 220.5 }),
+    );
+    expect(response.status).not.toBe(400);
+  });
 });
 
 // ── #119: save-side integration ─────────────────────────────────────
@@ -239,6 +253,18 @@ describe("POST /api/insights — save-side happy path", () => {
     expect(createArgs.data.reportType).toBe("insights");
     expect(typeof createArgs.data.slug).toBe("string");
     expect(createArgs.data.slug.length).toBeGreaterThan(0);
+  });
+
+  it("rounds fractional durationHours before writing to the Int column", async () => {
+    mockSessionAndUser("user-1");
+    wireTransaction();
+    seedReportMock();
+
+    await insightsPOST(postRequest({ sessionCount: 1, durationHours: 220.5 }));
+
+    const createArgs = mockPrisma.insightReport.create.mock.calls[0][0];
+    expect(createArgs.data.durationHours).toBe(221);
+    expect(Number.isInteger(createArgs.data.durationHours)).toBe(true);
   });
 
   it("auto-generates a title when the body omits one", async () => {

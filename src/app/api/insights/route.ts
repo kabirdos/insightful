@@ -65,7 +65,11 @@ const createInsightReportSchema = z.object({
   projectIds: z.array(z.string()).optional(),
   reportType: z.string().optional(),
   totalTokens: z.number().int().nonnegative().nullable().optional(),
-  durationHours: optionalNullableInt,
+  // durationHours comes from extract.py as fractional hours (e.g. 220.5);
+  // the DB column is Int, so we accept a float here and round at the
+  // Prisma write site. Widening the column isn't worth a migration for
+  // what's a vanity metric.
+  durationHours: optionalNullableNumber,
   avgSessionMinutes: optionalNullableNumber,
   prCount: optionalNullableInt,
   autonomyLabel: optionalNullableString,
@@ -487,7 +491,10 @@ export async function POST(request: Request) {
           reportType: reportType ?? "insights",
           totalTokens:
             typeof totalTokens === "number" ? BigInt(totalTokens) : null,
-          durationHours: durationHours ?? null,
+          durationHours:
+            typeof durationHours === "number"
+              ? Math.round(durationHours)
+              : null,
           avgSessionMinutes: avgSessionMinutes ?? null,
           prCount: prCount ?? null,
           autonomyLabel: autonomyLabel ?? null,
