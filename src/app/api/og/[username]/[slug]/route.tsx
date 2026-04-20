@@ -3,6 +3,14 @@ import { prisma } from "@/lib/db";
 import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 import { estimateApiCostUsd } from "@/lib/api-cost";
 import { normalizeHarnessData, type HarnessData } from "@/types/insights";
+import {
+  formatCompactNumber,
+  formatCompactCurrency,
+} from "@/lib/number-format";
+
+const formatNumber = formatCompactNumber;
+const formatLines = formatCompactNumber;
+const formatCost = formatCompactCurrency;
 
 export const runtime = "nodejs";
 
@@ -30,26 +38,6 @@ async function loadFonts() {
   ]);
 
   return { interFont, jetbrainsFont };
-}
-
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}k`;
-  return n.toLocaleString();
-}
-
-function formatLines(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 100_000) return `${Math.round(n / 1_000)}k`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return Math.round(n).toLocaleString();
-}
-
-function formatCost(usd: number): string {
-  if (usd >= 1000) return `$${(usd / 1000).toFixed(1)}k`;
-  if (usd >= 100) return `$${Math.round(usd)}`;
-  if (usd >= 10) return `$${usd.toFixed(0)}`;
-  return `$${usd.toFixed(2)}`;
 }
 
 function perWeek(total: number, days: number): number {
