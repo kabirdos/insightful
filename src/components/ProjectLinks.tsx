@@ -125,7 +125,7 @@ function ProjectCard({ link }: { link: ProjectCardData }) {
         // height, fixed width, object-cover so the image always
         // fills the box (may crop). Hidden on the smallest screens
         // to keep the card compact on phones.
-        <div className="relative hidden w-36 shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-900 sm:block">
+        <div className="relative hidden w-40 shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-900 sm:block">
           {/* Plain <img> on purpose — OG images come from arbitrary
               third-party hosts and next/image would require wildcard
               remotePatterns in next.config.ts. URL has been gated by
@@ -134,7 +134,7 @@ function ProjectCard({ link }: { link: ProjectCardData }) {
           <img
             src={safeOgImage}
             alt=""
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
             onError={() => setImageFailed(true)}
             loading="lazy"
             referrerPolicy="no-referrer"
