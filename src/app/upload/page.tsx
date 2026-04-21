@@ -1088,14 +1088,25 @@ export default function UploadPage() {
               <CommandBlock command="/plugin marketplace add kabirdos/insight-harness" />
               <CommandBlock command="/plugin install insight-harness@kabirdos-insight-harness" />
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Auto-updates when new versions ship. Inspect the source at{" "}
+                Auto-updates when new versions ship. Python stdlib only — no pip
+                installs, no background daemons, no uploads unless you choose to
+                share.{" "}
+                <a
+                  href="https://github.com/kabirdos/insight-harness#how-it-runs-and-what-it-doesnt-do"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-600 underline decoration-slate-300 underline-offset-2 hover:text-slate-900 hover:decoration-slate-500 dark:text-slate-300 dark:decoration-slate-600 dark:hover:text-slate-100 dark:hover:decoration-slate-400"
+                >
+                  See exactly what it runs
+                </a>{" "}
+                or{" "}
                 <a
                   href="https://github.com/kabirdos/insight-harness"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-mono text-slate-600 underline decoration-slate-300 underline-offset-2 hover:text-slate-900 hover:decoration-slate-500 dark:text-slate-300 dark:decoration-slate-600 dark:hover:text-slate-100 dark:hover:decoration-slate-400"
                 >
-                  github.com/kabirdos/insight-harness
+                  inspect the source
                 </a>
                 .
               </p>
