@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { GitFork, ExternalLink, Globe } from "lucide-react";
 import clsx from "clsx";
 
 /**
@@ -106,35 +105,27 @@ function ProjectCard({ link }: { link: ProjectCardData }) {
   const safeFavicon = looksLikePublicUrl(link.favicon) ? link.favicon : null;
 
   const showImage = Boolean(safeOgImage) && !imageFailed;
-  const showSiteRow = Boolean(link.siteName) || Boolean(safeFavicon);
 
   // Whole card becomes a link. Prefer liveUrl, fall back to githubUrl.
   // If neither exists the overlay anchor is omitted entirely so the
   // card stays non-clickable but visually consistent.
   const cardHref = link.liveUrl || link.githubUrl || null;
 
-  // We use the "stretched link" pattern: the outer card is a plain
-  // <div class="relative">, a full-card <a> overlays it with ::after
-  // via `absolute inset-0`, and the inner icon buttons render as real
-  // <a> siblings with a higher z-index so they remain valid HTML (no
-  // interactive content nested inside an anchor) and stay keyboard-
-  // and screen-reader-navigable.
   const hoverClass = cardHref ? "hover:shadow-lg" : "";
 
   return (
     <div
       className={clsx(
-        "group relative flex overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow dark:border-slate-700 dark:bg-slate-800/50",
+        "group relative flex min-h-[120px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow dark:border-slate-700 dark:bg-slate-800/50",
         hoverClass,
       )}
     >
       {showImage && safeOgImage && (
-        // Horizontal thumbnail: fixed width, aspect ratio matches the
-        // OG 1200×630 standard (40:21), and object-contain so the full
-        // image is always visible — no cropping. Letterboxing falls
-        // back to a neutral slate fill. Hidden on the smallest screens
+        // Full-bleed thumbnail on the left: fills the entire card
+        // height, fixed width, object-cover so the image always
+        // fills the box (may crop). Hidden on the smallest screens
         // to keep the card compact on phones.
-        <div className="relative my-3 ml-3 hidden aspect-[40/21] w-32 shrink-0 self-center overflow-hidden rounded-md bg-slate-100 dark:bg-slate-900 sm:block">
+        <div className="relative hidden w-36 shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-900 sm:block">
           {/* Plain <img> on purpose — OG images come from arbitrary
               third-party hosts and next/image would require wildcard
               remotePatterns in next.config.ts. URL has been gated by
@@ -143,69 +134,40 @@ function ProjectCard({ link }: { link: ProjectCardData }) {
           <img
             src={safeOgImage}
             alt=""
-            className="h-full w-full object-contain"
+            className="h-full w-full object-cover"
             onError={() => setImageFailed(true)}
             loading="lazy"
             referrerPolicy="no-referrer"
           />
         </div>
       )}
-      <div className="min-w-0 flex-1 p-3">
-        {showSiteRow && (
-          <div className="mb-1 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-            {safeFavicon && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={safeFavicon}
-                alt=""
-                className="h-3.5 w-3.5 rounded-sm"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).style.display = "none";
-                }}
-                loading="lazy"
-                referrerPolicy="no-referrer"
-              />
-            )}
-            {link.siteName && <span className="truncate">{link.siteName}</span>}
-          </div>
-        )}
-        <h4 className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
-          {link.name}
-        </h4>
+      <div className="flex min-w-0 flex-1 flex-col p-4">
+        <div className="flex items-center gap-2">
+          {safeFavicon && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={safeFavicon}
+              alt=""
+              className="h-5 w-5 shrink-0 rounded-sm"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          )}
+          <h4 className="truncate text-base font-bold text-slate-900 dark:text-slate-100">
+            {link.name}
+          </h4>
+        </div>
         {link.description && (
-          <p className="mt-0.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
+          <p
+            className="mt-1 line-clamp-3 flex-1 text-xs text-slate-500 dark:text-slate-400"
+            title={link.description}
+          >
             {link.description}
           </p>
         )}
-        <div className="relative z-10 mt-2 flex items-center gap-1">
-          {link.githubUrl && (
-            <a
-              href={link.githubUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-300"
-              aria-label={`${link.name} on GitHub`}
-            >
-              <GitFork className="h-3.5 w-3.5" />
-            </a>
-          )}
-          {link.liveUrl && (
-            <a
-              href={link.liveUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-300"
-              aria-label={`Visit ${link.name}`}
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          )}
-          {!link.githubUrl && !link.liveUrl && (
-            <div className="rounded-lg p-1.5 text-slate-300 dark:text-slate-600">
-              <Globe className="h-3.5 w-3.5" />
-            </div>
-          )}
-        </div>
       </div>
       {cardHref && (
         <a
