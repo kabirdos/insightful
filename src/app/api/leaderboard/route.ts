@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 import { filterReportForListFeed } from "@/lib/filter-report-response";
+import { draftVisibilityClause } from "@/lib/draft-filter";
 
 export interface LeaderboardRow {
   rank: number;
@@ -40,7 +41,11 @@ export async function GET(request: Request) {
     // author keeping the latest. With hundreds of users this fits easily
     // in memory; when the population grows past a few thousand we'll
     // push this into a materialized view or window function.
+    // Leaderboard ranks public reports only. Drafts are excluded
+    // unconditionally (viewerId: null) so an owner's own draft never
+    // leapfrogs their published ranking.
     const reports = await prisma.insightReport.findMany({
+      where: draftVisibilityClause(null),
       orderBy: { publishedAt: "desc" },
       select: {
         publishedAt: true,

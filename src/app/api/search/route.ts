@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { filterReportForListFeed } from "@/lib/filter-report-response";
+import { draftVisibilityClause } from "@/lib/draft-filter";
 
 const SEARCHABLE_JSON_FIELDS = [
   "atAGlance",
@@ -27,9 +29,15 @@ export async function GET(request: Request) {
 
     const searchTerm = q.toLowerCase();
 
+    // Search results respect draft visibility — owners can find their
+    // own drafts via search; non-owners and anonymous viewers cannot.
+    const session = await auth();
+    const viewerId = session?.user?.id ?? null;
+
     // Fetch all reports with their content and author info
     // SQLite doesn't support JSON path queries, so we fetch and filter in-memory
     const allReports = await prisma.insightReport.findMany({
+      where: draftVisibilityClause(viewerId),
       include: {
         author: {
           select: {

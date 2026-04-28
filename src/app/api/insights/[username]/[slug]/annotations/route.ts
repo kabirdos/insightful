@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { draftVisibilityClause } from "@/lib/draft-filter";
 
 const SECTION_KEYS = [
   "atAGlance",
@@ -26,7 +27,12 @@ export async function POST(
     const { username, slug } = await params;
 
     const report = await prisma.insightReport.findFirst({
-      where: { slug, author: { username } },
+      where: {
+        AND: [
+          { slug, author: { username } },
+          draftVisibilityClause(session.user.id),
+        ],
+      },
       select: { id: true, authorId: true },
     });
 

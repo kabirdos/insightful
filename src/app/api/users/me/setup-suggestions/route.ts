@@ -40,6 +40,9 @@ export async function GET(): Promise<
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // owner-scoped: where.authorId restricts to the caller's own reports,
+    // so the draft-visibility helper would be a no-op. The owner is
+    // entitled to see their own drafts here.
     const report = await prisma.insightReport.findFirst({
       where: { authorId: session.user.id, reportType: "insight-harness" },
       orderBy: { createdAt: "desc" },

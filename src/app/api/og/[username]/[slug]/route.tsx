@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 import { estimateApiCostUsd } from "@/lib/api-cost";
 import { normalizeHarnessData, type HarnessData } from "@/types/insights";
+import { draftVisibilityClause } from "@/lib/draft-filter";
 import {
   formatCompactNumber,
   formatCompactCurrency,
@@ -136,8 +137,13 @@ export async function GET(
   try {
     const { username, slug } = await params;
 
+    // OG images are crawler-facing previews. Never expose drafts —
+    // even to authenticated owners — because the resulting image gets
+    // cached by social previews. Filter as anonymous (viewerId: null).
     const report = await prisma.insightReport.findFirst({
-      where: { slug, author: { username } },
+      where: {
+        AND: [{ slug, author: { username } }, draftVisibilityClause(null)],
+      },
       include: {
         author: {
           select: {
