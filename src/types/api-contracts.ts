@@ -8,6 +8,7 @@ import type { ChartData, SkillKey } from "./insights";
 
 export interface InsightReportListItemContract {
   slug: string;
+  isDraft: boolean;
   detectedSkills: SkillKey[] | string[];
   dayCount: number | null;
   linesAdded: number | null;

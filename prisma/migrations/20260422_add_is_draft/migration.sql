@@ -1,0 +1,1 @@
+ALTER TABLE "InsightReport" ADD COLUMN "isDraft" BOOLEAN NOT NULL DEFAULT false;
