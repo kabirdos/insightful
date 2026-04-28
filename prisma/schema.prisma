@@ -37,6 +37,7 @@ model InsightReport {
   title       String
   slug        String
   publishedAt DateTime @default(now())
+  isDraft     Boolean  @default(false)
 
   // Stats
   sessionCount   Int?
