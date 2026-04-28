@@ -24,11 +24,13 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  reports    InsightReport[]
-  votes      SectionVote[]
-  highlights SectionHighlight[]
-  comments   Comment[]
-  projects   Project[]
+  reports        InsightReport[]
+  votes          SectionVote[]
+  highlights     SectionHighlight[]
+  comments       Comment[]
+  projects       Project[]
+  harnessTokens  HarnessToken[]
+  harnessUploads HarnessUpload[]
 }
 
 model InsightReport {
@@ -187,4 +189,40 @@ model AuthorAnnotation {
   report InsightReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
   @@unique([reportId, sectionKey])
+}
+
+/// Bearer tokens used by the insight-harness skill for direct-POST upload.
+/// `selector` is the public, indexed half (12 hex chars). `hashedSecret` is bcrypt(secret half).
+/// Tokens are reusable; expiresAt is rolled forward to NOW() + 90d on every successful use.
+model HarnessToken {
+  id            String    @id @default(cuid())
+  userId        String
+  selector      String    @unique
+  hashedSecret  String
+  createdAt     DateTime  @default(now())
+  expiresAt     DateTime
+  lastUsedAt    DateTime?
+  revokedAt     DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([userId, createdAt])
+}
+
+/// Idempotency + rate-limit log for direct-POST uploads via /api/upload (bearer path).
+/// Unique (userId, uploadId) backs the X-Upload-Id idempotency contract.
+/// Rows in the last 24h back the rate-limit counters in src/lib/harness-rate-limit.ts.
+model HarnessUpload {
+  id        String   @id @default(cuid())
+  userId    String
+  uploadId  String
+  slug      String?
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, uploadId])
+  @@index([userId, createdAt])
 }
