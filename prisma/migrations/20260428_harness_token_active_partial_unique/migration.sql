@@ -1,3 +1,8 @@
+-- Take an exclusive lock for the duration of this migration so concurrent mints
+-- cannot slip a new active row in between the dedup UPDATE and the CREATE UNIQUE
+-- INDEX below. Released automatically at end of migration transaction.
+LOCK TABLE "HarnessToken" IN ACCESS EXCLUSIVE MODE;
+
 -- Defensive dedup: if any environment already has two active tokens for the same user
 -- (the state the prior race could have produced), revoke all but the "best" per user
 -- before adding the partial unique index. Ranking prefers the actually-usable token:
