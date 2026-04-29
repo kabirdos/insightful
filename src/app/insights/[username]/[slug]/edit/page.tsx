@@ -140,7 +140,7 @@ function HideableCard({
 export default function EditReportPage() {
   const { username, slug } = useParams<{ username: string; slug: string }>();
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const [report, setReport] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -400,7 +400,12 @@ export default function EditReportPage() {
     setPendingSave(null);
   };
 
-  if (loading) {
+  // Hold the spinner until BOTH the report fetch and the next-auth
+  // session have resolved. Without the sessionStatus guard the
+  // ownership branch below can fire `notFound()` for the legitimate
+  // owner of a draft if the API fetch resolves before next-auth's
+  // initial session call (codex P1 on the prior commit).
+  if (loading || sessionStatus === "loading") {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
