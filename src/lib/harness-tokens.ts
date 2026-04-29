@@ -33,6 +33,16 @@ const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 /** R13 — at most this many mints per user per rolling 24h window. */
 export const MINT_CAP_PER_24H = 10;
+/**
+ * If we acquire the mint lock and find an active token created in
+ * the last `MINT_CONFLICT_FRESHNESS_MS`, treat the request as a
+ * concurrent mint (e.g. double-click, retry) and surface
+ * MintConflictError instead of silently revoking the freshly-minted
+ * winner's token. Tuned to comfortably cover one outbound HTTP
+ * round-trip while staying well below "user reloaded the page to
+ * deliberately rotate."
+ */
+export const MINT_CONFLICT_FRESHNESS_MS = 5_000;
 
 export interface GeneratedToken {
   raw: string;
@@ -176,6 +186,30 @@ export async function mintTokenForUser(
         // Fallback to `now` if the row vanished between count and read
         // (vanishingly unlikely; HarnessToken rows aren't deleted).
         throw new MintRateLimitError(userId, oldest?.createdAt ?? now);
+      }
+
+      // Conflict detection: if a recently-created active token already
+      // exists, the prior caller in the lock queue just minted. We
+      // would otherwise revoke their (still-in-flight, freshly-issued)
+      // token in the updateMany below, returning 201 with a token they
+      // already received plus a token they don't know about. Surface
+      // MintConflictError so the HTTP layer 409s and the client can
+      // reload (or re-mint deliberately).
+      //
+      // Threshold tuned at MINT_CONFLICT_FRESHNESS_MS — long enough to
+      // catch double-clicks and HTTP retries, short enough that a
+      // deliberate reload-and-rotate flow still works.
+      const freshCutoff = new Date(Date.now() - MINT_CONFLICT_FRESHNESS_MS);
+      const recentActive = await tx.harnessToken.findFirst({
+        where: {
+          userId,
+          revokedAt: null,
+          createdAt: { gt: freshCutoff },
+        },
+        select: { id: true },
+      });
+      if (recentActive) {
+        throw new MintConflictError(userId);
       }
 
       await tx.harnessToken.updateMany({
