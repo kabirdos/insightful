@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { notFound, useParams, useRouter } from "next/navigation";
 import {
   buildReportApiUrl,
   buildReportSubResourceApiUrl,
@@ -58,6 +58,7 @@ interface ReportData {
   slug: string;
   title: string;
   authorId: string;
+  isDraft: boolean;
   reportType: string;
   sessionCount: number | null;
   messageCount: number | null;
@@ -144,6 +145,13 @@ export default function EditReportPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // R9b: when the report is missing (404) or it's a draft the viewer
+  // doesn't own, surface Next's notFound() instead of the read-only
+  // "you can only edit your own reports" message. The 404 path covers
+  // anonymous viewers and non-owners of drafts (the API filters those
+  // out via draftVisibilityClause). The render-time guard below covers
+  // the defense-in-depth case where a draft slips through.
+  const [reportNotFound, setReportNotFound] = useState(false);
   const [hiddenSections, setHiddenSections] = useState<Record<string, boolean>>(
     {},
   );
@@ -158,8 +166,19 @@ export default function EditReportPage() {
     // the owner can toggle them back on. The server enforces
     // ownership before honoring the flag.
     fetch(`${buildReportApiUrl(username, slug)}?includeHidden=true`)
-      .then((r) => r.json())
-      .then((data) => {
+      .then(async (response) => {
+        // 404 covers: report doesn't exist; the viewer is anonymous /
+        // non-owner and the report is a draft (API hides drafts from
+        // non-owners via draftVisibilityClause). Render-side this
+        // becomes a Next.js notFound() instead of the read-only
+        // message. Any other error code falls through to the error
+        // state. (R9b)
+        if (response.status === 404) {
+          setReportNotFound(true);
+          setLoading(false);
+          return;
+        }
+        const data = await response.json();
         if (data.error) {
           setError(data.error);
         } else {
@@ -389,6 +408,16 @@ export default function EditReportPage() {
     );
   }
 
+  // R9b: when the API responded 404, surface Next's notFound() rather
+  // than rendering an inline error. This happens for: (a) the report
+  // genuinely doesn't exist, (b) a non-owner / anonymous viewer hitting
+  // a draft's edit URL — drafts are filtered from non-owner reads by
+  // `draftVisibilityClause`, so the API returns 404 from this page's
+  // perspective.
+  if (reportNotFound) {
+    notFound();
+  }
+
   if (error && !report) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-8 text-center">
@@ -417,8 +446,18 @@ export default function EditReportPage() {
     );
   }
 
-  // Check ownership
+  // Check ownership. Drafts are not addressable by non-owners (R9b):
+  // the API already filters them out via draftVisibilityClause, so
+  // hitting this branch with `report.isDraft` would only happen if the
+  // API filter regressed. Fail closed with notFound() rather than
+  // exposing the read-only message that would tip off a guesser to the
+  // existence of someone else's draft. Public reports keep their
+  // existing read-only behavior so non-owners with the URL still see a
+  // helpful message.
   if (session?.user?.id !== report.author.id) {
+    if (report.isDraft) {
+      notFound();
+    }
     return (
       <div className="mx-auto max-w-4xl px-4 py-8 text-center">
         <p className="text-slate-600 dark:text-slate-400">
