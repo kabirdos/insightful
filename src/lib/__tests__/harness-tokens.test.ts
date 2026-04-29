@@ -16,6 +16,7 @@ import { prisma } from "@/lib/db";
 import {
   generateToken,
   hashSecret,
+  MintConflictError,
   mintTokenForUser,
   parseToken,
   revokeActiveTokensForUser,
@@ -121,11 +122,12 @@ describe("mintTokenForUser", () => {
     });
   });
 
-  it("retries once on a P2002 partial-unique collision, then succeeds (race recovery)", async () => {
-    // Simulate two concurrent mints racing past the transactional
-    // updateMany. The first create() trips the partial-unique index
-    // (P2002), the wrapper retries: the second updateMany now sees
-    // and revokes the winner's row, and the second create() succeeds.
+  it("throws MintConflictError immediately on P2002 (no retry — would silently revoke the winner)", async () => {
+    // Simulate the loser of a concurrent partial-unique race: the
+    // winner's row is now visible via the partial unique index, so
+    // our `create` trips P2002. We must NOT retry — a retry would
+    // re-run `updateMany` against the winner's freshly-created row
+    // and silently revoke their token.
     const { Prisma } = await import("@prisma/client");
     const p2002 = new Prisma.PrismaClientKnownRequestError(
       "Unique constraint failed on the fields: (`userId`)",
@@ -137,44 +139,14 @@ describe("mintTokenForUser", () => {
     );
 
     mockPrisma.harnessToken.updateMany.mockResolvedValue({ count: 0 });
-    // First create throws P2002, second succeeds.
-    mockPrisma.harnessToken.create
-      .mockRejectedValueOnce(p2002)
-      .mockResolvedValueOnce({});
+    mockPrisma.harnessToken.create.mockRejectedValueOnce(p2002);
 
-    const { raw } = await mintTokenForUser("user-1");
-
-    expect(raw).toMatch(/^ih_[0-9a-f]{76}$/);
-    // Two attempts → two updateMany calls, two create calls.
-    expect(mockPrisma.harnessToken.updateMany).toHaveBeenCalledTimes(2);
-    expect(mockPrisma.harnessToken.create).toHaveBeenCalledTimes(2);
-    // Both updateMany calls target the same partial-unique slot
-    // (userId, revokedAt: null); the second one is what revokes the
-    // winner that beat us in the first race.
-    expect(mockPrisma.harnessToken.updateMany).toHaveBeenNthCalledWith(2, {
-      where: { userId: "user-1", revokedAt: null },
-      data: expect.objectContaining({ revokedAt: expect.any(Date) }),
-    });
-  });
-
-  it("throws if a second P2002 follows the retry (no infinite loop)", async () => {
-    const { Prisma } = await import("@prisma/client");
-    const p2002 = new Prisma.PrismaClientKnownRequestError(
-      "Unique constraint failed on the fields: (`userId`)",
-      {
-        code: "P2002",
-        clientVersion: "test",
-        meta: { target: ["HarnessToken_userId_active_unique"] },
-      },
+    await expect(mintTokenForUser("user-1")).rejects.toBeInstanceOf(
+      MintConflictError,
     );
-
-    mockPrisma.harnessToken.updateMany.mockResolvedValue({ count: 0 });
-    mockPrisma.harnessToken.create.mockRejectedValue(p2002);
-
-    await expect(mintTokenForUser("user-1")).rejects.toMatchObject({
-      code: "P2002",
-    });
-    expect(mockPrisma.harnessToken.create).toHaveBeenCalledTimes(2);
+    // Single attempt only — no retry.
+    expect(mockPrisma.harnessToken.create).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.harnessToken.updateMany).toHaveBeenCalledTimes(1);
   });
 });
 

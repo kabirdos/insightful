@@ -83,6 +83,22 @@ export function parseToken(
 }
 
 /**
+ * Thrown when a concurrent mint won the partial-unique race for a
+ * user's active token slot. The HTTP layer should translate this to
+ * `409 Conflict` so the client can reload and surface the winning
+ * token. We deliberately do NOT retry: a retry would re-revoke the
+ * winner's freshly-created row and silently break their token.
+ */
+export class MintConflictError extends Error {
+  constructor(userId: string) {
+    super(
+      `Concurrent mint for user ${userId} won the partial-unique race; reload to see the active token.`,
+    );
+    this.name = "MintConflictError";
+  }
+}
+
+/**
  * Mint a new token for `userId`. Implicitly revokes any prior active
  * tokens (R3): a user has at most one active token at a time. Returns
  * the raw token exactly once — callers must surface it immediately
@@ -90,23 +106,26 @@ export function parseToken(
  *
  * Concurrency: the partial unique index
  * `HarnessToken_userId_active_unique ON (userId) WHERE revokedAt IS NULL`
- * is the source of truth for the at-most-one-active invariant. If two
- * mints race past the in-transaction `updateMany` (each seeing zero
- * rows to revoke because the prior winner has not yet committed) and
- * the second `create` trips P2002 on that index, we retry once: the
- * winner's row is now visible, the second attempt's `updateMany`
- * revokes it, and the second `create` succeeds. Cap at one retry — a
- * second P2002 implies a non-race bug we want to surface, not loop on.
+ * is the source of truth for the at-most-one-active invariant. The
+ * in-transaction `updateMany` handles the common (non-racing) case
+ * where a user is rotating their own token deliberately. If two mints
+ * race past their respective `updateMany`s (each seeing zero rows to
+ * revoke because the prior winner has not yet committed) the loser's
+ * `create` trips P2002 on the partial unique index. We translate that
+ * to `MintConflictError` and let the caller decide. We do NOT retry —
+ * a retry would re-run `updateMany` against the winner's row and
+ * silently revoke it, yielding two "successful" responses where the
+ * first user's token is already dead.
  */
 export async function mintTokenForUser(
   userId: string,
 ): Promise<{ raw: string; expiresAt: Date }> {
   const generated = generateToken();
   const hashedSecret = await hashSecret(generated.secret);
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + NINETY_DAYS_MS);
 
-  const attemptMint = async (): Promise<{ raw: string; expiresAt: Date }> => {
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + NINETY_DAYS_MS);
+  try {
     await prisma.$transaction(async (tx) => {
       await tx.harnessToken.updateMany({
         where: { userId, revokedAt: null },
@@ -122,18 +141,12 @@ export async function mintTokenForUser(
       });
     });
     return { raw: generated.raw, expiresAt };
-  };
-
-  try {
-    return await attemptMint();
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      // Concurrent mint won the partial-unique race. Retry once: this
-      // attempt's updateMany will now see + revoke the winner's row.
-      return await attemptMint();
+      throw new MintConflictError(userId);
     }
     throw error;
   }
