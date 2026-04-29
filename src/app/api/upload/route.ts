@@ -111,23 +111,60 @@ class ParseError extends Error {
 }
 
 /**
- * Cheap pre-parse check: does this body look like an HTML document?
- * `parseInsightsHtml` accepts arbitrary text and silently falls back
- * to an all-empty report shape, which on the bearer path would land
- * as a junk draft. Reject inputs that don't contain any of the
- * tell-tale tags before they hit the parser.
+ * Cheap pre-parse check: does this body LOOK like an HTML document?
+ * Used as a fast-fail before invoking the full HTML parser. Real
+ * acceptance is determined post-parse by hasParsedContent() — this is
+ * just a wallet-of-tags fence to short-circuit the obviously-bogus
+ * `{}` payload before we spin up cheerio.
  */
 function looksLikeHtml(html: string): boolean {
-  // A real Insight report always has at least one of the document
-  // wrappers OR our integrity script. Whitespace and case-insensitive
-  // match — be liberal in what we accept, strict about rejecting
-  // obviously-non-HTML payloads like `{}`.
   const lower = html.slice(0, 4096).toLowerCase();
   if (lower.includes("<!doctype html")) return true;
   if (lower.includes("<html")) return true;
   if (lower.includes("<body")) return true;
-  if (lower.includes("insight-harness-integrity")) return true;
-  if (lower.includes("harness-data")) return true;
+  if (lower.includes("<script")) return true;
+  return false;
+}
+
+/**
+ * After parsing, confirm the report has at least one signal of real
+ * content. Without this check, parseInsightsHtml silently produces
+ * an all-empty report shape for any text that happens to slip past
+ * looksLikeHtml() (e.g. `<body>{}</body>`), which on the bearer path
+ * would land as a junk draft.
+ *
+ * The bar is low: any non-zero stat OR any non-empty section field
+ * passes. A true insight-harness report always has at least one
+ * positive `messageCount` / `sessionCount`; a true /insights report
+ * always has narrative text in `interaction_style` or one of the
+ * sections. Plain `{}` produces all zeros + all empty strings, which
+ * is unambiguously the empty-report fallback.
+ */
+function hasParsedContent(parsed: ParsedInsightsReport): boolean {
+  const s = parsed.stats;
+  if (
+    (typeof s.sessionCount === "number" && s.sessionCount > 0) ||
+    (typeof s.messageCount === "number" && s.messageCount > 0) ||
+    (typeof s.commitCount === "number" && s.commitCount > 0) ||
+    (typeof s.dayCount === "number" && (s.dayCount ?? 0) > 0) ||
+    (s.dateRangeStart && s.dateRangeStart.length > 0) ||
+    (s.dateRangeEnd && s.dateRangeEnd.length > 0)
+  ) {
+    return true;
+  }
+  const d = parsed.data;
+  if (
+    d.interaction_style?.narrative ||
+    d.interaction_style?.key_pattern ||
+    (d.project_areas?.areas?.length ?? 0) > 0 ||
+    (d.what_works?.impressive_workflows?.length ?? 0) > 0 ||
+    (d.friction_analysis?.categories?.length ?? 0) > 0 ||
+    (d.on_the_horizon?.opportunities?.length ?? 0) > 0 ||
+    d.at_a_glance?.whats_working ||
+    d.at_a_glance?.whats_hindering
+  ) {
+    return true;
+  }
   return false;
 }
 
@@ -202,6 +239,19 @@ function parseUploadHtml(html: string): ParsedUpload {
     reportType: isHarness ? "insight-harness" : "insights",
     harnessData,
   };
+
+  // Post-parse content check. parseInsightsHtml accepts arbitrary
+  // text and silently falls back to an all-empty report; without this
+  // gate, any string that scraped past looksLikeHtml() but contained
+  // no real report data would persist as a junk draft on the bearer
+  // path. Belt-and-suspenders pairing: looksLikeHtml() is fast-fail,
+  // hasParsedContent() is the truth-check.
+  if (!isHarness && !hasParsedContent(composed)) {
+    throw new ParseError(
+      "Request body parsed as an empty report — verify it is a valid insights or insight-harness HTML.",
+      400,
+    );
+  }
 
   return {
     parsed: composed,

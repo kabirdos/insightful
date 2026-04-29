@@ -582,6 +582,21 @@ describe("POST /api/upload — bearer rejects bodies that aren't HTML", () => {
     expect(response.status).toBe(400);
     expect(mockPublish).not.toHaveBeenCalled();
   });
+
+  it("returns 400 when body has HTML wrappers but parses as an empty report", async () => {
+    // looksLikeHtml() passes (the body has <html>/<body>) but the
+    // post-parse content check rejects it because no real report data
+    // landed in the parsed structure. Without this gate, parseInsightsHtml
+    // would silently produce an all-empty report that becomes a junk draft.
+    const response = await uploadPOST(
+      bearerRequest({
+        contentType: "text/html",
+        body: "<html><body>{}</body></html>",
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(mockPublish).not.toHaveBeenCalled();
+  });
 });
 
 describe("POST /api/upload — bearer parse failure", () => {
