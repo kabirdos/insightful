@@ -555,6 +555,35 @@ describe("POST /api/upload — bearer failure-attempt accounting", () => {
   });
 });
 
+describe("POST /api/upload — bearer rejects bodies that aren't HTML", () => {
+  it("returns 400 when body is octet-stream but content is JSON-like", async () => {
+    // Even with the allowed Content-Type, a non-HTML body (e.g. `{}`)
+    // would otherwise reach parseInsightsHtml as text and silently
+    // produce an all-empty draft. Pre-parse check rejects it.
+    const response = await uploadPOST(
+      bearerRequest({
+        contentType: "application/octet-stream",
+        body: "{}",
+      }),
+    );
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toMatch(/HTML/i);
+    expect(mockPublish).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when body is plain text without any HTML markers", async () => {
+    const response = await uploadPOST(
+      bearerRequest({
+        contentType: "text/html",
+        body: "this is just some text without tags",
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(mockPublish).not.toHaveBeenCalled();
+  });
+});
+
 describe("POST /api/upload — bearer parse failure", () => {
   it("returns 400 + records HarnessUpload {success:false} on malformed harness JSON", async () => {
     const LEGACY = `<!doctype html>

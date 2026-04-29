@@ -110,7 +110,34 @@ class ParseError extends Error {
   }
 }
 
+/**
+ * Cheap pre-parse check: does this body look like an HTML document?
+ * `parseInsightsHtml` accepts arbitrary text and silently falls back
+ * to an all-empty report shape, which on the bearer path would land
+ * as a junk draft. Reject inputs that don't contain any of the
+ * tell-tale tags before they hit the parser.
+ */
+function looksLikeHtml(html: string): boolean {
+  // A real Insight report always has at least one of the document
+  // wrappers OR our integrity script. Whitespace and case-insensitive
+  // match — be liberal in what we accept, strict about rejecting
+  // obviously-non-HTML payloads like `{}`.
+  const lower = html.slice(0, 4096).toLowerCase();
+  if (lower.includes("<!doctype html")) return true;
+  if (lower.includes("<html")) return true;
+  if (lower.includes("<body")) return true;
+  if (lower.includes("insight-harness-integrity")) return true;
+  if (lower.includes("harness-data")) return true;
+  return false;
+}
+
 function parseUploadHtml(html: string): ParsedUpload {
+  if (!looksLikeHtml(html)) {
+    throw new ParseError(
+      "Request body does not appear to be an HTML report.",
+      400,
+    );
+  }
   const isHarness = isHarnessReport(html);
 
   // For harness reports, parse the embedded /insights tab — the
