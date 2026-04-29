@@ -33,16 +33,6 @@ const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 /** R13 — at most this many mints per user per rolling 24h window. */
 export const MINT_CAP_PER_24H = 10;
-/**
- * If we acquire the mint lock and find an active token created in
- * the last `MINT_CONFLICT_FRESHNESS_MS`, treat the request as a
- * concurrent mint (e.g. double-click, retry) and surface
- * MintConflictError instead of silently revoking the freshly-minted
- * winner's token. Tuned to comfortably cover one outbound HTTP
- * round-trip while staying well below "user reloaded the page to
- * deliberately rotate."
- */
-export const MINT_CONFLICT_FRESHNESS_MS = 5_000;
 
 export interface GeneratedToken {
   raw: string;
@@ -159,20 +149,32 @@ export async function mintTokenForUser(
 
   try {
     await prisma.$transaction(async (tx) => {
-      // Serialize concurrent mints for this user. Without a lock, two
-      // POSTs at count=9 can both read 9 under READ COMMITTED, both
-      // pass the cap check, and both insert — yielding 11 mints in
-      // 24h. `pg_advisory_xact_lock` blocks the second caller until
-      // the first transaction commits/rolls back, after which the
-      // second sees the freshly-committed row in its count and trips
-      // the cap.
+      // Try-acquire a per-user advisory lock. If we don't get it, a
+      // concurrent mint for this user is in flight; surface
+      // MintConflictError so the HTTP layer 409s rather than fall
+      // through to the rotation path (which would silently revoke the
+      // winner's freshly-returned token in updateMany).
+      //
+      // Try-acquire (vs. blocking acquire) closes the race exposed
+      // during code review: blocking would let us serialize behind the
+      // winner, then run updateMany against their committed row,
+      // returning 201 with their token already dead. The non-blocking
+      // version is also robust to commit-time vs. createdAt skew —
+      // we don't need a freshness window, the lock IS the signal.
       //
       // Lock key: a 32-bit hash of `mint:<userId>` so we don't
-      // serialize unrelated users. We only need scoping by user for
-      // this critical section; the bcrypt cost of the loser's wasted
-      // hash work (~80ms) is bounded by the rate-limit cap anyway.
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`mint:${userId}`}))`;
+      // serialize unrelated users.
+      const lockResult = await tx.$queryRaw<Array<{ acquired: boolean }>>`
+        SELECT pg_try_advisory_xact_lock(hashtext(${`mint:${userId}`})) AS acquired
+      `;
+      if (!lockResult[0]?.acquired) {
+        throw new MintConflictError(userId);
+      }
 
+      // With the lock held, count + insert are atomic w.r.t. other
+      // mints for this user. Concurrent bursts now serialize into
+      // single-attempt MintConflictErrors; the lock holder always sees
+      // up-to-date state.
       const since = new Date(Date.now() - TWENTY_FOUR_HOURS_MS);
       const count = await tx.harnessToken.count({
         where: { userId, createdAt: { gt: since } },
@@ -183,33 +185,7 @@ export async function mintTokenForUser(
           orderBy: { createdAt: "asc" },
           select: { createdAt: true },
         });
-        // Fallback to `now` if the row vanished between count and read
-        // (vanishingly unlikely; HarnessToken rows aren't deleted).
         throw new MintRateLimitError(userId, oldest?.createdAt ?? now);
-      }
-
-      // Conflict detection: if a recently-created active token already
-      // exists, the prior caller in the lock queue just minted. We
-      // would otherwise revoke their (still-in-flight, freshly-issued)
-      // token in the updateMany below, returning 201 with a token they
-      // already received plus a token they don't know about. Surface
-      // MintConflictError so the HTTP layer 409s and the client can
-      // reload (or re-mint deliberately).
-      //
-      // Threshold tuned at MINT_CONFLICT_FRESHNESS_MS — long enough to
-      // catch double-clicks and HTTP retries, short enough that a
-      // deliberate reload-and-rotate flow still works.
-      const freshCutoff = new Date(Date.now() - MINT_CONFLICT_FRESHNESS_MS);
-      const recentActive = await tx.harnessToken.findFirst({
-        where: {
-          userId,
-          revokedAt: null,
-          createdAt: { gt: freshCutoff },
-        },
-        select: { id: true },
-      });
-      if (recentActive) {
-        throw new MintConflictError(userId);
       }
 
       await tx.harnessToken.updateMany({

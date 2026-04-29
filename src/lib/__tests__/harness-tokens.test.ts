@@ -11,7 +11,7 @@ vi.mock("@/lib/db", () => ({
       count: vi.fn(),
     },
     $transaction: vi.fn(),
-    $executeRaw: vi.fn(),
+    $queryRaw: vi.fn(),
   },
 }));
 
@@ -39,7 +39,7 @@ const mockPrisma = prisma as unknown as {
     count: Mock;
   };
   $transaction: Mock;
-  $executeRaw: Mock;
+  $queryRaw: Mock;
 };
 
 beforeEach(() => {
@@ -55,9 +55,9 @@ beforeEach(() => {
   // so the conflict-detection branch in mintTokenForUser stays inert
   // for tests that aren't exercising it.
   mockPrisma.harnessToken.findFirst.mockResolvedValue(null);
-  // `pg_advisory_xact_lock` is a void SQL call; resolve it as 0 so the
-  // helper's await goes through.
-  mockPrisma.$executeRaw.mockResolvedValue(0);
+  // `pg_try_advisory_xact_lock` returns boolean; default success.
+  // Tests that exercise the lock-conflict path override this.
+  mockPrisma.$queryRaw.mockResolvedValue([{ acquired: true }]);
 });
 
 describe("generateToken", () => {
@@ -167,39 +167,37 @@ describe("mintTokenForUser", () => {
     expect(mockPrisma.harnessToken.updateMany).toHaveBeenCalledTimes(1);
   });
 
-  it("acquires a per-user advisory lock before the in-tx count check", async () => {
+  it("try-acquires a per-user advisory lock before the in-tx count check", async () => {
     // Without the lock, two concurrent POSTs at count=cap-1 can both
-    // read cap-1 under READ COMMITTED and both insert. The lock
-    // serializes the critical section by user — verify it's actually
-    // requested before the count.
+    // read cap-1 under READ COMMITTED and both insert. The non-blocking
+    // try-lock serializes the critical section by user — verify it's
+    // actually requested.
     mockPrisma.harnessToken.updateMany.mockResolvedValue({ count: 0 });
     mockPrisma.harnessToken.create.mockResolvedValue({});
 
     await mintTokenForUser("user-1");
 
-    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
-    // Vitest's $executeRaw mock receives the tagged-template fragments.
-    // Argument 0 is the strings array; argument 1+ are the values. We
-    // assert the lock key includes our user-scoped identifier.
-    const callArgs = mockPrisma.$executeRaw.mock.calls[0];
-    // The first arg is a TemplateStringsArray containing the SQL
-    // fragments; the second is the lock-key string.
-    expect(String(callArgs[0])).toContain("pg_advisory_xact_lock");
+    expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+    const callArgs = mockPrisma.$queryRaw.mock.calls[0];
+    // First arg is a TemplateStringsArray containing the SQL fragments;
+    // second is the lock-key string.
+    expect(String(callArgs[0])).toContain("pg_try_advisory_xact_lock");
     expect(callArgs[1]).toBe("mint:user-1");
   });
 
-  it("throws MintConflictError when a recent active token already exists", async () => {
-    // Concurrent-mint scenario: caller A's POST committed milliseconds
-    // ago and is the active token. Caller B (double-click, retry, or
-    // racing browser) acquires the lock next. Without conflict
-    // detection, B's updateMany would silently revoke A's freshly-
-    // returned token and B would mint its own. Detect the recent
-    // active row and surface MintConflictError so B's HTTP layer 409s.
-    mockPrisma.harnessToken.findFirst.mockResolvedValueOnce({ id: "tok-A" });
+  it("throws MintConflictError when the try-lock cannot be acquired", async () => {
+    // Concurrent-mint scenario: caller A holds the per-user lock.
+    // Caller B's pg_try_advisory_xact_lock returns false → throw
+    // MintConflictError so the HTTP layer 409s. Without this
+    // short-circuit, B would block until A commits, then run
+    // updateMany against A's freshly-committed row and silently
+    // revoke A's just-returned token.
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ acquired: false }]);
 
     const thrown = await mintTokenForUser("user-1").catch((e: unknown) => e);
     expect(thrown).toBeInstanceOf(MintConflictError);
-    // Crucially: no updateMany / create call (would have revoked the winner).
+    // No DB writes when the lock is held by another caller.
+    expect(mockPrisma.harnessToken.count).not.toHaveBeenCalled();
     expect(mockPrisma.harnessToken.updateMany).not.toHaveBeenCalled();
     expect(mockPrisma.harnessToken.create).not.toHaveBeenCalled();
   });
