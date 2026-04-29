@@ -1,13 +1,23 @@
--- Enforce "at most one active HarnessToken per user" at the database
--- level. The application code in src/lib/harness-tokens.ts revokes
--- prior active tokens before inserting a new one, but a transaction
--- alone cannot prevent two concurrent mints from both finding zero
--- rows to revoke and then both inserting fresh active rows. A
--- Postgres partial unique index closes that race.
---
--- Prisma 6's schema DSL does not express a `WHERE` clause on
--- `@@unique`, so this constraint lives in SQL only. The matching
--- comment in prisma/schema.prisma documents that the DB enforces it.
+-- Defensive dedup: if any environment already has two active tokens for the same user
+-- (the state the prior race could have produced), revoke all but the most recent per user
+-- before adding the partial unique index. This is a no-op in production today since the
+-- HarnessToken model is brand new and empty.
+UPDATE "HarnessToken"
+SET "revokedAt" = NOW()
+WHERE "id" IN (
+  SELECT "id" FROM (
+    SELECT
+      "id",
+      ROW_NUMBER() OVER (PARTITION BY "userId" ORDER BY "createdAt" DESC) AS rn
+    FROM "HarnessToken"
+    WHERE "revokedAt" IS NULL
+  ) t
+  WHERE t.rn > 1
+);
+
+-- At-most-one-active-token-per-user invariant. The schema cannot express the WHERE clause
+-- in Prisma 6.19.3's DSL, so this index lives here only. Do not run `prisma db pull` —
+-- it will silently drop this constraint.
 CREATE UNIQUE INDEX "HarnessToken_userId_active_unique"
   ON "HarnessToken" ("userId")
   WHERE "revokedAt" IS NULL;
