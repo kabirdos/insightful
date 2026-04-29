@@ -299,6 +299,66 @@ describe("POST /api/upload — bearer auth", () => {
   });
 });
 
+describe("POST /api/upload — bearer Content-Type validation", () => {
+  it("rejects application/json with 415 + records an attempt against the cap", async () => {
+    // Without this gate, a `{}` body would reach parseInsightsHtml and
+    // land as an empty draft. We require octet-stream or text/html.
+    const response = await uploadPOST(
+      bearerRequest({
+        contentType: "application/json",
+        body: "{}",
+      }),
+    );
+    expect(response.status).toBe(415);
+    // Synthetic id used because the X-Upload-Id wasn't validated yet.
+    expect(mockPrisma.harnessUpload.create).toHaveBeenCalled();
+    const args = mockPrisma.harnessUpload.create.mock.calls[0][0];
+    expect(args.data.success).toBe(false);
+    expect(args.data.uploadId).toMatch(/^bad-upload-id:/);
+    // Publish path never reached.
+    expect(mockPublish).not.toHaveBeenCalled();
+  });
+
+  it("accepts text/html as a valid bearer Content-Type", async () => {
+    const response = await uploadPOST(
+      bearerRequest({ contentType: "text/html" }),
+    );
+    expect(response.status).toBe(200);
+    expect(mockPublish).toHaveBeenCalled();
+  });
+
+  it("strips Content-Type parameters before matching (e.g. charset)", async () => {
+    const response = await uploadPOST(
+      bearerRequest({ contentType: "text/html; charset=utf-8" }),
+    );
+    expect(response.status).toBe(200);
+  });
+});
+
+describe("POST /api/upload — bearer body size cap", () => {
+  it("returns 400 when Content-Length exceeds the 10MB cap (byte size, not UTF-16 length)", async () => {
+    // Use a Content-Length that exceeds the cap. We don't actually
+    // need to send an oversize body — the route quick-rejects on
+    // the header before buffering.
+    const headers: Record<string, string> = {
+      "content-type": "application/octet-stream",
+      authorization: `Bearer ih_${"a".repeat(76)}`,
+      "x-upload-id": VALID_UUID,
+      "content-length": String(11 * 1024 * 1024),
+    };
+    const response = await uploadPOST(
+      new Request("http://localhost/api/upload", {
+        method: "POST",
+        headers,
+        body: "x", // body content unused — header alone trips the gate
+      }),
+    );
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toMatch(/too large/i);
+  });
+});
+
 describe("POST /api/upload — bearer X-Upload-Id validation", () => {
   it("returns 400 + records HarnessUpload {success:false} when X-Upload-Id is missing", async () => {
     const response = await uploadPOST(bearerRequest({ uploadId: null }));
@@ -455,6 +515,43 @@ describe("POST /api/upload — bearer happy path", () => {
     // Selector is logged in 8-char trimmed form, never the full 12.
     const logArg = mockLog.mock.calls.at(-1)?.[0];
     expect(logArg.tokenSelectorPrefix.length).toBe(8);
+  });
+});
+
+describe("POST /api/upload — bearer failure-attempt accounting", () => {
+  it("records a synthetic-id row when the (userId, uploadId) row already exists at success=false", async () => {
+    // Token holder spamming retries with the same uploadId. The first
+    // attempt's failure row exists; the second attempt's recordFailure
+    // hits P2002 on the unique constraint and falls back to a synthetic
+    // id, ensuring the attempt counter still increments toward R12's
+    // cap.
+    mockUploadLimit.mockResolvedValue({
+      ok: false,
+      retryAfter: 60,
+      reason: "attempts_24h",
+    });
+    // First create call (real id) trips P2002; second (synthetic) succeeds.
+    let calls = 0;
+    mockPrisma.harnessUpload.create.mockImplementation(async (arg) => {
+      calls += 1;
+      if (calls === 1) {
+        const err = new Error("unique constraint violation") as Error & {
+          code: string;
+        };
+        err.code = "P2002";
+        throw err;
+      }
+      return arg;
+    });
+
+    const response = await uploadPOST(bearerRequest());
+    expect(response.status).toBe(429);
+    // Two create calls: real id (P2002) + synthetic id (success).
+    expect(mockPrisma.harnessUpload.create).toHaveBeenCalledTimes(2);
+    const realIdCall = mockPrisma.harnessUpload.create.mock.calls[0][0];
+    const synthCall = mockPrisma.harnessUpload.create.mock.calls[1][0];
+    expect(realIdCall.data.uploadId).toBe(VALID_UUID);
+    expect(synthCall.data.uploadId).toMatch(/^bad-upload-id:/);
   });
 });
 

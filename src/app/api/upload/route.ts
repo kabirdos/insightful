@@ -258,12 +258,27 @@ async function handleMultipart(request: Request): Promise<NextResponse> {
  * raw HTML body and persists a draft InsightReport in one round trip,
  * with idempotency, rate-limit, and structured logging.
  */
+/**
+ * Allowed Content-Types on the bearer-auth path. Anything else (e.g.
+ * application/json, text/plain) is rejected with 400 BEFORE we run
+ * the parser, so a malformed payload never lands as a "{}-empty"
+ * draft in InsightReport.
+ */
+const ALLOWED_BEARER_CONTENT_TYPES = new Set([
+  "application/octet-stream",
+  "text/html",
+]);
+
 async function handleBearer(request: Request): Promise<NextResponse> {
   const startedAt = Date.now();
   const contentLengthHeader = request.headers.get("content-length");
   const contentLength = contentLengthHeader
     ? Number(contentLengthHeader)
     : undefined;
+  const contentType = (request.headers.get("content-type") ?? "")
+    .toLowerCase()
+    .split(";")[0]
+    .trim();
 
   // ── 1. Authenticate ────────────────────────────────────────────────
   const authResult = await authenticateRequest(request);
@@ -280,25 +295,38 @@ async function handleBearer(request: Request): Promise<NextResponse> {
   const { userId, username, tokenSelector } = authResult;
   const tokenSelectorPrefix = tokenSelector?.slice(0, 8);
 
+  // ── 1b. Validate Content-Type ──────────────────────────────────────
+  // Reject unsupported content types BEFORE rate-limit / idempotency
+  // so a malformed payload (e.g. application/json with body `{}`) can
+  // never land as an all-empty draft. Treat it as a "reached past auth
+  // but failed validation" attempt so it counts toward R12's cap, with
+  // a synthetic uploadId because we haven't validated the X-Upload-Id
+  // yet either.
+  if (!ALLOWED_BEARER_CONTENT_TYPES.has(contentType)) {
+    await recordFailureWithSyntheticId(userId);
+    logHarnessRequest({
+      userId,
+      tokenSelectorPrefix,
+      contentLength,
+      statusCode: 415,
+      durationMs: Date.now() - startedAt,
+    });
+    return NextResponse.json(
+      {
+        error: "Unsupported Content-Type",
+        message: "Send the report as application/octet-stream or text/html.",
+      },
+      { status: 415 },
+    );
+  }
+
   // ── 2. Validate X-Upload-Id ────────────────────────────────────────
   const rawUploadId = request.headers.get("x-upload-id");
   if (!rawUploadId || !UUID_REGEX.test(rawUploadId)) {
     // Synthetic id so the row still records (R12 needs every reach
-    // beyond auth to count toward the attempt cap).
-    await prisma.harnessUpload
-      .create({
-        data: {
-          userId,
-          uploadId: syntheticUploadId(),
-          slug: null,
-          success: false,
-        },
-      })
-      .catch((e) => {
-        // Don't fail the request just because we couldn't log the
-        // attempt; the user already saw a 400 coming. Bubble to logs.
-        console.error("Failed to record bad-upload-id HarnessUpload:", e);
-      });
+    // beyond auth to count toward the attempt cap, even when the
+    // client never gave us a valid id).
+    await recordFailureWithSyntheticId(userId);
     logHarnessRequest({
       userId,
       tokenSelectorPrefix,
@@ -337,19 +365,10 @@ async function handleBearer(request: Request): Promise<NextResponse> {
   // ── 4. Rate limit ──────────────────────────────────────────────────
   const limit = await checkUploadRateLimit(userId);
   if (!limit.ok) {
-    await prisma.harnessUpload
-      .create({
-        data: { userId, uploadId, slug: null, success: false },
-      })
-      .catch((e) => {
-        // Surfacing this in logs is enough — the user already gets a
-        // 429 from the rate-limiter check. A duplicate row from an
-        // earlier 4xx for the same uploadId trips the unique
-        // constraint; that's fine, we're done counting.
-        if (!isUniqueViolation(e)) {
-          console.error("Failed to record rate-limited HarnessUpload row:", e);
-        }
-      });
+    // recordFailure will fall back to a synthetic id if the (userId,
+    // uploadId) row already exists, so a token holder repeatedly
+    // retrying with the same uploadId still ticks the attempt cap.
+    await recordFailure(userId, uploadId);
     logHarnessRequest({
       uploadId,
       userId,
@@ -373,9 +392,28 @@ async function handleBearer(request: Request): Promise<NextResponse> {
   }
 
   // ── 5. Read body, parse, publish (under withIdempotency) ───────────
-  let html: string;
+  // Quick reject on Content-Length BEFORE buffering — clients that
+  // send a >10MB body have advertised the size and we don't need to
+  // read it to know.
+  if (typeof contentLength === "number" && contentLength > MAX_UPLOAD_BYTES) {
+    await recordFailure(userId, uploadId);
+    logHarnessRequest({
+      uploadId,
+      userId,
+      tokenSelectorPrefix,
+      contentLength,
+      statusCode: 400,
+      durationMs: Date.now() - startedAt,
+    });
+    return NextResponse.json(
+      { error: "File too large (max 10MB)" },
+      { status: 400 },
+    );
+  }
+
+  let bodyBytes: ArrayBuffer;
   try {
-    html = await request.text();
+    bodyBytes = await request.arrayBuffer();
   } catch {
     await recordFailure(userId, uploadId);
     logHarnessRequest({
@@ -392,7 +430,10 @@ async function handleBearer(request: Request): Promise<NextResponse> {
     );
   }
 
-  if (html.length > MAX_UPLOAD_BYTES) {
+  // Hard byte-size cap. arrayBuffer().byteLength counts actual bytes
+  // on the wire, so multibyte HTML cannot bypass the limit by virtue
+  // of UTF-16 string-length being smaller than the UTF-8 byte length.
+  if (bodyBytes.byteLength > MAX_UPLOAD_BYTES) {
     await recordFailure(userId, uploadId);
     logHarnessRequest({
       uploadId,
@@ -407,6 +448,8 @@ async function handleBearer(request: Request): Promise<NextResponse> {
       { status: 400 },
     );
   }
+
+  const html = new TextDecoder("utf-8").decode(bodyBytes);
 
   let parsed: ParsedInsightsReport;
   try {
@@ -481,18 +524,54 @@ async function handleBearer(request: Request): Promise<NextResponse> {
   });
 }
 
-/** Best-effort attempt to record a failed bearer-path upload row. The
- *  unique constraint on (userId, uploadId) means a duplicate failure
- *  for the same id throws; we treat that as already-recorded. */
+/**
+ * Record a failed bearer-path upload attempt. The unique constraint
+ * on (userId, uploadId) means a literal retry of the same uploadId
+ * cannot create another row at that key — so on P2002 we fall back to
+ * inserting a row with a synthetic id. This preserves R12's
+ * "every reach beyond auth counts toward the attempt cap" invariant
+ * even when a token holder spams retries with the same uploadId.
+ */
 async function recordFailure(userId: string, uploadId: string): Promise<void> {
   try {
     await prisma.harnessUpload.create({
       data: { userId, uploadId, slug: null, success: false },
     });
   } catch (e) {
-    if (!isUniqueViolation(e)) {
-      console.error("Failed to record HarnessUpload failure row:", e);
+    if (isUniqueViolation(e)) {
+      // Original (userId, uploadId) row already exists — this is a
+      // retry of a previously-failed attempt. Insert under a synthetic
+      // id so the attempt-cap counter still increments for this hit.
+      await recordFailureWithSyntheticId(userId);
+      return;
     }
+    console.error("Failed to record HarnessUpload failure row:", e);
+  }
+}
+
+/**
+ * Record a failed attempt under a synthetic uploadId. Used in two
+ * cases: (a) the request's X-Upload-Id was missing/malformed so we
+ * never had a real id, and (b) a retry of an already-failed (userId,
+ * uploadId) tripped the unique constraint above. In both cases the
+ * synthetic id is unique-per-row so the attempt counter ticks
+ * forward, even when the same client keeps misbehaving.
+ */
+async function recordFailureWithSyntheticId(userId: string): Promise<void> {
+  try {
+    await prisma.harnessUpload.create({
+      data: {
+        userId,
+        uploadId: syntheticUploadId(),
+        slug: null,
+        success: false,
+      },
+    });
+  } catch (e) {
+    console.error(
+      "Failed to record HarnessUpload synthetic-id failure row:",
+      e,
+    );
   }
 }
 
