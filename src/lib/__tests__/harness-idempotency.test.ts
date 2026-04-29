@@ -5,6 +5,7 @@ vi.mock("@/lib/db", () => ({
     harnessUpload: {
       findUnique: vi.fn(),
       upsert: vi.fn(),
+      update: vi.fn(),
     },
   },
 }));
@@ -13,7 +14,7 @@ import { prisma } from "@/lib/db";
 import { findIdempotentResult, withIdempotency } from "../harness-idempotency";
 
 const mockPrisma = prisma as unknown as {
-  harnessUpload: { findUnique: Mock; upsert: Mock };
+  harnessUpload: { findUnique: Mock; upsert: Mock; update: Mock };
 };
 
 beforeEach(() => {
@@ -27,7 +28,10 @@ describe("findIdempotentResult", () => {
     expect(result).toBeNull();
   });
 
-  it("returns null on a row with success=false (failed attempt only)", async () => {
+  it("returns null on a row with success=false (prior failure or in-flight)", async () => {
+    // A success=false row should NOT short-circuit the upload route —
+    // otherwise we'd skip the rate limit AND the actual work, leaving
+    // the user permanently stuck on a partial failure (P1.C).
     mockPrisma.harnessUpload.findUnique.mockResolvedValue({
       slug: null,
       success: false,
@@ -47,64 +51,89 @@ describe("findIdempotentResult", () => {
 });
 
 describe("withIdempotency", () => {
-  it("first call runs work, stores slug, returns { replayed: false }", async () => {
-    // No prior row.
-    mockPrisma.harnessUpload.findUnique
-      .mockResolvedValueOnce(null) // pre-flight check
-      .mockResolvedValueOnce({ slug: "new-slug" }); // post-upsert re-read
+  it("first call: claims with success=false, runs work, flips to success=true", async () => {
+    // Upsert creates a fresh success=false row. The post-upsert read
+    // reflects what we just inserted.
     mockPrisma.harnessUpload.upsert.mockResolvedValue({});
-    const work = vi.fn(async () => ({ slug: "new-slug" }));
+    mockPrisma.harnessUpload.findUnique.mockResolvedValue({
+      slug: null,
+      success: false,
+    });
+    mockPrisma.harnessUpload.update.mockResolvedValue({});
 
+    const work = vi.fn(async () => ({ slug: "new-slug" }));
     const result = await withIdempotency("user-1", "upload-1", work);
 
     expect(work).toHaveBeenCalledTimes(1);
     expect(result).toEqual({ slug: "new-slug", replayed: false });
+
+    // Claim row inserted with success=false.
     expect(mockPrisma.harnessUpload.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { userId_uploadId: { userId: "user-1", uploadId: "upload-1" } },
         create: expect.objectContaining({
           userId: "user-1",
           uploadId: "upload-1",
-          slug: "new-slug",
-          success: true,
+          slug: null,
+          success: false,
         }),
+        update: {},
       }),
     );
+    // Then flipped to success=true with the slug.
+    expect(mockPrisma.harnessUpload.update).toHaveBeenCalledWith({
+      where: { userId_uploadId: { userId: "user-1", uploadId: "upload-1" } },
+      data: { slug: "new-slug", success: true },
+    });
   });
 
-  it("second call with same (userId, uploadId) skips work and reports replayed: true", async () => {
-    // Pre-flight returns the prior success; work should NOT run.
-    mockPrisma.harnessUpload.findUnique.mockResolvedValueOnce({
+  it("second call after success: skips work, returns replayed: true", async () => {
+    // Upsert is a no-op (existing row left as-is). Post-upsert read
+    // returns the prior winner's row.
+    mockPrisma.harnessUpload.upsert.mockResolvedValue({});
+    mockPrisma.harnessUpload.findUnique.mockResolvedValue({
       slug: "prior-slug",
       success: true,
     });
-    const work = vi.fn(async () => ({ slug: "should-not-run" }));
 
+    const work = vi.fn(async () => ({ slug: "should-not-run" }));
     const result = await withIdempotency("user-1", "upload-1", work);
 
     expect(work).not.toHaveBeenCalled();
     expect(result).toEqual({ slug: "prior-slug", replayed: true });
-    expect(mockPrisma.harnessUpload.upsert).not.toHaveBeenCalled();
+    // No UPDATE on a replay — the row already has success=true.
+    expect(mockPrisma.harnessUpload.update).not.toHaveBeenCalled();
   });
 
-  it("concurrent race: loser reads winner's slug and reports replayed: true", async () => {
-    // Pre-flight passes (no row yet), work runs and produces a slug,
-    // upsert hits the unique constraint via the no-op update branch,
-    // and the post-upsert re-read returns a DIFFERENT slug — the
-    // winner's. The loser must surface that and mark replayed: true.
-    mockPrisma.harnessUpload.findUnique
-      .mockResolvedValueOnce(null) // pre-flight
-      .mockResolvedValueOnce({ slug: "winner-slug" }); // post-upsert re-read
+  it("retry after prior failure: re-runs work and flips success=false → true (P1.C fix)", async () => {
+    // Earlier attempt's work() threw; row stayed at success=false.
+    // A new call should re-run work and flip the row, NOT silently
+    // leave it stuck at success=false (which was the old upsert
+    // `update: {}` bug that broke this case forever).
     mockPrisma.harnessUpload.upsert.mockResolvedValue({});
-    const work = vi.fn(async () => ({ slug: "loser-slug" }));
+    mockPrisma.harnessUpload.findUnique.mockResolvedValue({
+      slug: null,
+      success: false, // prior failure
+    });
+    mockPrisma.harnessUpload.update.mockResolvedValue({});
 
+    const work = vi.fn(async () => ({ slug: "retry-slug" }));
     const result = await withIdempotency("user-1", "upload-1", work);
 
-    expect(result).toEqual({ slug: "winner-slug", replayed: true });
+    expect(work).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ slug: "retry-slug", replayed: false });
+    expect(mockPrisma.harnessUpload.update).toHaveBeenCalledWith({
+      where: { userId_uploadId: { userId: "user-1", uploadId: "upload-1" } },
+      data: { slug: "retry-slug", success: true },
+    });
   });
 
-  it("propagates errors from the work callback", async () => {
-    mockPrisma.harnessUpload.findUnique.mockResolvedValue(null);
+  it("work() throws: leaves row at success=false; subsequent retry can recover", async () => {
+    mockPrisma.harnessUpload.upsert.mockResolvedValue({});
+    mockPrisma.harnessUpload.findUnique.mockResolvedValue({
+      slug: null,
+      success: false,
+    });
     const work = vi.fn(async () => {
       throw new Error("parse failed");
     });
@@ -112,6 +141,30 @@ describe("withIdempotency", () => {
     await expect(withIdempotency("user-1", "upload-1", work)).rejects.toThrow(
       "parse failed",
     );
-    expect(mockPrisma.harnessUpload.upsert).not.toHaveBeenCalled();
+    // Crucially, NO update was issued — the row remains success=false
+    // so a later retry will see it and run work() again.
+    expect(mockPrisma.harnessUpload.update).not.toHaveBeenCalled();
+  });
+
+  it("simulated concurrency: two sequential calls where the second sees a prior success=false row", async () => {
+    // Vitest's mocking can't simulate true concurrency, so we model the
+    // collapsed-case path: caller B arrives after caller A's claim row
+    // exists but before A flipped success=true. B's logic re-runs
+    // work() and writes its own slug. (In production this can produce
+    // two drafts; the README and the helper docstring document the
+    // tradeoff. The common retry-after-network-blip case is caught by
+    // findIdempotentResult before this wrapper is invoked.)
+    mockPrisma.harnessUpload.upsert.mockResolvedValue({});
+    mockPrisma.harnessUpload.findUnique.mockResolvedValue({
+      slug: null,
+      success: false, // A's claim row, not yet flipped
+    });
+    mockPrisma.harnessUpload.update.mockResolvedValue({});
+
+    const work = vi.fn(async () => ({ slug: "B-slug" }));
+    const result = await withIdempotency("user-1", "upload-1", work);
+
+    expect(work).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ slug: "B-slug", replayed: false });
   });
 });
