@@ -148,6 +148,30 @@ describe("mintTokenForUser", () => {
     expect(mockPrisma.harnessToken.create).toHaveBeenCalledTimes(1);
     expect(mockPrisma.harnessToken.updateMany).toHaveBeenCalledTimes(1);
   });
+
+  it("rethrows non-active-slot P2002 unchanged (e.g. selector collision)", async () => {
+    // A P2002 on the selector key is a separate failure mode (random
+    // collision in the selector space). It must NOT be translated to
+    // MintConflictError, since the caller's recovery path differs:
+    // selector collisions are retryable, active-slot races are not.
+    const { Prisma } = await import("@prisma/client");
+    const p2002 = new Prisma.PrismaClientKnownRequestError(
+      "Unique constraint failed on the fields: (`selector`)",
+      {
+        code: "P2002",
+        clientVersion: "test",
+        meta: { target: "HarnessToken_selector_key" },
+      },
+    );
+
+    mockPrisma.harnessToken.updateMany.mockResolvedValue({ count: 0 });
+    mockPrisma.harnessToken.create.mockRejectedValue(p2002);
+
+    const thrown = await mintTokenForUser("user-1").catch((e: unknown) => e);
+    expect(thrown).toBeInstanceOf(Prisma.PrismaClientKnownRequestError);
+    expect(thrown).not.toBeInstanceOf(MintConflictError);
+    expect((thrown as { code: string }).code).toBe("P2002");
+  });
 });
 
 describe("revokeActiveTokensForUser", () => {

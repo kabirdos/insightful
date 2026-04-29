@@ -144,7 +144,14 @@ export async function mintTokenForUser(
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
+      error.code === "P2002" &&
+      // `meta.target` may be a string (older Prisma) or string[] (newer);
+      // String() flattens both shapes so we only translate the active-slot
+      // partial unique violation. Other P2002s (e.g. selector collisions on
+      // `HarnessToken_selector_key`) bubble up untouched.
+      String(error.meta?.target ?? "").includes(
+        "HarnessToken_userId_active_unique",
+      )
     ) {
       throw new MintConflictError(userId);
     }
