@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { buildOgImageUrl } from "@/lib/urls";
 import { formatCompactNumber as formatTokens } from "@/lib/number-format";
+import { draftVisibilityClause } from "@/lib/draft-filter";
 
 export async function generateMetadata({
   params,
@@ -10,8 +11,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { username, slug } = await params;
 
+  // Page metadata is rendered for crawlers and shareable previews;
+  // never expose draft titles. Filter as anonymous (viewerId: null).
   const report = await prisma.insightReport.findFirst({
-    where: { slug, author: { username } },
+    where: {
+      AND: [{ slug, author: { username } }, draftVisibilityClause(null)],
+    },
     select: {
       totalTokens: true,
       sessionCount: true,

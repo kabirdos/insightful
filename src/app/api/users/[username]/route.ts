@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { normalizeSetup } from "@/lib/profile-setup-normalize";
+import { draftVisibilityClause } from "@/lib/draft-filter";
 
 export async function GET(
   request: Request,
@@ -8,6 +10,8 @@ export async function GET(
 ) {
   try {
     const { username } = await params;
+    const session = await auth();
+    const viewerId = session?.user?.id ?? null;
 
     const user = await prisma.user.findUnique({
       where: { username },
@@ -24,6 +28,10 @@ export async function GET(
         setup: true,
         createdAt: true,
         reports: {
+          // Filter drafts at the relation level so a non-owner viewing
+          // someone else's profile does not enumerate that user's drafts.
+          // The owner sees their own drafts because the OR branch matches.
+          where: draftVisibilityClause(viewerId),
           orderBy: { publishedAt: "desc" },
           select: {
             id: true,

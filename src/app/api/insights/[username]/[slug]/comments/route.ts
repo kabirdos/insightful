@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { draftVisibilityClause } from "@/lib/draft-filter";
 
 export async function GET(
   request: Request,
@@ -8,9 +9,13 @@ export async function GET(
 ) {
   try {
     const { username, slug } = await params;
+    const session = await auth();
+    const viewerId = session?.user?.id ?? null;
 
     const report = await prisma.insightReport.findFirst({
-      where: { slug, author: { username } },
+      where: {
+        AND: [{ slug, author: { username } }, draftVisibilityClause(viewerId)],
+      },
       select: { id: true },
     });
 
@@ -86,7 +91,12 @@ export async function POST(
     }
 
     const report = await prisma.insightReport.findFirst({
-      where: { slug, author: { username } },
+      where: {
+        AND: [
+          { slug, author: { username } },
+          draftVisibilityClause(session.user.id),
+        ],
+      },
       select: { id: true },
     });
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { draftVisibilityClause } from "@/lib/draft-filter";
 
 /**
  * PATCH /api/insights/[slug]/projects/[projectId]
@@ -15,7 +16,9 @@ import { auth } from "@/lib/auth";
  */
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ username: string; slug: string; projectId: string }> },
+  {
+    params,
+  }: { params: Promise<{ username: string; slug: string; projectId: string }> },
 ) {
   try {
     const session = await auth();
@@ -26,7 +29,12 @@ export async function PATCH(
     const { username, slug, projectId } = await params;
 
     const report = await prisma.insightReport.findFirst({
-      where: { slug, author: { username } },
+      where: {
+        AND: [
+          { slug, author: { username } },
+          draftVisibilityClause(session.user.id),
+        ],
+      },
       select: { id: true, authorId: true },
     });
 

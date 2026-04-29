@@ -7,6 +7,7 @@ import { normalizeHarnessData } from "@/types/insights";
 import type { Prisma } from "@prisma/client";
 import { fetchLinkPreview } from "@/lib/link-preview";
 import { filterReportForListFeed } from "@/lib/filter-report-response";
+import { draftVisibilityClause } from "@/lib/draft-filter";
 
 // Optional-nullable scalar helpers used across the POST body schema.
 // Every stat field is nullable in the DB — we reject only garbage
@@ -95,6 +96,10 @@ function generateSlug(): string {
 
 export async function GET(request: Request) {
   try {
+    const session = await auth();
+    const viewerId = session?.user?.id ?? null;
+    const draftWhere = draftVisibilityClause(viewerId);
+
     const { searchParams } = new URL(request.url);
     const sort = searchParams.get("sort") ?? "newest";
     const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
@@ -133,6 +138,7 @@ export async function GET(request: Request) {
     // linesAdded, linesRemoved, fileCount. If you change this to an explicit
     // `select`, you MUST add those fields explicitly, or the UI will silently break.
     const reportsQuery = prisma.insightReport.findMany({
+      where: draftWhere,
       skip: fetchSkip,
       take: fetchLimit,
       orderBy,
@@ -156,7 +162,7 @@ export async function GET(request: Request) {
         },
       },
     });
-    const countQuery = prisma.insightReport.count();
+    const countQuery = prisma.insightReport.count({ where: draftWhere });
 
     const [reports, total] = await Promise.all([reportsQuery, countQuery]);
 

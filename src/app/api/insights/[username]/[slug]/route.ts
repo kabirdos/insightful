@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import type { InsightReportDetailContract } from "@/types/api-contracts";
 import { ALLOWED_PUT_FIELDS } from "@/app/api/insights/allowed-fields";
 import { filterReportForResponse } from "@/lib/filter-report-response";
+import { draftVisibilityClause } from "@/lib/draft-filter";
 
 const SECTION_KEYS = [
   "atAGlance",
@@ -39,7 +40,9 @@ export async function GET(
     // linesAdded, linesRemoved, fileCount. If you change this to an explicit
     // `select`, you MUST add those fields explicitly, or the UI will silently break.
     const report = await prisma.insightReport.findFirst({
-      where: { slug, author: { username } },
+      where: {
+        AND: [{ slug, author: { username } }, draftVisibilityClause(userId)],
+      },
       include: {
         author: {
           select: {
@@ -165,7 +168,12 @@ export async function PUT(
     const { username, slug } = await params;
 
     const report = await prisma.insightReport.findFirst({
-      where: { slug, author: { username } },
+      where: {
+        AND: [
+          { slug, author: { username } },
+          draftVisibilityClause(session.user.id),
+        ],
+      },
       select: { id: true, authorId: true },
     });
 
@@ -226,7 +234,12 @@ export async function DELETE(
     const { username, slug } = await params;
 
     const report = await prisma.insightReport.findFirst({
-      where: { slug, author: { username } },
+      where: {
+        AND: [
+          { slug, author: { username } },
+          draftVisibilityClause(session.user.id),
+        ],
+      },
       select: { id: true, authorId: true },
     });
 
