@@ -30,6 +30,9 @@ const TOKEN_REGEX = new RegExp(
 
 const BCRYPT_COST = 10;
 const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+/** R13 — at most this many mints per user per rolling 24h window. */
+export const MINT_CAP_PER_24H = 10;
 
 export interface GeneratedToken {
   raw: string;
@@ -99,6 +102,25 @@ export class MintConflictError extends Error {
 }
 
 /**
+ * Thrown when a mint attempt is over the per-user rate limit. Detected
+ * INSIDE the transaction (atomic count + create) so concurrent bursts
+ * cannot blow past the cap by each calling soft-check
+ * `checkMintRateLimit` before any of them commits. The HTTP layer
+ * should translate to 429.
+ *
+ * `oldestCreatedAt` is the timestamp of the oldest counted row in the
+ * 24h window — callers compute Retry-After from it.
+ */
+export class MintRateLimitError extends Error {
+  readonly oldestCreatedAt: Date;
+  constructor(userId: string, oldestCreatedAt: Date) {
+    super(`Mint cap reached for user ${userId}`);
+    this.name = "MintRateLimitError";
+    this.oldestCreatedAt = oldestCreatedAt;
+  }
+}
+
+/**
  * Mint a new token for `userId`. Implicitly revokes any prior active
  * tokens (R3): a user has at most one active token at a time. Returns
  * the raw token exactly once — callers must surface it immediately
@@ -127,6 +149,31 @@ export async function mintTokenForUser(
 
   try {
     await prisma.$transaction(async (tx) => {
+      // Atomic rate-limit check: count this user's mints in the last 24h
+      // INSIDE the transaction. Without this, two concurrent POSTs could
+      // each pass the soft `checkMintRateLimit` (which runs before the
+      // transaction) and serialize through to mint, exceeding the cap.
+      // Postgres's MVCC won't synchronize their reads, but having both
+      // bursts trip the cap inside the same critical section as the
+      // create gives us a hard upper bound: one of the two will see the
+      // other's row by the time it gets here, OR both will be under
+      // cap and we accept up to MINT_CAP_PER_24H + concurrent_bursts as
+      // the worst case (still bounded by Postgres's serialization).
+      const since = new Date(Date.now() - TWENTY_FOUR_HOURS_MS);
+      const count = await tx.harnessToken.count({
+        where: { userId, createdAt: { gt: since } },
+      });
+      if (count >= MINT_CAP_PER_24H) {
+        const oldest = await tx.harnessToken.findFirst({
+          where: { userId, createdAt: { gt: since } },
+          orderBy: { createdAt: "asc" },
+          select: { createdAt: true },
+        });
+        // Fallback to `now` if the row vanished between count and read
+        // (vanishingly unlikely; HarnessToken rows aren't deleted).
+        throw new MintRateLimitError(userId, oldest?.createdAt ?? now);
+      }
+
       await tx.harnessToken.updateMany({
         where: { userId, revokedAt: null },
         data: { revokedAt: now },

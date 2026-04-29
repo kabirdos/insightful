@@ -14,41 +14,67 @@
  * here — this endpoint mints credentials, not consumes them, and accepting
  * a bearer would let a leaked token rotate itself.
  *
- * Rate limit: POST hits checkMintRateLimit (10/24h per user, R13). DELETE
- * is unrate-limited; revocation is fast and incentive-aligned with safety.
+ * Rate limit: POST is gated by both a soft pre-check (`checkMintRateLimit`,
+ * gives the most accurate Retry-After) AND a hard per-transaction count
+ * inside `mintTokenForUser` (`MintRateLimitError`, prevents concurrent
+ * bursts from blowing past the cap). DELETE is unrate-limited.
  */
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { checkMintRateLimit } from "@/lib/harness-rate-limit";
 import {
   MintConflictError,
+  MintRateLimitError,
   mintTokenForUser,
   revokeActiveTokensForUser,
 } from "@/lib/harness-tokens";
 
+const TWENTY_FOUR_HOURS_S = 24 * 60 * 60;
+
+/**
+ * Translate a MintRateLimitError's `oldestCreatedAt` to a Retry-After
+ * second count. Floor at 1 — emitting `Retry-After: 0` tells clients
+ * they may retry immediately, which is exactly the loop we want to
+ * avoid.
+ */
+function retryAfterFromOldest(oldestCreatedAt: Date): number {
+  const ageMs = Date.now() - oldestCreatedAt.getTime();
+  const remainingMs = TWENTY_FOUR_HOURS_S * 1000 - ageMs;
+  return Math.max(1, Math.ceil(remainingMs / 1000));
+}
+
 export async function POST() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const userId = session.user.id;
-
-  const limit = await checkMintRateLimit(userId);
-  if (!limit.ok) {
-    return NextResponse.json(
-      {
-        error: "rate_limited",
-        reason: limit.reason,
-        retryAfter: limit.retryAfter,
-      },
-      {
-        status: 429,
-        headers: { "Retry-After": String(limit.retryAfter) },
-      },
-    );
-  }
-
+  // Wrap the whole handler so any failure in `auth()` or the soft
+  // rate-limit query still emits a structured 500. Without this, an
+  // upstream NextAuth or DB error would fall through to Next.js's
+  // generic error page, breaking the JSON API contract for the upload
+  // page that calls this from a fetch().
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userId = session.user.id;
+
+    // Soft check first: gives an accurate Retry-After in the common
+    // (non-racing) case. The hard check sits inside the transaction in
+    // `mintTokenForUser` so two concurrent POSTs can't each pass the
+    // soft check and serialize through to mint, exceeding the cap.
+    const limit = await checkMintRateLimit(userId);
+    if (!limit.ok) {
+      return NextResponse.json(
+        {
+          error: "rate_limited",
+          reason: limit.reason,
+          retryAfter: limit.retryAfter,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(limit.retryAfter) },
+        },
+      );
+    }
+
     const { raw, expiresAt } = await mintTokenForUser(userId);
     return NextResponse.json(
       { token: raw, expiresAt: expiresAt.toISOString() },
@@ -65,6 +91,20 @@ export async function POST() {
         { status: 409 },
       );
     }
+    if (error instanceof MintRateLimitError) {
+      const retryAfter = retryAfterFromOldest(error.oldestCreatedAt);
+      return NextResponse.json(
+        {
+          error: "rate_limited",
+          reason: "mints_24h",
+          retryAfter,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(retryAfter) },
+        },
+      );
+    }
     console.error("POST /api/harness-tokens error:", error);
     return NextResponse.json(
       { error: "Failed to mint token" },
@@ -74,12 +114,11 @@ export async function POST() {
 }
 
 export async function DELETE() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     await revokeActiveTokensForUser(session.user.id);
     return new NextResponse(null, { status: 204 });
   } catch (error) {

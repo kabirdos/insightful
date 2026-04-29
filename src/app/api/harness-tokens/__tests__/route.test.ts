@@ -22,14 +22,22 @@ vi.mock("@/lib/harness-rate-limit", () => ({
 }));
 
 vi.mock("@/lib/harness-tokens", () => ({
-  // MintConflictError is a class; the route imports it for `instanceof`
-  // checks. We re-export a class that mirrors the real one so the
-  // instanceof branch fires when the mocked mintTokenForUser rejects
-  // with `new MintConflictError(...)`.
+  // MintConflictError + MintRateLimitError are classes; the route imports
+  // them for `instanceof` checks. Re-export shape-compatible doubles so
+  // the instanceof branches fire when the mocked mintTokenForUser
+  // rejects with `new MintConflictError(...)` / `new MintRateLimitError(...)`.
   MintConflictError: class MintConflictError extends Error {
     constructor(userId: string) {
       super(`Concurrent mint for user ${userId}`);
       this.name = "MintConflictError";
+    }
+  },
+  MintRateLimitError: class MintRateLimitError extends Error {
+    readonly oldestCreatedAt: Date;
+    constructor(userId: string, oldestCreatedAt: Date) {
+      super(`Mint cap reached for user ${userId}`);
+      this.name = "MintRateLimitError";
+      this.oldestCreatedAt = oldestCreatedAt;
     }
   },
   mintTokenForUser: vi.fn(),
@@ -42,6 +50,7 @@ import { auth } from "@/lib/auth";
 import { checkMintRateLimit } from "@/lib/harness-rate-limit";
 import {
   MintConflictError,
+  MintRateLimitError,
   mintTokenForUser,
   revokeActiveTokensForUser,
 } from "@/lib/harness-tokens";
@@ -125,6 +134,42 @@ describe("POST /api/harness-tokens", () => {
     expect(body.error).toBe("mint_conflict");
     expect(typeof body.message).toBe("string");
     expect(body.message.length).toBeGreaterThan(0);
+  });
+
+  it("returns 429 with mints_24h reason when the in-tx rate-limit fires", async () => {
+    // Race scenario: soft check passes, but by the time the transaction
+    // ran, a concurrent burst pushed the count to cap. The helper throws
+    // MintRateLimitError; the route translates to 429 with Retry-After
+    // computed from the oldest counted row.
+    setSession("user-1");
+    mockMintLimit.mockResolvedValue({ ok: true });
+    const oldest = new Date(Date.now() - 60 * 60 * 1000); // 1h ago
+    mockMint.mockRejectedValue(new MintRateLimitError("user-1", oldest));
+
+    const response = await harnessTokensPOST();
+    expect(response.status).toBe(429);
+    const body = await response.json();
+    expect(body.reason).toBe("mints_24h");
+    expect(body.retryAfter).toBeGreaterThan(0);
+    // Oldest row is 1h ago in a 24h window → ~23h remaining.
+    expect(body.retryAfter).toBeLessThanOrEqual(24 * 60 * 60);
+    expect(body.retryAfter).toBeGreaterThan(22 * 60 * 60);
+    expect(response.headers.get("Retry-After")).toBe(String(body.retryAfter));
+  });
+
+  it("returns 500 (with JSON body) when auth() throws unexpectedly", async () => {
+    // If `auth()` blows up (NextAuth crash, DB error in jwt callback),
+    // the route must still emit a structured 500 — falling through to
+    // Next's generic error page would break fetch clients on the
+    // upload page.
+    mockAuth.mockRejectedValue(new Error("auth crash"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const response = await harnessTokensPOST();
+    consoleSpy.mockRestore();
+
+    expect(response.status).toBe(500);
+    const body = await response.json();
+    expect(typeof body.error).toBe("string");
   });
 
   it("returns 500 on unexpected mint errors", async () => {
