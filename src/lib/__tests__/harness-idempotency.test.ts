@@ -6,6 +6,7 @@ vi.mock("@/lib/db", () => ({
       findUnique: vi.fn(),
       upsert: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
   },
 }));
@@ -14,7 +15,12 @@ import { prisma } from "@/lib/db";
 import { findIdempotentResult, withIdempotency } from "../harness-idempotency";
 
 const mockPrisma = prisma as unknown as {
-  harnessUpload: { findUnique: Mock; upsert: Mock; update: Mock };
+  harnessUpload: {
+    findUnique: Mock;
+    upsert: Mock;
+    update: Mock;
+    updateMany: Mock;
+  };
 };
 
 beforeEach(() => {
@@ -59,7 +65,7 @@ describe("withIdempotency", () => {
       slug: null,
       success: false,
     });
-    mockPrisma.harnessUpload.update.mockResolvedValue({});
+    mockPrisma.harnessUpload.updateMany.mockResolvedValue({ count: 1 });
 
     const work = vi.fn(async () => ({ slug: "new-slug" }));
     const result = await withIdempotency("user-1", "upload-1", work);
@@ -80,9 +86,10 @@ describe("withIdempotency", () => {
         update: {},
       }),
     );
-    // Then flipped to success=true with the slug.
-    expect(mockPrisma.harnessUpload.update).toHaveBeenCalledWith({
-      where: { userId_uploadId: { userId: "user-1", uploadId: "upload-1" } },
+    // Then conditionally flipped to success=true with the slug —
+    // the WHERE clause guards against clobbering a race winner.
+    expect(mockPrisma.harnessUpload.updateMany).toHaveBeenCalledWith({
+      where: { userId: "user-1", uploadId: "upload-1", success: false },
       data: { slug: "new-slug", success: true },
     });
   });
@@ -103,6 +110,7 @@ describe("withIdempotency", () => {
     expect(result).toEqual({ slug: "prior-slug", replayed: true });
     // No UPDATE on a replay — the row already has success=true.
     expect(mockPrisma.harnessUpload.update).not.toHaveBeenCalled();
+    expect(mockPrisma.harnessUpload.updateMany).not.toHaveBeenCalled();
   });
 
   it("retry after prior failure: re-runs work and flips success=false → true (P1.C fix)", async () => {
@@ -115,15 +123,15 @@ describe("withIdempotency", () => {
       slug: null,
       success: false, // prior failure
     });
-    mockPrisma.harnessUpload.update.mockResolvedValue({});
+    mockPrisma.harnessUpload.updateMany.mockResolvedValue({ count: 1 });
 
     const work = vi.fn(async () => ({ slug: "retry-slug" }));
     const result = await withIdempotency("user-1", "upload-1", work);
 
     expect(work).toHaveBeenCalledTimes(1);
     expect(result).toEqual({ slug: "retry-slug", replayed: false });
-    expect(mockPrisma.harnessUpload.update).toHaveBeenCalledWith({
-      where: { userId_uploadId: { userId: "user-1", uploadId: "upload-1" } },
+    expect(mockPrisma.harnessUpload.updateMany).toHaveBeenCalledWith({
+      where: { userId: "user-1", uploadId: "upload-1", success: false },
       data: { slug: "retry-slug", success: true },
     });
   });
@@ -144,6 +152,7 @@ describe("withIdempotency", () => {
     // Crucially, NO update was issued — the row remains success=false
     // so a later retry will see it and run work() again.
     expect(mockPrisma.harnessUpload.update).not.toHaveBeenCalled();
+    expect(mockPrisma.harnessUpload.updateMany).not.toHaveBeenCalled();
   });
 
   it("simulated concurrency: two sequential calls where the second sees a prior success=false row", async () => {
@@ -159,12 +168,32 @@ describe("withIdempotency", () => {
       slug: null,
       success: false, // A's claim row, not yet flipped
     });
-    mockPrisma.harnessUpload.update.mockResolvedValue({});
+    mockPrisma.harnessUpload.updateMany.mockResolvedValue({ count: 1 });
 
     const work = vi.fn(async () => ({ slug: "B-slug" }));
     const result = await withIdempotency("user-1", "upload-1", work);
 
     expect(work).toHaveBeenCalledTimes(1);
     expect(result).toEqual({ slug: "B-slug", replayed: false });
+  });
+
+  it("concurrent race: B's update returns count 0; B's response carries A's slug, not B's", async () => {
+    // Caller B's work() ran but A finished first and already flipped
+    // the row to success=true with A's slug. B's conditional
+    // updateMany matches zero rows (success is no longer false).
+    // B must discard its slug and surface A's slug to the user so
+    // both callers resolve to the same idempotent result.
+    mockPrisma.harnessUpload.upsert.mockResolvedValue({});
+    mockPrisma.harnessUpload.findUnique
+      .mockResolvedValueOnce({ slug: null, success: false }) // post-claim read (B sees A's claim row)
+      .mockResolvedValueOnce({ slug: "A-slug", success: true }); // post-update re-read after race
+    mockPrisma.harnessUpload.updateMany.mockResolvedValueOnce({ count: 0 });
+
+    const work = vi.fn(async () => ({ slug: "B-slug" }));
+    const result = await withIdempotency("user-1", "upload-1", work);
+
+    expect(work).toHaveBeenCalledTimes(1);
+    // Critical: B returns A's slug, with replayed: true.
+    expect(result).toEqual({ slug: "A-slug", replayed: true });
   });
 });

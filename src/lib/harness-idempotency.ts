@@ -1,6 +1,14 @@
 /**
  * Postgres-backed idempotency for the harness direct-POST flow.
  *
+ * NOTE: Under a concurrent first-time race for the same `(userId, uploadId)`,
+ * the loser's `work()` may have produced a real side effect (e.g., a draft
+ * InsightReport) that becomes orphaned. Both callers will return the winner's
+ * slug. Cleaning up the orphan requires coupling this helper to the caller's
+ * work product; deferred to a follow-up. The race window is small (one Prisma
+ * round trip) and the upload route's `findIdempotentResult` short-circuit
+ * covers the common retry-after-success case.
+ *
  * Two helpers (Decision 11):
  *
  * 1. findIdempotentResult(userId, uploadId) — pure lookup. Returns
@@ -107,11 +115,33 @@ export async function withIdempotency(
   // Step 3: execute path. Either we won the insert race (claimed.success
   // is false because we just inserted it) or the row was at success=false
   // from a prior failure / concurrent in-flight call. Both cases run
-  // work() and flip the row to success=true on success.
+  // work() and attempt to flip the row to success=true on success.
   const result = await work();
-  await prisma.harnessUpload.update({
-    where: { userId_uploadId: { userId, uploadId } },
+
+  // Conditional update: only flip success if it's still false. Prisma's
+  // updateMany returns { count }; count === 0 means another caller (the
+  // race winner) already flipped success=true with their own slug. In
+  // that case we discard our slug and return the winner's, preserving
+  // the idempotency contract that retries always resolve to the same
+  // slug as the first successful response.
+  const updateResult = await prisma.harnessUpload.updateMany({
+    where: { userId, uploadId, success: false },
     data: { slug: result.slug, success: true },
   });
+
+  if (updateResult.count === 0) {
+    // Race winner stored their result first. Re-read to surface their slug.
+    const winner = await prisma.harnessUpload.findUnique({
+      where: { userId_uploadId: { userId, uploadId } },
+    });
+    if (!winner || !winner.slug || !winner.success) {
+      // Should be unreachable: count===0 means a winning row exists.
+      throw new Error(
+        "Idempotency invariant violated: row missing after race",
+      );
+    }
+    return { slug: winner.slug, replayed: true };
+  }
+
   return { slug: result.slug, replayed: false };
 }
