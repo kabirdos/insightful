@@ -15,6 +15,7 @@
  */
 import * as crypto from "crypto";
 import * as bcrypt from "bcrypt";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
 export const TOKEN_PREFIX = "ih_";
@@ -86,31 +87,56 @@ export function parseToken(
  * tokens (R3): a user has at most one active token at a time. Returns
  * the raw token exactly once — callers must surface it immediately
  * because the secret is never recoverable after this call.
+ *
+ * Concurrency: the partial unique index
+ * `HarnessToken_userId_active_unique ON (userId) WHERE revokedAt IS NULL`
+ * is the source of truth for the at-most-one-active invariant. If two
+ * mints race past the in-transaction `updateMany` (each seeing zero
+ * rows to revoke because the prior winner has not yet committed) and
+ * the second `create` trips P2002 on that index, we retry once: the
+ * winner's row is now visible, the second attempt's `updateMany`
+ * revokes it, and the second `create` succeeds. Cap at one retry — a
+ * second P2002 implies a non-race bug we want to surface, not loop on.
  */
 export async function mintTokenForUser(
   userId: string,
 ): Promise<{ raw: string; expiresAt: Date }> {
   const generated = generateToken();
   const hashedSecret = await hashSecret(generated.secret);
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + NINETY_DAYS_MS);
 
-  await prisma.$transaction(async (tx) => {
-    await tx.harnessToken.updateMany({
-      where: { userId, revokedAt: null },
-      data: { revokedAt: now },
+  const attemptMint = async (): Promise<{ raw: string; expiresAt: Date }> => {
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + NINETY_DAYS_MS);
+    await prisma.$transaction(async (tx) => {
+      await tx.harnessToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: now },
+      });
+      await tx.harnessToken.create({
+        data: {
+          userId,
+          selector: generated.selector,
+          hashedSecret,
+          expiresAt,
+        },
+      });
     });
-    await tx.harnessToken.create({
-      data: {
-        userId,
-        selector: generated.selector,
-        hashedSecret,
-        expiresAt,
-      },
-    });
-  });
+    return { raw: generated.raw, expiresAt };
+  };
 
-  return { raw: generated.raw, expiresAt };
+  try {
+    return await attemptMint();
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      // Concurrent mint won the partial-unique race. Retry once: this
+      // attempt's updateMany will now see + revoke the winner's row.
+      return await attemptMint();
+    }
+    throw error;
+  }
 }
 
 /** Revoke every active token for `userId`. Idempotent. */
