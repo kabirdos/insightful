@@ -149,16 +149,20 @@ export async function mintTokenForUser(
 
   try {
     await prisma.$transaction(async (tx) => {
-      // Atomic rate-limit check: count this user's mints in the last 24h
-      // INSIDE the transaction. Without this, two concurrent POSTs could
-      // each pass the soft `checkMintRateLimit` (which runs before the
-      // transaction) and serialize through to mint, exceeding the cap.
-      // Postgres's MVCC won't synchronize their reads, but having both
-      // bursts trip the cap inside the same critical section as the
-      // create gives us a hard upper bound: one of the two will see the
-      // other's row by the time it gets here, OR both will be under
-      // cap and we accept up to MINT_CAP_PER_24H + concurrent_bursts as
-      // the worst case (still bounded by Postgres's serialization).
+      // Serialize concurrent mints for this user. Without a lock, two
+      // POSTs at count=9 can both read 9 under READ COMMITTED, both
+      // pass the cap check, and both insert — yielding 11 mints in
+      // 24h. `pg_advisory_xact_lock` blocks the second caller until
+      // the first transaction commits/rolls back, after which the
+      // second sees the freshly-committed row in its count and trips
+      // the cap.
+      //
+      // Lock key: a 32-bit hash of `mint:<userId>` so we don't
+      // serialize unrelated users. We only need scoping by user for
+      // this critical section; the bcrypt cost of the loser's wasted
+      // hash work (~80ms) is bounded by the rate-limit cap anyway.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`mint:${userId}`}))`;
+
       const since = new Date(Date.now() - TWENTY_FOUR_HOURS_MS);
       const count = await tx.harnessToken.count({
         where: { userId, createdAt: { gt: since } },

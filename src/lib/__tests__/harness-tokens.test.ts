@@ -11,6 +11,7 @@ vi.mock("@/lib/db", () => ({
       count: vi.fn(),
     },
     $transaction: vi.fn(),
+    $executeRaw: vi.fn(),
   },
 }));
 
@@ -38,6 +39,7 @@ const mockPrisma = prisma as unknown as {
     count: Mock;
   };
   $transaction: Mock;
+  $executeRaw: Mock;
 };
 
 beforeEach(() => {
@@ -49,6 +51,9 @@ beforeEach(() => {
   // Default: zero prior mints in the 24h window so the in-tx rate-limit
   // check passes. Tests that exercise the cap override this.
   mockPrisma.harnessToken.count.mockResolvedValue(0);
+  // `pg_advisory_xact_lock` is a void SQL call; resolve it as 0 so the
+  // helper's await goes through.
+  mockPrisma.$executeRaw.mockResolvedValue(0);
 });
 
 describe("generateToken", () => {
@@ -156,6 +161,27 @@ describe("mintTokenForUser", () => {
     // Single attempt only — no retry.
     expect(mockPrisma.harnessToken.create).toHaveBeenCalledTimes(1);
     expect(mockPrisma.harnessToken.updateMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("acquires a per-user advisory lock before the in-tx count check", async () => {
+    // Without the lock, two concurrent POSTs at count=cap-1 can both
+    // read cap-1 under READ COMMITTED and both insert. The lock
+    // serializes the critical section by user — verify it's actually
+    // requested before the count.
+    mockPrisma.harnessToken.updateMany.mockResolvedValue({ count: 0 });
+    mockPrisma.harnessToken.create.mockResolvedValue({});
+
+    await mintTokenForUser("user-1");
+
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    // Vitest's $executeRaw mock receives the tagged-template fragments.
+    // Argument 0 is the strings array; argument 1+ are the values. We
+    // assert the lock key includes our user-scoped identifier.
+    const callArgs = mockPrisma.$executeRaw.mock.calls[0];
+    // The first arg is a TemplateStringsArray containing the SQL
+    // fragments; the second is the lock-key string.
+    expect(String(callArgs[0])).toContain("pg_advisory_xact_lock");
+    expect(callArgs[1]).toBe("mint:user-1");
   });
 
   it("throws MintRateLimitError when the in-transaction count is at cap", async () => {
