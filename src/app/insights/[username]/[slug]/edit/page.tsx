@@ -403,24 +403,32 @@ export default function EditReportPage() {
 
   /**
    * "Make public" (R10/R11): the only path that flips a report's
-   * isDraft from true to false. Server-side, the PUT handler enforces
-   * one-way semantics (rejects false → true with 400). On 200 we
+   * isDraft from true to false. Server-side, the PUT handler
+   * enforces one-way semantics (rejects false → true with 400) and
+   * stamps publishedAt to NOW() on the flip. On 200 we
    * `router.refresh()` so the read-only public-page links and the
    * edit-page header reflect the new state without a hard reload.
+   *
+   * Pending visibility edits (hidden sections / per-item hides) ride
+   * along with the publish in a single PUT. Without this, an author
+   * who hides sections then clicks "Make public" before "Save
+   * Changes" would publish a report containing the content they had
+   * marked "Will be removed" — codex P1 from review on fc78b3b.
    */
   const handleMakePublic = async () => {
     if (!report) return;
     setPublishing(true);
     setError(null);
     try {
+      const body = { ...buildSaveBody(), isDraft: false };
       const res = await fetch(buildReportApiUrl(username, slug), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isDraft: false }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Failed to publish");
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error ?? "Failed to publish");
       }
       // Reflect the new public state in the local fetch cache + the
       // read-only views that already loaded.

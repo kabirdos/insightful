@@ -201,11 +201,17 @@ export async function PUT(
     // R10/R11 (Wave 4 Unit 10): isDraft is one-way. We allow
     // `true → false` (the "Make public" button) and silently drop a
     // no-op self-set (`false → false`, `true → true`), but we reject
-    // any attempt to flip a public report back to a draft.
-    // Rationale per plan Decision: simpler audit ("once public, stays
-    // public") and prevents accidental unpublish via a stale UI.
-    // `publishedAt` is populated at row creation by Prisma's
-    // `@default(now())`, so there's nothing to backfill on flip.
+    // any attempt to flip a public report back to a draft. Rationale
+    // per plan Decision: simpler audit ("once public, stays public")
+    // and prevents accidental unpublish via a stale UI.
+    //
+    // `publishedAt` is auto-populated at row creation by Prisma's
+    // `@default(now())`, so legacy public rows already have a
+    // sensible value. For drafts that flip to public, we restamp
+    // `publishedAt` to NOW() so feed/search/leaderboard ordering
+    // (which sort by `publishedAt`) treats the report as fresh
+    // rather than burying it under its draft-creation timestamp.
+    // (codex P2 fix on fc78b3b.)
     if (Object.prototype.hasOwnProperty.call(updateData, "isDraft")) {
       const requested = updateData.isDraft;
       if (typeof requested !== "boolean") {
@@ -227,6 +233,12 @@ export async function PUT(
       // avoid generating a redundant `updatedAt` bump.
       if (requested === report.isDraft) {
         delete updateData.isDraft;
+      } else if (requested === false && report.isDraft === true) {
+        // Genuine draft → public flip. Stamp publishedAt to NOW()
+        // here (rather than client-side) so the value is in the
+        // server's frame of reference. updatedAt is bumped
+        // automatically by Prisma's `@updatedAt` on every save.
+        updateData.publishedAt = new Date();
       }
     }
 

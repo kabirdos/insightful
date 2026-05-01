@@ -97,6 +97,13 @@ describe("PUT /api/insights/[username]/[slug] — isDraft transitions", () => {
     const updateCall = mockPrisma.insightReport.update.mock.calls[0]?.[0];
     expect(updateCall?.where).toEqual({ id: "r1" });
     expect(updateCall?.data?.isDraft).toBe(false);
+    // The flip must also stamp publishedAt to NOW() so feed/search/
+    // leaderboard ordering (which sort by `publishedAt`) treats the
+    // newly-public report as fresh rather than burying it under its
+    // draft-creation timestamp. (codex P2 on fc78b3b.)
+    expect(updateCall?.data?.publishedAt).toBeInstanceOf(Date);
+    const stampedMs = (updateCall.data.publishedAt as Date).getTime();
+    expect(Math.abs(stampedMs - Date.now())).toBeLessThan(5_000);
   });
 
   it("rejects flipping a public report back to draft (one-way)", async () => {
@@ -196,7 +203,10 @@ describe("PUT /api/insights/[username]/[slug] — isDraft transitions", () => {
     const updateCall = mockPrisma.insightReport.update.mock.calls[0]?.[0];
     // Other allowed fields still pass through (`title`).
     expect(updateCall?.data?.title).toBe("Renamed");
-    // But the no-op `isDraft` is stripped to keep updatedAt clean.
+    // But the no-op `isDraft` is stripped to keep updatedAt clean,
+    // and the publishedAt stamp is reserved for genuine draft →
+    // public flips.
     expect(updateCall?.data).not.toHaveProperty("isDraft");
+    expect(updateCall?.data).not.toHaveProperty("publishedAt");
   });
 });
