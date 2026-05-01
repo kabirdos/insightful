@@ -390,6 +390,13 @@ export default function EditReportPage() {
 
     if (removedSections.length > 0) {
       setPendingSave(body);
+      // Reset publish intent — the modal could otherwise have been
+      // opened by a prior Make public click whose pendingIsPublish
+      // is still set. Without this, confirming would route the
+      // plain save through executePublish() and leave the UI saying
+      // "public" while the server kept the row as draft. (codex P2
+      // on 16de842.)
+      setPendingIsPublish(false);
       setShowConfirmModal(true);
       return;
     }
