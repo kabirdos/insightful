@@ -532,8 +532,17 @@ const INITIAL_TOKEN_STATUS: TokenStatus = {
   retryAfterSeconds: null,
 };
 
-/** Token TTL — kept in sync with `mintTokenForUser` server-side. */
-const TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+/**
+ * Token TTL — kept in sync with `mintTokenForUser` server-side
+ * (NINETY_DAYS_MS in src/lib/harness-tokens.ts). If the server TTL
+ * changes, this constant MUST move with it; otherwise the watermark
+ * derivation below lands far in the future / past and the polling
+ * loop never sees the new draft.
+ */
+const TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+
+/** localStorage key for the polling watermark (persists across remounts). */
+const POLL_SINCE_KEY = "insightful:upload_poll_since";
 
 /**
  * Derive the server's "now" at mint time from the mint response.
@@ -546,6 +555,35 @@ function deriveServerNowMs(expiresAtIso: string): number {
   const expires = Date.parse(expiresAtIso);
   if (Number.isNaN(expires)) return Date.now();
   return expires - TOKEN_TTL_MS;
+}
+
+/**
+ * Read the persisted polling watermark from localStorage. Returns
+ * null if the value is missing, malformed, or older than the token
+ * TTL (a stale watermark from weeks ago would silently fail to
+ * match new drafts).
+ */
+function readPersistedPollSince(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(POLL_SINCE_KEY);
+    if (!raw) return null;
+    const ms = Date.parse(raw);
+    if (Number.isNaN(ms)) return null;
+    if (Date.now() - ms > TOKEN_TTL_MS) {
+      // Stale — clear so a future generate-command run has a fresh
+      // slate.
+      try {
+        window.localStorage.removeItem(POLL_SINCE_KEY);
+      } catch {
+        // ignore
+      }
+      return null;
+    }
+    return raw;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -565,8 +603,24 @@ function TokenizedFlow({
   router: ReturnType<typeof useRouter>;
   legacyFlow: React.ReactNode;
 }) {
-  const [tokenStatus, setTokenStatus] =
-    useState<TokenStatus>(INITIAL_TOKEN_STATUS);
+  const [tokenStatus, setTokenStatus] = useState<TokenStatus>(() => {
+    // Hydrate `pollSince` from localStorage so a refresh / second-tab
+    // mount keeps polling against an in-flight previous mint instead
+    // of dropping the user back to the "Generate command" idle state
+    // and silently abandoning the running CLI command. We do NOT
+    // hydrate the raw token (it's a credential — never persist) so
+    // the UI shows the idle "generate" CTA, but polling runs silently
+    // against the persisted watermark and redirects the moment the
+    // skill's POST lands. (P1 fix from codex review on 1d08b0b.)
+    const persistedSince = readPersistedPollSince();
+    if (persistedSince) {
+      return {
+        ...INITIAL_TOKEN_STATUS,
+        pollSince: persistedSince,
+      };
+    }
+    return INITIAL_TOKEN_STATUS;
+  });
   // Hydrate the install-block "I've already installed it" hint from
   // localStorage during initial state (not in an effect) so we don't
   // trip react-hooks/set-state-in-effect. The lazy initializer guards
@@ -646,10 +700,22 @@ function TokenizedFlow({
       // previous `new Date().toISOString()` watermark would silently
       // miss drafts when the user's clock was ahead of UTC.
       const serverNowMs = deriveServerNowMs(body.expiresAt);
+      const pollSince = new Date(serverNowMs).toISOString();
+      // Persist the watermark so a remount can resume polling
+      // without re-minting (which would revoke the in-flight token).
+      try {
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(POLL_SINCE_KEY, pollSince);
+        }
+      } catch {
+        // localStorage disabled / quota exceeded — polling still works
+        // for the current session; only the resume-after-refresh path
+        // degrades.
+      }
       setTokenStatus({
         state: "ready",
         token: body.token,
-        pollSince: new Date(serverNowMs).toISOString(),
+        pollSince,
         message: null,
         retryAfterSeconds: null,
       });
@@ -958,8 +1024,16 @@ function TokenizedFlow({
         )}
       </div>
 
-      {/* ── Polling status (R24) — only after a token has been minted. */}
-      {tokenStatus.token && (
+      {/* ── Polling status (R24) ─────────────────────────────────────
+        Two flavors:
+          1. Token in state: full "Waiting for your report…" banner
+             (current session, command on screen).
+          2. No token in state but `pollSince` hydrated from
+             localStorage: a previous session minted a token; the CLI
+             may still be mid-run. Surface a quieter banner so the
+             user knows polling is active and DOESN'T smash "Generate
+             command" (which would revoke the in-flight token). */}
+      {tokenStatus.token ? (
         <div className="mb-6 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-4 dark:border-slate-700 dark:bg-slate-800/40">
           <Loader2
             className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400"
@@ -974,7 +1048,23 @@ function TokenizedFlow({
             </p>
           </div>
         </div>
-      )}
+      ) : tokenStatus.pollSince ? (
+        <div className="mb-6 flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50/60 px-5 py-4 dark:border-blue-800/60 dark:bg-blue-950/20">
+          <Loader2
+            className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400"
+            aria-hidden
+          />
+          <div>
+            <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
+              Still watching for a report from your previous session…
+            </p>
+            <p className="text-xs text-blue-800/80 dark:text-blue-300/80">
+              If the CLI is still running, hold off on generating a new command
+              — that would revoke the in-flight token.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {/* ── Fallback disclosure (R25) ── */}
       <div className="mt-8 border-t border-slate-200 pt-6 dark:border-slate-700">
