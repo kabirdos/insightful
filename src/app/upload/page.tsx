@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
@@ -23,6 +23,9 @@ import {
   Send,
   Eye,
   EyeOff,
+  Loader2,
+  RefreshCw,
+  LogIn,
 } from "lucide-react";
 import clsx from "clsx";
 import type {
@@ -468,6 +471,571 @@ function ProjectForm({
   );
 }
 
+/**
+ * Cross-repo rollout gate (Wave 4 Unit 9 / R23).
+ *
+ * The tokenized direct-post UI shows the user a `/insight-harness
+ * --publish --token=...` command. That command only works against the
+ * `insight-harness` skill version that ships in Units 11/12. If we
+ * render the new UI before the marketplace release lands, users copy
+ * a flag their installed skill doesn't understand.
+ *
+ * Until the env var flips to `"true"` in Vercel production (after the
+ * marketplace release is confirmed live), the page renders today's
+ * drag-drop wizard as the primary CTA. Once it flips, the tokenized
+ * panel becomes primary and the wizard moves into the "Having
+ * trouble?" disclosure.
+ *
+ * Read at module scope on purpose — Next inlines `NEXT_PUBLIC_*` env
+ * vars at build time, so a Vercel redeploy is required to flip the
+ * gate. That deploy boundary is intentional: it forces the same human
+ * review that gated the marketplace release.
+ */
+const DIRECT_POST_ENABLED =
+  process.env.NEXT_PUBLIC_DIRECT_POST_ENABLED === "true";
+
+const HAS_INSTALLED_PLUGIN_KEY = "insightful:has_installed_plugin";
+
+/** Polling cadence for the upload-status endpoint (R24). */
+const STATUS_POLL_INTERVAL_MS = 3_000;
+
+/** Backoff cap when the status endpoint errors. */
+const STATUS_POLL_MAX_BACKOFF_MS = 30_000;
+
+interface MintTokenResult {
+  token: string;
+  expiresAt: string;
+}
+
+interface TokenStatus {
+  state: "idle" | "minting" | "ready" | "rate_limited" | "conflict" | "error";
+  token: string | null;
+  message: string | null;
+  retryAfterSeconds: number | null;
+}
+
+const INITIAL_TOKEN_STATUS: TokenStatus = {
+  state: "idle",
+  token: null,
+  message: null,
+  retryAfterSeconds: null,
+};
+
+/**
+ * Authed tokenized flow (R23/R24/R26): renders the install block, the
+ * `/insight-harness --publish --token=...` command, the polling
+ * status, and a "Having trouble?" disclosure that wraps the existing
+ * drag-drop wizard.
+ *
+ * The component owns its own token-mint lifecycle and polling effects.
+ * It is rendered only when `DIRECT_POST_ENABLED && session` is true —
+ * the parent decides whether to render this or the unauth landing.
+ */
+function TokenizedFlow({
+  router,
+  legacyFlow,
+}: {
+  router: ReturnType<typeof useRouter>;
+  legacyFlow: React.ReactNode;
+}) {
+  const [tokenStatus, setTokenStatus] =
+    useState<TokenStatus>(INITIAL_TOKEN_STATUS);
+  // Hydrate the install-block "I've already installed it" hint from
+  // localStorage during initial state (not in an effect) so we don't
+  // trip react-hooks/set-state-in-effect. The lazy initializer guards
+  // against SSR + localStorage-disabled environments.
+  const [installCollapsed, setInstallCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem(HAS_INSTALLED_PLUGIN_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const [showFallback, setShowFallback] = useState(false);
+  // Captured once on mount: the timestamp the page loaded. The polling
+  // endpoint filters drafts to `createdAt > since`, so a stable value
+  // is critical — refreshing the timestamp on every poll would cause
+  // the loop to miss a draft that landed during a tick.
+  const sinceRef = useRef<string>(new Date().toISOString());
+  // Backoff window between polls when the endpoint errors. Reset to
+  // the base interval on any successful (200) response.
+  const pollDelayRef = useRef<number>(STATUS_POLL_INTERVAL_MS);
+  // Cleanup-on-unmount flag. The polling loop schedules its next tick
+  // via setTimeout from inside an async fn — when the component
+  // unmounts (e.g. router.push redirects away) we need the in-flight
+  // tick to skip rescheduling.
+  const cancelledRef = useRef<boolean>(false);
+
+  /** POST /api/harness-tokens — store the result in tokenStatus. */
+  const mintToken = useCallback(async () => {
+    setTokenStatus((prev) => ({
+      ...prev,
+      state: "minting",
+      message: null,
+      retryAfterSeconds: null,
+    }));
+    try {
+      const res = await fetch("/api/harness-tokens", { method: "POST" });
+      if (res.status === 429) {
+        const body = await res.json().catch(() => ({}));
+        const retryAfterHeader = res.headers.get("Retry-After");
+        const retryAfter = retryAfterHeader
+          ? Number(retryAfterHeader)
+          : (body.retryAfter ?? null);
+        setTokenStatus({
+          state: "rate_limited",
+          token: null,
+          message: "You've hit the token-mint rate limit. Try again in a bit.",
+          retryAfterSeconds: Number.isFinite(retryAfter) ? retryAfter : null,
+        });
+        return;
+      }
+      if (res.status === 409) {
+        const body = await res.json().catch(() => ({}));
+        setTokenStatus({
+          state: "conflict",
+          token: null,
+          message:
+            body.message ??
+            "Another mint just succeeded for this account. Reload the page to see the active token.",
+          retryAfterSeconds: null,
+        });
+        return;
+      }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setTokenStatus({
+          state: "error",
+          token: null,
+          message: body.error ?? "Failed to mint a token. Please retry.",
+          retryAfterSeconds: null,
+        });
+        return;
+      }
+      const body = (await res.json()) as MintTokenResult;
+      setTokenStatus({
+        state: "ready",
+        token: body.token,
+        message: null,
+        retryAfterSeconds: null,
+      });
+    } catch (err) {
+      setTokenStatus({
+        state: "error",
+        token: null,
+        message:
+          err instanceof Error
+            ? err.message
+            : "Network error while minting a token. Please retry.",
+        retryAfterSeconds: null,
+      });
+    }
+  }, []);
+
+  /** DELETE /api/harness-tokens then POST a fresh one (R26). */
+  const rotateToken = useCallback(async () => {
+    setTokenStatus((prev) => ({
+      ...prev,
+      state: "minting",
+      message: null,
+      retryAfterSeconds: null,
+    }));
+    try {
+      await fetch("/api/harness-tokens", { method: "DELETE" });
+    } catch {
+      // Even if DELETE fails (network), POST below will implicitly
+      // revoke the old token via the one-active-token invariant.
+    }
+    await mintToken();
+  }, [mintToken]);
+
+  // Mint a token on mount — the unauth landing is handled by the
+  // parent, so by the time this component renders we know the user is
+  // signed in. We defer the first setState into a microtask via
+  // Promise.resolve so react-hooks/set-state-in-effect is satisfied
+  // — the lint rule rejects synchronous setState during the effect's
+  // render-phase chain.
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (cancelled) return;
+      void mintToken();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [mintToken]);
+
+  /**
+   * R24 polling. The interval fires every 3s; on a network/5xx error
+   * we double the delay (capped at 30s) and try again. On a 200 with
+   * `editUrl: <string>` we redirect via `router.push`. The loop is
+   * cooperative — `cancelledRef` ensures we don't reschedule after
+   * unmount.
+   */
+  useEffect(() => {
+    cancelledRef.current = false;
+    const sinceParam = encodeURIComponent(sinceRef.current);
+
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const tick = async () => {
+      if (cancelledRef.current) return;
+      try {
+        const res = await fetch(`/api/upload/status?since=${sinceParam}`, {
+          cache: "no-store",
+        });
+        if (cancelledRef.current) return;
+        if (!res.ok) {
+          // Backoff on any non-200 (auth lapse, server error, etc.).
+          // Don't surface to the user — the polling loop is best-effort
+          // background work; the visible status is the "Waiting…"
+          // string above the spinner.
+          pollDelayRef.current = Math.min(
+            pollDelayRef.current * 2,
+            STATUS_POLL_MAX_BACKOFF_MS,
+          );
+        } else {
+          const body = await res.json();
+          if (typeof body.editUrl === "string" && body.editUrl) {
+            cancelledRef.current = true;
+            router.push(body.editUrl);
+            return;
+          }
+          // Reset backoff on a successful "not yet" response.
+          pollDelayRef.current = STATUS_POLL_INTERVAL_MS;
+        }
+      } catch {
+        // Network error path — same backoff as 5xx.
+        pollDelayRef.current = Math.min(
+          pollDelayRef.current * 2,
+          STATUS_POLL_MAX_BACKOFF_MS,
+        );
+      }
+      if (cancelledRef.current) return;
+      timeoutId = setTimeout(tick, pollDelayRef.current);
+    };
+
+    timeoutId = setTimeout(tick, pollDelayRef.current);
+
+    return () => {
+      cancelledRef.current = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [router]);
+
+  const command = useMemo(() => {
+    const token = tokenStatus.token;
+    return token
+      ? `/insight-harness --publish --token=${token}`
+      : "/insight-harness --publish --token=...";
+  }, [tokenStatus.token]);
+
+  const handleCopyCommand = useCallback(() => {
+    // Set the "I've installed it" flag the first time the user copies.
+    // Future visits to /upload show the install block collapsed.
+    try {
+      window.localStorage.setItem(HAS_INSTALLED_PLUGIN_KEY, "1");
+    } catch {
+      // localStorage may be disabled — silently no-op; the install
+      // block will simply re-expand on the next visit.
+    }
+  }, []);
+
+  return (
+    <div>
+      <div className="mb-6">
+        <Link
+          href="/"
+          className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+        >
+          ← Back to home
+        </Link>
+      </div>
+
+      <div className="mb-6 text-center">
+        <h1 className="text-xl font-extrabold text-slate-900 dark:text-slate-100">
+          Run one command — your profile shows up here
+        </h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          The skill posts your report straight to insightful.com, and we
+          redirect you to the edit page when it lands.
+        </p>
+      </div>
+
+      {/* ── Install block (collapsed by default for returning users) ── */}
+      <div className="mb-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/60">
+        <button
+          type="button"
+          onClick={() => setInstallCollapsed((v) => !v)}
+          className="flex w-full items-center justify-between text-left"
+          aria-expanded={!installCollapsed}
+        >
+          <span className="flex items-center gap-2">
+            <Sparkles className="h-[18px] w-[18px] text-blue-600 dark:text-blue-400" />
+            <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+              Install the /insight-harness skill (one-time)
+            </span>
+          </span>
+          {installCollapsed ? (
+            <ChevronDown className="h-4 w-4 text-slate-400" />
+          ) : (
+            <ChevronUp className="h-4 w-4 text-slate-400" />
+          )}
+        </button>
+        {!installCollapsed && (
+          <div className="mt-3 flex flex-col gap-2">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Run these two commands inside Claude Code:
+            </p>
+            <CommandBlock command="/plugin marketplace add kabirdos/insight-harness" />
+            <CommandBlock command="/plugin install insight-harness@kabirdos-insight-harness" />
+            <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+              Auto-updates when new versions ship. Python stdlib only — no pip
+              installs, no background daemons.{" "}
+              <a
+                href="https://github.com/kabirdos/insight-harness#how-it-runs-and-what-it-doesnt-do"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-slate-600 underline decoration-slate-300 underline-offset-2 hover:text-slate-900 hover:decoration-slate-500 dark:text-slate-300 dark:decoration-slate-600 dark:hover:text-slate-100 dark:hover:decoration-slate-400"
+              >
+                See exactly what it runs
+              </a>
+              .
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Tokenized command + status ── */}
+      <div className="mb-5 rounded-xl border-[1.5px] border-blue-300 bg-white p-6 shadow-[0_0_0_1px_rgba(37,99,235,0.08),0_4px_16px_rgba(37,99,235,0.06)] dark:border-blue-700 dark:bg-slate-800/60 dark:shadow-[0_0_0_1px_rgba(37,99,235,0.15),0_4px_16px_rgba(37,99,235,0.1)]">
+        <div className="mb-3 flex items-center gap-2">
+          <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+            1
+          </span>
+          <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+            Run this in Claude Code
+          </span>
+        </div>
+
+        {tokenStatus.state === "minting" && !tokenStatus.token ? (
+          <div className="flex items-center gap-2 rounded-lg bg-slate-100 px-3.5 py-2.5 text-xs text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Generating a one-time token…
+          </div>
+        ) : tokenStatus.state === "rate_limited" ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/20 dark:text-amber-300">
+            <p>{tokenStatus.message}</p>
+            {tokenStatus.retryAfterSeconds !== null && (
+              <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                Retry after ~{tokenStatus.retryAfterSeconds}s.
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                void mintToken();
+              }}
+              className="mt-2 rounded-md border border-amber-300 bg-white px-3 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-100 dark:border-amber-700 dark:bg-slate-900 dark:text-amber-200 dark:hover:bg-amber-950/40"
+            >
+              Try again
+            </button>
+          </div>
+        ) : tokenStatus.state === "conflict" ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/20 dark:text-amber-300">
+            <p>{tokenStatus.message}</p>
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== "undefined") window.location.reload();
+              }}
+              className="mt-2 rounded-md border border-amber-300 bg-white px-3 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-100 dark:border-amber-700 dark:bg-slate-900 dark:text-amber-200 dark:hover:bg-amber-950/40"
+            >
+              Reload
+            </button>
+          </div>
+        ) : tokenStatus.state === "error" ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400">
+            <p>{tokenStatus.message}</p>
+            <button
+              type="button"
+              onClick={() => {
+                void mintToken();
+              }}
+              className="mt-2 rounded-md border border-red-300 bg-white px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 dark:border-red-700 dark:bg-slate-900 dark:text-red-300 dark:hover:bg-red-950/40"
+            >
+              Try again
+            </button>
+          </div>
+        ) : (
+          <div
+            onClick={handleCopyCommand}
+            onKeyDown={(e) => {
+              // Same "I've installed it" hint set when the user activates
+              // the row via keyboard (Enter / Space) instead of mouse.
+              if (e.key === "Enter" || e.key === " ") handleCopyCommand();
+            }}
+            role="presentation"
+          >
+            <CommandBlock command={command} />
+          </div>
+        )}
+
+        <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/20 dark:text-amber-300">
+          <span aria-hidden>⚠</span>
+          <p>
+            Your token is on this screen — anyone with it can post a report as
+            you. Don&apos;t paste it into Slack, screenshots, or shared shells.{" "}
+            <button
+              type="button"
+              onClick={() => {
+                void rotateToken();
+              }}
+              disabled={tokenStatus.state === "minting"}
+              className="font-semibold underline decoration-amber-400 underline-offset-2 hover:decoration-amber-600 disabled:opacity-50"
+            >
+              <span className="inline-flex items-center gap-1">
+                <RefreshCw className="h-3 w-3" /> Revoke and generate new
+              </span>
+            </button>
+          </p>
+        </div>
+      </div>
+
+      {/* ── Polling status ── */}
+      <div className="mb-6 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-4 dark:border-slate-700 dark:bg-slate-800/40">
+        <Loader2
+          className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400"
+          aria-hidden
+        />
+        <div>
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+            Waiting for your report…
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Once the skill posts, we&apos;ll redirect you to the edit page.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Fallback disclosure (R25) ── */}
+      <div className="mt-8 border-t border-slate-200 pt-6 dark:border-slate-700">
+        <button
+          type="button"
+          onClick={() => setShowFallback((v) => !v)}
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-[13px] font-medium text-slate-500 transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+        >
+          <FileText className="h-3.5 w-3.5" />
+          Having trouble? Upload a file instead
+          {showFallback ? (
+            <ChevronUp className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5" />
+          )}
+        </button>
+
+        {showFallback && (
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/40 p-1 dark:border-slate-700 dark:bg-slate-900/40">
+            {legacyFlow}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Unauth landing (R22): example report preview + sign-in CTA. The
+ * user must see what /upload is about before authenticating, so we
+ * intentionally render content here rather than redirecting to /login.
+ *
+ * Exported for unit tests — the page itself toggles via session +
+ * `DIRECT_POST_ENABLED`, so production callers should not import this
+ * directly.
+ */
+export function UnauthLanding() {
+  return (
+    <div className="mx-auto max-w-3xl">
+      <div className="mb-6">
+        <Link
+          href="/"
+          className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+        >
+          ← Back to home
+        </Link>
+      </div>
+
+      <div className="mb-6 text-center">
+        <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">
+          Share your Claude Code profile in one minute
+        </h1>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          Sign in, run one command in Claude Code, and your profile lands here —
+          ready to share.
+        </p>
+      </div>
+
+      <div className="mb-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/40">
+        <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-5">
+          <Link
+            href={SAMPLE_PROFILE_HREF}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 transition-opacity hover:opacity-90 dark:border-slate-700 dark:bg-slate-900 sm:w-64"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={SAMPLE_PROFILE_OG}
+              alt={`Preview of ${SAMPLE_PROFILE_LABEL}`}
+              loading="lazy"
+              className="block h-auto w-full"
+              width={1200}
+              height={630}
+            />
+          </Link>
+          <div className="min-w-0 flex-1">
+            <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">
+              What your profile will look like
+            </div>
+            <div className="mb-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+              {SAMPLE_PROFILE_LABEL}
+            </div>
+            <p className="mb-3 text-sm text-slate-600 dark:text-slate-400">
+              Rich stats, skill inventory, and workflow patterns —
+              auto-generated from your local usage data.
+            </p>
+            <Link
+              href={SAMPLE_PROFILE_HREF}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              See a sample profile
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800/40">
+        <button
+          type="button"
+          onClick={() => signIn("github", { callbackUrl: "/upload" })}
+          className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+        >
+          <LogIn className="h-4 w-4" />
+          Sign in with GitHub
+        </button>
+        <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+          We use your GitHub login as your public profile handle. Your report
+          stays private until you click &quot;Make public&quot;.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function UploadPage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -875,8 +1443,27 @@ export default function UploadPage() {
   const totalSensitive = redactions.length;
   const allRedacted = totalSensitive > 0 && redactedCount === totalSensitive;
 
-  return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+  // R22: when the rollout flag is on AND there's no session, show the
+  // unauth landing instead of the wizard. The example preview teaches
+  // visitors what /upload is for before they OAuth.
+  if (DIRECT_POST_ENABLED && !session) {
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-8">
+        <UnauthLanding />
+      </div>
+    );
+  }
+
+  // The existing drag-drop wizard, rendered as either:
+  //   - the primary flow (DIRECT_POST_ENABLED is false — today's
+  //     behavior, no UI change for users until the marketplace
+  //     release lands), or
+  //   - the fallback inside the "Having trouble?" disclosure when
+  //     DIRECT_POST_ENABLED is true.
+  // The render-time hierarchy and all wizard internals (drop zone,
+  // project picker, review step) are preserved verbatim.
+  const legacyContent = (
+    <>
       <h1 className="mb-2 text-2xl font-bold text-slate-900 dark:text-white">
         Share Your Insights
       </h1>
@@ -2411,6 +2998,23 @@ export default function UploadPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
+
+  if (DIRECT_POST_ENABLED) {
+    // Authed + flag on: tokenized flow is primary; the legacy wizard
+    // is wrapped in the "Having trouble?" disclosure inside
+    // TokenizedFlow. We pass the legacy content as a prop so the
+    // wizard's existing handlers (handleFile, handlePublish, step
+    // wizard) keep working unchanged.
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-8">
+        <TokenizedFlow router={router} legacyFlow={legacyContent} />
+      </div>
+    );
+  }
+
+  // Flag off → today's behavior. The legacy wizard renders as primary
+  // and the page is indistinguishable from main pre-Wave-4.
+  return <div className="mx-auto max-w-5xl px-4 py-8">{legacyContent}</div>;
 }
