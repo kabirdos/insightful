@@ -510,6 +510,16 @@ interface MintTokenResult {
 interface TokenStatus {
   state: "idle" | "minting" | "ready" | "rate_limited" | "conflict" | "error";
   token: string | null;
+  /**
+   * Server-derived watermark for the polling endpoint. We compute it
+   * as `expiresAt - 24h` from the mint response — that's the server's
+   * `Date.now()` at mint time. Using a server value (instead of the
+   * browser's `new Date()`) is what makes the redirect work for users
+   * whose machine clock is skewed past the server: a draft created
+   * just after the mint will satisfy `createdAt > since` regardless
+   * of the browser clock. (P2 fix from codex review on 9ae63b9.)
+   */
+  pollSince: string | null;
   message: string | null;
   retryAfterSeconds: number | null;
 }
@@ -517,9 +527,26 @@ interface TokenStatus {
 const INITIAL_TOKEN_STATUS: TokenStatus = {
   state: "idle",
   token: null,
+  pollSince: null,
   message: null,
   retryAfterSeconds: null,
 };
+
+/** Token TTL — kept in sync with `mintTokenForUser` server-side. */
+const TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Derive the server's "now" at mint time from the mint response.
+ * `expiresAt = serverNow + TOKEN_TTL_MS`, so `serverNow = expiresAt -
+ * TOKEN_TTL_MS`. Falls back to the browser clock if `expiresAt` is
+ * unparseable — that case is functionally equivalent to today's
+ * (browser-clock) behavior, so we don't worsen the bug we're fixing.
+ */
+function deriveServerNowMs(expiresAtIso: string): number {
+  const expires = Date.parse(expiresAtIso);
+  if (Number.isNaN(expires)) return Date.now();
+  return expires - TOKEN_TTL_MS;
+}
 
 /**
  * Authed tokenized flow (R23/R24/R26): renders the install block, the
@@ -553,11 +580,6 @@ function TokenizedFlow({
     }
   });
   const [showFallback, setShowFallback] = useState(false);
-  // Captured once on mount: the timestamp the page loaded. The polling
-  // endpoint filters drafts to `createdAt > since`, so a stable value
-  // is critical — refreshing the timestamp on every poll would cause
-  // the loop to miss a draft that landed during a tick.
-  const sinceRef = useRef<string>(new Date().toISOString());
   // Backoff window between polls when the endpoint errors. Reset to
   // the base interval on any successful (200) response.
   const pollDelayRef = useRef<number>(STATUS_POLL_INTERVAL_MS);
@@ -586,6 +608,7 @@ function TokenizedFlow({
         setTokenStatus({
           state: "rate_limited",
           token: null,
+          pollSince: null,
           message: "You've hit the token-mint rate limit. Try again in a bit.",
           retryAfterSeconds: Number.isFinite(retryAfter) ? retryAfter : null,
         });
@@ -596,6 +619,7 @@ function TokenizedFlow({
         setTokenStatus({
           state: "conflict",
           token: null,
+          pollSince: null,
           message:
             body.message ??
             "Another mint just succeeded for this account. Reload the page to see the active token.",
@@ -608,15 +632,24 @@ function TokenizedFlow({
         setTokenStatus({
           state: "error",
           token: null,
+          pollSince: null,
           message: body.error ?? "Failed to mint a token. Please retry.",
           retryAfterSeconds: null,
         });
         return;
       }
       const body = (await res.json()) as MintTokenResult;
+      // Use the server-derived "now" (from `expiresAt - 24h`) as the
+      // polling watermark so a draft posted after the mint is visible
+      // to the loop even if the browser clock is skewed forward of the
+      // server. This is the P2 fix from codex review on 9ae63b9 — the
+      // previous `new Date().toISOString()` watermark would silently
+      // miss drafts when the user's clock was ahead of UTC.
+      const serverNowMs = deriveServerNowMs(body.expiresAt);
       setTokenStatus({
         state: "ready",
         token: body.token,
+        pollSince: new Date(serverNowMs).toISOString(),
         message: null,
         retryAfterSeconds: null,
       });
@@ -624,6 +657,7 @@ function TokenizedFlow({
       setTokenStatus({
         state: "error",
         token: null,
+        pollSince: null,
         message:
           err instanceof Error
             ? err.message
@@ -650,22 +684,13 @@ function TokenizedFlow({
     await mintToken();
   }, [mintToken]);
 
-  // Mint a token on mount — the unauth landing is handled by the
-  // parent, so by the time this component renders we know the user is
-  // signed in. We defer the first setState into a microtask via
-  // Promise.resolve so react-hooks/set-state-in-effect is satisfied
-  // — the lint rule rejects synchronous setState during the effect's
-  // render-phase chain.
-  useEffect(() => {
-    let cancelled = false;
-    void Promise.resolve().then(() => {
-      if (cancelled) return;
-      void mintToken();
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [mintToken]);
+  // Intentionally NOT auto-minting on mount — the POST endpoint
+  // implicitly revokes any prior active token (one-active-token
+  // invariant in src/lib/harness-tokens.ts), so a refresh / second
+  // tab / return-visit would silently invalidate the token the user
+  // already pasted into a running CLI command and burn one of the 10
+  // mints/day. The user clicks "Generate command" explicitly to
+  // mint. This is the P1 fix from codex review on 9ae63b9.
 
   /**
    * R24 polling. The interval fires every 3s; on a network/5xx error
@@ -675,8 +700,15 @@ function TokenizedFlow({
    * unmount.
    */
   useEffect(() => {
+    // The polling loop only makes sense once the user has minted a
+    // token — before then there's no way for a draft to land, and we
+    // don't want to spin a 3s loop generating "still nothing" 200s
+    // for visitors who never run the skill.
+    if (!tokenStatus.pollSince) return;
+
     cancelledRef.current = false;
-    const sinceParam = encodeURIComponent(sinceRef.current);
+    pollDelayRef.current = STATUS_POLL_INTERVAL_MS;
+    const sinceParam = encodeURIComponent(tokenStatus.pollSince);
 
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -723,7 +755,7 @@ function TokenizedFlow({
       cancelledRef.current = true;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [router]);
+  }, [router, tokenStatus.pollSince]);
 
   const command = useMemo(() => {
     const token = tokenStatus.token;
@@ -819,7 +851,27 @@ function TokenizedFlow({
           </span>
         </div>
 
-        {tokenStatus.state === "minting" && !tokenStatus.token ? (
+        {tokenStatus.state === "idle" ? (
+          // Idle (pre-mint) state. Tells the user up front that
+          // clicking the button mints a credential — important context
+          // because rotation invalidates any prior token still in use.
+          <div className="flex flex-col gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-900/40">
+            <p className="text-xs text-slate-600 dark:text-slate-300">
+              Generate a one-time token, then paste the command into Claude
+              Code. Each click revokes any previous token, so only do this when
+              you&apos;re ready to run the skill.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                void mintToken();
+              }}
+              className="self-start rounded-md bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
+            >
+              Generate command
+            </button>
+          </div>
+        ) : tokenStatus.state === "minting" && !tokenStatus.token ? (
           <div className="flex items-center gap-2 rounded-lg bg-slate-100 px-3.5 py-2.5 text-xs text-slate-500 dark:bg-slate-900 dark:text-slate-400">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             Generating a one-time token…
@@ -882,42 +934,47 @@ function TokenizedFlow({
           </div>
         )}
 
-        <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/20 dark:text-amber-300">
-          <span aria-hidden>⚠</span>
-          <p>
-            Your token is on this screen — anyone with it can post a report as
-            you. Don&apos;t paste it into Slack, screenshots, or shared shells.{" "}
-            <button
-              type="button"
-              onClick={() => {
-                void rotateToken();
-              }}
-              disabled={tokenStatus.state === "minting"}
-              className="font-semibold underline decoration-amber-400 underline-offset-2 hover:decoration-amber-600 disabled:opacity-50"
-            >
-              <span className="inline-flex items-center gap-1">
-                <RefreshCw className="h-3 w-3" /> Revoke and generate new
-              </span>
-            </button>
-          </p>
-        </div>
+        {tokenStatus.token && (
+          <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/20 dark:text-amber-300">
+            <span aria-hidden>⚠</span>
+            <p>
+              Your token is on this screen — anyone with it can post a report as
+              you. Don&apos;t paste it into Slack, screenshots, or shared
+              shells.{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  void rotateToken();
+                }}
+                disabled={tokenStatus.state === "minting"}
+                className="font-semibold underline decoration-amber-400 underline-offset-2 hover:decoration-amber-600 disabled:opacity-50"
+              >
+                <span className="inline-flex items-center gap-1">
+                  <RefreshCw className="h-3 w-3" /> Revoke and generate new
+                </span>
+              </button>
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* ── Polling status ── */}
-      <div className="mb-6 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-4 dark:border-slate-700 dark:bg-slate-800/40">
-        <Loader2
-          className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400"
-          aria-hidden
-        />
-        <div>
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-            Waiting for your report…
-          </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Once the skill posts, we&apos;ll redirect you to the edit page.
-          </p>
+      {/* ── Polling status (R24) — only after a token has been minted. */}
+      {tokenStatus.token && (
+        <div className="mb-6 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-4 dark:border-slate-700 dark:bg-slate-800/40">
+          <Loader2
+            className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400"
+            aria-hidden
+          />
+          <div>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+              Waiting for your report…
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Once the skill posts, we&apos;ll redirect you to the edit page.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Fallback disclosure (R25) ── */}
       <div className="mt-8 border-t border-slate-200 pt-6 dark:border-slate-700">
