@@ -541,8 +541,18 @@ const INITIAL_TOKEN_STATUS: TokenStatus = {
  */
 const TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
-/** localStorage key for the polling watermark (persists across remounts). */
-const POLL_SINCE_KEY = "insightful:upload_poll_since";
+/**
+ * localStorage key prefix for the polling watermark. We scope by
+ * userId (appended below) so a watermark minted by one account isn't
+ * reused when a different account signs in on the same browser
+ * — that would let polling redirect to an unrelated user's draft.
+ * (P2 fix from codex review on 75b91d5.)
+ */
+const POLL_SINCE_KEY_PREFIX = "insightful:upload_poll_since:";
+
+function pollSinceStorageKey(userId: string): string {
+  return `${POLL_SINCE_KEY_PREFIX}${userId}`;
+}
 
 /**
  * Derive the server's "now" at mint time from the mint response.
@@ -558,15 +568,16 @@ function deriveServerNowMs(expiresAtIso: string): number {
 }
 
 /**
- * Read the persisted polling watermark from localStorage. Returns
- * null if the value is missing, malformed, or older than the token
- * TTL (a stale watermark from weeks ago would silently fail to
+ * Read the persisted polling watermark for `userId` from localStorage.
+ * Returns null if the value is missing, malformed, or older than the
+ * token TTL (a stale watermark from weeks ago would silently fail to
  * match new drafts).
  */
-function readPersistedPollSince(): string | null {
+function readPersistedPollSince(userId: string): string | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(POLL_SINCE_KEY);
+    const key = pollSinceStorageKey(userId);
+    const raw = window.localStorage.getItem(key);
     if (!raw) return null;
     const ms = Date.parse(raw);
     if (Number.isNaN(ms)) return null;
@@ -574,7 +585,7 @@ function readPersistedPollSince(): string | null {
       // Stale — clear so a future generate-command run has a fresh
       // slate.
       try {
-        window.localStorage.removeItem(POLL_SINCE_KEY);
+        window.localStorage.removeItem(key);
       } catch {
         // ignore
       }
@@ -583,6 +594,22 @@ function readPersistedPollSince(): string | null {
     return raw;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Drop the persisted watermark for `userId`. Called after a
+ * successful redirect (terminal state — no further polling for this
+ * upload session) so a future visit to /upload doesn't rehydrate a
+ * stale watermark and immediately bounce the user back to the old
+ * edit URL. (P1 fix from codex review on 75b91d5.)
+ */
+function clearPersistedPollSince(userId: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(pollSinceStorageKey(userId));
+  } catch {
+    // ignore
   }
 }
 
@@ -598,9 +625,11 @@ function readPersistedPollSince(): string | null {
  */
 function TokenizedFlow({
   router,
+  userId,
   legacyFlow,
 }: {
   router: ReturnType<typeof useRouter>;
+  userId: string;
   legacyFlow: React.ReactNode;
 }) {
   const [tokenStatus, setTokenStatus] = useState<TokenStatus>(() => {
@@ -612,7 +641,11 @@ function TokenizedFlow({
     // the UI shows the idle "generate" CTA, but polling runs silently
     // against the persisted watermark and redirects the moment the
     // skill's POST lands. (P1 fix from codex review on 1d08b0b.)
-    const persistedSince = readPersistedPollSince();
+    //
+    // Scoped by userId so a watermark from one account doesn't leak
+    // when another account signs in on the same browser. (P2 fix from
+    // codex review on 75b91d5.)
+    const persistedSince = readPersistedPollSince(userId);
     if (persistedSince) {
       return {
         ...INITIAL_TOKEN_STATUS,
@@ -703,9 +736,10 @@ function TokenizedFlow({
       const pollSince = new Date(serverNowMs).toISOString();
       // Persist the watermark so a remount can resume polling
       // without re-minting (which would revoke the in-flight token).
+      // Scoped by userId so it doesn't leak across account switches.
       try {
         if (typeof window !== "undefined") {
-          window.localStorage.setItem(POLL_SINCE_KEY, pollSince);
+          window.localStorage.setItem(pollSinceStorageKey(userId), pollSince);
         }
       } catch {
         // localStorage disabled / quota exceeded — polling still works
@@ -731,7 +765,7 @@ function TokenizedFlow({
         retryAfterSeconds: null,
       });
     }
-  }, []);
+  }, [userId]);
 
   /** DELETE /api/harness-tokens then POST a fresh one (R26). */
   const rotateToken = useCallback(async () => {
@@ -798,6 +832,11 @@ function TokenizedFlow({
           const body = await res.json();
           if (typeof body.editUrl === "string" && body.editUrl) {
             cancelledRef.current = true;
+            // Terminal state — drop the persisted watermark so a
+            // future /upload visit starts fresh and doesn't bounce
+            // the user back to this same edit URL. (P1 fix from
+            // codex review on 75b91d5.)
+            clearPersistedPollSince(userId);
             router.push(body.editUrl);
             return;
           }
@@ -821,7 +860,7 @@ function TokenizedFlow({
       cancelledRef.current = true;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [router, tokenStatus.pollSince]);
+  }, [router, userId, tokenStatus.pollSince]);
 
   const command = useMemo(() => {
     const token = tokenStatus.token;
@@ -3148,15 +3187,20 @@ export default function UploadPage() {
     </>
   );
 
-  if (DIRECT_POST_ENABLED) {
+  if (DIRECT_POST_ENABLED && session?.user?.id) {
     // Authed + flag on: tokenized flow is primary; the legacy wizard
     // is wrapped in the "Having trouble?" disclosure inside
     // TokenizedFlow. We pass the legacy content as a prop so the
     // wizard's existing handlers (handleFile, handlePublish, step
-    // wizard) keep working unchanged.
+    // wizard) keep working unchanged. userId scopes the persisted
+    // poll watermark per account so it doesn't leak across signins.
     return (
       <div className="mx-auto max-w-5xl px-4 py-8">
-        <TokenizedFlow router={router} legacyFlow={legacyContent} />
+        <TokenizedFlow
+          router={router}
+          userId={session.user.id}
+          legacyFlow={legacyContent}
+        />
       </div>
     );
   }
