@@ -4,11 +4,14 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     harnessToken: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       update: vi.fn(),
       updateMany: vi.fn(),
       create: vi.fn(),
+      count: vi.fn(),
     },
     $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
   },
 }));
 
@@ -16,7 +19,9 @@ import { prisma } from "@/lib/db";
 import {
   generateToken,
   hashSecret,
+  MINT_CAP_PER_24H,
   MintConflictError,
+  MintRateLimitError,
   mintTokenForUser,
   parseToken,
   revokeActiveTokensForUser,
@@ -27,11 +32,14 @@ import {
 const mockPrisma = prisma as unknown as {
   harnessToken: {
     findUnique: Mock;
+    findFirst: Mock;
     update: Mock;
     updateMany: Mock;
     create: Mock;
+    count: Mock;
   };
   $transaction: Mock;
+  $queryRaw: Mock;
 };
 
 beforeEach(() => {
@@ -40,6 +48,16 @@ beforeEach(() => {
   mockPrisma.$transaction.mockImplementation(
     async (cb: (tx: typeof mockPrisma) => Promise<unknown>) => cb(mockPrisma),
   );
+  // Default: zero prior mints in the 24h window so the in-tx rate-limit
+  // check passes. Tests that exercise the cap override this.
+  mockPrisma.harnessToken.count.mockResolvedValue(0);
+  // Default: no recent active token in the conflict-freshness window
+  // so the conflict-detection branch in mintTokenForUser stays inert
+  // for tests that aren't exercising it.
+  mockPrisma.harnessToken.findFirst.mockResolvedValue(null);
+  // `pg_try_advisory_xact_lock` returns boolean; default success.
+  // Tests that exercise the lock-conflict path override this.
+  mockPrisma.$queryRaw.mockResolvedValue([{ acquired: true }]);
 });
 
 describe("generateToken", () => {
@@ -147,6 +165,63 @@ describe("mintTokenForUser", () => {
     // Single attempt only — no retry.
     expect(mockPrisma.harnessToken.create).toHaveBeenCalledTimes(1);
     expect(mockPrisma.harnessToken.updateMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("try-acquires a per-user advisory lock before the in-tx count check", async () => {
+    // Without the lock, two concurrent POSTs at count=cap-1 can both
+    // read cap-1 under READ COMMITTED and both insert. The non-blocking
+    // try-lock serializes the critical section by user — verify it's
+    // actually requested.
+    mockPrisma.harnessToken.updateMany.mockResolvedValue({ count: 0 });
+    mockPrisma.harnessToken.create.mockResolvedValue({});
+
+    await mintTokenForUser("user-1");
+
+    expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+    const callArgs = mockPrisma.$queryRaw.mock.calls[0];
+    // First arg is a TemplateStringsArray containing the SQL fragments;
+    // second is the lock-key string.
+    expect(String(callArgs[0])).toContain("pg_try_advisory_xact_lock");
+    expect(callArgs[1]).toBe("mint:user-1");
+  });
+
+  it("throws MintConflictError when the try-lock cannot be acquired", async () => {
+    // Concurrent-mint scenario: caller A holds the per-user lock.
+    // Caller B's pg_try_advisory_xact_lock returns false → throw
+    // MintConflictError so the HTTP layer 409s. Without this
+    // short-circuit, B would block until A commits, then run
+    // updateMany against A's freshly-committed row and silently
+    // revoke A's just-returned token.
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ acquired: false }]);
+
+    const thrown = await mintTokenForUser("user-1").catch((e: unknown) => e);
+    expect(thrown).toBeInstanceOf(MintConflictError);
+    // No DB writes when the lock is held by another caller.
+    expect(mockPrisma.harnessToken.count).not.toHaveBeenCalled();
+    expect(mockPrisma.harnessToken.updateMany).not.toHaveBeenCalled();
+    expect(mockPrisma.harnessToken.create).not.toHaveBeenCalled();
+  });
+
+  it("throws MintRateLimitError when the in-transaction count is at cap", async () => {
+    // Atomic in-tx check: even if the soft pre-check passed (the route's
+    // pre-tx call to checkMintRateLimit), a concurrent burst could have
+    // pushed the count to cap by the time this transaction runs. The
+    // helper must catch that and surface MintRateLimitError, not silently
+    // mint the (cap+1)-th token.
+    const oldestRow = {
+      createdAt: new Date(Date.now() - 60 * 60 * 1000), // 1h ago
+    };
+    mockPrisma.harnessToken.count.mockResolvedValue(MINT_CAP_PER_24H);
+    mockPrisma.harnessToken.findFirst.mockResolvedValue(oldestRow);
+
+    const thrown = await mintTokenForUser("user-1").catch((e: unknown) => e);
+    expect(thrown).toBeInstanceOf(MintRateLimitError);
+    expect((thrown as MintRateLimitError).oldestCreatedAt).toEqual(
+      oldestRow.createdAt,
+    );
+    // Critically: no create call should have been attempted.
+    expect(mockPrisma.harnessToken.create).not.toHaveBeenCalled();
+    expect(mockPrisma.harnessToken.updateMany).not.toHaveBeenCalled();
   });
 
   it("rethrows non-active-slot P2002 unchanged (e.g. selector collision)", async () => {

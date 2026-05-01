@@ -30,6 +30,9 @@ const TOKEN_REGEX = new RegExp(
 
 const BCRYPT_COST = 10;
 const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+/** R13 — at most this many mints per user per rolling 24h window. */
+export const MINT_CAP_PER_24H = 10;
 
 export interface GeneratedToken {
   raw: string;
@@ -99,6 +102,25 @@ export class MintConflictError extends Error {
 }
 
 /**
+ * Thrown when a mint attempt is over the per-user rate limit. Detected
+ * INSIDE the transaction (atomic count + create) so concurrent bursts
+ * cannot blow past the cap by each calling soft-check
+ * `checkMintRateLimit` before any of them commits. The HTTP layer
+ * should translate to 429.
+ *
+ * `oldestCreatedAt` is the timestamp of the oldest counted row in the
+ * 24h window — callers compute Retry-After from it.
+ */
+export class MintRateLimitError extends Error {
+  readonly oldestCreatedAt: Date;
+  constructor(userId: string, oldestCreatedAt: Date) {
+    super(`Mint cap reached for user ${userId}`);
+    this.name = "MintRateLimitError";
+    this.oldestCreatedAt = oldestCreatedAt;
+  }
+}
+
+/**
  * Mint a new token for `userId`. Implicitly revokes any prior active
  * tokens (R3): a user has at most one active token at a time. Returns
  * the raw token exactly once — callers must surface it immediately
@@ -127,6 +149,45 @@ export async function mintTokenForUser(
 
   try {
     await prisma.$transaction(async (tx) => {
+      // Try-acquire a per-user advisory lock. If we don't get it, a
+      // concurrent mint for this user is in flight; surface
+      // MintConflictError so the HTTP layer 409s rather than fall
+      // through to the rotation path (which would silently revoke the
+      // winner's freshly-returned token in updateMany).
+      //
+      // Try-acquire (vs. blocking acquire) closes the race exposed
+      // during code review: blocking would let us serialize behind the
+      // winner, then run updateMany against their committed row,
+      // returning 201 with their token already dead. The non-blocking
+      // version is also robust to commit-time vs. createdAt skew —
+      // we don't need a freshness window, the lock IS the signal.
+      //
+      // Lock key: a 32-bit hash of `mint:<userId>` so we don't
+      // serialize unrelated users.
+      const lockResult = await tx.$queryRaw<Array<{ acquired: boolean }>>`
+        SELECT pg_try_advisory_xact_lock(hashtext(${`mint:${userId}`})) AS acquired
+      `;
+      if (!lockResult[0]?.acquired) {
+        throw new MintConflictError(userId);
+      }
+
+      // With the lock held, count + insert are atomic w.r.t. other
+      // mints for this user. Concurrent bursts now serialize into
+      // single-attempt MintConflictErrors; the lock holder always sees
+      // up-to-date state.
+      const since = new Date(Date.now() - TWENTY_FOUR_HOURS_MS);
+      const count = await tx.harnessToken.count({
+        where: { userId, createdAt: { gt: since } },
+      });
+      if (count >= MINT_CAP_PER_24H) {
+        const oldest = await tx.harnessToken.findFirst({
+          where: { userId, createdAt: { gt: since } },
+          orderBy: { createdAt: "asc" },
+          select: { createdAt: true },
+        });
+        throw new MintRateLimitError(userId, oldest?.createdAt ?? now);
+      }
+
       await tx.harnessToken.updateMany({
         where: { userId, revokedAt: null },
         data: { revokedAt: now },
