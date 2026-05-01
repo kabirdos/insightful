@@ -54,4 +54,9 @@ describe("PUT /api/insights/[slug] allowedFields", () => {
     expect(fields).not.toContain("publishedAt");
     expect(fields).not.toContain("rawHtml");
   });
+
+  it("includes isDraft (Wave 4 Unit 10 — gated by one-way transition guard in the route handler)", () => {
+    const fields = [...ALLOWED_PUT_FIELDS];
+    expect(fields).toContain("isDraft");
+  });
 });

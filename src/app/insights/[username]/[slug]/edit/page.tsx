@@ -144,6 +144,7 @@ export default function EditReportPage() {
   const [report, setReport] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // R9b: when the report is missing (404) or it's a draft the viewer
   // doesn't own, surface Next's notFound() instead of the read-only
@@ -400,6 +401,41 @@ export default function EditReportPage() {
     setPendingSave(null);
   };
 
+  /**
+   * "Make public" (R10/R11): the only path that flips a report's
+   * isDraft from true to false. Server-side, the PUT handler enforces
+   * one-way semantics (rejects false → true with 400). On 200 we
+   * `router.refresh()` so the read-only public-page links and the
+   * edit-page header reflect the new state without a hard reload.
+   */
+  const handleMakePublic = async () => {
+    if (!report) return;
+    setPublishing(true);
+    setError(null);
+    try {
+      const res = await fetch(buildReportApiUrl(username, slug), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isDraft: false }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Failed to publish");
+      }
+      // Reflect the new public state in the local fetch cache + the
+      // read-only views that already loaded.
+      router.refresh();
+      // Also flip our local copy so the button disappears immediately
+      // — router.refresh re-renders server components only, not this
+      // client component's fetched state.
+      setReport((prev) => (prev ? { ...prev, isDraft: false } : prev));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to publish");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   // Hold the spinner until BOTH the report fetch and the next-auth
   // session have resolved. Without the sessionStatus guard the
   // ownership branch below can fire `notFound()` for the legitimate
@@ -495,6 +531,20 @@ export default function EditReportPage() {
           </Link>
         </div>
         <div className="flex items-center gap-3">
+          {/* R10/R11: "Make public" appears only when the current
+              report is a draft. The ownership check above guarantees
+              the viewer is the author by the time we render here, so
+              the button is implicitly owner-only. */}
+          {report.isDraft && (
+            <button
+              type="button"
+              onClick={handleMakePublic}
+              disabled={publishing || saving}
+              className="rounded-lg border border-blue-600 bg-white px-4 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 disabled:opacity-50 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-blue-950/40"
+            >
+              {publishing ? "Publishing…" : "Make public"}
+            </button>
+          )}
           <button
             onClick={handleSave}
             disabled={saving}

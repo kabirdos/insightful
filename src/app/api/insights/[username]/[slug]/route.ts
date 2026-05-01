@@ -174,7 +174,9 @@ export async function PUT(
           draftVisibilityClause(session.user.id),
         ],
       },
-      select: { id: true, authorId: true },
+      // isDraft is selected so the one-way transition guard below
+      // can read the current draft state without a second fetch.
+      select: { id: true, authorId: true, isDraft: true },
     });
 
     if (!report) {
@@ -193,6 +195,38 @@ export async function PUT(
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
         updateData[field] = body[field];
+      }
+    }
+
+    // R10/R11 (Wave 4 Unit 10): isDraft is one-way. We allow
+    // `true → false` (the "Make public" button) and silently drop a
+    // no-op self-set (`false → false`, `true → true`), but we reject
+    // any attempt to flip a public report back to a draft.
+    // Rationale per plan Decision: simpler audit ("once public, stays
+    // public") and prevents accidental unpublish via a stale UI.
+    // `publishedAt` is populated at row creation by Prisma's
+    // `@default(now())`, so there's nothing to backfill on flip.
+    if (Object.prototype.hasOwnProperty.call(updateData, "isDraft")) {
+      const requested = updateData.isDraft;
+      if (typeof requested !== "boolean") {
+        return NextResponse.json(
+          { error: "isDraft must be a boolean" },
+          { status: 400 },
+        );
+      }
+      if (requested === true && report.isDraft === false) {
+        return NextResponse.json(
+          {
+            error:
+              "Cannot revert a public report to draft — publicity is one-way.",
+          },
+          { status: 400 },
+        );
+      }
+      // No-op transitions are dropped from the update payload to
+      // avoid generating a redundant `updatedAt` bump.
+      if (requested === report.isDraft) {
+        delete updateData.isDraft;
       }
     }
 
