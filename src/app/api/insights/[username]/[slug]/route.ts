@@ -174,7 +174,9 @@ export async function PUT(
           draftVisibilityClause(session.user.id),
         ],
       },
-      select: { id: true, authorId: true },
+      // isDraft is selected so the one-way transition guard below
+      // can read the current draft state without a second fetch.
+      select: { id: true, authorId: true, isDraft: true },
     });
 
     if (!report) {
@@ -193,6 +195,50 @@ export async function PUT(
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
         updateData[field] = body[field];
+      }
+    }
+
+    // R10/R11 (Wave 4 Unit 10): isDraft is one-way. We allow
+    // `true → false` (the "Make public" button) and silently drop a
+    // no-op self-set (`false → false`, `true → true`), but we reject
+    // any attempt to flip a public report back to a draft. Rationale
+    // per plan Decision: simpler audit ("once public, stays public")
+    // and prevents accidental unpublish via a stale UI.
+    //
+    // `publishedAt` is auto-populated at row creation by Prisma's
+    // `@default(now())`, so legacy public rows already have a
+    // sensible value. For drafts that flip to public, we restamp
+    // `publishedAt` to NOW() so feed/search/leaderboard ordering
+    // (which sort by `publishedAt`) treats the report as fresh
+    // rather than burying it under its draft-creation timestamp.
+    // (codex P2 fix on fc78b3b.)
+    if (Object.prototype.hasOwnProperty.call(updateData, "isDraft")) {
+      const requested = updateData.isDraft;
+      if (typeof requested !== "boolean") {
+        return NextResponse.json(
+          { error: "isDraft must be a boolean" },
+          { status: 400 },
+        );
+      }
+      if (requested === true && report.isDraft === false) {
+        return NextResponse.json(
+          {
+            error:
+              "Cannot revert a public report to draft — publicity is one-way.",
+          },
+          { status: 400 },
+        );
+      }
+      // No-op transitions are dropped from the update payload to
+      // avoid generating a redundant `updatedAt` bump.
+      if (requested === report.isDraft) {
+        delete updateData.isDraft;
+      } else if (requested === false && report.isDraft === true) {
+        // Genuine draft → public flip. Stamp publishedAt to NOW()
+        // here (rather than client-side) so the value is in the
+        // server's frame of reference. updatedAt is bumped
+        // automatically by Prisma's `@updatedAt` on every save.
+        updateData.publishedAt = new Date();
       }
     }
 

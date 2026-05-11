@@ -144,6 +144,7 @@ export default function EditReportPage() {
   const [report, setReport] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // R9b: when the report is missing (404) or it's a draft the viewer
   // doesn't own, surface Next's notFound() instead of the read-only
@@ -160,6 +161,14 @@ export default function EditReportPage() {
     string,
     unknown
   > | null>(null);
+  // When the modal was triggered by the "Make public" path (vs the
+  // ordinary "Save Changes" path), confirm runs the publish flow
+  // (which router.refresh()es and flips local state) instead of
+  // executeSave (which router.push()es to the public URL). Without
+  // this flag, confirming a publish with hidden sections would
+  // either redirect to a still-draft URL or permanently delete the
+  // sections without asking — codex P2 on 779cc45.
+  const [pendingIsPublish, setPendingIsPublish] = useState(false);
 
   useEffect(() => {
     // includeHidden=true surfaces per-report hidden junction rows so
@@ -381,6 +390,13 @@ export default function EditReportPage() {
 
     if (removedSections.length > 0) {
       setPendingSave(body);
+      // Reset publish intent — the modal could otherwise have been
+      // opened by a prior Make public click whose pendingIsPublish
+      // is still set. Without this, confirming would route the
+      // plain save through executePublish() and leave the UI saying
+      // "public" while the server kept the row as draft. (codex P2
+      // on 16de842.)
+      setPendingIsPublish(false);
       setShowConfirmModal(true);
       return;
     }
@@ -391,13 +407,81 @@ export default function EditReportPage() {
   const handleConfirmSave = async () => {
     if (!pendingSave) return;
     setShowConfirmModal(false);
-    await executeSave(pendingSave);
+    if (pendingIsPublish) {
+      await executePublish(pendingSave);
+    } else {
+      await executeSave(pendingSave);
+    }
     setPendingSave(null);
+    setPendingIsPublish(false);
   };
 
   const handleCancelSave = () => {
     setShowConfirmModal(false);
     setPendingSave(null);
+    setPendingIsPublish(false);
+  };
+
+  /**
+   * Underlying PUT for the publish path. Reused by both the
+   * straight-publish (no removals) and the confirm-modal (with
+   * removals) flows.
+   */
+  const executePublish = async (body: Record<string, unknown>) => {
+    setPublishing(true);
+    setError(null);
+    try {
+      const res = await fetch(buildReportApiUrl(username, slug), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error ?? "Failed to publish");
+      }
+      // Reflect the new public state in the local fetch cache + the
+      // read-only views that already loaded.
+      router.refresh();
+      // Also flip our local copy so the button disappears immediately
+      // — router.refresh re-renders server components only, not this
+      // client component's fetched state.
+      setReport((prev) => (prev ? { ...prev, isDraft: false } : prev));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to publish");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  /**
+   * "Make public" (R10/R11): the only path that flips a report's
+   * isDraft from true to false. Server-side, the PUT handler
+   * enforces one-way semantics (rejects false → true with 400) and
+   * stamps publishedAt to NOW() on the flip. On 200 we
+   * `router.refresh()` so the read-only public-page links and the
+   * edit-page header reflect the new state without a hard reload.
+   *
+   * Pending visibility edits (hidden sections / per-item hides) ride
+   * along with the publish in a single PUT (codex P1 on fc78b3b).
+   * If those pending edits include narrative-section removals, route
+   * through the existing destructive-save confirmation modal so the
+   * author has a final chance to cancel before content is permanently
+   * deleted (codex P2 on 779cc45).
+   */
+  const handleMakePublic = async () => {
+    if (!report) return;
+    const body = { ...buildSaveBody(), isDraft: false };
+    const removedSections = SECTIONS.filter((s) => hiddenSections[s.key]).map(
+      (s) => s.label,
+    );
+    if (removedSections.length > 0) {
+      setPendingSave(body);
+      setPendingIsPublish(true);
+      setShowConfirmModal(true);
+      return;
+    }
+    await executePublish(body);
   };
 
   // Hold the spinner until BOTH the report fetch and the next-auth
@@ -495,6 +579,20 @@ export default function EditReportPage() {
           </Link>
         </div>
         <div className="flex items-center gap-3">
+          {/* R10/R11: "Make public" appears only when the current
+              report is a draft. The ownership check above guarantees
+              the viewer is the author by the time we render here, so
+              the button is implicitly owner-only. */}
+          {report.isDraft && (
+            <button
+              type="button"
+              onClick={handleMakePublic}
+              disabled={publishing || saving}
+              className="rounded-lg border border-blue-600 bg-white px-4 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 disabled:opacity-50 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-blue-950/40"
+            >
+              {publishing ? "Publishing…" : "Make public"}
+            </button>
+          )}
           <button
             onClick={handleSave}
             disabled={saving}

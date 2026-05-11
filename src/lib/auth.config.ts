@@ -16,13 +16,14 @@ export default {
       return session;
     },
     authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
-
-      // Protect upload page
-      if (nextUrl.pathname.startsWith("/upload") && !isLoggedIn) {
-        return false;
-      }
-
+      // R22 (Wave 4 Unit 9): the /upload page now has an unauth landing
+      // state — the example report preview and a "Sign in with GitHub"
+      // CTA. Visitors must be able to see it before authenticating, so
+      // we no longer block /upload at the middleware layer. The page
+      // itself toggles between the unauth landing and the authed
+      // tokenized flow based on the next-auth session.
+      void auth;
+      void nextUrl;
       return true;
     },
   },

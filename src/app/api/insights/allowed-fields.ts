@@ -34,4 +34,9 @@ export const ALLOWED_PUT_FIELDS = [
   "chartData",
   "detectedSkills",
   "hiddenHarnessSections",
+  // R10/R11 (Wave 4 Unit 10): "Make public" flips a draft to public.
+  // The PUT handler enforces one-way semantics (true → false only)
+  // — listing the field here merely makes it eligible for the
+  // allowlist gate before the handler validates the transition.
+  "isDraft",
 ] as const;
