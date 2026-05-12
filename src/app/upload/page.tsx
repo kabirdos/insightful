@@ -896,7 +896,7 @@ function TokenizedFlow({
           Run one command — your profile shows up here
         </h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          The skill posts your report straight to insightful.com, and we
+          The skill posts your report straight to insightharness.com, and we
           redirect you to the edit page when it lands.
         </p>
       </div>
