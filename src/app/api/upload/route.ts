@@ -46,6 +46,28 @@ const UUID_REGEX =
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB — matches the multipart cap.
 
+/**
+ * Build a fully-qualified edit URL for serialization to the skill.
+ *
+ * The skill prints this string verbatim to its terminal and copies it to
+ * the user's clipboard, so it must be directly clickable / paste-into-
+ * browser-able. `buildReportEditUrl` returns a path-only URL (correct for
+ * in-app `router.push`), so we host-qualify it here.
+ *
+ * Prefers `AUTH_URL` (NextAuth's canonical origin, set in production).
+ * Falls back to the request's own origin for dev / preview deployments
+ * where `AUTH_URL` may not be set.
+ */
+function buildAbsoluteEditUrl(
+  request: Request,
+  username: string,
+  slug: string,
+): string {
+  const rawOrigin = process.env.AUTH_URL ?? new URL(request.url).origin;
+  const origin = rawOrigin.replace(/\/$/, "");
+  return `${origin}${buildReportEditUrl(username, slug)}`;
+}
+
 /** Synthetic upload id used when the request lacks a valid X-Upload-Id.
  *  Prefixed so it can never collide with a real client UUID, and we
  *  still record a HarnessUpload row for rate-limit accounting. */
@@ -431,7 +453,7 @@ async function handleBearer(request: Request): Promise<NextResponse> {
       durationMs: Date.now() - startedAt,
     });
     return NextResponse.json({
-      editUrl: buildReportEditUrl(username, replay.slug),
+      editUrl: buildAbsoluteEditUrl(request, username, replay.slug),
       slug: replay.slug,
       uploadId,
       status: "draft",
@@ -593,7 +615,7 @@ async function handleBearer(request: Request): Promise<NextResponse> {
     durationMs: Date.now() - startedAt,
   });
   return NextResponse.json({
-    editUrl: buildReportEditUrl(username, result.slug),
+    editUrl: buildAbsoluteEditUrl(request, username, result.slug),
     slug: result.slug,
     uploadId,
     status: "draft",

@@ -402,7 +402,12 @@ describe("POST /api/upload — bearer idempotency", () => {
       uploadId: VALID_UUID,
       status: "draft",
     });
-    expect(body.editUrl).toBe("/insights/alice/20260421-prior/edit");
+    // editUrl is host-qualified so the skill can print/clipboard it
+    // directly. AUTH_URL is unset in this test, so the route falls
+    // back to the incoming request's origin (`http://localhost`).
+    expect(body.editUrl).toBe(
+      "http://localhost/insights/alice/20260421-prior/edit",
+    );
     // CRITICAL: no rate-limit check on replays (R14a).
     expect(mockUploadLimit).not.toHaveBeenCalled();
     expect(mockPublish).not.toHaveBeenCalled();
@@ -489,7 +494,9 @@ describe("POST /api/upload — bearer happy path", () => {
       status: "draft",
       replayed: false,
     });
-    expect(body.editUrl).toBe("/insights/alice/20260421-abc123/edit");
+    expect(body.editUrl).toBe(
+      "http://localhost/insights/alice/20260421-abc123/edit",
+    );
     // publishReport called with isDraft:true, redactions/projectIds
     // empty (the user redacts on the edit page).
     expect(mockPublish).toHaveBeenCalledWith(
@@ -515,6 +522,38 @@ describe("POST /api/upload — bearer happy path", () => {
     // Selector is logged in 8-char trimmed form, never the full 12.
     const logArg = mockLog.mock.calls.at(-1)?.[0];
     expect(logArg.tokenSelectorPrefix.length).toBe(8);
+  });
+
+  it("uses AUTH_URL as the editUrl origin when set (production canonical host)", async () => {
+    // In production AUTH_URL is set to the canonical app origin
+    // (e.g. https://insightharness.com). buildAbsoluteEditUrl prefers
+    // it over the incoming request's origin so deployments behind
+    // proxies or with custom domains still return the user-facing URL.
+    vi.stubEnv("AUTH_URL", "https://insightharness.com");
+    try {
+      const response = await uploadPOST(bearerRequest());
+      const body = await response.json();
+      expect(body.editUrl).toBe(
+        "https://insightharness.com/insights/alice/20260421-abc123/edit",
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("strips a trailing slash from AUTH_URL before joining", async () => {
+    // AUTH_URL is commonly stored with a trailing slash; the join must
+    // not produce a double-slash in the resulting editUrl.
+    vi.stubEnv("AUTH_URL", "https://insightharness.com/");
+    try {
+      const response = await uploadPOST(bearerRequest());
+      const body = await response.json();
+      expect(body.editUrl).toBe(
+        "https://insightharness.com/insights/alice/20260421-abc123/edit",
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 
