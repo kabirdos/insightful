@@ -63,7 +63,10 @@ function buildAbsoluteEditUrl(
   username: string,
   slug: string,
 ): string {
-  const rawOrigin = process.env.AUTH_URL ?? new URL(request.url).origin;
+  // Use `||` not `??` so empty-string env values (common in CI/test
+  // setups where AUTH_URL is stubbed to "") fall through to the
+  // request origin rather than yielding a malformed URL.
+  const rawOrigin = process.env.AUTH_URL || new URL(request.url).origin;
   const origin = rawOrigin.replace(/\/$/, "");
   return `${origin}${buildReportEditUrl(username, slug)}`;
 }
