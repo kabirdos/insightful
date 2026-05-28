@@ -135,6 +135,8 @@ Existing rows remain valid. A current top-level Claude `HarnessData` normalizes 
 
 ### Unit 4: Public report tool selector and Codex dashboard
 
+**Status:** completed 2026-05-28
+
 **Goal:** Render multi-tool reports on `/insights/[username]/[slug]`.
 
 **Files:**
