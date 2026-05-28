@@ -19,7 +19,11 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { applyRedactions } from "@/lib/redaction";
-import { normalizeHarnessData } from "@/types/insights";
+import {
+  getClaudeHarnessData,
+  getCodexHarnessData,
+  toStoredHarnessData,
+} from "@/types/insights";
 import type {
   InsightsData,
   ParsedInsightsReport,
@@ -139,6 +143,10 @@ export async function publishReport(
       redactedData[dataKey as keyof InsightsData] ?? null;
   }
 
+  const storedHarnessData = toStoredHarnessData(parsed.harnessData);
+  const claudeHarnessData = getClaudeHarnessData(storedHarnessData);
+  const codexHarnessData = getCodexHarnessData(storedHarnessData);
+
   // 3. Title fallback.
   const isHarness = parsed.reportType === "insight-harness";
   const title =
@@ -200,20 +208,21 @@ export async function publishReport(
         reportType: parsed.reportType ?? "insights",
         // Harness scalar denorm — null when this isn't a harness report.
         totalTokens:
-          typeof parsed.harnessData?.stats.totalTokens === "number"
-            ? BigInt(parsed.harnessData.stats.totalTokens)
-            : null,
+          typeof claudeHarnessData?.stats.totalTokens === "number"
+            ? BigInt(claudeHarnessData.stats.totalTokens)
+            : typeof codexHarnessData?.stats.totalTokens === "number"
+              ? BigInt(codexHarnessData.stats.totalTokens)
+              : null,
         durationHours:
-          typeof parsed.harnessData?.stats.durationHours === "number"
-            ? Math.round(parsed.harnessData.stats.durationHours)
+          typeof claudeHarnessData?.stats.durationHours === "number"
+            ? Math.round(claudeHarnessData.stats.durationHours)
             : null,
-        avgSessionMinutes: parsed.harnessData?.stats.avgSessionMinutes ?? null,
-        prCount: parsed.harnessData?.stats.prCount ?? null,
-        autonomyLabel: parsed.harnessData?.autonomy.label ?? null,
+        avgSessionMinutes:
+          claudeHarnessData?.stats.avgSessionMinutes ?? null,
+        prCount: claudeHarnessData?.stats.prCount ?? null,
+        autonomyLabel: claudeHarnessData?.autonomy.label ?? null,
         harnessData:
-          (normalizeHarnessData(
-            parsed.harnessData,
-          ) as unknown as Prisma.InputJsonValue) ?? undefined,
+          (storedHarnessData as unknown as Prisma.InputJsonValue) ?? undefined,
         hiddenHarnessSections: args.hiddenHarnessSections,
       },
       select: {

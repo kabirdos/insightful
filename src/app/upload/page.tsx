@@ -35,7 +35,7 @@ import type {
 } from "@/types/insights";
 import { applyRedactions } from "@/lib/redaction";
 import { normalizeChartData } from "@/lib/chart-parser";
-import { normalizeSkills } from "@/types/insights";
+import { normalizeHarnessData, normalizeSkills } from "@/types/insights";
 import SectionRenderer from "@/components/SectionRenderer";
 import SnapshotCard from "@/components/SnapshotCard";
 import CollapsibleSection from "@/components/CollapsibleSection";
@@ -1498,6 +1498,7 @@ export default function UploadPage() {
         });
       }
       const isHarness = parsed.reportType === "insight-harness";
+      const claudeHarnessData = normalizeHarnessData(parsed.harnessData);
       const title = isHarness
         ? `${firstName}'s Insight Harness - ${titleDate}`
         : `${firstName}'s Claude Code Insights - ${titleDate}`;
@@ -1544,12 +1545,12 @@ export default function UploadPage() {
           detectedSkills: parsed.detectedSkills,
           // v3: Harness fields
           reportType: parsed.reportType ?? "insights",
-          totalTokens: parsed.harnessData?.stats.totalTokens ?? null,
-          durationHours: parsed.harnessData?.stats.durationHours ?? null,
+          totalTokens: claudeHarnessData?.stats.totalTokens ?? null,
+          durationHours: claudeHarnessData?.stats.durationHours ?? null,
           avgSessionMinutes:
-            parsed.harnessData?.stats.avgSessionMinutes ?? null,
-          prCount: parsed.harnessData?.stats.prCount ?? null,
-          autonomyLabel: parsed.harnessData?.autonomy.label ?? null,
+            claudeHarnessData?.stats.avgSessionMinutes ?? null,
+          prCount: claudeHarnessData?.stats.prCount ?? null,
+          autonomyLabel: claudeHarnessData?.autonomy.label ?? null,
           // Persist the FULL harnessData (including hidden showcase content).
           // Filtering is applied server-side in filterReportForResponse on
           // every GET, so third parties never see hidden data, while the
@@ -1648,6 +1649,9 @@ export default function UploadPage() {
   //     DIRECT_POST_ENABLED is true.
   // The render-time hierarchy and all wizard internals (drop zone,
   // project picker, review step) are preserved verbatim.
+  const previewHarnessData = parsed?.harnessData
+    ? normalizeHarnessData(parsed.harnessData)
+    : null;
   const legacyContent = (
     <>
       <h1 className="mb-2 text-2xl font-bold text-slate-900 dark:text-white">
@@ -2325,7 +2329,7 @@ export default function UploadPage() {
           </div>
 
           {/* ── Harness Report Preview — mirrors profile page layout ── */}
-          {parsed.reportType === "insight-harness" && parsed.harnessData ? (
+          {parsed.reportType === "insight-harness" && previewHarnessData ? (
             <>
               {/* Hero Stats */}
               <RedactableSection
@@ -2334,22 +2338,22 @@ export default function UploadPage() {
                 onToggle={() => toggleSection("heroStats")}
               >
                 <HeroStats
-                  stats={parsed.harnessData.stats}
+                  stats={previewHarnessData.stats}
                   dayCount={parsed.stats.dayCount ?? null}
                   sessionCount={
                     parsed.stats.sessionCount ??
-                    parsed.harnessData.stats.sessionCount ??
+                    previewHarnessData.stats.sessionCount ??
                     0
                   }
                   linesAdded={resolveLinesAdded({
                     linesAdded: parsed.stats.linesAdded ?? null,
                     linesRemoved: parsed.stats.linesRemoved ?? null,
-                    harnessData: parsed.harnessData,
+                    harnessData: previewHarnessData,
                   })}
                   linesRemoved={resolveLinesRemoved({
                     linesAdded: parsed.stats.linesAdded ?? null,
                     linesRemoved: parsed.stats.linesRemoved ?? null,
-                    harnessData: parsed.harnessData,
+                    harnessData: previewHarnessData,
                   })}
                 />
               </RedactableSection>
@@ -2363,17 +2367,17 @@ export default function UploadPage() {
                 <ActivityHeatmap
                   totalSessions={
                     parsed.stats.sessionCount ??
-                    parsed.harnessData.stats.sessionCount ??
+                    previewHarnessData.stats.sessionCount ??
                     undefined
                   }
                   totalTokens={
-                    parsed.harnessData.stats.totalTokens ?? undefined
+                    previewHarnessData.stats.totalTokens ?? undefined
                   }
                   dayCount={parsed.stats.dayCount ?? undefined}
                   dateRangeStart={parsed.stats.dateRangeStart ?? undefined}
                   slug="preview"
-                  models={parsed.harnessData.models}
-                  perModelTokens={parsed.harnessData.perModelTokens}
+                  models={previewHarnessData.models}
+                  perModelTokens={previewHarnessData.perModelTokens}
                 />
               </RedactableSection>
 
@@ -2383,38 +2387,38 @@ export default function UploadPage() {
                 enabled={!disabledSections["howIWork"]}
                 onToggle={() => toggleSection("howIWork")}
               >
-                <HowIWorkCluster harnessData={parsed.harnessData} />
+                <HowIWorkCluster harnessData={previewHarnessData} />
               </RedactableSection>
 
               {/* Workflow Diagrams */}
-              {parsed.harnessData.workflowData && (
+              {previewHarnessData.workflowData && (
                 <RedactableSection
                   title="Workflow Diagrams"
                   enabled={!disabledSections["workflowData"]}
                   onToggle={() => toggleSection("workflowData")}
                 >
                   <WorkflowDiagram
-                    workflowData={parsed.harnessData.workflowData}
-                    agentDispatch={parsed.harnessData.agentDispatch}
+                    workflowData={previewHarnessData.workflowData}
+                    agentDispatch={previewHarnessData.agentDispatch}
                   />
                 </RedactableSection>
               )}
 
               {/* Skills Card Grid */}
-              {parsed.harnessData.skillInventory.length > 0 && (
+              {previewHarnessData.skillInventory.length > 0 && (
                 <RedactableSection
                   title="Skills"
                   enabled={!disabledSections["skillInventory"]}
                   onToggle={() => toggleSection("skillInventory")}
                 >
                   <SkillCardGrid
-                    skillInventory={parsed.harnessData.skillInventory}
+                    skillInventory={previewHarnessData.skillInventory}
                   />
                   {/* Per-skill showcase visibility — only shown when at least
                       one skill carries renderable showcase content, since
                       that's the only case where item-level hides matter for
                       privacy on the public report. */}
-                  {parsed.harnessData.skillInventory.some(
+                  {previewHarnessData.skillInventory.some(
                     hasShowcaseContent,
                   ) && (
                     <div className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-800">
@@ -2422,10 +2426,10 @@ export default function UploadPage() {
                         Skill Showcase — toggle individual skills
                       </div>
                       <div className="space-y-2">
-                        {parsed.harnessData.skillInventory.map((skill, i) => {
+                        {previewHarnessData.skillInventory.map((skill, i) => {
                           if (!hasShowcaseContent(skill)) return null;
                           const itemKey = buildItemKey(
-                            parsed.harnessData!.skillInventory,
+                            previewHarnessData.skillInventory,
                             i,
                             (s) => s.name,
                           );
@@ -2452,7 +2456,7 @@ export default function UploadPage() {
               )}
 
               {/* Plugins */}
-              {parsed.harnessData.plugins.length > 0 && (
+              {previewHarnessData.plugins.length > 0 && (
                 <RedactableSection
                   title="Plugins"
                   enabled={!disabledSections["plugins"]}
@@ -2465,7 +2469,7 @@ export default function UploadPage() {
                     defaultOpen={true}
                   >
                     <div className="grid gap-2 sm:grid-cols-2">
-                      {parsed.harnessData.plugins.map((plugin) => (
+                      {previewHarnessData.plugins.map((plugin) => (
                         <div
                           key={plugin.name}
                           className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
@@ -2499,24 +2503,24 @@ export default function UploadPage() {
               )}
 
               {/* Tool Usage Treemap */}
-              {Object.keys(parsed.harnessData.toolUsage).length > 0 && (
+              {Object.keys(previewHarnessData.toolUsage).length > 0 && (
                 <RedactableSection
                   title="Tool Usage"
                   enabled={!disabledSections["toolUsage"]}
                   onToggle={() => toggleSection("toolUsage")}
                 >
-                  <ToolUsageTreemap toolUsage={parsed.harnessData.toolUsage} />
+                  <ToolUsageTreemap toolUsage={previewHarnessData.toolUsage} />
                 </RedactableSection>
               )}
 
               {/* CLI Tools Donut */}
-              {Object.keys(parsed.harnessData.cliTools).length > 0 && (
+              {Object.keys(previewHarnessData.cliTools).length > 0 && (
                 <RedactableSection
                   title="CLI Tools"
                   enabled={!disabledSections["cliTools"]}
                   onToggle={() => toggleSection("cliTools")}
                 >
-                  <CliToolsDonut cliTools={parsed.harnessData.cliTools} />
+                  <CliToolsDonut cliTools={previewHarnessData.cliTools} />
                 </RedactableSection>
               )}
 
@@ -2527,7 +2531,7 @@ export default function UploadPage() {
                 onToggle={() => toggleSection("gitPatterns")}
               >
                 <GitPatternsDisplay
-                  gitPatterns={parsed.harnessData.gitPatterns}
+                  gitPatterns={previewHarnessData.gitPatterns}
                 />
               </RedactableSection>
 
@@ -2538,27 +2542,27 @@ export default function UploadPage() {
                 onToggle={() => toggleSection("permissionModes")}
               >
                 <PermissionModeDisplay
-                  permissionModes={parsed.harnessData.permissionModes}
-                  featurePills={parsed.harnessData.featurePills}
+                  permissionModes={previewHarnessData.permissionModes}
+                  featurePills={previewHarnessData.featurePills}
                 />
               </RedactableSection>
 
               {/* Hooks & Safety */}
-              {parsed.harnessData.hookDefinitions.length > 0 && (
+              {previewHarnessData.hookDefinitions.length > 0 && (
                 <RedactableSection
                   title="Hooks & Safety"
                   enabled={!disabledSections["hookDefinitions"]}
                   onToggle={() => toggleSection("hookDefinitions")}
                 >
                   <HooksSafetyTable
-                    hookDefinitions={parsed.harnessData.hookDefinitions}
+                    hookDefinitions={previewHarnessData.hookDefinitions}
                   />
                 </RedactableSection>
               )}
 
               {/* Agent Dispatch */}
-              {parsed.harnessData.agentDispatch &&
-                parsed.harnessData.agentDispatch.totalAgents > 0 && (
+              {previewHarnessData.agentDispatch &&
+                previewHarnessData.agentDispatch.totalAgents > 0 && (
                   <RedactableSection
                     title="Agent Dispatch"
                     enabled={!disabledSections["agentDispatch"]}
@@ -2567,11 +2571,11 @@ export default function UploadPage() {
                     <CollapsibleSection
                       icon="🤖"
                       iconBgClass="bg-indigo-100 dark:bg-indigo-900/30"
-                      title={`Agent Dispatch (${parsed.harnessData.agentDispatch.totalAgents} agents)`}
+                      title={`Agent Dispatch (${previewHarnessData.agentDispatch.totalAgents} agents)`}
                       defaultOpen={false}
                     >
                       <div className="grid gap-4 sm:grid-cols-2">
-                        {Object.keys(parsed.harnessData.agentDispatch.types)
+                        {Object.keys(previewHarnessData.agentDispatch.types)
                           .length > 0 && (
                           <div>
                             <h4 className="mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
@@ -2579,14 +2583,14 @@ export default function UploadPage() {
                             </h4>
                             <MiniBarChart
                               data={Object.entries(
-                                parsed.harnessData.agentDispatch.types,
+                                previewHarnessData.agentDispatch.types,
                               ).map(([label, value]) => ({ label, value }))}
                               title=""
                               color="bg-indigo-500"
                             />
                           </div>
                         )}
-                        {Object.keys(parsed.harnessData.agentDispatch.models)
+                        {Object.keys(previewHarnessData.agentDispatch.models)
                           .length > 0 && (
                           <div>
                             <h4 className="mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
@@ -2594,29 +2598,29 @@ export default function UploadPage() {
                             </h4>
                             <MiniBarChart
                               data={Object.entries(
-                                parsed.harnessData.agentDispatch.models,
+                                previewHarnessData.agentDispatch.models,
                               ).map(([label, value]) => ({ label, value }))}
                               title=""
                               color="bg-purple-500"
                             />
-                            {parsed.harnessData.agentDispatch.backgroundPct >
+                            {previewHarnessData.agentDispatch.backgroundPct >
                               0 && (
                               <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-                                {parsed.harnessData.agentDispatch.backgroundPct}
+                                {previewHarnessData.agentDispatch.backgroundPct}
                                 % run in background
                               </p>
                             )}
                           </div>
                         )}
                       </div>
-                      {parsed.harnessData.agentDispatch.customAgents.length >
+                      {previewHarnessData.agentDispatch.customAgents.length >
                         0 && (
                         <div className="mt-3">
                           <h4 className="mb-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
                             Custom Agents
                           </h4>
                           <div className="flex flex-wrap gap-1.5">
-                            {parsed.harnessData.agentDispatch.customAgents.map(
+                            {previewHarnessData.agentDispatch.customAgents.map(
                               (agent) => (
                                 <span
                                   key={agent}
@@ -2634,7 +2638,7 @@ export default function UploadPage() {
                 )}
 
               {/* Languages */}
-              {Object.keys(parsed.harnessData.languages).length > 0 && (
+              {Object.keys(previewHarnessData.languages).length > 0 && (
                 <RedactableSection
                   title="Languages"
                   enabled={!disabledSections["languages"]}
@@ -2647,7 +2651,7 @@ export default function UploadPage() {
                     defaultOpen={false}
                   >
                     <MiniBarChart
-                      data={Object.entries(parsed.harnessData.languages)
+                      data={Object.entries(previewHarnessData.languages)
                         .sort((a, b) => b[1] - a[1])
                         .slice(0, 12)
                         .map(([label, value]) => ({ label, value }))}
@@ -2659,7 +2663,7 @@ export default function UploadPage() {
               )}
 
               {/* MCP Servers */}
-              {Object.keys(parsed.harnessData.mcpServers).length > 0 && (
+              {Object.keys(previewHarnessData.mcpServers).length > 0 && (
                 <RedactableSection
                   title="MCP Servers"
                   enabled={!disabledSections["mcpServers"]}
@@ -2672,7 +2676,7 @@ export default function UploadPage() {
                     defaultOpen={false}
                   >
                     <div className="space-y-1">
-                      {Object.entries(parsed.harnessData.mcpServers)
+                      {Object.entries(previewHarnessData.mcpServers)
                         .sort((a, b) => b[1] - a[1])
                         .map(([server, calls]) => (
                           <div
@@ -2693,7 +2697,7 @@ export default function UploadPage() {
               )}
 
               {/* Versions */}
-              {parsed.harnessData.versions.length > 0 && (
+              {previewHarnessData.versions.length > 0 && (
                 <RedactableSection
                   title="Claude Code Versions"
                   enabled={!disabledSections["versions"]}
@@ -2706,7 +2710,7 @@ export default function UploadPage() {
                     defaultOpen={false}
                   >
                     <div className="flex flex-wrap gap-1.5">
-                      {parsed.harnessData.versions.map((version) => (
+                      {previewHarnessData.versions.map((version) => (
                         <span
                           key={version}
                           className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
@@ -2720,7 +2724,7 @@ export default function UploadPage() {
               )}
 
               {/* Writeup Sections */}
-              {parsed.harnessData.writeupSections.length > 0 && (
+              {previewHarnessData.writeupSections.length > 0 && (
                 <RedactableSection
                   title="Writeup Analysis"
                   enabled={!disabledSections["writeupSections"]}
@@ -2733,7 +2737,7 @@ export default function UploadPage() {
                     defaultOpen={false}
                   >
                     <div className="space-y-6">
-                      {parsed.harnessData.writeupSections.map((section) => (
+                      {previewHarnessData.writeupSections.map((section) => (
                         <div key={section.title}>
                           <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
                             {section.title}
@@ -2752,7 +2756,7 @@ export default function UploadPage() {
               )}
 
               {/* Harness Files */}
-              {parsed.harnessData.harnessFiles.length > 0 && (
+              {previewHarnessData.harnessFiles.length > 0 && (
                 <RedactableSection
                   title="Harness File Ecosystem"
                   enabled={!disabledSections["harnessFiles"]}
@@ -2765,7 +2769,7 @@ export default function UploadPage() {
                     defaultOpen={false}
                   >
                     <div className="space-y-1">
-                      {parsed.harnessData.harnessFiles.map((file) => (
+                      {previewHarnessData.harnessFiles.map((file) => (
                         <div
                           key={file}
                           className="border-b border-slate-100 py-1 font-mono text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400"

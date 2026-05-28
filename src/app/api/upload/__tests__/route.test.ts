@@ -101,6 +101,34 @@ const FIXTURE_PATH = resolve(
 );
 const FIXTURE_HTML = readFileSync(FIXTURE_PATH, "utf-8");
 const VALID_UUID = "11111111-2222-3333-4444-555555555555";
+const CODEX_HARNESS_HTML = `<!doctype html>
+<html>
+  <body>
+    <script id="harness-data" type="application/json">
+      {
+        "tool": "codex",
+        "stats": { "totalTokens": 2000, "sessionCount": 12 },
+        "toolUsage": { "exec_command": 8 },
+        "cliTools": { "git": 3 },
+        "skillInventory": [
+          { "name": "code-review", "description": "Review code" }
+        ],
+        "plugins": [{ "name": "github", "enabled": true }],
+        "safety": {
+          "approvalsReviewer": "model",
+          "approvalModes": ["approve"],
+          "trustLevels": ["trusted"],
+          "rulesAllowlist": ["git"]
+        },
+        "workflowData": { "phaseTransitions": {} },
+        "workSurfaces": {
+          "desktopPresence": [{ "tool": "Codex CLI", "present": true }]
+        },
+        "localOnly": true
+      }
+    </script>
+  </body>
+</html>`;
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
@@ -272,6 +300,26 @@ describe("POST /api/upload — multipart v2.7.0 happy path", () => {
     const body = await response.json();
     expect(body.stats.sessionCount).toBe(95);
     expect(body.stats.linesAdded).toBe(12500);
+  });
+});
+
+describe("POST /api/upload — multipart Codex harness happy path", () => {
+  it("accepts Codex Phase 1 output without the legacy integrity marker", async () => {
+    mockSession("user-1");
+    const response = await uploadPOST(multipartRequest(CODEX_HARNESS_HTML));
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.reportType).toBe("insight-harness");
+    expect(body.stats.sessionCount).toBe(12);
+    expect(body.harnessData).toMatchObject({
+      primaryTool: "codex",
+      tools: {
+        codex: {
+          tool: "codex",
+          stats: { totalTokens: 2000, sessionCount: 12 },
+        },
+      },
+    });
   });
 });
 
@@ -538,6 +586,30 @@ describe("POST /api/upload — bearer happy path", () => {
     // Selector is logged in 8-char trimmed form, never the full 12.
     const logArg = mockLog.mock.calls.at(-1)?.[0];
     expect(logArg.tokenSelectorPrefix.length).toBe(8);
+  });
+
+  it("passes Codex-only parsed envelopes through to publishReport", async () => {
+    const response = await uploadPOST(
+      bearerRequest({ contentType: "text/html", body: CODEX_HARNESS_HTML }),
+    );
+    expect(response.status).toBe(200);
+    expect(mockPublish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        parsed: expect.objectContaining({
+          reportType: "insight-harness",
+          stats: expect.objectContaining({ sessionCount: 12 }),
+          harnessData: expect.objectContaining({
+            primaryTool: "codex",
+            tools: expect.objectContaining({
+              codex: expect.objectContaining({
+                tool: "codex",
+                stats: expect.objectContaining({ totalTokens: 2000 }),
+              }),
+            }),
+          }),
+        }),
+      }),
+    );
   });
 
   it("uses AUTH_URL as the editUrl origin when set (production canonical host)", async () => {

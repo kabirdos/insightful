@@ -111,7 +111,7 @@ export interface ParsedInsightsReport {
   multiClauding?: MultiClaudingStats;
   detectedSkills?: SkillKey[];
   reportType?: "insights" | "insight-harness";
-  harnessData?: HarnessData;
+  harnessData?: StoredHarnessData;
 }
 
 // ── Harness Data (insight-harness reports) ──────────────────────────────
@@ -328,6 +328,8 @@ export interface HarnessToolsEnvelope {
     codex?: CodexHarnessData;
   };
 }
+
+export type StoredHarnessData = HarnessData | HarnessToolsEnvelope;
 
 // v2: Chart data parsed from HTML report
 export interface ChartDataPoint {

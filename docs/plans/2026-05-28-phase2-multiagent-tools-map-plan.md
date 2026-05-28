@@ -80,6 +80,8 @@ Existing rows remain valid. A current top-level Claude `HarnessData` normalizes 
 
 ### Unit 2: Parser and upload storage
 
+**Status:** completed 2026-05-28
+
 **Goal:** Parse all three supported `harness-data` shapes and persist the normalized stored shape.
 
 **Files:**
@@ -106,6 +108,8 @@ Existing rows remain valid. A current top-level Claude `HarnessData` normalizes 
 **Verification:** targeted parser/upload/insights Vitest files.
 
 ### Unit 3: Hidden-section filtering for tools map
+
+**Status:** completed 2026-05-28
 
 **Goal:** Preserve privacy filtering for both legacy and envelope-shaped `harnessData`.
 
