@@ -226,6 +226,8 @@ function stripShowcaseFieldsFromHarnessData(data: unknown): unknown {
 }
 
 function toListFeedHarnessData(data: unknown): unknown {
+  if (!isRecord(data) || !isRecord(data.tools)) return data;
+
   const envelope = normalizeHarnessEnvelope(data);
   return envelope?.tools["claude-code"] ?? data;
 }

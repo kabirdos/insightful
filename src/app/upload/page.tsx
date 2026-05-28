@@ -56,7 +56,10 @@ import HowIWorkCluster from "@/components/HowIWorkCluster";
 import ProjectLinks from "@/components/ProjectLinks";
 import MiniBarChart from "@/components/MiniBarChart";
 import CodexHarnessDashboard from "@/components/CodexHarnessDashboard";
-import { getHiddenKeypaths } from "@/lib/harness-section-visibility";
+import {
+  buildCodexVisibilityKey,
+  getHiddenKeypaths,
+} from "@/lib/harness-section-visibility";
 import { buildItemKey } from "@/lib/item-visibility";
 import HideableItem from "@/components/HideableItem";
 import { hasShowcaseContent } from "@/types/insights";
@@ -64,10 +67,6 @@ import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 import { buildOgImageUrl, buildReportUrl } from "@/lib/urls";
 
 type Step = "upload" | "projects" | "review";
-
-function buildCodexVisibilityKey(sectionKey: string): string {
-  return `tools.codex.${sectionKey}`;
-}
 
 /** Library Project as returned by GET /api/projects. */
 interface LibraryProject {
@@ -2342,8 +2341,7 @@ export default function UploadPage() {
           </div>
 
           {parsed.reportType === "insight-harness" &&
-            previewCodexData &&
-            !previewHarnessData && (
+            previewCodexData && (
               <div className="space-y-4">
                 <RedactableSection
                   title="Codex Tool Usage"

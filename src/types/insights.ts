@@ -310,6 +310,10 @@ export interface CodexHarnessWorkSurfaces {
   }>;
 }
 
+export interface CodexHarnessWorkflowData {
+  phaseTransitions?: Record<string, number>;
+}
+
 export interface CodexHarnessData {
   tool: "codex";
   stats: CodexHarnessStats;
@@ -318,7 +322,7 @@ export interface CodexHarnessData {
   skillInventory: CodexHarnessSkillEntry[];
   plugins: CodexHarnessPlugin[];
   safety: CodexHarnessSafety;
-  workflowData: Record<string, unknown> | null;
+  workflowData: CodexHarnessWorkflowData | null;
   workSurfaces: CodexHarnessWorkSurfaces;
   localOnly: boolean;
 }
@@ -489,6 +493,13 @@ function normalizeNumberMap(raw: unknown): Record<string, number> {
   );
 }
 
+function normalizeNonNegativeInteger(raw: unknown): number | undefined {
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0) {
+    return undefined;
+  }
+  return Math.round(raw);
+}
+
 function normalizeStringArray(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter((item): item is string => typeof item === "string");
@@ -562,6 +573,15 @@ function normalizeCodexWorkSurfaces(raw: unknown): CodexHarnessWorkSurfaces {
   };
 }
 
+function normalizeCodexWorkflowData(
+  raw: unknown,
+): CodexHarnessWorkflowData | null {
+  if (!isRecord(raw)) return null;
+
+  const phaseTransitions = normalizeNumberMap(raw.phaseTransitions);
+  return Object.keys(phaseTransitions).length > 0 ? { phaseTransitions } : null;
+}
+
 function normalizeCodexHarnessData(raw: unknown): CodexHarnessData | null {
   if (!isRecord(raw)) return null;
   if (raw.tool !== "codex") return null;
@@ -570,29 +590,21 @@ function normalizeCodexHarnessData(raw: unknown): CodexHarnessData | null {
   return {
     tool: "codex",
     stats: {
-      totalTokens:
-        typeof raw.stats.totalTokens === "number"
-          ? raw.stats.totalTokens
-          : undefined,
-      sessionCount:
-        typeof raw.stats.sessionCount === "number"
-          ? raw.stats.sessionCount
-          : undefined,
-      payloadFormatSessions:
-        typeof raw.stats.payloadFormatSessions === "number"
-          ? raw.stats.payloadFormatSessions
-          : undefined,
-      legacyFormatSessions:
-        typeof raw.stats.legacyFormatSessions === "number"
-          ? raw.stats.legacyFormatSessions
-          : undefined,
+      totalTokens: normalizeNonNegativeInteger(raw.stats.totalTokens),
+      sessionCount: normalizeNonNegativeInteger(raw.stats.sessionCount),
+      payloadFormatSessions: normalizeNonNegativeInteger(
+        raw.stats.payloadFormatSessions,
+      ),
+      legacyFormatSessions: normalizeNonNegativeInteger(
+        raw.stats.legacyFormatSessions,
+      ),
     },
     toolUsage: normalizeNumberMap(raw.toolUsage),
     cliTools: normalizeNumberMap(raw.cliTools),
     skillInventory: normalizeCodexSkillInventory(raw.skillInventory),
     plugins: normalizeCodexPlugins(raw.plugins),
     safety: normalizeCodexSafety(raw.safety),
-    workflowData: null,
+    workflowData: normalizeCodexWorkflowData(raw.workflowData),
     workSurfaces: normalizeCodexWorkSurfaces(raw.workSurfaces),
     localOnly: raw.localOnly === true,
   };

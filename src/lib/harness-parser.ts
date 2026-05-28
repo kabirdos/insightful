@@ -8,10 +8,10 @@ import { toStoredHarnessData } from "@/types/insights";
  * Checks for the integrity manifest script tag unique to harness reports.
  */
 export function isHarnessReport(html: string): boolean {
+  const $ = cheerio.load(html);
   return (
-    html.includes('id="insight-harness-integrity"') ||
-    html.includes('id="harness-data"') ||
-    html.includes("id='harness-data'")
+    $("script#insight-harness-integrity").length > 0 ||
+    $("script#harness-data").length > 0
   );
 }
 

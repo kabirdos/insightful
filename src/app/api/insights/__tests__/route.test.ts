@@ -340,7 +340,7 @@ describe("POST /api/insights — save-side happy path", () => {
         reportType: "insight-harness",
         harnessData: {
           tool: "codex",
-          stats: { totalTokens: 2000, sessionCount: 12 },
+          stats: { totalTokens: 2000.6, sessionCount: 12 },
           toolUsage: { exec_command: 8 },
           cliTools: { git: 3 },
           skillInventory: [
@@ -353,7 +353,7 @@ describe("POST /api/insights — save-side happy path", () => {
             trustLevels: ["trusted"],
             rulesAllowlist: ["git"],
           },
-          workflowData: { phaseTransitions: {} },
+          workflowData: { phaseTransitions: { planning: 2 } },
           workSurfaces: {
             desktopPresence: [{ tool: "Codex CLI", present: true }],
           },
@@ -364,14 +364,15 @@ describe("POST /api/insights — save-side happy path", () => {
 
     const createArgs = mockPrisma.insightReport.create.mock.calls[0][0];
     expect(createArgs.data.reportType).toBe("insight-harness");
-    expect(createArgs.data.totalTokens).toBe(BigInt(2000));
+    expect(createArgs.data.totalTokens).toBe(BigInt(2001));
     expect(createArgs.data.durationHours).toBeNull();
     expect(createArgs.data.harnessData).toMatchObject({
       primaryTool: "codex",
       tools: {
         codex: {
           tool: "codex",
-          stats: { totalTokens: 2000, sessionCount: 12 },
+          stats: { totalTokens: 2001, sessionCount: 12 },
+          workflowData: { phaseTransitions: { planning: 2 } },
         },
       },
     });

@@ -150,6 +150,12 @@ describe("isHarnessReport", () => {
     expect(isHarnessReport(insightsHtml)).toBe(false);
   });
 
+  it("does not classify escaped harness-data text as a harness script", () => {
+    const html =
+      '<html><body><pre>&lt;script id="harness-data"&gt;&lt;/script&gt;</pre></body></html>';
+    expect(isHarnessReport(html)).toBe(false);
+  });
+
   it("returns false for empty/minimal HTML", () => {
     expect(isHarnessReport("")).toBe(false);
     expect(isHarnessReport("<html><body></body></html>")).toBe(false);

@@ -190,13 +190,38 @@ describe("harness tools normalization", () => {
           ],
           rawSurface: "private",
         },
-        workflowData: { rawPrompt: "private" },
+        workflowData: {
+          rawPrompt: "private",
+          phaseTransitions: { planning: 2 },
+        },
       } as unknown as Partial<CodexHarnessData>),
     );
 
     expect(JSON.stringify(stored)).not.toContain("/Users/example");
     expect(JSON.stringify(stored)).not.toContain("do not publish");
     expect(JSON.stringify(stored)).not.toContain("rawPrompt");
-    expect(stored?.tools.codex?.workflowData).toBeNull();
+    expect(stored?.tools.codex?.workflowData).toEqual({
+      phaseTransitions: { planning: 2 },
+    });
+  });
+
+  it("normalizes Codex stats to non-negative integers", () => {
+    const stored = toStoredHarnessData(
+      codex({
+        stats: {
+          totalTokens: 2000.6,
+          sessionCount: 12.2,
+          payloadFormatSessions: -1,
+          legacyFormatSessions: Number.NaN,
+        },
+      }),
+    );
+
+    expect(stored?.tools.codex?.stats).toMatchObject({
+      totalTokens: 2001,
+      sessionCount: 12,
+    });
+    expect(stored?.tools.codex?.stats.payloadFormatSessions).toBeUndefined();
+    expect(stored?.tools.codex?.stats.legacyFormatSessions).toBeUndefined();
   });
 });

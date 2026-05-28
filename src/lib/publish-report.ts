@@ -58,6 +58,13 @@ function generateSlug(): string {
   return `${date}-${shortId}`;
 }
 
+function toStoredTokenCount(value: unknown): bigint | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    return null;
+  }
+  return BigInt(Math.round(value));
+}
+
 /**
  * Build the auto-generated title used when the caller didn't supply
  * one. Mirrors `handlePublish`'s "<First>'s {Insight Harness | Claude
@@ -146,6 +153,10 @@ export async function publishReport(
   const storedHarnessData = toStoredHarnessData(parsed.harnessData);
   const claudeHarnessData = getClaudeHarnessData(storedHarnessData);
   const codexHarnessData = getCodexHarnessData(storedHarnessData);
+  const storedTotalTokens =
+    typeof claudeHarnessData?.stats.totalTokens === "number"
+      ? claudeHarnessData.stats.totalTokens
+      : codexHarnessData?.stats.totalTokens;
 
   // 3. Title fallback.
   const isHarness = parsed.reportType === "insight-harness";
@@ -207,12 +218,7 @@ export async function publishReport(
         detectedSkills: parsed.detectedSkills ?? [],
         reportType: parsed.reportType ?? "insights",
         // Harness scalar denorm — null when this isn't a harness report.
-        totalTokens:
-          typeof claudeHarnessData?.stats.totalTokens === "number"
-            ? BigInt(claudeHarnessData.stats.totalTokens)
-            : typeof codexHarnessData?.stats.totalTokens === "number"
-              ? BigInt(codexHarnessData.stats.totalTokens)
-              : null,
+        totalTokens: toStoredTokenCount(storedTotalTokens),
         durationHours:
           typeof claudeHarnessData?.stats.durationHours === "number"
             ? Math.round(claudeHarnessData.stats.durationHours)

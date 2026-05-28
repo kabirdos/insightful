@@ -39,7 +39,10 @@ import CollapsibleSection from "@/components/CollapsibleSection";
 import SectionRenderer from "@/components/SectionRenderer";
 import Link from "next/link";
 import clsx from "clsx";
-import { getHiddenKeypaths } from "@/lib/harness-section-visibility";
+import {
+  buildCodexVisibilityKey,
+  getHiddenKeypaths,
+} from "@/lib/harness-section-visibility";
 import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 
 interface EditProject {
@@ -89,26 +92,6 @@ interface ReportData {
   onTheHorizon: unknown;
   reportProjects: EditReportProject[];
   author: { id: string; username: string; displayName: string | null };
-}
-
-type CodexVisibilitySectionKey =
-  | "toolUsage"
-  | "skillInventory"
-  | "plugins"
-  | "cliTools"
-  | "workflowData"
-  | "safety"
-  | "workSurfaces";
-
-const CODEX_VISIBILITY_PREFIX = "tools.codex";
-
-export function buildCodexVisibilityKey(
-  sectionKey: CodexVisibilitySectionKey,
-  itemKey?: string,
-): string {
-  return itemKey
-    ? `${CODEX_VISIBILITY_PREFIX}.${sectionKey}.${itemKey}`
-    : `${CODEX_VISIBILITY_PREFIX}.${sectionKey}`;
 }
 
 export function getEditHarnessPreviewData(raw: unknown): {

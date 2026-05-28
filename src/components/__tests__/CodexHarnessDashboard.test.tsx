@@ -56,4 +56,18 @@ describe("CodexHarnessDashboard", () => {
 
     expect(html).toContain("No workflow phase signal was detected");
   });
+
+  it("shows safe workflow keys when phase signal exists", () => {
+    const html = renderToStaticMarkup(
+      <CodexHarnessDashboard
+        codexData={codexData({
+          workflowData: { phaseTransitions: { planning: 2 } },
+        })}
+      />,
+    );
+
+    expect(html).toContain("Workflow Signal");
+    expect(html).toContain("phaseTransitions");
+    expect(html).not.toContain("planning");
+  });
 });

@@ -59,6 +59,15 @@ const STRIPPABLE_HARNESS_DATA_KEYS = new Set<string>([
 
 const TOOL_KEY_ORDER: HarnessToolKey[] = ["claude-code", "codex"];
 
+export function buildCodexVisibilityKey(
+  sectionKey: string,
+  itemKey?: string,
+): string {
+  return itemKey
+    ? `tools.codex.${sectionKey}.${itemKey}`
+    : `tools.codex.${sectionKey}`;
+}
+
 function parseToolKeypath(keypath: string): {
   toolKey: HarnessToolKey;
   innerKeypath: string;

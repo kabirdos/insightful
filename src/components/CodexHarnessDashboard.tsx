@@ -101,8 +101,7 @@ export default function CodexHarnessDashboard({
   const desktopPresence = codexData.workSurfaces.desktopPresence;
   const hasWorkflowSignal =
     !!codexData.workflowData &&
-    Object.keys(codexData.workflowData).some((key) => {
-      const value = codexData.workflowData?.[key];
+    Object.values(codexData.workflowData).some((value) => {
       if (Array.isArray(value)) return value.length > 0;
       return !!value && typeof value === "object"
         ? Object.keys(value).length > 0

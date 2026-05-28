@@ -81,6 +81,14 @@ const createInsightReportSchema = z.object({
   harnessData: z.unknown().optional(),
   hiddenHarnessSections: z.array(z.string()).optional(),
 });
+
+function toStoredTokenCount(value: unknown): bigint | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    return null;
+  }
+  return BigInt(Math.round(value));
+}
+
 const SECTION_KEYS = [
   "atAGlance",
   "interactionStyle",
@@ -483,6 +491,9 @@ export async function POST(request: Request) {
         uniqueProjectIds.push(id);
       }
 
+      const storedTotalTokens =
+        typeof totalTokens === "number" ? totalTokens : derivedTotalTokens;
+
       const created = await tx.insightReport.create({
         data: {
           authorId: user.id,
@@ -512,12 +523,7 @@ export async function POST(request: Request) {
           chartData: (chartData as Prisma.InputJsonValue) ?? undefined,
           detectedSkills: detectedSkills ?? [],
           reportType: reportType ?? "insights",
-          totalTokens:
-            typeof totalTokens === "number"
-              ? BigInt(totalTokens)
-              : typeof derivedTotalTokens === "number"
-                ? BigInt(derivedTotalTokens)
-                : null,
+          totalTokens: toStoredTokenCount(storedTotalTokens),
           durationHours:
             typeof durationHours === "number" ||
             typeof derivedDurationHours === "number"

@@ -1,9 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { ALLOWED_PUT_FIELDS } from "@/app/api/insights/allowed-fields";
-import {
-  buildCodexVisibilityKey,
-  getEditHarnessPreviewData,
-} from "@/app/insights/[username]/[slug]/edit/page";
+import { getEditHarnessPreviewData } from "@/app/insights/[username]/[slug]/edit/page";
+import { buildCodexVisibilityKey } from "@/lib/harness-section-visibility";
 import type { CodexHarnessData, HarnessData } from "@/types/insights";
 
 function legacyClaude(overrides: Partial<HarnessData> = {}): HarnessData {
