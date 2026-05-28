@@ -171,6 +171,8 @@ Existing rows remain valid. A current top-level Claude `HarnessData` normalizes 
 
 ### Unit 5: Edit page compatibility
 
+**Status:** completed 2026-05-28
+
 **Goal:** Keep the author edit page functional for legacy and envelope reports.
 
 **Files:**
