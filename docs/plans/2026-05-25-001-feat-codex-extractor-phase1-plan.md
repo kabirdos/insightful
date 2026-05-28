@@ -1,7 +1,7 @@
 ---
 title: "feat: Codex extractor (Phase 1 — standalone profile)"
 type: feat
-status: active
+status: completed
 date: 2026-05-25
 deepened: 2026-05-26
 origin: docs/brainstorms/2026-05-25-codex-extractor-multiagent-requirements.md
