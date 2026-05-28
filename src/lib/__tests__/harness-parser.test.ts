@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { isHarnessReport, parseHarnessHtml } from "../harness-parser";
+import {
+  getClaudeHarnessData,
+  getCodexHarnessData,
+  type HarnessData,
+} from "@/types/insights";
 
 // ---------------------------------------------------------------------------
 // Minimal HarnessData JSON matching the HarnessData interface
@@ -119,6 +124,12 @@ function buildHarnessHtml(
 
 const MINIMAL_HARNESS_HTML = buildHarnessHtml(MINIMAL_HARNESS_DATA);
 
+function parseClaudeHarnessHtml(html: string): HarnessData {
+  const data = getClaudeHarnessData(parseHarnessHtml(html));
+  if (!data) throw new Error("Expected Claude Code harness data");
+  return data;
+}
+
 // ---------------------------------------------------------------------------
 // isHarnessReport
 // ---------------------------------------------------------------------------
@@ -128,10 +139,21 @@ describe("isHarnessReport", () => {
     expect(isHarnessReport(MINIMAL_HARNESS_HTML)).toBe(true);
   });
 
+  it("detects Codex harness reports by harness-data script without integrity tag", () => {
+    const html = `<html><body><script id="harness-data" type="application/json">{"tool":"codex","stats":{}}</script></body></html>`;
+    expect(isHarnessReport(html)).toBe(true);
+  });
+
   it("returns false for plain insights HTML", () => {
     const insightsHtml =
       '<html><body><div class="subtitle">100 messages across 10 sessions</div></body></html>';
     expect(isHarnessReport(insightsHtml)).toBe(false);
+  });
+
+  it("does not classify escaped harness-data text as a harness script", () => {
+    const html =
+      '<html><body><pre>&lt;script id="harness-data"&gt;&lt;/script&gt;</pre></body></html>';
+    expect(isHarnessReport(html)).toBe(false);
   });
 
   it("returns false for empty/minimal HTML", () => {
@@ -149,9 +171,78 @@ describe("parseHarnessHtml", () => {
     expect(() => parseHarnessHtml(MINIMAL_HARNESS_HTML)).not.toThrow();
   });
 
+  it("stores legacy Claude data as a tools envelope", () => {
+    const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+    expect(result.primaryTool).toBe("claude-code");
+    expect(result.tools["claude-code"]?.stats.totalTokens).toBe(1200000);
+  });
+
+  it("accepts Codex Phase 1 harness data", () => {
+    const html = buildHarnessHtml({
+      tool: "codex",
+      stats: { totalTokens: 2000, sessionCount: 12 },
+      toolUsage: { exec_command: 8 },
+      cliTools: { git: 3 },
+      skillInventory: [{ name: "code-review", description: "Review code" }],
+      plugins: [{ name: "github", enabled: true }],
+      safety: {
+        approvalsReviewer: "model",
+        approvalModes: ["approve"],
+        trustLevels: ["trusted"],
+        rulesAllowlist: ["git"],
+      },
+      workflowData: { phaseTransitions: {} },
+      workSurfaces: {
+        desktopPresence: [{ tool: "Codex CLI", present: true }],
+      },
+      localOnly: true,
+    });
+
+    const result = parseHarnessHtml(html);
+    expect(result.primaryTool).toBe("codex");
+    expect(getCodexHarnessData(result)?.stats.totalTokens).toBe(2000);
+    expect(getClaudeHarnessData(result)).toBeNull();
+  });
+
+  it("sanitizes Claude writeup HTML inside combined envelopes", () => {
+    const html = buildHarnessHtml({
+      primaryTool: "claude-code",
+      tools: {
+        "claude-code": {
+          ...MINIMAL_HARNESS_DATA,
+          writeupSections: [
+            {
+              title: "Unsafe",
+              contentHtml: '<p onclick="alert(1)">safe text</p>',
+            },
+          ],
+        },
+        codex: {
+          tool: "codex",
+          stats: { totalTokens: 2000 },
+          toolUsage: {},
+          cliTools: {},
+          skillInventory: [],
+          plugins: [],
+          safety: {},
+          workflowData: null,
+          workSurfaces: {},
+          localOnly: true,
+        },
+      },
+    });
+
+    const result = parseHarnessHtml(html);
+    expect(result.primaryTool).toBe("claude-code");
+    expect(getClaudeHarnessData(result)?.writeupSections[0].contentHtml).toBe(
+      "<p>safe text</p>",
+    );
+    expect(getCodexHarnessData(result)?.tool).toBe("codex");
+  });
+
   describe("stats", () => {
     it("extracts all stat fields with correct types", () => {
-      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      const result = parseClaudeHarnessHtml(MINIMAL_HARNESS_HTML);
       expect(result.stats.totalTokens).toBe(1200000);
       expect(result.stats.lifetimeTokens).toBe(9500000);
       expect(result.stats.durationHours).toBe(18);
@@ -166,7 +257,7 @@ describe("parseHarnessHtml", () => {
 
   describe("autonomy", () => {
     it("extracts autonomy fields", () => {
-      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      const result = parseClaudeHarnessHtml(MINIMAL_HARNESS_HTML);
       expect(result.autonomy.label).toBe("Fire-and-Forget");
       expect(result.autonomy.description).toBe(
         "You launch tasks and let Claude run",
@@ -180,7 +271,7 @@ describe("parseHarnessHtml", () => {
 
   describe("feature pills", () => {
     it("extracts pill names, active state, and values", () => {
-      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      const result = parseClaudeHarnessHtml(MINIMAL_HARNESS_HTML);
       expect(result.featurePills).toHaveLength(3);
       expect(result.featurePills[0]).toEqual({
         name: "Task Agents",
@@ -202,14 +293,14 @@ describe("parseHarnessHtml", () => {
 
   describe("tool usage", () => {
     it("extracts tool usage as record", () => {
-      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      const result = parseClaudeHarnessHtml(MINIMAL_HARNESS_HTML);
       expect(result.toolUsage).toEqual({ Read: 1500, Edit: 800, Bash: 2200 });
     });
   });
 
   describe("skill inventory", () => {
     it("extracts skill entries", () => {
-      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      const result = parseClaudeHarnessHtml(MINIMAL_HARNESS_HTML);
       expect(result.skillInventory).toHaveLength(2);
       expect(result.skillInventory[0]).toEqual({
         name: "commit",
@@ -228,7 +319,7 @@ describe("parseHarnessHtml", () => {
 
   describe("hook definitions", () => {
     it("extracts hook definitions", () => {
-      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      const result = parseClaudeHarnessHtml(MINIMAL_HARNESS_HTML);
       expect(result.hookDefinitions).toHaveLength(2);
       expect(result.hookDefinitions[0]).toEqual({
         event: "PreToolUse",
@@ -240,7 +331,7 @@ describe("parseHarnessHtml", () => {
 
   describe("plugins", () => {
     it("extracts plugin info", () => {
-      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      const result = parseClaudeHarnessHtml(MINIMAL_HARNESS_HTML);
       expect(result.plugins).toHaveLength(1);
       expect(result.plugins[0]).toEqual({
         name: "superpowers",
@@ -253,7 +344,7 @@ describe("parseHarnessHtml", () => {
 
   describe("file operation style", () => {
     it("extracts file op style", () => {
-      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      const result = parseClaudeHarnessHtml(MINIMAL_HARNESS_HTML);
       expect(result.fileOpStyle.readPct).toBe(45);
       expect(result.fileOpStyle.editPct).toBe(40);
       expect(result.fileOpStyle.writePct).toBe(15);
@@ -265,7 +356,7 @@ describe("parseHarnessHtml", () => {
 
   describe("git patterns", () => {
     it("extracts git patterns", () => {
-      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      const result = parseClaudeHarnessHtml(MINIMAL_HARNESS_HTML);
       expect(result.gitPatterns.prCount).toBe(7);
       expect(result.gitPatterns.commitCount).toBe(23);
       expect(result.gitPatterns.branchPrefixes).toEqual({
@@ -277,7 +368,7 @@ describe("parseHarnessHtml", () => {
 
   describe("writeup sections", () => {
     it("extracts writeup sections", () => {
-      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      const result = parseClaudeHarnessHtml(MINIMAL_HARNESS_HTML);
       expect(result.writeupSections).toHaveLength(2);
       expect(result.writeupSections[0].title).toBe("Workflow Analysis");
       expect(result.writeupSections[0].contentHtml).toContain(
@@ -289,24 +380,24 @@ describe("parseHarnessHtml", () => {
 
   describe("integrity hash and versions", () => {
     it("extracts integrity hash", () => {
-      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      const result = parseClaudeHarnessHtml(MINIMAL_HARNESS_HTML);
       expect(result.integrityHash).toBe("abc123def456");
     });
 
     it("extracts version tags", () => {
-      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      const result = parseClaudeHarnessHtml(MINIMAL_HARNESS_HTML);
       expect(result.versions).toEqual(["1.0.33", "1.0.34"]);
     });
 
     it("extracts skill version", () => {
-      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      const result = parseClaudeHarnessHtml(MINIMAL_HARNESS_HTML);
       expect(result.skillVersion).toBe("2.3.0");
     });
   });
 
   describe("enhanced stats", () => {
     it("extracts enhancedStats when present", () => {
-      const result = parseHarnessHtml(MINIMAL_HARNESS_HTML);
+      const result = parseClaudeHarnessHtml(MINIMAL_HARNESS_HTML);
       expect(result.enhancedStats).toEqual({
         linesAdded: 1200,
         linesRemoved: 300,
@@ -321,7 +412,7 @@ describe("parseHarnessHtml", () => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { enhancedStats, ...rest } = dataWithout;
       const html = buildHarnessHtml(rest);
-      const result = parseHarnessHtml(html);
+      const result = parseClaudeHarnessHtml(html);
       expect(result.enhancedStats).toBeNull();
     });
   });
@@ -360,7 +451,7 @@ describe("parseHarnessHtml", () => {
       const html = buildHarnessHtml(MINIMAL_HARNESS_DATA, {
         reverseAttrs: true,
       });
-      const result = parseHarnessHtml(html);
+      const result = parseClaudeHarnessHtml(html);
       expect(result.stats.totalTokens).toBe(1200000);
       expect(result.stats.sessionCount).toBe(42);
     });
@@ -382,7 +473,7 @@ describe("parseHarnessHtml", () => {
         ],
       };
       const html = buildHarnessHtml(data);
-      const result = parseHarnessHtml(html);
+      const result = parseClaudeHarnessHtml(html);
       expect(result.writeupSections[0].contentHtml).not.toContain("<script>");
       expect(result.writeupSections[0].contentHtml).toContain("<p>Safe</p>");
       expect(result.writeupSections[0].contentHtml).toContain(
@@ -402,7 +493,7 @@ describe("parseHarnessHtml", () => {
         ],
       };
       const html = buildHarnessHtml(data);
-      const result = parseHarnessHtml(html);
+      const result = parseClaudeHarnessHtml(html);
       expect(result.writeupSections[0].contentHtml).not.toContain("onerror");
       expect(result.writeupSections[0].contentHtml).not.toContain("onclick");
       // img is not in the allowlist, so it gets stripped entirely
@@ -422,7 +513,7 @@ describe("parseHarnessHtml", () => {
         ],
       };
       const html = buildHarnessHtml(data);
-      const result = parseHarnessHtml(html);
+      const result = parseClaudeHarnessHtml(html);
       expect(result.writeupSections[0].contentHtml).not.toContain("<iframe");
       expect(result.writeupSections[0].contentHtml).not.toContain("<object");
       expect(result.writeupSections[0].contentHtml).not.toContain("<embed");
@@ -441,7 +532,7 @@ describe("parseHarnessHtml", () => {
         ],
       };
       const html = buildHarnessHtml(data);
-      const result = parseHarnessHtml(html);
+      const result = parseClaudeHarnessHtml(html);
       expect(result.writeupSections[0].contentHtml).not.toContain(
         "javascript:",
       );
@@ -462,7 +553,7 @@ describe("parseHarnessHtml", () => {
         ],
       };
       const html = buildHarnessHtml(data);
-      const result = parseHarnessHtml(html);
+      const result = parseClaudeHarnessHtml(html);
       expect(result.writeupSections[0].contentHtml).not.toContain("<svg");
       expect(result.writeupSections[0].contentHtml).not.toContain("<math");
       expect(result.writeupSections[0].contentHtml).toContain("<p>safe</p>");
@@ -480,7 +571,7 @@ describe("parseHarnessHtml", () => {
         ],
       };
       const html = buildHarnessHtml(data);
-      const result = parseHarnessHtml(html);
+      const result = parseClaudeHarnessHtml(html);
       expect(result.writeupSections[0].contentHtml).not.toContain("onfocus");
       expect(result.writeupSections[0].contentHtml).not.toContain(
         "onanimationstart",
@@ -503,7 +594,7 @@ describe("parseHarnessHtml", () => {
         ],
       };
       const html = buildHarnessHtml(data);
-      const result = parseHarnessHtml(html);
+      const result = parseClaudeHarnessHtml(html);
       expect(result.writeupSections[0].contentHtml).not.toContain("<form");
       expect(result.writeupSections[0].contentHtml).not.toContain("<input");
       expect(result.writeupSections[0].contentHtml).toContain("<p>safe</p>");
@@ -522,7 +613,7 @@ describe("parseHarnessHtml", () => {
         featurePills: MINIMAL_HARNESS_DATA.featurePills,
       };
       const html = buildHarnessHtml(minimal);
-      const result = parseHarnessHtml(html);
+      const result = parseClaudeHarnessHtml(html);
       expect(result.toolUsage).toEqual({});
       expect(result.skillInventory).toEqual([]);
       expect(result.hookDefinitions).toEqual([]);

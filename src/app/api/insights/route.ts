@@ -3,7 +3,11 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import type { InsightReportListItemContract } from "@/types/api-contracts";
-import { normalizeHarnessData } from "@/types/insights";
+import {
+  getClaudeHarnessData,
+  getCodexHarnessData,
+  toStoredHarnessData,
+} from "@/types/insights";
 import type { Prisma } from "@prisma/client";
 import { fetchLinkPreview } from "@/lib/link-preview";
 import { filterReportForListFeed } from "@/lib/filter-report-response";
@@ -77,6 +81,14 @@ const createInsightReportSchema = z.object({
   harnessData: z.unknown().optional(),
   hiddenHarnessSections: z.array(z.string()).optional(),
 });
+
+function toStoredTokenCount(value: unknown): bigint | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    return null;
+  }
+  return BigInt(Math.round(value));
+}
+
 const SECTION_KEYS = [
   "atAGlance",
   "interactionStyle",
@@ -338,6 +350,19 @@ export async function POST(request: Request) {
       harnessData,
       hiddenHarnessSections,
     } = parsed.data;
+    const storedHarnessData = toStoredHarnessData(harnessData);
+    const claudeHarnessData = getClaudeHarnessData(storedHarnessData);
+    const codexHarnessData = getCodexHarnessData(storedHarnessData);
+    const derivedTotalTokens =
+      typeof claudeHarnessData?.stats.totalTokens === "number"
+        ? claudeHarnessData.stats.totalTokens
+        : typeof codexHarnessData?.stats.totalTokens === "number"
+          ? codexHarnessData.stats.totalTokens
+          : null;
+    const derivedDurationHours =
+      typeof claudeHarnessData?.stats.durationHours === "number"
+        ? claudeHarnessData.stats.durationHours
+        : null;
 
     // Auto-generate title if not provided
     const title =
@@ -466,6 +491,9 @@ export async function POST(request: Request) {
         uniqueProjectIds.push(id);
       }
 
+      const storedTotalTokens =
+        typeof totalTokens === "number" ? totalTokens : derivedTotalTokens;
+
       const created = await tx.insightReport.create({
         data: {
           authorId: user.id,
@@ -495,19 +523,22 @@ export async function POST(request: Request) {
           chartData: (chartData as Prisma.InputJsonValue) ?? undefined,
           detectedSkills: detectedSkills ?? [],
           reportType: reportType ?? "insights",
-          totalTokens:
-            typeof totalTokens === "number" ? BigInt(totalTokens) : null,
+          totalTokens: toStoredTokenCount(storedTotalTokens),
           durationHours:
-            typeof durationHours === "number"
-              ? Math.round(durationHours)
+            typeof durationHours === "number" ||
+            typeof derivedDurationHours === "number"
+              ? Math.round(durationHours ?? derivedDurationHours ?? 0)
               : null,
-          avgSessionMinutes: avgSessionMinutes ?? null,
-          prCount: prCount ?? null,
-          autonomyLabel: autonomyLabel ?? null,
+          avgSessionMinutes:
+            avgSessionMinutes ??
+            claudeHarnessData?.stats.avgSessionMinutes ??
+            null,
+          prCount: prCount ?? claudeHarnessData?.stats.prCount ?? null,
+          autonomyLabel:
+            autonomyLabel ?? claudeHarnessData?.autonomy.label ?? null,
           harnessData:
-            (normalizeHarnessData(
-              harnessData,
-            ) as unknown as Prisma.InputJsonValue) ?? undefined,
+            (storedHarnessData as unknown as Prisma.InputJsonValue) ??
+            undefined,
           hiddenHarnessSections: Array.isArray(hiddenHarnessSections)
             ? hiddenHarnessSections
             : [],

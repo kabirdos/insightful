@@ -1,14 +1,18 @@
 import * as cheerio from "cheerio";
 import sanitize from "sanitize-html";
-import type { HarnessData } from "@/types/insights";
-import { normalizeHarnessData } from "@/types/insights";
+import type { HarnessToolsEnvelope } from "@/types/insights";
+import { toStoredHarnessData } from "@/types/insights";
 
 /**
  * Detect whether an HTML string is an insight-harness report (vs plain /insights).
  * Checks for the integrity manifest script tag unique to harness reports.
  */
 export function isHarnessReport(html: string): boolean {
-  return html.includes('id="insight-harness-integrity"');
+  const $ = cheerio.load(html);
+  return (
+    $("script#insight-harness-integrity").length > 0 ||
+    $("script#harness-data").length > 0
+  );
 }
 
 /**
@@ -17,7 +21,7 @@ export function isHarnessReport(html: string): boolean {
  * sanitizes writeup HTML, and validates the shape.
  * Throws a descriptive error if the tag is missing or JSON is malformed.
  */
-export function parseHarnessHtml(html: string): HarnessData {
+export function parseHarnessHtml(html: string): HarnessToolsEnvelope {
   const $ = cheerio.load(html);
   const script = $("script#harness-data").first();
   const jsonString = script.html();
@@ -37,29 +41,47 @@ export function parseHarnessHtml(html: string): HarnessData {
     );
   }
 
-  // Sanitize writeup contentHtml before validation
-  if (
-    parsed &&
-    typeof parsed === "object" &&
-    Array.isArray((parsed as Record<string, unknown>).writeupSections)
-  ) {
-    const sections = (parsed as Record<string, unknown>)
-      .writeupSections as Array<{ title: string; contentHtml: string }>;
-    for (const section of sections) {
-      if (section.contentHtml) {
-        section.contentHtml = sanitizeWriteupHtml(section.contentHtml);
-      }
-    }
-  }
+  sanitizeClaudeWriteupSections(parsed);
 
-  const data = normalizeHarnessData(parsed);
+  const data = toStoredHarnessData(parsed);
   if (!data) {
     throw new Error(
-      "Harness report JSON is missing required fields (stats, autonomy, featurePills). The embedded data does not match the expected HarnessData shape.",
+      "Harness report JSON is missing required fields. The embedded data does not match a supported Claude Code, Codex, or multi-tool harness shape.",
     );
   }
 
   return data;
+}
+
+function sanitizeClaudeWriteupSections(parsed: unknown) {
+  if (!parsed || typeof parsed !== "object") return;
+  const obj = parsed as Record<string, unknown>;
+  const candidates: unknown[] = [obj];
+
+  if (
+    obj.tools &&
+    typeof obj.tools === "object" &&
+    !Array.isArray(obj.tools)
+  ) {
+    candidates.push((obj.tools as Record<string, unknown>)["claude-code"]);
+  }
+
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate !== "object") continue;
+    const sections = (candidate as Record<string, unknown>).writeupSections;
+    if (!Array.isArray(sections)) continue;
+    for (const section of sections) {
+      if (
+        section &&
+        typeof section === "object" &&
+        typeof (section as { contentHtml?: unknown }).contentHtml === "string"
+      ) {
+        (section as { contentHtml: string }).contentHtml = sanitizeWriteupHtml(
+          (section as { contentHtml: string }).contentHtml,
+        );
+      }
+    }
+  }
 }
 
 /**

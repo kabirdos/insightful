@@ -11,8 +11,18 @@ import { useSession } from "next-auth/react";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
 import EyeToggle from "@/components/EyeToggle";
 import HideableItem from "@/components/HideableItem";
-import type { HarnessData } from "@/types/insights";
-import { normalizeHarnessData } from "@/types/insights";
+import type {
+  CodexHarnessData,
+  HarnessData,
+  HarnessToolsEnvelope,
+  HarnessToolKey,
+} from "@/types/insights";
+import {
+  getClaudeHarnessData,
+  getCodexHarnessData,
+  listHarnessTools,
+  normalizeHarnessEnvelope,
+} from "@/types/insights";
 import { buildItemKey } from "@/lib/item-visibility";
 import HeroStats from "@/components/HeroStats";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
@@ -29,7 +39,10 @@ import CollapsibleSection from "@/components/CollapsibleSection";
 import SectionRenderer from "@/components/SectionRenderer";
 import Link from "next/link";
 import clsx from "clsx";
-import { getHiddenKeypaths } from "@/lib/harness-section-visibility";
+import {
+  buildCodexVisibilityKey,
+  getHiddenKeypaths,
+} from "@/lib/harness-section-visibility";
 import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 
 interface EditProject {
@@ -68,7 +81,7 @@ interface ReportData {
   durationHours: number | null;
   linesAdded: number | null;
   linesRemoved: number | null;
-  harnessData: HarnessData | null;
+  harnessData: HarnessToolsEnvelope | null;
   hiddenHarnessSections: string[];
   atAGlance: unknown;
   interactionStyle: unknown;
@@ -79,6 +92,18 @@ interface ReportData {
   onTheHorizon: unknown;
   reportProjects: EditReportProject[];
   author: { id: string; username: string; displayName: string | null };
+}
+
+export function getEditHarnessPreviewData(raw: unknown): {
+  availableTools: HarnessToolKey[];
+  claudeHarnessData: HarnessData | null;
+  codexHarnessData: CodexHarnessData | null;
+} {
+  return {
+    availableTools: listHarnessTools(raw),
+    claudeHarnessData: getClaudeHarnessData(raw),
+    codexHarnessData: getCodexHarnessData(raw),
+  };
 }
 
 // Section config for narrative sections
@@ -133,6 +158,311 @@ function HideableCard({
         )}
       </div>
       {!hidden && children}
+    </div>
+  );
+}
+
+function CodexRecordSection({
+  title,
+  sectionKey,
+  entries,
+  color,
+  hiddenSections,
+  onToggle,
+}: {
+  title: string;
+  sectionKey: "toolUsage" | "cliTools";
+  entries: Array<[string, number]>;
+  color: string;
+  hiddenSections: Record<string, boolean>;
+  onToggle: (key: string) => void;
+}) {
+  if (entries.length === 0) return null;
+
+  const visibilityKey = buildCodexVisibilityKey(sectionKey);
+
+  return (
+    <HideableCard
+      title={title}
+      hidden={!!hiddenSections[visibilityKey]}
+      onToggle={() => onToggle(visibilityKey)}
+    >
+      <CollapsibleSection icon="" title={title} defaultOpen={false}>
+        <MiniBarChart
+          data={entries
+            .sort((a, b) => b[1] - a[1])
+            .map(([label, value]) => ({ label, value }))}
+          title=""
+          color={color}
+        />
+      </CollapsibleSection>
+    </HideableCard>
+  );
+}
+
+function CodexVisibilityPreview({
+  codexData,
+  hiddenSections,
+  onToggle,
+}: {
+  codexData: CodexHarnessData;
+  hiddenSections: Record<string, boolean>;
+  onToggle: (key: string) => void;
+}) {
+  const skillSectionKey = buildCodexVisibilityKey("skillInventory");
+  const pluginSectionKey = buildCodexVisibilityKey("plugins");
+  const workflowSectionKey = buildCodexVisibilityKey("workflowData");
+  const safetySectionKey = buildCodexVisibilityKey("safety");
+  const workSurfacesSectionKey = buildCodexVisibilityKey("workSurfaces");
+  const toolEntries = Object.entries(codexData.toolUsage ?? {});
+  const cliEntries = Object.entries(codexData.cliTools ?? {});
+  const workflowKeys = codexData.workflowData
+    ? Object.keys(codexData.workflowData)
+    : [];
+
+  return (
+    <div className="mt-6 border-t border-slate-200 pt-6 dark:border-slate-800">
+      <div className="mb-4">
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+          Codex Visibility
+        </h2>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          Hide Codex-specific sections without changing the uploaded harness
+          data.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
+          {typeof codexData.stats.totalTokens === "number" && (
+            <span className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-800">
+              {codexData.stats.totalTokens.toLocaleString()} tokens
+            </span>
+          )}
+          {typeof codexData.stats.sessionCount === "number" && (
+            <span className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-800">
+              {codexData.stats.sessionCount.toLocaleString()} sessions
+            </span>
+          )}
+          {codexData.localOnly && (
+            <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+              local CLI report
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <CodexRecordSection
+          title="Codex Tool Usage"
+          sectionKey="toolUsage"
+          entries={toolEntries}
+          color="bg-cyan-500"
+          hiddenSections={hiddenSections}
+          onToggle={onToggle}
+        />
+
+        <CodexRecordSection
+          title="Codex CLI Tools"
+          sectionKey="cliTools"
+          entries={cliEntries}
+          color="bg-emerald-500"
+          hiddenSections={hiddenSections}
+          onToggle={onToggle}
+        />
+
+        {codexData.skillInventory.length > 0 && (
+          <HideableCard
+            title="Codex Skills"
+            hidden={!!hiddenSections[skillSectionKey]}
+            onToggle={() => onToggle(skillSectionKey)}
+          >
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {codexData.skillInventory.map((skill, i) => {
+                const itemKey = buildItemKey(
+                  codexData.skillInventory,
+                  i,
+                  (s) => s.name,
+                );
+                const keypath = buildCodexVisibilityKey(
+                  "skillInventory",
+                  itemKey,
+                );
+                return (
+                  <HideableItem
+                    key={itemKey}
+                    hidden={!!hiddenSections[keypath]}
+                    onToggle={() => onToggle(keypath)}
+                  >
+                    <div className="h-full rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+                      <div className="font-mono text-xs font-semibold text-slate-800 dark:text-slate-100">
+                        {skill.name}
+                      </div>
+                      {skill.description && (
+                        <p className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
+                          {skill.description}
+                        </p>
+                      )}
+                      <div className="mt-2 flex flex-wrap gap-1 text-[11px] text-slate-400">
+                        {skill.source && <span>{skill.source}</span>}
+                        {skill.category && <span>{skill.category}</span>}
+                        {typeof skill.calls === "number" && (
+                          <span>{skill.calls.toLocaleString()} calls</span>
+                        )}
+                      </div>
+                    </div>
+                  </HideableItem>
+                );
+              })}
+            </div>
+          </HideableCard>
+        )}
+
+        {codexData.plugins.length > 0 && (
+          <HideableCard
+            title="Codex Plugins"
+            hidden={!!hiddenSections[pluginSectionKey]}
+            onToggle={() => onToggle(pluginSectionKey)}
+          >
+            <div className="grid gap-2 sm:grid-cols-2">
+              {codexData.plugins.map((plugin, i) => {
+                const itemKey = buildItemKey(
+                  codexData.plugins,
+                  i,
+                  (p) => p.name,
+                );
+                const keypath = buildCodexVisibilityKey("plugins", itemKey);
+                return (
+                  <HideableItem
+                    key={itemKey}
+                    hidden={!!hiddenSections[keypath]}
+                    onToggle={() => onToggle(keypath)}
+                  >
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="min-w-0 truncate font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          {plugin.name}
+                        </span>
+                        {typeof plugin.enabled === "boolean" && (
+                          <span
+                            className={clsx(
+                              "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase",
+                              plugin.enabled
+                                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                : "bg-slate-100 text-slate-400 dark:bg-slate-800",
+                            )}
+                          >
+                            {plugin.enabled ? "on" : "off"}
+                          </span>
+                        )}
+                      </div>
+                      {(plugin.version || plugin.marketplace) && (
+                        <div className="mt-0.5 text-[11px] text-slate-400">
+                          {plugin.version && `v${plugin.version}`}
+                          {plugin.version && plugin.marketplace && " · "}
+                          {plugin.marketplace}
+                        </div>
+                      )}
+                    </div>
+                  </HideableItem>
+                );
+              })}
+            </div>
+          </HideableCard>
+        )}
+
+        {workflowKeys.length > 0 && (
+          <HideableCard
+            title="Codex Workflow Data"
+            hidden={!!hiddenSections[workflowSectionKey]}
+            onToggle={() => onToggle(workflowSectionKey)}
+          >
+            <CollapsibleSection
+              icon=""
+              title="Codex Workflow Data"
+              defaultOpen={false}
+            >
+              <div className="flex flex-wrap gap-2">
+                {workflowKeys.map((key) => (
+                  <span
+                    key={key}
+                    className="rounded border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
+                  >
+                    {key}
+                  </span>
+                ))}
+              </div>
+            </CollapsibleSection>
+          </HideableCard>
+        )}
+
+        <HideableCard
+          title="Codex Safety And Rules"
+          hidden={!!hiddenSections[safetySectionKey]}
+          onToggle={() => onToggle(safetySectionKey)}
+        >
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {codexData.safety.approvalsReviewer && (
+                <div>
+                  <div className="text-xs font-semibold uppercase text-slate-400">
+                    Approvals reviewer
+                  </div>
+                  <div className="mt-1 text-slate-700 dark:text-slate-300">
+                    {codexData.safety.approvalsReviewer}
+                  </div>
+                </div>
+              )}
+              <div>
+                <div className="text-xs font-semibold uppercase text-slate-400">
+                  Safety fields
+                </div>
+                <div className="mt-1 text-slate-700 dark:text-slate-300">
+                  {[
+                    ...codexData.safety.approvalModes,
+                    ...codexData.safety.trustLevels,
+                    ...codexData.safety.rulesAllowlist,
+                  ].length.toLocaleString()} values
+                </div>
+              </div>
+            </div>
+          </div>
+        </HideableCard>
+
+        {codexData.workSurfaces.desktopPresence.length > 0 && (
+          <HideableCard
+            title="Codex Work Surfaces"
+            hidden={!!hiddenSections[workSurfacesSectionKey]}
+            onToggle={() => onToggle(workSurfacesSectionKey)}
+          >
+            <div className="grid gap-2 sm:grid-cols-2">
+              {codexData.workSurfaces.desktopPresence.map((surface, i) => (
+                <div
+                  key={`${surface.tool ?? "surface"}-${i}`}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+                >
+                  <div className="font-medium text-slate-800 dark:text-slate-100">
+                    {surface.tool ?? `Surface ${i + 1}`}
+                  </div>
+                  {typeof surface.present === "boolean" && (
+                    <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                      {surface.present ? "Detected" : "Not detected"}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </HideableCard>
+        )}
+
+        {toolEntries.length === 0 &&
+          cliEntries.length === 0 &&
+          codexData.skillInventory.length === 0 &&
+          codexData.plugins.length === 0 &&
+          workflowKeys.length === 0 &&
+          codexData.workSurfaces.desktopPresence.length === 0 && (
+            <p className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+              This Codex report does not include hideable Codex sections.
+            </p>
+          )}
+      </div>
     </div>
   );
 }
@@ -193,7 +523,7 @@ export default function EditReportPage() {
         } else {
           const r = data.data ?? data;
           r.harnessData = r.harnessData
-            ? normalizeHarnessData(r.harnessData)
+            ? normalizeHarnessEnvelope(r.harnessData)
             : null;
           if (!Array.isArray(r.reportProjects)) {
             r.reportProjects = [];
@@ -563,7 +893,11 @@ export default function EditReportPage() {
   }
 
   const isHarness = report.reportType === "insight-harness";
-  const harnessData = report.harnessData;
+  const {
+    availableTools: availableHarnessTools,
+    claudeHarnessData: harnessData,
+    codexHarnessData,
+  } = getEditHarnessPreviewData(report.harnessData);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -618,6 +952,13 @@ export default function EditReportPage() {
       )}
 
       {/* Report preview with harness sections */}
+      {isHarness && availableHarnessTools.length > 1 && (
+        <div className="mb-5 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
+          This report includes {availableHarnessTools.length} harness tools.
+          Claude Code and Codex visibility are edited separately below.
+        </div>
+      )}
+
       {isHarness && harnessData && (
         <>
           <HideableCard
@@ -1108,6 +1449,14 @@ export default function EditReportPage() {
             </HideableCard>
           )}
         </>
+      )}
+
+      {isHarness && codexHarnessData && (
+        <CodexVisibilityPreview
+          codexData={codexHarnessData}
+          hiddenSections={hiddenSections}
+          onToggle={toggleSection}
+        />
       )}
 
       {/* Projects attached to this report */}

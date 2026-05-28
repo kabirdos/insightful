@@ -19,7 +19,11 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { applyRedactions } from "@/lib/redaction";
-import { normalizeHarnessData } from "@/types/insights";
+import {
+  getClaudeHarnessData,
+  getCodexHarnessData,
+  toStoredHarnessData,
+} from "@/types/insights";
 import type {
   InsightsData,
   ParsedInsightsReport,
@@ -52,6 +56,13 @@ function generateSlug(): string {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const shortId = Math.random().toString(36).substring(2, 8);
   return `${date}-${shortId}`;
+}
+
+function toStoredTokenCount(value: unknown): bigint | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    return null;
+  }
+  return BigInt(Math.round(value));
 }
 
 /**
@@ -139,6 +150,14 @@ export async function publishReport(
       redactedData[dataKey as keyof InsightsData] ?? null;
   }
 
+  const storedHarnessData = toStoredHarnessData(parsed.harnessData);
+  const claudeHarnessData = getClaudeHarnessData(storedHarnessData);
+  const codexHarnessData = getCodexHarnessData(storedHarnessData);
+  const storedTotalTokens =
+    typeof claudeHarnessData?.stats.totalTokens === "number"
+      ? claudeHarnessData.stats.totalTokens
+      : codexHarnessData?.stats.totalTokens;
+
   // 3. Title fallback.
   const isHarness = parsed.reportType === "insight-harness";
   const title =
@@ -199,21 +218,17 @@ export async function publishReport(
         detectedSkills: parsed.detectedSkills ?? [],
         reportType: parsed.reportType ?? "insights",
         // Harness scalar denorm — null when this isn't a harness report.
-        totalTokens:
-          typeof parsed.harnessData?.stats.totalTokens === "number"
-            ? BigInt(parsed.harnessData.stats.totalTokens)
-            : null,
+        totalTokens: toStoredTokenCount(storedTotalTokens),
         durationHours:
-          typeof parsed.harnessData?.stats.durationHours === "number"
-            ? Math.round(parsed.harnessData.stats.durationHours)
+          typeof claudeHarnessData?.stats.durationHours === "number"
+            ? Math.round(claudeHarnessData.stats.durationHours)
             : null,
-        avgSessionMinutes: parsed.harnessData?.stats.avgSessionMinutes ?? null,
-        prCount: parsed.harnessData?.stats.prCount ?? null,
-        autonomyLabel: parsed.harnessData?.autonomy.label ?? null,
+        avgSessionMinutes:
+          claudeHarnessData?.stats.avgSessionMinutes ?? null,
+        prCount: claudeHarnessData?.stats.prCount ?? null,
+        autonomyLabel: claudeHarnessData?.autonomy.label ?? null,
         harnessData:
-          (normalizeHarnessData(
-            parsed.harnessData,
-          ) as unknown as Prisma.InputJsonValue) ?? undefined,
+          (storedHarnessData as unknown as Prisma.InputJsonValue) ?? undefined,
         hiddenHarnessSections: args.hiddenHarnessSections,
       },
       select: {

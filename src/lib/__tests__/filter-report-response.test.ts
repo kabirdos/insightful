@@ -144,6 +144,61 @@ function makeReport(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function makeEnvelopeReport(hiddenHarnessSections: string[] = []) {
+  const claudeHarnessData = makeReportWithShowcase([]).harnessData;
+  return {
+    id: "report-envelope",
+    authorId: "user-1",
+    harnessData: {
+      primaryTool: "claude-code",
+      tools: {
+        "claude-code": claudeHarnessData,
+        codex: {
+          tool: "codex",
+          stats: {
+            totalTokens: 200,
+            sessionCount: 4,
+            payloadFormatSessions: 3,
+            legacyFormatSessions: 1,
+          },
+          toolUsage: { exec_command: 8, apply_patch: 2 },
+          cliTools: { git: 5, npm: 1 },
+          skillInventory: [
+            {
+              name: "Codex Public Skill",
+              description: "visible",
+              readme_markdown: "# Codex public",
+              hero_base64: "CODEXPUBLICBASE64",
+              hero_mime_type: "image/png",
+            },
+            {
+              name: "Codex Secret Skill",
+              description: "hidden",
+              readme_markdown: "# Codex secret",
+              hero_base64: "CODEXSECRETBASE64",
+              hero_mime_type: "image/jpeg",
+            },
+          ],
+          plugins: [
+            { name: "codex-github", enabled: true },
+            { name: "codex-private", enabled: true },
+          ],
+          safety: {
+            approvalsReviewer: "model",
+            approvalModes: ["approve"],
+            trustLevels: ["trusted"],
+            rulesAllowlist: ["git"],
+          },
+          workflowData: { phaseTransitions: { plan: 1 } },
+          workSurfaces: { desktopPresence: [{ tool: "Codex CLI" }] },
+          localOnly: true,
+        },
+      },
+    },
+    hiddenHarnessSections,
+  };
+}
+
 describe("filterReportForResponse", () => {
   it("returns full payload when no hides", () => {
     const report = makeReport();
@@ -313,6 +368,128 @@ describe("filterReportForResponse", () => {
     };
     expect(hd.plugins).toHaveLength(0);
     expect(Object.keys(hd.languages)).toHaveLength(0);
+  });
+
+  it("applies legacy harness hide keys only to the Claude slice in an envelope", () => {
+    const report = makeEnvelopeReport(["skillInventory"]);
+    const result = filterReportForResponse(report, {
+      viewerIsOwner: false,
+      includeHidden: false,
+    });
+    const tools = (
+      result.harnessData as {
+        tools: {
+          "claude-code": { skillInventory: unknown[] };
+          codex: { skillInventory: unknown[] };
+        };
+      }
+    ).tools;
+
+    expect(tools["claude-code"].skillInventory).toHaveLength(0);
+    expect(tools.codex.skillInventory).toHaveLength(2);
+  });
+
+  it("applies namespaced harness hide keys only to the targeted tool slice", () => {
+    const report = makeEnvelopeReport(["tools.codex.skillInventory"]);
+    const result = filterReportForResponse(report, {
+      viewerIsOwner: false,
+      includeHidden: false,
+    });
+    const tools = (
+      result.harnessData as {
+        tools: {
+          "claude-code": { skillInventory: unknown[] };
+          codex: { skillInventory: unknown[] };
+        };
+      }
+    ).tools;
+
+    expect(tools["claude-code"].skillInventory).toHaveLength(2);
+    expect(tools.codex.skillInventory).toHaveLength(0);
+  });
+
+  it("applies namespaced item hides inside Codex envelope slices", () => {
+    const report = makeEnvelopeReport([
+      "tools.codex.skillInventory.codex-secret-skill",
+    ]);
+    const result = filterReportForResponse(report, {
+      viewerIsOwner: false,
+      includeHidden: false,
+    });
+    const codexSkills = (
+      result.harnessData as {
+        tools: { codex: { skillInventory: Array<{ name: string }> } };
+      }
+    ).tools.codex.skillInventory;
+
+    expect(codexSkills).toHaveLength(1);
+    expect(codexSkills[0].name).toBe("Codex Public Skill");
+    expect(JSON.stringify(result)).not.toContain("CODEXSECRETBASE64");
+  });
+
+  it("strips namespaced Codex safety and work-surface sections", () => {
+    const report = makeEnvelopeReport([
+      "tools.codex.safety",
+      "tools.codex.workSurfaces",
+    ]);
+    const result = filterReportForResponse(report, {
+      viewerIsOwner: false,
+      includeHidden: false,
+    });
+    const codex = (
+      result.harnessData as {
+        tools: {
+          codex: {
+            safety: {
+              approvalModes: string[];
+              trustLevels: string[];
+              rulesAllowlist: string[];
+            };
+            workSurfaces: { desktopPresence: unknown[] };
+          };
+        };
+      }
+    ).tools.codex;
+
+    expect(codex.safety.approvalModes).toEqual([]);
+    expect(codex.safety.trustLevels).toEqual([]);
+    expect(codex.safety.rulesAllowlist).toEqual([]);
+    expect(codex.workSurfaces.desktopPresence).toEqual([]);
+  });
+
+  it("keeps list-feed harnessData Claude-compatible when a Claude slice exists", () => {
+    const report = makeEnvelopeReport([]);
+    const result = filterReportForListFeed(report);
+
+    expect(result.harnessData).toMatchObject({
+      stats: { totalTokens: 100 },
+      skillInventory: expect.any(Array),
+    });
+    expect(result.harnessData).not.toMatchObject({
+      tools: expect.any(Object),
+    });
+  });
+
+  it("owner with includeHidden=true receives the full envelope", () => {
+    const report = makeEnvelopeReport([
+      "skillInventory",
+      "tools.codex.skillInventory",
+    ]);
+    const result = filterReportForResponse(report, {
+      viewerIsOwner: true,
+      includeHidden: true,
+    });
+    const tools = (
+      result.harnessData as {
+        tools: {
+          "claude-code": { skillInventory: unknown[] };
+          codex: { skillInventory: unknown[] };
+        };
+      }
+    ).tools;
+
+    expect(tools["claude-code"].skillInventory).toHaveLength(2);
+    expect(tools.codex.skillInventory).toHaveLength(2);
   });
 });
 
@@ -566,5 +743,21 @@ describe("filterReportForListFeed", () => {
     // Shape unchanged for old reports — no new null keys injected where
     // the source skill didn't have them
     expect(skills[0]).not.toHaveProperty("readme_markdown");
+  });
+
+  it("drops showcase bytes from compatible skill inventories inside envelopes", () => {
+    const report = makeEnvelopeReport([]);
+    const result = filterReportForListFeed(report);
+    const skills = (result.harnessData as unknown as {
+      skillInventory: Array<Record<string, unknown>>;
+    }).skillInventory;
+
+    for (const skill of skills) {
+      expect(skill.readme_markdown).toBeNull();
+      expect(skill.hero_base64).toBeNull();
+      expect(skill.hero_mime_type).toBeNull();
+    }
+    expect(JSON.stringify(result)).not.toContain("PUBLICBASE64DATA");
+    expect(JSON.stringify(result)).not.toContain("tools");
   });
 });

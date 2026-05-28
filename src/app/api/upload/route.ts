@@ -39,7 +39,11 @@ import {
 import { logHarnessRequest } from "@/lib/harness-logging";
 import { publishReport } from "@/lib/publish-report";
 import { buildReportEditUrl } from "@/lib/urls";
-import type { ParsedInsightsReport } from "@/types/insights";
+import {
+  getClaudeHarnessData,
+  getCodexHarnessData,
+  type ParsedInsightsReport,
+} from "@/types/insights";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -225,29 +229,44 @@ function parseUploadHtml(html: string): ParsedUpload {
     // translate to 400 so the message reaches the user.
     harnessData = parseHarnessHtml(html);
   }
+  const claudeHarnessData = getClaudeHarnessData(harnessData);
+  const codexHarnessData = getCodexHarnessData(harnessData);
 
-  const enhancedStats = harnessData?.enhancedStats
+  const enhancedStats = claudeHarnessData?.enhancedStats
     ? {
-        linesAdded: harnessData.enhancedStats.linesAdded,
-        linesRemoved: harnessData.enhancedStats.linesRemoved,
-        fileCount: harnessData.enhancedStats.fileCount,
-        dayCount: harnessData.enhancedStats.dayCount,
-        msgsPerDay: harnessData.enhancedStats.msgsPerDay,
+        linesAdded: claudeHarnessData.enhancedStats.linesAdded,
+        linesRemoved: claudeHarnessData.enhancedStats.linesRemoved,
+        fileCount: claudeHarnessData.enhancedStats.fileCount,
+        dayCount: claudeHarnessData.enhancedStats.dayCount,
+        msgsPerDay: claudeHarnessData.enhancedStats.msgsPerDay,
       }
     : extractEnhancedStats(insightsHtml);
 
   const stats = {
     ...parsed.stats,
     ...enhancedStats,
-    ...(harnessData
+    ...(claudeHarnessData
       ? {
           sessionCount:
-            harnessData.stats.sessionCount ?? parsed.stats.sessionCount ?? 0,
+            claudeHarnessData.stats.sessionCount ??
+            parsed.stats.sessionCount ??
+            0,
           commitCount:
-            harnessData.stats.commitCount ?? parsed.stats.commitCount ?? 0,
+            claudeHarnessData.stats.commitCount ??
+            parsed.stats.commitCount ??
+            0,
           dayCount: enhancedStats.dayCount ?? 30,
         }
-      : {}),
+      : codexHarnessData
+        ? {
+            sessionCount:
+              codexHarnessData.stats.sessionCount ??
+              parsed.stats.sessionCount ??
+              0,
+            commitCount: parsed.stats.commitCount ?? 0,
+            dayCount: enhancedStats.dayCount ?? 30,
+          }
+        : {}),
   };
 
   // Compose the ParsedInsightsReport that publishReport expects. Layer

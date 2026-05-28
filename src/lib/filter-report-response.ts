@@ -6,9 +6,9 @@
  * returned harnessData unfiltered for section-level hides added via edit.
  */
 
-import type { HarnessData } from "@/types/insights";
 import { stripHiddenHarnessData } from "./harness-section-visibility";
 import { hideSetFromArray, filterList } from "./item-visibility";
+import { normalizeHarnessEnvelope } from "@/types/insights";
 
 /**
  * The shape of a narrative section that contains filterable sub-lists.
@@ -50,7 +50,7 @@ export function filterReportForResponse<
   // Filter harnessData (the main privacy fix)
   if (result.harnessData && typeof result.harnessData === "object") {
     result.harnessData = stripHiddenHarnessData(
-      result.harnessData as HarnessData,
+      result.harnessData,
       hiddenSections,
     ) as unknown as T["harnessData"];
   }
@@ -191,28 +191,56 @@ export function filterReportForListFeed<
     includeHidden: false,
   });
 
-  if (
-    !filtered.harnessData ||
-    typeof filtered.harnessData !== "object" ||
-    !Array.isArray(
-      (filtered.harnessData as { skillInventory?: unknown }).skillInventory,
-    )
-  ) {
+  const harnessData = toListFeedHarnessData(
+    stripShowcaseFieldsFromHarnessData(filtered.harnessData),
+  );
+  if (harnessData === filtered.harnessData) {
     return filtered;
   }
 
-  const hd = filtered.harnessData as {
-    skillInventory: Array<{
-      readme_markdown?: string | null;
-      hero_base64?: string | null;
-      hero_mime_type?: string | null;
-      [key: string]: unknown;
-    }>;
-  };
+  return {
+    ...filtered,
+    harnessData,
+  } as T;
+}
 
-  const skillInventory = hd.skillInventory.map((skill) => {
+function stripShowcaseFieldsFromHarnessData(data: unknown): unknown {
+  if (!isRecord(data)) return data;
+
+  if (isRecord(data.tools)) {
+    const tools: Record<string, unknown> = { ...data.tools };
+    let changed = false;
+
+    for (const toolKey of ["claude-code", "codex"]) {
+      const stripped = stripShowcaseFieldsFromHarnessSlice(tools[toolKey]);
+      if (stripped !== tools[toolKey]) {
+        tools[toolKey] = stripped;
+        changed = true;
+      }
+    }
+
+    return changed ? { ...data, tools } : data;
+  }
+
+  return stripShowcaseFieldsFromHarnessSlice(data);
+}
+
+function toListFeedHarnessData(data: unknown): unknown {
+  if (!isRecord(data) || !isRecord(data.tools)) return data;
+
+  const envelope = normalizeHarnessEnvelope(data);
+  return envelope?.tools["claude-code"] ?? data;
+}
+
+function stripShowcaseFieldsFromHarnessSlice(data: unknown): unknown {
+  if (!isRecord(data) || !Array.isArray(data.skillInventory)) return data;
+
+  let changed = false;
+  const skillInventory = data.skillInventory.map((skill) => {
+    if (!isRecord(skill)) return skill;
+
     // Only strip if showcase fields are actually present — avoids unnecessary
-    // object allocation for reports without --include-skills data
+    // object allocation for reports without --include-skills data.
     if (
       skill.readme_markdown == null &&
       skill.hero_base64 == null &&
@@ -220,6 +248,8 @@ export function filterReportForListFeed<
     ) {
       return skill;
     }
+
+    changed = true;
     return {
       ...skill,
       readme_markdown: null,
@@ -228,8 +258,9 @@ export function filterReportForListFeed<
     };
   });
 
-  return {
-    ...filtered,
-    harnessData: { ...hd, skillInventory },
-  } as T;
+  return changed ? { ...data, skillInventory } : data;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
 }

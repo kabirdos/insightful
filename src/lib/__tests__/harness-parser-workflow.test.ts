@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parseHarnessHtml } from "@/lib/harness-parser";
+import { getClaudeHarnessData, type HarnessData } from "@/types/insights";
 
 // ---------------------------------------------------------------------------
 // Base HarnessData with workflow data embedded as JSON
@@ -103,10 +104,16 @@ function buildHtml(data: unknown): string {
 </body></html>`;
 }
 
+function parseClaudeHarnessHtml(html: string): HarnessData {
+  const result = getClaudeHarnessData(parseHarnessHtml(html));
+  if (!result) throw new Error("Expected Claude Code harness data");
+  return result;
+}
+
 describe("harness-parser workflow data", () => {
   it("parses workflow phases from JSON", () => {
     const data = { ...BASE_DATA, workflowData: WORKFLOW_DATA };
-    const result = parseHarnessHtml(buildHtml(data));
+    const result = parseClaudeHarnessHtml(buildHtml(data));
     expect(result.workflowData).not.toBeNull();
     expect(result.workflowData!.phaseDistribution).toEqual({
       exploration: 40,
@@ -118,7 +125,7 @@ describe("harness-parser workflow data", () => {
 
   it("parses phase transitions", () => {
     const data = { ...BASE_DATA, workflowData: WORKFLOW_DATA };
-    const result = parseHarnessHtml(buildHtml(data));
+    const result = parseClaudeHarnessHtml(buildHtml(data));
     expect(result.workflowData!.phaseTransitions).toEqual({
       "exploration->implementation": 23,
       "implementation->testing": 15,
@@ -128,7 +135,7 @@ describe("harness-parser workflow data", () => {
 
   it("parses skill invocations", () => {
     const data = { ...BASE_DATA, workflowData: WORKFLOW_DATA };
-    const result = parseHarnessHtml(buildHtml(data));
+    const result = parseClaudeHarnessHtml(buildHtml(data));
     expect(result.workflowData!.skillInvocations).toEqual({
       "ce-brainstorm": 8,
       "ce-work": 12,
@@ -138,7 +145,7 @@ describe("harness-parser workflow data", () => {
 
   it("parses agent dispatches", () => {
     const data = { ...BASE_DATA, workflowData: WORKFLOW_DATA };
-    const result = parseHarnessHtml(buildHtml(data));
+    const result = parseClaudeHarnessHtml(buildHtml(data));
     expect(result.workflowData!.agentDispatches).toEqual({
       "Run tests for auth module": 3,
       "Lint and format changed files": 2,
@@ -147,7 +154,7 @@ describe("harness-parser workflow data", () => {
 
   it("parses workflow patterns", () => {
     const data = { ...BASE_DATA, workflowData: WORKFLOW_DATA };
-    const result = parseHarnessHtml(buildHtml(data));
+    const result = parseClaudeHarnessHtml(buildHtml(data));
     expect(result.workflowData!.workflowPatterns).toEqual([
       {
         sequence: ["ce-brainstorm", "ce-work", "git-commit-push-pr"],
@@ -159,7 +166,7 @@ describe("harness-parser workflow data", () => {
 
   it("parses phase stats", () => {
     const data = { ...BASE_DATA, workflowData: WORKFLOW_DATA };
-    const result = parseHarnessHtml(buildHtml(data));
+    const result = parseClaudeHarnessHtml(buildHtml(data));
     expect(result.workflowData!.phaseStats.exploreBeforeImplPct).toBe(75);
     expect(result.workflowData!.phaseStats.testBeforeShipPct).toBe(60);
     expect(result.workflowData!.phaseStats.totalSessionsWithPhases).toBe(8);
@@ -167,14 +174,14 @@ describe("harness-parser workflow data", () => {
 
   it("returns null workflowData when not present in JSON", () => {
     const data = { ...BASE_DATA, workflowData: null };
-    const result = parseHarnessHtml(buildHtml(data));
+    const result = parseClaudeHarnessHtml(buildHtml(data));
     expect(result.workflowData).toBeNull();
   });
 
   it("returns null workflowData when field is omitted", () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { workflowData, ...rest } = BASE_DATA;
-    const result = parseHarnessHtml(buildHtml(rest));
+    const result = parseClaudeHarnessHtml(buildHtml(rest));
     expect(result.workflowData).toBeNull();
   });
 });

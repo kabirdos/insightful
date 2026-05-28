@@ -328,6 +328,55 @@ describe("POST /api/insights — save-side happy path", () => {
     expect(createArgs.data.reportType).toBe("insight-harness");
     expect(createArgs.data.harnessData).toBeDefined();
   });
+
+  it("stores Codex-only harnessData as an envelope and derives clear scalar stats", async () => {
+    mockSessionAndUser("user-1");
+    wireTransaction();
+    seedReportMock();
+
+    await insightsPOST(
+      postRequest({
+        sessionCount: null,
+        reportType: "insight-harness",
+        harnessData: {
+          tool: "codex",
+          stats: { totalTokens: 2000.6, sessionCount: 12 },
+          toolUsage: { exec_command: 8 },
+          cliTools: { git: 3 },
+          skillInventory: [
+            { name: "code-review", description: "Review code" },
+          ],
+          plugins: [{ name: "github", enabled: true }],
+          safety: {
+            approvalsReviewer: "model",
+            approvalModes: ["approve"],
+            trustLevels: ["trusted"],
+            rulesAllowlist: ["git"],
+          },
+          workflowData: { phaseTransitions: { planning: 2 } },
+          workSurfaces: {
+            desktopPresence: [{ tool: "Codex CLI", present: true }],
+          },
+          localOnly: true,
+        },
+      }),
+    );
+
+    const createArgs = mockPrisma.insightReport.create.mock.calls[0][0];
+    expect(createArgs.data.reportType).toBe("insight-harness");
+    expect(createArgs.data.totalTokens).toBe(BigInt(2001));
+    expect(createArgs.data.durationHours).toBeNull();
+    expect(createArgs.data.harnessData).toMatchObject({
+      primaryTool: "codex",
+      tools: {
+        codex: {
+          tool: "codex",
+          stats: { totalTokens: 2001, sessionCount: 12 },
+          workflowData: { phaseTransitions: { planning: 2 } },
+        },
+      },
+    });
+  });
 });
 
 describe("POST /api/insights — field allowlist enforcement", () => {
