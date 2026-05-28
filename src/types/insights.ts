@@ -304,8 +304,10 @@ export interface CodexHarnessSafety {
 }
 
 export interface CodexHarnessWorkSurfaces {
-  desktopPresence: Array<Record<string, unknown>>;
-  [key: string]: unknown;
+  desktopPresence: Array<{
+    tool?: string;
+    present?: boolean;
+  }>;
 }
 
 export interface CodexHarnessData {
@@ -498,7 +500,6 @@ function normalizeCodexSkillInventory(raw: unknown): CodexHarnessSkillEntry[] {
     if (!isRecord(entry) || typeof entry.name !== "string") return [];
     return [
       {
-        ...entry,
         name: entry.name,
         description:
           typeof entry.description === "string" ? entry.description : null,
@@ -520,7 +521,6 @@ function normalizeCodexPlugins(raw: unknown): CodexHarnessPlugin[] {
     if (!isRecord(entry) || typeof entry.name !== "string") return [];
     return [
       {
-        ...entry,
         name: entry.name,
         enabled: typeof entry.enabled === "boolean" ? entry.enabled : undefined,
         version: typeof entry.version === "string" ? entry.version : null,
@@ -534,7 +534,6 @@ function normalizeCodexPlugins(raw: unknown): CodexHarnessPlugin[] {
 function normalizeCodexSafety(raw: unknown): CodexHarnessSafety {
   const source = isRecord(raw) ? raw : {};
   return {
-    ...source,
     approvalsReviewer:
       typeof source.approvalsReviewer === "string"
         ? source.approvalsReviewer
@@ -548,9 +547,17 @@ function normalizeCodexSafety(raw: unknown): CodexHarnessSafety {
 function normalizeCodexWorkSurfaces(raw: unknown): CodexHarnessWorkSurfaces {
   const source = isRecord(raw) ? raw : {};
   return {
-    ...source,
     desktopPresence: Array.isArray(source.desktopPresence)
-      ? source.desktopPresence.filter(isRecord)
+      ? source.desktopPresence.flatMap((entry) => {
+          if (!isRecord(entry)) return [];
+          return [
+            {
+              tool: typeof entry.tool === "string" ? entry.tool : undefined,
+              present:
+                typeof entry.present === "boolean" ? entry.present : undefined,
+            },
+          ];
+        })
       : [],
   };
 }
@@ -562,13 +569,30 @@ function normalizeCodexHarnessData(raw: unknown): CodexHarnessData | null {
 
   return {
     tool: "codex",
-    stats: raw.stats as CodexHarnessStats,
+    stats: {
+      totalTokens:
+        typeof raw.stats.totalTokens === "number"
+          ? raw.stats.totalTokens
+          : undefined,
+      sessionCount:
+        typeof raw.stats.sessionCount === "number"
+          ? raw.stats.sessionCount
+          : undefined,
+      payloadFormatSessions:
+        typeof raw.stats.payloadFormatSessions === "number"
+          ? raw.stats.payloadFormatSessions
+          : undefined,
+      legacyFormatSessions:
+        typeof raw.stats.legacyFormatSessions === "number"
+          ? raw.stats.legacyFormatSessions
+          : undefined,
+    },
     toolUsage: normalizeNumberMap(raw.toolUsage),
     cliTools: normalizeNumberMap(raw.cliTools),
     skillInventory: normalizeCodexSkillInventory(raw.skillInventory),
     plugins: normalizeCodexPlugins(raw.plugins),
     safety: normalizeCodexSafety(raw.safety),
-    workflowData: isRecord(raw.workflowData) ? raw.workflowData : null,
+    workflowData: null,
     workSurfaces: normalizeCodexWorkSurfaces(raw.workSurfaces),
     localOnly: raw.localOnly === true,
   };

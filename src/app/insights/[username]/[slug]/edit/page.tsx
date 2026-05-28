@@ -96,7 +96,9 @@ type CodexVisibilitySectionKey =
   | "skillInventory"
   | "plugins"
   | "cliTools"
-  | "workflowData";
+  | "workflowData"
+  | "safety"
+  | "workSurfaces";
 
 const CODEX_VISIBILITY_PREFIX = "tools.codex";
 
@@ -227,6 +229,8 @@ function CodexVisibilityPreview({
   const skillSectionKey = buildCodexVisibilityKey("skillInventory");
   const pluginSectionKey = buildCodexVisibilityKey("plugins");
   const workflowSectionKey = buildCodexVisibilityKey("workflowData");
+  const safetySectionKey = buildCodexVisibilityKey("safety");
+  const workSurfacesSectionKey = buildCodexVisibilityKey("workSurfaces");
   const toolEntries = Object.entries(codexData.toolUsage ?? {});
   const cliEntries = Object.entries(codexData.cliTools ?? {});
   const workflowKeys = codexData.workflowData
@@ -406,11 +410,71 @@ function CodexVisibilityPreview({
           </HideableCard>
         )}
 
+        <HideableCard
+          title="Codex Safety And Rules"
+          hidden={!!hiddenSections[safetySectionKey]}
+          onToggle={() => onToggle(safetySectionKey)}
+        >
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {codexData.safety.approvalsReviewer && (
+                <div>
+                  <div className="text-xs font-semibold uppercase text-slate-400">
+                    Approvals reviewer
+                  </div>
+                  <div className="mt-1 text-slate-700 dark:text-slate-300">
+                    {codexData.safety.approvalsReviewer}
+                  </div>
+                </div>
+              )}
+              <div>
+                <div className="text-xs font-semibold uppercase text-slate-400">
+                  Safety fields
+                </div>
+                <div className="mt-1 text-slate-700 dark:text-slate-300">
+                  {[
+                    ...codexData.safety.approvalModes,
+                    ...codexData.safety.trustLevels,
+                    ...codexData.safety.rulesAllowlist,
+                  ].length.toLocaleString()} values
+                </div>
+              </div>
+            </div>
+          </div>
+        </HideableCard>
+
+        {codexData.workSurfaces.desktopPresence.length > 0 && (
+          <HideableCard
+            title="Codex Work Surfaces"
+            hidden={!!hiddenSections[workSurfacesSectionKey]}
+            onToggle={() => onToggle(workSurfacesSectionKey)}
+          >
+            <div className="grid gap-2 sm:grid-cols-2">
+              {codexData.workSurfaces.desktopPresence.map((surface, i) => (
+                <div
+                  key={`${surface.tool ?? "surface"}-${i}`}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+                >
+                  <div className="font-medium text-slate-800 dark:text-slate-100">
+                    {surface.tool ?? `Surface ${i + 1}`}
+                  </div>
+                  {typeof surface.present === "boolean" && (
+                    <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                      {surface.present ? "Detected" : "Not detected"}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </HideableCard>
+        )}
+
         {toolEntries.length === 0 &&
           cliEntries.length === 0 &&
           codexData.skillInventory.length === 0 &&
           codexData.plugins.length === 0 &&
-          workflowKeys.length === 0 && (
+          workflowKeys.length === 0 &&
+          codexData.workSurfaces.desktopPresence.length === 0 && (
             <p className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
               This Codex report does not include hideable Codex sections.
             </p>

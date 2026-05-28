@@ -403,7 +403,16 @@ export default function InsightDetailPage() {
           />
 
           {selectedTool === "codex" && codexHarnessData && (
-            <CodexHarnessDashboard codexData={codexHarnessData} />
+            <>
+              {report.reportProjects.length > 0 && (
+                <div className="mb-6">
+                  <ProjectLinks
+                    links={report.reportProjects.map((rp) => rp.project)}
+                  />
+                </div>
+              )}
+              <CodexHarnessDashboard codexData={codexHarnessData} />
+            </>
           )}
 
           {selectedTool === "claude-code" && claudeHarnessData && (

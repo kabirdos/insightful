@@ -427,6 +427,49 @@ describe("filterReportForResponse", () => {
     expect(JSON.stringify(result)).not.toContain("CODEXSECRETBASE64");
   });
 
+  it("strips namespaced Codex safety and work-surface sections", () => {
+    const report = makeEnvelopeReport([
+      "tools.codex.safety",
+      "tools.codex.workSurfaces",
+    ]);
+    const result = filterReportForResponse(report, {
+      viewerIsOwner: false,
+      includeHidden: false,
+    });
+    const codex = (
+      result.harnessData as {
+        tools: {
+          codex: {
+            safety: {
+              approvalModes: string[];
+              trustLevels: string[];
+              rulesAllowlist: string[];
+            };
+            workSurfaces: { desktopPresence: unknown[] };
+          };
+        };
+      }
+    ).tools.codex;
+
+    expect(codex.safety.approvalModes).toEqual([]);
+    expect(codex.safety.trustLevels).toEqual([]);
+    expect(codex.safety.rulesAllowlist).toEqual([]);
+    expect(codex.workSurfaces.desktopPresence).toEqual([]);
+  });
+
+  it("keeps list-feed harnessData Claude-compatible when a Claude slice exists", () => {
+    const report = makeEnvelopeReport([]);
+    const result = filterReportForListFeed(report);
+
+    expect(result.harnessData).toMatchObject({
+      stats: { totalTokens: 100 },
+      skillInventory: expect.any(Array),
+    });
+    expect(result.harnessData).not.toMatchObject({
+      tools: expect.any(Object),
+    });
+  });
+
   it("owner with includeHidden=true receives the full envelope", () => {
     const report = makeEnvelopeReport([
       "skillInventory",
@@ -705,24 +748,16 @@ describe("filterReportForListFeed", () => {
   it("drops showcase bytes from compatible skill inventories inside envelopes", () => {
     const report = makeEnvelopeReport([]);
     const result = filterReportForListFeed(report);
-    const tools = (
-      result.harnessData as {
-        tools: {
-          "claude-code": { skillInventory: Array<Record<string, unknown>> };
-          codex: { skillInventory: Array<Record<string, unknown>> };
-        };
-      }
-    ).tools;
+    const skills = (result.harnessData as unknown as {
+      skillInventory: Array<Record<string, unknown>>;
+    }).skillInventory;
 
-    for (const skill of [
-      ...tools["claude-code"].skillInventory,
-      ...tools.codex.skillInventory,
-    ]) {
+    for (const skill of skills) {
       expect(skill.readme_markdown).toBeNull();
       expect(skill.hero_base64).toBeNull();
       expect(skill.hero_mime_type).toBeNull();
     }
     expect(JSON.stringify(result)).not.toContain("PUBLICBASE64DATA");
-    expect(JSON.stringify(result)).not.toContain("CODEXPUBLICBASE64");
+    expect(JSON.stringify(result)).not.toContain("tools");
   });
 });

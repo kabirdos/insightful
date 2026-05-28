@@ -8,6 +8,7 @@
 
 import { stripHiddenHarnessData } from "./harness-section-visibility";
 import { hideSetFromArray, filterList } from "./item-visibility";
+import { normalizeHarnessEnvelope } from "@/types/insights";
 
 /**
  * The shape of a narrative section that contains filterable sub-lists.
@@ -190,7 +191,9 @@ export function filterReportForListFeed<
     includeHidden: false,
   });
 
-  const harnessData = stripShowcaseFieldsFromHarnessData(filtered.harnessData);
+  const harnessData = toListFeedHarnessData(
+    stripShowcaseFieldsFromHarnessData(filtered.harnessData),
+  );
   if (harnessData === filtered.harnessData) {
     return filtered;
   }
@@ -220,6 +223,11 @@ function stripShowcaseFieldsFromHarnessData(data: unknown): unknown {
   }
 
   return stripShowcaseFieldsFromHarnessSlice(data);
+}
+
+function toListFeedHarnessData(data: unknown): unknown {
+  const envelope = normalizeHarnessEnvelope(data);
+  return envelope?.tools["claude-code"] ?? data;
 }
 
 function stripShowcaseFieldsFromHarnessSlice(data: unknown): unknown {

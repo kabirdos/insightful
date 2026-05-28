@@ -142,6 +142,10 @@ describe("Edit report visibility flow", () => {
     expect(buildCodexVisibilityKey("skillInventory", "code-review")).toBe(
       "tools.codex.skillInventory.code-review",
     );
+    expect(buildCodexVisibilityKey("safety")).toBe("tools.codex.safety");
+    expect(buildCodexVisibilityKey("workSurfaces")).toBe(
+      "tools.codex.workSurfaces",
+    );
   });
 
   it("should allow nulling stat fields", () => {

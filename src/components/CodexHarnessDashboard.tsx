@@ -283,9 +283,16 @@ export default function CodexHarnessDashboard({
 
         <Section title="Workflow Signal" icon={Wrench}>
           {hasWorkflowSignal ? (
-            <pre className="max-h-72 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
-              {JSON.stringify(codexData.workflowData, null, 2)}
-            </pre>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.keys(codexData.workflowData ?? {}).map((key) => (
+                <span
+                  key={key}
+                  className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                >
+                  {key}
+                </span>
+              ))}
+            </div>
           ) : (
             <p className="text-sm text-slate-500 dark:text-slate-400">
               No workflow phase signal was detected in this Codex profile.

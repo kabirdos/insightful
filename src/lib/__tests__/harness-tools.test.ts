@@ -162,4 +162,41 @@ describe("harness tools normalization", () => {
       tools: { codex: { tool: "codex", stats: { totalTokens: 2000 } } },
     });
   });
+
+  it("drops unrecognized Codex fields before storage", () => {
+    const stored = toStoredHarnessData(
+      codex({
+        stats: {
+          totalTokens: 2000,
+          sessionCount: 12,
+          payloadFormatSessions: 10,
+          legacyFormatSessions: 2,
+          localPath: "/Users/example/secret",
+        },
+        safety: {
+          approvalsReviewer: "model",
+          approvalModes: ["approve"],
+          trustLevels: ["trusted"],
+          rulesAllowlist: ["git"],
+          rawRules: "do not publish",
+        },
+        workSurfaces: {
+          desktopPresence: [
+            {
+              tool: "Codex CLI",
+              present: true,
+              path: "/Users/example/.codex",
+            },
+          ],
+          rawSurface: "private",
+        },
+        workflowData: { rawPrompt: "private" },
+      } as unknown as Partial<CodexHarnessData>),
+    );
+
+    expect(JSON.stringify(stored)).not.toContain("/Users/example");
+    expect(JSON.stringify(stored)).not.toContain("do not publish");
+    expect(JSON.stringify(stored)).not.toContain("rawPrompt");
+    expect(stored?.tools.codex?.workflowData).toBeNull();
+  });
 });

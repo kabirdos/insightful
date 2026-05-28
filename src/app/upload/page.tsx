@@ -35,7 +35,11 @@ import type {
 } from "@/types/insights";
 import { applyRedactions } from "@/lib/redaction";
 import { normalizeChartData } from "@/lib/chart-parser";
-import { normalizeHarnessData, normalizeSkills } from "@/types/insights";
+import {
+  normalizeHarnessData,
+  normalizeHarnessEnvelope,
+  normalizeSkills,
+} from "@/types/insights";
 import SectionRenderer from "@/components/SectionRenderer";
 import SnapshotCard from "@/components/SnapshotCard";
 import CollapsibleSection from "@/components/CollapsibleSection";
@@ -51,6 +55,7 @@ import WorkflowDiagram from "@/components/WorkflowDiagram";
 import HowIWorkCluster from "@/components/HowIWorkCluster";
 import ProjectLinks from "@/components/ProjectLinks";
 import MiniBarChart from "@/components/MiniBarChart";
+import CodexHarnessDashboard from "@/components/CodexHarnessDashboard";
 import { getHiddenKeypaths } from "@/lib/harness-section-visibility";
 import { buildItemKey } from "@/lib/item-visibility";
 import HideableItem from "@/components/HideableItem";
@@ -59,6 +64,10 @@ import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 import { buildOgImageUrl, buildReportUrl } from "@/lib/urls";
 
 type Step = "upload" | "projects" | "review";
+
+function buildCodexVisibilityKey(sectionKey: string): string {
+  return `tools.codex.${sectionKey}`;
+}
 
 /** Library Project as returned by GET /api/projects. */
 interface LibraryProject {
@@ -1652,6 +1661,10 @@ export default function UploadPage() {
   const previewHarnessData = parsed?.harnessData
     ? normalizeHarnessData(parsed.harnessData)
     : null;
+  const previewHarnessEnvelope = parsed?.harnessData
+    ? normalizeHarnessEnvelope(parsed.harnessData)
+    : null;
+  const previewCodexData = previewHarnessEnvelope?.tools.codex ?? null;
   const legacyContent = (
     <>
       <h1 className="mb-2 text-2xl font-bold text-slate-900 dark:text-white">
@@ -2328,6 +2341,74 @@ export default function UploadPage() {
             )}
           </div>
 
+          {parsed.reportType === "insight-harness" &&
+            previewCodexData &&
+            !previewHarnessData && (
+              <div className="space-y-4">
+                <RedactableSection
+                  title="Codex Tool Usage"
+                  enabled={!disabledSections[buildCodexVisibilityKey("toolUsage")]}
+                  onToggle={() =>
+                    toggleSection(buildCodexVisibilityKey("toolUsage"))
+                  }
+                >
+                  <CodexHarnessDashboard codexData={previewCodexData} />
+                </RedactableSection>
+                <RedactableSection
+                  title="Codex Skills"
+                  enabled={
+                    !disabledSections[
+                      buildCodexVisibilityKey("skillInventory")
+                    ]
+                  }
+                  onToggle={() =>
+                    toggleSection(buildCodexVisibilityKey("skillInventory"))
+                  }
+                >
+                  <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                    {previewCodexData.skillInventory.length.toLocaleString()}{" "}
+                    inventory items
+                  </div>
+                </RedactableSection>
+                <RedactableSection
+                  title="Codex Plugins"
+                  enabled={!disabledSections[buildCodexVisibilityKey("plugins")]}
+                  onToggle={() =>
+                    toggleSection(buildCodexVisibilityKey("plugins"))
+                  }
+                >
+                  <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                    {previewCodexData.plugins.length.toLocaleString()} plugins
+                  </div>
+                </RedactableSection>
+                <RedactableSection
+                  title="Codex Safety And Rules"
+                  enabled={!disabledSections[buildCodexVisibilityKey("safety")]}
+                  onToggle={() =>
+                    toggleSection(buildCodexVisibilityKey("safety"))
+                  }
+                >
+                  <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                    Safety metadata will be shown unless hidden.
+                  </div>
+                </RedactableSection>
+                <RedactableSection
+                  title="Codex Work Surfaces"
+                  enabled={
+                    !disabledSections[buildCodexVisibilityKey("workSurfaces")]
+                  }
+                  onToggle={() =>
+                    toggleSection(buildCodexVisibilityKey("workSurfaces"))
+                  }
+                >
+                  <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                    {previewCodexData.workSurfaces.desktopPresence.length.toLocaleString()}{" "}
+                    desktop signals
+                  </div>
+                </RedactableSection>
+              </div>
+            )}
+
           {/* ── Harness Report Preview — mirrors profile page layout ── */}
           {parsed.reportType === "insight-harness" && previewHarnessData ? (
             <>
@@ -2826,7 +2907,7 @@ export default function UploadPage() {
                 })}
               </div>
             </>
-          ) : (
+          ) : previewCodexData ? null : (
             /* ── Standard Insights Report Preview ── */
             <>
               <SnapshotCard

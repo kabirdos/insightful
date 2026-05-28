@@ -31,6 +31,8 @@ export const HIDEABLE_HARNESS_SECTION_KEYS = [
   "versions",
   "writeupSections",
   "harnessFiles",
+  "safety",
+  "workSurfaces",
 ] as const;
 
 export type HideableHarnessSectionKey =
@@ -51,6 +53,8 @@ const STRIPPABLE_HARNESS_DATA_KEYS = new Set<string>([
   "versions",
   "writeupSections",
   "harnessFiles",
+  "safety",
+  "workSurfaces",
 ]);
 
 const TOOL_KEY_ORDER: HarnessToolKey[] = ["claude-code", "codex"];
@@ -338,6 +342,17 @@ function stripHiddenCodexHarnessData(
         break;
       case "toolUsage":
         copy.toolUsage = {};
+        break;
+      case "safety":
+        copy.safety = {
+          approvalsReviewer: null,
+          approvalModes: [],
+          trustLevels: [],
+          rulesAllowlist: [],
+        };
+        break;
+      case "workSurfaces":
+        copy.workSurfaces = { desktopPresence: [] };
         break;
     }
   }
