@@ -393,16 +393,28 @@ describe("POST /api/upload — bearer idempotency", () => {
   it("short-circuits with replayed:true on a prior successful uploadId", async () => {
     mockFindIdempotent.mockResolvedValue({ slug: "20260421-prior" });
 
-    const response = await uploadPOST(bearerRequest());
-    expect(response.status).toBe(200);
-    const body = await response.json();
-    expect(body).toMatchObject({
-      replayed: true,
-      slug: "20260421-prior",
-      uploadId: VALID_UUID,
-      status: "draft",
-    });
-    expect(body.editUrl).toBe("/insights/alice/20260421-prior/edit");
+    // Explicitly clear AUTH_URL so this assertion is hermetic
+    // regardless of ambient env (CI may set AUTH_URL globally). With
+    // AUTH_URL unset the route falls back to the request's origin.
+    vi.stubEnv("AUTH_URL", "");
+    try {
+      const response = await uploadPOST(bearerRequest());
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body).toMatchObject({
+        replayed: true,
+        slug: "20260421-prior",
+        uploadId: VALID_UUID,
+        status: "draft",
+      });
+      // editUrl is host-qualified so the skill can print/clipboard it
+      // directly.
+      expect(body.editUrl).toBe(
+        "http://localhost/insights/alice/20260421-prior/edit",
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
     // CRITICAL: no rate-limit check on replays (R14a).
     expect(mockUploadLimit).not.toHaveBeenCalled();
     expect(mockPublish).not.toHaveBeenCalled();
@@ -480,16 +492,27 @@ describe("POST /api/upload — bearer rate limit", () => {
 
 describe("POST /api/upload — bearer happy path", () => {
   it("parses, publishes a draft, and returns editUrl + slug + uploadId + status", async () => {
-    const response = await uploadPOST(bearerRequest());
-    expect(response.status).toBe(200);
-    const body = await response.json();
-    expect(body).toMatchObject({
-      slug: "20260421-abc123",
-      uploadId: VALID_UUID,
-      status: "draft",
-      replayed: false,
-    });
-    expect(body.editUrl).toBe("/insights/alice/20260421-abc123/edit");
+    // Clear AUTH_URL so the editUrl assertion exercises the
+    // request-origin fallback path independent of ambient env.
+    vi.stubEnv("AUTH_URL", "");
+    let response;
+    let body;
+    try {
+      response = await uploadPOST(bearerRequest());
+      expect(response.status).toBe(200);
+      body = await response.json();
+      expect(body).toMatchObject({
+        slug: "20260421-abc123",
+        uploadId: VALID_UUID,
+        status: "draft",
+        replayed: false,
+      });
+      expect(body.editUrl).toBe(
+        "http://localhost/insights/alice/20260421-abc123/edit",
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
     // publishReport called with isDraft:true, redactions/projectIds
     // empty (the user redacts on the edit page).
     expect(mockPublish).toHaveBeenCalledWith(
@@ -515,6 +538,38 @@ describe("POST /api/upload — bearer happy path", () => {
     // Selector is logged in 8-char trimmed form, never the full 12.
     const logArg = mockLog.mock.calls.at(-1)?.[0];
     expect(logArg.tokenSelectorPrefix.length).toBe(8);
+  });
+
+  it("uses AUTH_URL as the editUrl origin when set (production canonical host)", async () => {
+    // In production AUTH_URL is set to the canonical app origin
+    // (e.g. https://insightharness.com). buildAbsoluteEditUrl prefers
+    // it over the incoming request's origin so deployments behind
+    // proxies or with custom domains still return the user-facing URL.
+    vi.stubEnv("AUTH_URL", "https://insightharness.com");
+    try {
+      const response = await uploadPOST(bearerRequest());
+      const body = await response.json();
+      expect(body.editUrl).toBe(
+        "https://insightharness.com/insights/alice/20260421-abc123/edit",
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("strips a trailing slash from AUTH_URL before joining", async () => {
+    // AUTH_URL is commonly stored with a trailing slash; the join must
+    // not produce a double-slash in the resulting editUrl.
+    vi.stubEnv("AUTH_URL", "https://insightharness.com/");
+    try {
+      const response = await uploadPOST(bearerRequest());
+      const body = await response.json();
+      expect(body.editUrl).toBe(
+        "https://insightharness.com/insights/alice/20260421-abc123/edit",
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 
