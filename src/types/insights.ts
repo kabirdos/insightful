@@ -268,6 +268,67 @@ export interface HarnessData {
   perModelTokens?: Record<string, HarnessModelTokenBreakdown> | null;
 }
 
+export type HarnessToolKey = "claude-code" | "codex";
+
+export interface CodexHarnessStats {
+  totalTokens?: number;
+  sessionCount?: number;
+  payloadFormatSessions?: number;
+  legacyFormatSessions?: number;
+  [key: string]: unknown;
+}
+
+export interface CodexHarnessSkillEntry {
+  name: string;
+  description?: string | null;
+  installPointer?: string | null;
+  source?: string | null;
+  category?: string | null;
+  calls?: number;
+}
+
+export interface CodexHarnessPlugin {
+  name: string;
+  enabled?: boolean;
+  version?: string | null;
+  marketplace?: string | null;
+  [key: string]: unknown;
+}
+
+export interface CodexHarnessSafety {
+  approvalsReviewer?: string | null;
+  approvalModes: string[];
+  trustLevels: string[];
+  rulesAllowlist: string[];
+  [key: string]: unknown;
+}
+
+export interface CodexHarnessWorkSurfaces {
+  desktopPresence: Array<Record<string, unknown>>;
+  [key: string]: unknown;
+}
+
+export interface CodexHarnessData {
+  tool: "codex";
+  stats: CodexHarnessStats;
+  toolUsage: Record<string, number>;
+  cliTools: Record<string, number>;
+  skillInventory: CodexHarnessSkillEntry[];
+  plugins: CodexHarnessPlugin[];
+  safety: CodexHarnessSafety;
+  workflowData: Record<string, unknown> | null;
+  workSurfaces: CodexHarnessWorkSurfaces;
+  localOnly: boolean;
+}
+
+export interface HarnessToolsEnvelope {
+  primaryTool: HarnessToolKey;
+  tools: {
+    "claude-code"?: HarnessData;
+    codex?: CodexHarnessData;
+  };
+}
+
 // v2: Chart data parsed from HTML report
 export interface ChartDataPoint {
   label: string;
@@ -410,12 +471,122 @@ export function normalizeSkills(raw: unknown): SkillKey[] {
   return raw.filter(isSkillKey);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizeNumberMap(raw: unknown): Record<string, number> {
+  if (!isRecord(raw)) return {};
+  return Object.fromEntries(
+    Object.entries(raw).filter(
+      (entry): entry is [string, number] =>
+        typeof entry[1] === "number" && Number.isFinite(entry[1]),
+    ),
+  );
+}
+
+function normalizeStringArray(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((item): item is string => typeof item === "string");
+}
+
+function normalizeCodexSkillInventory(raw: unknown): CodexHarnessSkillEntry[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((entry) => {
+    if (!isRecord(entry) || typeof entry.name !== "string") return [];
+    return [
+      {
+        ...entry,
+        name: entry.name,
+        description:
+          typeof entry.description === "string" ? entry.description : null,
+        installPointer:
+          typeof entry.installPointer === "string"
+            ? entry.installPointer
+            : null,
+        source: typeof entry.source === "string" ? entry.source : null,
+        category: typeof entry.category === "string" ? entry.category : null,
+        calls: typeof entry.calls === "number" ? entry.calls : undefined,
+      },
+    ];
+  });
+}
+
+function normalizeCodexPlugins(raw: unknown): CodexHarnessPlugin[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((entry) => {
+    if (!isRecord(entry) || typeof entry.name !== "string") return [];
+    return [
+      {
+        ...entry,
+        name: entry.name,
+        enabled: typeof entry.enabled === "boolean" ? entry.enabled : undefined,
+        version: typeof entry.version === "string" ? entry.version : null,
+        marketplace:
+          typeof entry.marketplace === "string" ? entry.marketplace : null,
+      },
+    ];
+  });
+}
+
+function normalizeCodexSafety(raw: unknown): CodexHarnessSafety {
+  const source = isRecord(raw) ? raw : {};
+  return {
+    ...source,
+    approvalsReviewer:
+      typeof source.approvalsReviewer === "string"
+        ? source.approvalsReviewer
+        : null,
+    approvalModes: normalizeStringArray(source.approvalModes),
+    trustLevels: normalizeStringArray(source.trustLevels),
+    rulesAllowlist: normalizeStringArray(source.rulesAllowlist),
+  };
+}
+
+function normalizeCodexWorkSurfaces(raw: unknown): CodexHarnessWorkSurfaces {
+  const source = isRecord(raw) ? raw : {};
+  return {
+    ...source,
+    desktopPresence: Array.isArray(source.desktopPresence)
+      ? source.desktopPresence.filter(isRecord)
+      : [],
+  };
+}
+
+function normalizeCodexHarnessData(raw: unknown): CodexHarnessData | null {
+  if (!isRecord(raw)) return null;
+  if (raw.tool !== "codex") return null;
+  if (!isRecord(raw.stats)) return null;
+
+  return {
+    tool: "codex",
+    stats: raw.stats as CodexHarnessStats,
+    toolUsage: normalizeNumberMap(raw.toolUsage),
+    cliTools: normalizeNumberMap(raw.cliTools),
+    skillInventory: normalizeCodexSkillInventory(raw.skillInventory),
+    plugins: normalizeCodexPlugins(raw.plugins),
+    safety: normalizeCodexSafety(raw.safety),
+    workflowData: isRecord(raw.workflowData) ? raw.workflowData : null,
+    workSurfaces: normalizeCodexWorkSurfaces(raw.workSurfaces),
+    localOnly: raw.localOnly === true,
+  };
+}
+
+function listNormalizedHarnessTools(
+  tools: HarnessToolsEnvelope["tools"],
+): HarnessToolKey[] {
+  const available: HarnessToolKey[] = [];
+  if (tools["claude-code"]) available.push("claude-code");
+  if (tools.codex) available.push("codex");
+  return available;
+}
+
 /**
- * Validate that an unknown value from the DB (Prisma Json?) looks like
- * HarnessData. Returns the typed value if it passes, or null if malformed.
- * Checks for the required top-level keys with correct types.
+ * Validate that an unknown value looks like legacy Claude Code HarnessData.
+ * Returns the typed value if it passes, or null if malformed. Checks for the
+ * required top-level keys with correct types.
  */
-export function normalizeHarnessData(raw: unknown): HarnessData | null {
+function normalizeLegacyHarnessData(raw: unknown): HarnessData | null {
   if (!raw || typeof raw !== "object") return null;
   const obj = raw as Record<string, unknown>;
 
@@ -470,4 +641,69 @@ export function normalizeHarnessData(raw: unknown): HarnessData | null {
     perModelTokens:
       (obj.perModelTokens as HarnessData["perModelTokens"]) ?? null,
   };
+}
+
+export function normalizeHarnessEnvelope(
+  raw: unknown,
+): HarnessToolsEnvelope | null {
+  const legacy = normalizeLegacyHarnessData(raw);
+  if (legacy) {
+    return {
+      primaryTool: "claude-code",
+      tools: { "claude-code": legacy },
+    };
+  }
+
+  const codex = normalizeCodexHarnessData(raw);
+  if (codex) {
+    return {
+      primaryTool: "codex",
+      tools: { codex },
+    };
+  }
+
+  if (!isRecord(raw) || !isRecord(raw.tools)) return null;
+
+  const tools: HarnessToolsEnvelope["tools"] = {};
+  const claudeTool = normalizeLegacyHarnessData(raw.tools["claude-code"]);
+  const codexTool = normalizeCodexHarnessData(raw.tools.codex);
+
+  if (claudeTool) tools["claude-code"] = claudeTool;
+  if (codexTool) tools.codex = codexTool;
+
+  const available = listNormalizedHarnessTools(tools);
+  if (available.length === 0) return null;
+
+  const requestedPrimary = raw.primaryTool;
+  const primaryTool =
+    typeof requestedPrimary === "string" &&
+    available.includes(requestedPrimary as HarnessToolKey)
+      ? (requestedPrimary as HarnessToolKey)
+      : available[0];
+
+  return { primaryTool, tools };
+}
+
+/**
+ * Back-compat accessor for callers that render the existing Claude Code UI.
+ */
+export function normalizeHarnessData(raw: unknown): HarnessData | null {
+  return getClaudeHarnessData(raw);
+}
+
+export function getClaudeHarnessData(raw: unknown): HarnessData | null {
+  return normalizeHarnessEnvelope(raw)?.tools["claude-code"] ?? null;
+}
+
+export function getCodexHarnessData(raw: unknown): CodexHarnessData | null {
+  return normalizeHarnessEnvelope(raw)?.tools.codex ?? null;
+}
+
+export function listHarnessTools(raw: unknown): HarnessToolKey[] {
+  const tools = normalizeHarnessEnvelope(raw)?.tools;
+  return tools ? listNormalizedHarnessTools(tools) : [];
+}
+
+export function toStoredHarnessData(raw: unknown): HarnessToolsEnvelope | null {
+  return normalizeHarnessEnvelope(raw);
 }

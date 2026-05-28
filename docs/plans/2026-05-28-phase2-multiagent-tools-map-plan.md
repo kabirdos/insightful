@@ -47,6 +47,8 @@ Existing rows remain valid. A current top-level Claude `HarnessData` normalizes 
 
 ### Unit 1: Multi-tool type and normalization helpers
 
+**Status:** completed 2026-05-28
+
 **Goal:** Add typed helpers that classify legacy Claude data, Codex islands, and tools-map envelopes.
 
 **Files:**
@@ -205,4 +207,3 @@ Existing rows remain valid. A current top-level Claude `HarnessData` normalizes 
 - The current `ProfileTabs` and report page are large and Claude-shaped. The first implementation should avoid broad redesign; isolate Codex UI in a new component.
 - Existing list/OG routes may still use scalar denorms. Phase 2 should not promise cross-tool aggregate cards until Phase 3.
 - Codex standalone HTML currently lacks the `insight-harness-integrity` marker. `isHarnessReport` may need to recognize `script#harness-data` with `tool:"codex"` as a harness report.
-
