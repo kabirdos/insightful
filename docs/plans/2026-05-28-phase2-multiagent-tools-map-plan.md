@@ -1,7 +1,7 @@
 ---
 title: "feat: Phase 2 multi-agent tools map + tool selector"
 type: feat
-status: in_progress
+status: completed
 date: 2026-05-28
 origin: docs/brainstorms/2026-05-25-codex-extractor-multiagent-requirements.md
 ---
@@ -196,6 +196,8 @@ Existing rows remain valid. A current top-level Claude `HarnessData` normalizes 
 **Verification:** `npx vitest run src/app/insights/__tests__/edit-flow.test.ts`
 
 ### Unit 6: Full verification and PR
+
+**Status:** completed 2026-05-28
 
 **Goal:** Prove the feature works without regressing legacy flows.
 
