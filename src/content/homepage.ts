@@ -6,9 +6,9 @@
 export const homepage = {
   // ── Hero ──────────────────────────────────────────────────
   hero: {
-    headline: "See how other developers use Claude Code",
+    headline: "See how developers use Claude Code and Codex",
     subtext:
-      "Browse real developer workflows — the tools, skills, plugins, and patterns they use across actual coding sessions. All personal data removed.",
+      "Browse real developer workflows — the tools, skills, plugins, and patterns they use across actual agent sessions. All personal data removed.",
     primaryCta: "Browse Profiles",
     secondaryCta: "Upload Your Insights",
   },
@@ -18,7 +18,7 @@ export const homepage = {
     featuredLabel: "Featured Profile",
     recentHeading: "Recent Profiles",
     emptyTitle: "No profiles shared yet",
-    emptySubtext: "Be the first to share your Claude Code insights!",
+    emptySubtext: "Be the first to share your agent harness insights!",
     emptyCta: "Upload Your Insights",
     strengthsLabel: "Strengths:",
   },
@@ -28,12 +28,11 @@ export const homepage = {
     heading: "Upgrade your profile with",
     skillName: "/insight-harness",
     description:
-      "A superset of /insights — everything you get from /insights, plus token usage, tool breakdowns, skill inventory, and more.",
-    githubUrl:
-      "https://github.com/craigdossantos/claude-toolkit/tree/main/skills/insight-harness",
+      "A shareable harness profile for Claude Code and Codex — tools, skills, plugin inventory, workflow signal, and more.",
+    githubUrl: "https://github.com/kabirdos/insight-harness",
     githubLabel: "View on GitHub →",
     privacyNote:
-      "Privacy-first: only reads tool names, skill names, and stats — never your code or messages",
+      "Privacy-first: only reads whitelisted local metadata — never your code or messages",
 
     // Comparison table
     table: {
@@ -77,19 +76,19 @@ export const homepage = {
   howItWorks: {
     heading: "Three commands to a public profile",
     subheading:
-      "Install once, run, upload. No accounts. No signup. /insight-harness is the command.",
+      "Install once, run, upload. Claude Code and Codex reports both publish here.",
     steps: [
       {
         icon: "📦",
         title: "Install /insight-harness",
         description:
-          "One curl command drops the skill into your Claude Code setup. One-time step.",
+          "Install the skill for Claude Code or Codex. One-time step.",
       },
       {
         icon: "⚡",
         title: "Run /insight-harness",
         description:
-          "In any Claude Code session. Scans tokens, skills, plugins, workflows. Outputs a single HTML report in seconds.",
+          "Generate a local HTML report from Claude Code or Codex CLI metadata.",
       },
       {
         icon: "🌐",
@@ -104,7 +103,7 @@ export const homepage = {
   footerCta: {
     heading: "Ready to share your harness?",
     subtext:
-      "Join developers who are learning from each other's Claude Code workflows.",
+      "Join developers who are learning from each other's agent workflows.",
     cta: "Upload Your Insights",
   },
 } as const;
