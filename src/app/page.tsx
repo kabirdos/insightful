@@ -1114,6 +1114,12 @@ export default function HomePage() {
               <Upload className="h-4 w-4" />
               {copy.hero.secondaryCta}
             </Link>
+            <Link
+              href="/install"
+              className="hidden text-sm font-semibold text-slate-500 underline decoration-slate-300 underline-offset-4 transition-colors hover:text-slate-900 dark:text-slate-400 dark:decoration-slate-700 dark:hover:text-white sm:inline-flex"
+            >
+              Install the skill
+            </Link>
           </div>
         </div>
       </section>

@@ -26,6 +26,7 @@ import {
   Loader2,
   RefreshCw,
   LogIn,
+  Terminal,
 } from "lucide-react";
 import clsx from "clsx";
 import type {
@@ -100,6 +101,7 @@ const EMPTY_FORM: ProjectFormInput = {
 
 const INSIGHTS_PATH = "~/.claude/usage-data/report.html";
 const HARNESS_PATH = "~/.claude/insight-harness/report.html";
+const CODEX_HARNESS_PATH = "~/.codex/usage-data/<date>-codex-harness.html";
 
 const SAMPLE_PROFILE_USERNAME = "kabirdos";
 const SAMPLE_PROFILE_SLUG = "20260413-e3n48n";
@@ -948,6 +950,16 @@ function TokenizedFlow({
                 See exactly what it runs
               </a>
               .
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Using Codex?{" "}
+              <Link
+                href="/install"
+                className="font-medium text-slate-700 underline decoration-slate-300 underline-offset-2 hover:text-slate-950 dark:text-slate-200 dark:decoration-slate-600 dark:hover:text-white"
+              >
+                Install the Codex version
+              </Link>{" "}
+              and upload the generated HTML file here.
             </p>
           </div>
         )}
@@ -1810,12 +1822,12 @@ export default function UploadPage() {
           {/* Header */}
           <div className="mb-7 text-center">
             <h1 className="text-xl font-extrabold text-slate-900 dark:text-slate-100">
-              Turn your Claude Code session data into your{" "}
+              Turn your Claude Code or Codex session data into your{" "}
               <span className="text-2xl">profile</span> in one minute
             </h1>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Generate a report in Claude Code, drop the file below, and preview
-              your profile before anything goes public.
+              Generate a report, drop the file below, and preview your profile
+              before anything goes public.
             </p>
           </div>
 
@@ -1897,6 +1909,13 @@ export default function UploadPage() {
                 >
                   inspect the source
                 </a>
+                . Codex users can use the{" "}
+                <Link
+                  href="/install"
+                  className="font-medium text-slate-600 underline decoration-slate-300 underline-offset-2 hover:text-slate-900 hover:decoration-slate-500 dark:text-slate-300 dark:decoration-slate-600 dark:hover:text-slate-100 dark:hover:decoration-slate-400"
+                >
+                  Codex install instructions
+                </Link>
                 .
               </p>
               <div className="mt-1">
@@ -1925,6 +1944,29 @@ export default function UploadPage() {
                 Then run:
               </p>
               <CommandBlock command="/insight-harness" />
+            </div>
+
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+              <div className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-emerald-900 dark:text-emerald-100">
+                <Terminal className="h-4 w-4" />
+                Codex CLI
+              </div>
+              <p className="text-xs leading-relaxed text-emerald-900/80 dark:text-emerald-100/80">
+                Codex reports are generated locally, then uploaded manually.
+              </p>
+              <div className="mt-3">
+                <CommandBlock
+                  command="python3 ~/.codex/skills/insight-harness/scripts/codex_extract.py --include-skills"
+                  small
+                />
+              </div>
+              <p className="mt-2 text-xs text-emerald-900/80 dark:text-emerald-100/80">
+                Output path: <code>{CODEX_HARNESS_PATH}</code>. Need setup?{" "}
+                <Link href="/install" className="font-semibold underline">
+                  Install the skill
+                </Link>
+                .
+              </p>
             </div>
 
             <div className="flex flex-col gap-2">
