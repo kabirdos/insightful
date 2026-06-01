@@ -73,10 +73,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+// Hero image keys in BOTH casings: the Claude extractor emits snake_case
+// hero_base64 / hero_mime_type; the Codex extractor emits camelCase
+// heroBase64 / heroMimeType (codex_extract.py). A Codex or multi-tool report
+// stores the raw island (parseHarnessHtml does not normalize away these
+// fields), so we must strip whichever are present.
+const HERO_KEYS = [
+  "hero_base64",
+  "hero_mime_type",
+  "heroBase64",
+  "heroMimeType",
+] as const;
+
 function stripHeroFromSkill(skill: unknown): unknown {
   if (!isRecord(skill)) return skill;
-  if (skill.hero_base64 == null && skill.hero_mime_type == null) return skill;
-  return { ...skill, hero_base64: null, hero_mime_type: null };
+  if (!HERO_KEYS.some((key) => skill[key] != null)) return skill;
+  const out: Record<string, unknown> = { ...skill };
+  for (const key of HERO_KEYS) {
+    if (key in out) out[key] = null;
+  }
+  return out;
 }
 
 function stripHeroFromHolder(holder: unknown): unknown {
@@ -90,9 +106,9 @@ function stripHeroFromHolder(holder: unknown): unknown {
 /**
  * Drop hero image blobs from every skill inventory while preserving the stored
  * shape — a bare `HarnessData` or a multi-tool `{ primaryTool, tools }`
- * envelope (`isEnvelopeShape` is just "has a `tools` record"). Codex skill
- * entries carry no image fields today; they pass through the stripper anyway so
- * the day they do, this still covers them. Pure: never mutates the input.
+ * envelope (`isEnvelopeShape` is just "has a `tools` record"). Covers both the
+ * Claude (snake_case) and Codex (camelCase) hero fields, so a Codex or
+ * multi-tool report's images are stripped too. Pure: never mutates the input.
  */
 export function stripHeroImages(stored: unknown): unknown {
   if (!isRecord(stored)) return stored;
