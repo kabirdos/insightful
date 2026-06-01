@@ -116,11 +116,36 @@ describe("stripHeroImages", () => {
     };
     expect(out.primaryTool).toBe("claude-code");
     expect(out.tools["claude-code"].skillInventory[0].hero_base64).toBeNull();
-    // Codex entries carry no image fields; structure is preserved verbatim.
+    // This Codex entry has no image fields, so it's preserved verbatim.
     expect(out.tools.codex.skillInventory[0]).toEqual({
       name: "codex-skill",
       description: "x",
     });
+  });
+
+  it("strips camelCase hero fields from Codex skills (codex_extract emits heroBase64)", () => {
+    const envelope = {
+      primaryTool: "codex",
+      tools: {
+        codex: {
+          tool: "codex",
+          skillInventory: [
+            {
+              name: "codex-skill",
+              heroBase64: "AAAA".repeat(200),
+              heroMimeType: "image/png",
+            },
+          ],
+        },
+      },
+    };
+    const out = stripHeroImages(envelope) as {
+      tools: { codex: { skillInventory: Array<Record<string, unknown>> } };
+    };
+    const entry = out.tools.codex.skillInventory[0];
+    expect(entry.heroBase64).toBeNull();
+    expect(entry.heroMimeType).toBeNull();
+    expect(entry.name).toBe("codex-skill");
   });
 
   it("returns non-object / inventory-less input unchanged", () => {
