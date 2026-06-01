@@ -12,6 +12,7 @@ export const RESERVED_USERNAMES: ReadonlySet<string> = new Set([
   // Currently present top-level routes
   "api",
   "insights",
+  "install",
   "search",
   "top",
   "u",
