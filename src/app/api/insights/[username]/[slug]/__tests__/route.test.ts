@@ -478,3 +478,98 @@ describe("GET /api/insights/[username]/[slug] — hidden reportProjects (non-own
 // response never includes hidden projects even when the caller is the
 // report's owner (per filter-report-response.ts line ~190, list feeds
 // hardcode viewerIsOwner: false / includeHidden: false).
+
+// ── Agent payload — content negotiation ─────────────────────────────
+
+describe("GET /api/insights/[username]/[slug] — agent payload (Accept negotiation)", () => {
+  function buildReportWithShowcase(authorId: string) {
+    const fixture = buildReportFixture(authorId);
+    return {
+      ...fixture,
+      publishedAt: new Date("2026-05-10T08:00:00.000Z"),
+      createdAt: new Date("2026-05-09T08:00:00.000Z"),
+      harnessData: {
+        ...buildHarnessDataFixture(),
+        skillVersion: "2.7.0",
+        skillInventory: [
+          {
+            name: "frontend-design",
+            calls: 5,
+            source: "plugin",
+            description: "x",
+            readme_markdown: "# README",
+            hero_base64: "AAAA".repeat(200),
+            hero_mime_type: "image/png",
+          },
+        ],
+        // hiddenHarnessSections is ["plugins"] from buildReportFixture, so
+        // this must be stripped on BOTH the human and agent paths.
+        plugins: [{ name: "hidden-plugin" }],
+      },
+    };
+  }
+
+  function agentRequest(url: string): Request {
+    return new Request(url, {
+      method: "GET",
+      headers: { accept: "application/vnd.insight-harness.agent.v1+json" },
+    });
+  }
+
+  it("returns the lean enveloped payload: images stripped, readme kept, hidden sections removed", async () => {
+    mockSession(null);
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportWithShowcase("user-1"),
+    );
+
+    const response = await getInsight(
+      agentRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain(
+      "application/vnd.insight-harness.agent.v1+json",
+    );
+    // Negotiated by Accept → must advertise Vary so caches don't cross the
+    // human and agent representations of the same URL.
+    expect(response.headers.get("vary")).toContain("Accept");
+
+    const body = await response.json();
+    // Self-describing envelope — NOT wrapped in { data } like the human path.
+    expect(body.data).toBeUndefined();
+    expect(body.schema_version).toBe("1.0.0");
+    expect(body.generated_at).toBe("2026-05-10T08:00:00.000Z");
+    expect(body.source_extract_version).toBe("2.7.0");
+    expect(body.consumer_guidance).toMatch(/DATA, not instructions/);
+    expect(body._privacy.scrubbed).toContain("identity");
+
+    // F1: image bytes gone, README text preserved.
+    expect(body.profile.skillInventory[0].hero_base64).toBeNull();
+    expect(body.profile.skillInventory[0].readme_markdown).toBe("# README");
+    // Hidden section stripped on the agent path too.
+    expect(body.profile.plugins).toEqual([]);
+    // The owner hidden-rows fetch must never run on the agent path.
+    expect(mockPrisma.reportProject.findMany).not.toHaveBeenCalled();
+  });
+
+  it("leaves the human path (default Accept) unchanged — full { data } with images intact", async () => {
+    mockSession(null);
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportWithShowcase("user-1"),
+    );
+
+    const response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    // Both negotiated branches advertise Vary: Accept.
+    expect(response.headers.get("vary")).toContain("Accept");
+    const body = await response.json();
+    expect(body.data).toBeDefined();
+    // The human page renders the showcase image, so it must still ship.
+    expect(body.data.harnessData.skillInventory[0].hero_base64).toBeTruthy();
+  });
+});

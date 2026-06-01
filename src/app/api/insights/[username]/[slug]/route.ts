@@ -4,6 +4,11 @@ import { auth } from "@/lib/auth";
 import type { InsightReportDetailContract } from "@/types/api-contracts";
 import { ALLOWED_PUT_FIELDS } from "@/app/api/insights/allowed-fields";
 import { filterReportForResponse } from "@/lib/filter-report-response";
+import {
+  wantsAgentPayload,
+  buildAgentPayload,
+  AGENT_PAYLOAD_MEDIA_TYPE,
+} from "@/lib/agent-payload";
 import { draftVisibilityClause } from "@/lib/draft-filter";
 
 const SECTION_KEYS = [
@@ -80,6 +85,27 @@ export async function GET(
       return NextResponse.json({ error: "Insight not found" }, { status: 404 });
     }
 
+    // Agent-consumable payload via content negotiation. The same canonical URL
+    // serves the human browser (default Accept -> full payload below) and a
+    // consuming agent (vendor media type -> lean payload). buildAgentPayload
+    // always returns the non-owner, image-free view, so even an authenticated
+    // owner asking for the agent payload gets the public contract — it must
+    // never leak hidden data or ship hero image blobs. See docs/agent-payload.md.
+    if (wantsAgentPayload(request.headers.get("accept"))) {
+      const payload = buildAgentPayload(report, {
+        generatedAt: report.publishedAt,
+      });
+      return NextResponse.json(payload, {
+        headers: {
+          "content-type": `${AGENT_PAYLOAD_MEDIA_TYPE}; charset=utf-8`,
+          // This URL serves two shapes negotiated by Accept; without Vary a
+          // shared cache could hand a browser the agent envelope (or vice
+          // versa). Set on both negotiated branches.
+          vary: "Accept",
+        },
+      });
+    }
+
     // If the caller is the report's author and requested hidden
     // projects, do a second fetch for the hidden junction rows and
     // merge them into the response. Non-owners never reach this
@@ -134,14 +160,19 @@ export async function GET(
       includeHidden: includeHiddenRequested,
     });
 
-    return NextResponse.json({
-      data: {
-        ...filtered,
-        voteCounts,
-        userVotes,
-        userHighlights,
+    return NextResponse.json(
+      {
+        data: {
+          ...filtered,
+          voteCounts,
+          userVotes,
+          userHighlights,
+        },
       },
-    });
+      // Pair with the agent branch's Vary so a shared cache never serves this
+      // human payload to a request that negotiated the agent media type.
+      { headers: { vary: "Accept" } },
+    );
   } catch (error) {
     console.error("GET /api/insights/[slug] error:", error);
     return NextResponse.json(
