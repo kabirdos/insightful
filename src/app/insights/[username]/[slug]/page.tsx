@@ -38,6 +38,7 @@ import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 // New redesigned components for harness reports
 import HeroStats from "@/components/HeroStats";
 import HowIWorkCluster from "@/components/HowIWorkCluster";
+import WorkRhythm from "@/components/WorkRhythm";
 import ToolUsageTreemap from "@/components/ToolUsageTreemap";
 import SkillCardGrid from "@/components/SkillCardGrid";
 import { SkillsTeaserCard } from "@/components/SkillsTeaserCard";
@@ -480,6 +481,14 @@ export default function InsightDetailPage() {
                   {/* How I Work cluster: Autonomy + Model Donut + File Ops */}
                   {!isSectionHidden(hiddenSet, "howIWork") && (
                     <HowIWorkCluster harnessData={claudeHarnessData} />
+                  )}
+
+                  {/* Work Rhythm: parallel-session concurrency + when-I-work */}
+                  {!isSectionHidden(hiddenSet, "workRhythm") && (
+                    <WorkRhythm
+                      concurrency={claudeHarnessData.concurrency}
+                      temporal={claudeHarnessData.temporal}
+                    />
                   )}
 
                   {/* Skills Teaser — hero-thumbnail cards for the top shareable

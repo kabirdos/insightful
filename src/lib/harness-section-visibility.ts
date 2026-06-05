@@ -17,6 +17,7 @@ export const HIDEABLE_HARNESS_SECTION_KEYS = [
   "heroStats",
   "activityHeatmap",
   "howIWork",
+  "workRhythm",
   "toolUsage",
   "workflowData",
   "skillInventory",
@@ -39,6 +40,10 @@ export type HideableHarnessSectionKey =
   (typeof HIDEABLE_HARNESS_SECTION_KEYS)[number];
 
 const STRIPPABLE_HARNESS_DATA_KEYS = new Set<string>([
+  // concurrency + temporal are used only by the Work Rhythm card, so hiding the
+  // section can fully strip them from non-owner payloads (unlike heroStats /
+  // activityHeatmap / howIWork, whose data is shared across stat sections).
+  "workRhythm",
   "toolUsage",
   "workflowData",
   "skillInventory",
@@ -234,6 +239,10 @@ function stripHiddenLegacyHarnessData(
         break;
       case "toolUsage":
         copy.toolUsage = {};
+        break;
+      case "workRhythm":
+        copy.concurrency = null;
+        copy.temporal = null;
         break;
     }
   }
