@@ -108,6 +108,24 @@ describe("harness tools normalization", () => {
     expect(getCodexHarnessData(raw)).toBeNull();
   });
 
+  it("preserves a real dailyActivity series through normalization", () => {
+    const raw = legacyClaude({
+      dailyActivity: [
+        { date: "2026-06-01", sessions: 3, tokens: 150 },
+        { date: "2026-06-02", sessions: 1, tokens: 7 },
+      ],
+    });
+
+    expect(getClaudeHarnessData(raw)?.dailyActivity).toEqual([
+      { date: "2026-06-01", sessions: 3, tokens: 150 },
+      { date: "2026-06-02", sessions: 1, tokens: 7 },
+    ]);
+  });
+
+  it("defaults dailyActivity to null when the harness omits it", () => {
+    expect(getClaudeHarnessData(legacyClaude())?.dailyActivity).toBeNull();
+  });
+
   it("accepts a Codex Phase 1 tool island", () => {
     const raw = codex();
 

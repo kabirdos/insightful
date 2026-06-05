@@ -241,6 +241,18 @@ export interface HarnessEnhancedStats {
   msgsPerDay: number | null;
 }
 
+/**
+ * One day of real activity for the heatmap, sourced from stats-cache
+ * `dailyActivity` (sessions) joined with `dailyModelTokens` (tokens). When
+ * present, the heatmap renders these actual days instead of a seeded
+ * synthetic series.
+ */
+export interface HarnessDailyActivity {
+  date: string;
+  sessions: number;
+  tokens: number;
+}
+
 export interface HarnessData {
   stats: HarnessStats;
   autonomy: HarnessAutonomy;
@@ -266,6 +278,7 @@ export interface HarnessData {
   skillVersion: string | null;
   enhancedStats?: HarnessEnhancedStats | null;
   perModelTokens?: Record<string, HarnessModelTokenBreakdown> | null;
+  dailyActivity?: HarnessDailyActivity[] | null;
 }
 
 export type HarnessToolKey = "claude-code" | "codex";
@@ -678,6 +691,7 @@ function normalizeLegacyHarnessData(raw: unknown): HarnessData | null {
     enhancedStats: (obj.enhancedStats as HarnessData["enhancedStats"]) ?? null,
     perModelTokens:
       (obj.perModelTokens as HarnessData["perModelTokens"]) ?? null,
+    dailyActivity: (obj.dailyActivity as HarnessData["dailyActivity"]) ?? null,
   };
 }
 
