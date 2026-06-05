@@ -27,6 +27,7 @@ import { buildItemKey } from "@/lib/item-visibility";
 import HeroStats from "@/components/HeroStats";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
 import HowIWorkCluster from "@/components/HowIWorkCluster";
+import WorkRhythm from "@/components/WorkRhythm";
 import ToolUsageTreemap from "@/components/ToolUsageTreemap";
 import SkillCardGrid from "@/components/SkillCardGrid";
 import WorkflowDiagram from "@/components/WorkflowDiagram";
@@ -419,7 +420,8 @@ function CodexVisibilityPreview({
                     ...codexData.safety.approvalModes,
                     ...codexData.safety.trustLevels,
                     ...codexData.safety.rulesAllowlist,
-                  ].length.toLocaleString()} values
+                  ].length.toLocaleString()}{" "}
+                  values
                 </div>
               </div>
             </div>
@@ -1011,6 +1013,20 @@ export default function EditReportPage() {
           >
             <HowIWorkCluster harnessData={harnessData} />
           </HideableCard>
+
+          {((harnessData.concurrency?.maxConcurrent ?? 0) > 0 ||
+            harnessData.temporal?.label) && (
+            <HideableCard
+              title="Work Rhythm"
+              hidden={!!hiddenSections["workRhythm"]}
+              onToggle={() => toggleSection("workRhythm")}
+            >
+              <WorkRhythm
+                concurrency={harnessData.concurrency}
+                temporal={harnessData.temporal}
+              />
+            </HideableCard>
+          )}
 
           {harnessData.workflowData && (
             <HideableCard

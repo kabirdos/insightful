@@ -253,6 +253,20 @@ export interface HarnessDailyActivity {
   tokens: number;
 }
 
+/** Session concurrency — how many sessions overlapped in time. */
+export interface HarnessConcurrency {
+  maxConcurrent: number;
+  medianConcurrent: number;
+  sessionsCounted: number;
+}
+
+/** When work happens — activity by clock hour, with a derived characterization. */
+export interface HarnessTemporal {
+  hourCounts: Record<string, number>;
+  peakHour: number;
+  label: string;
+}
+
 export interface HarnessData {
   stats: HarnessStats;
   autonomy: HarnessAutonomy;
@@ -279,6 +293,8 @@ export interface HarnessData {
   enhancedStats?: HarnessEnhancedStats | null;
   perModelTokens?: Record<string, HarnessModelTokenBreakdown> | null;
   dailyActivity?: HarnessDailyActivity[] | null;
+  concurrency?: HarnessConcurrency | null;
+  temporal?: HarnessTemporal | null;
 }
 
 export type HarnessToolKey = "claude-code" | "codex";
@@ -692,6 +708,8 @@ function normalizeLegacyHarnessData(raw: unknown): HarnessData | null {
     perModelTokens:
       (obj.perModelTokens as HarnessData["perModelTokens"]) ?? null,
     dailyActivity: (obj.dailyActivity as HarnessData["dailyActivity"]) ?? null,
+    concurrency: (obj.concurrency as HarnessData["concurrency"]) ?? null,
+    temporal: (obj.temporal as HarnessData["temporal"]) ?? null,
   };
 }
 

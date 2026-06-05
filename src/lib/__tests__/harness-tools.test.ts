@@ -126,6 +126,35 @@ describe("harness tools normalization", () => {
     expect(getClaudeHarnessData(legacyClaude())?.dailyActivity).toBeNull();
   });
 
+  it("preserves concurrency and temporal signals through normalization", () => {
+    const raw = legacyClaude({
+      concurrency: {
+        maxConcurrent: 13,
+        medianConcurrent: 9,
+        sessionsCounted: 107,
+      },
+      temporal: {
+        hourCounts: { "15": 79 },
+        peakHour: 15,
+        label: "Afternoon peak",
+      },
+    });
+
+    expect(getClaudeHarnessData(raw)?.concurrency).toEqual({
+      maxConcurrent: 13,
+      medianConcurrent: 9,
+      sessionsCounted: 107,
+    });
+    expect(getClaudeHarnessData(raw)?.temporal?.label).toBe("Afternoon peak");
+    expect(getClaudeHarnessData(raw)?.temporal?.peakHour).toBe(15);
+  });
+
+  it("defaults concurrency and temporal to null when omitted", () => {
+    const out = getClaudeHarnessData(legacyClaude());
+    expect(out?.concurrency).toBeNull();
+    expect(out?.temporal).toBeNull();
+  });
+
   it("accepts a Codex Phase 1 tool island", () => {
     const raw = codex();
 

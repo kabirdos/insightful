@@ -54,6 +54,7 @@ import PermissionModeDisplay from "@/components/PermissionModeDisplay";
 import HooksSafetyTable from "@/components/HooksSafetyTable";
 import WorkflowDiagram from "@/components/WorkflowDiagram";
 import HowIWorkCluster from "@/components/HowIWorkCluster";
+import WorkRhythm from "@/components/WorkRhythm";
 import ProjectLinks from "@/components/ProjectLinks";
 import MiniBarChart from "@/components/MiniBarChart";
 import CodexHarnessDashboard from "@/components/CodexHarnessDashboard";
@@ -1567,8 +1568,7 @@ export default function UploadPage() {
           reportType: parsed.reportType ?? "insights",
           totalTokens: claudeHarnessData?.stats.totalTokens ?? null,
           durationHours: claudeHarnessData?.stats.durationHours ?? null,
-          avgSessionMinutes:
-            claudeHarnessData?.stats.avgSessionMinutes ?? null,
+          avgSessionMinutes: claudeHarnessData?.stats.avgSessionMinutes ?? null,
           prCount: claudeHarnessData?.stats.prCount ?? null,
           autonomyLabel: claudeHarnessData?.autonomy.label ?? null,
           // Persist the FULL harnessData (including hidden showcase content).
@@ -2382,72 +2382,71 @@ export default function UploadPage() {
             )}
           </div>
 
-          {parsed.reportType === "insight-harness" &&
-            previewCodexData && (
-              <div className="space-y-4">
-                <RedactableSection
-                  title="Codex Tool Usage"
-                  enabled={!disabledSections[buildCodexVisibilityKey("toolUsage")]}
-                  onToggle={() =>
-                    toggleSection(buildCodexVisibilityKey("toolUsage"))
-                  }
-                >
-                  <CodexHarnessDashboard codexData={previewCodexData} />
-                </RedactableSection>
-                <RedactableSection
-                  title="Codex Skills"
-                  enabled={
-                    !disabledSections[
-                      buildCodexVisibilityKey("skillInventory")
-                    ]
-                  }
-                  onToggle={() =>
-                    toggleSection(buildCodexVisibilityKey("skillInventory"))
-                  }
-                >
-                  <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                    {previewCodexData.skillInventory.length.toLocaleString()}{" "}
-                    inventory items
-                  </div>
-                </RedactableSection>
-                <RedactableSection
-                  title="Codex Plugins"
-                  enabled={!disabledSections[buildCodexVisibilityKey("plugins")]}
-                  onToggle={() =>
-                    toggleSection(buildCodexVisibilityKey("plugins"))
-                  }
-                >
-                  <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                    {previewCodexData.plugins.length.toLocaleString()} plugins
-                  </div>
-                </RedactableSection>
-                <RedactableSection
-                  title="Codex Safety And Rules"
-                  enabled={!disabledSections[buildCodexVisibilityKey("safety")]}
-                  onToggle={() =>
-                    toggleSection(buildCodexVisibilityKey("safety"))
-                  }
-                >
-                  <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                    Safety metadata will be shown unless hidden.
-                  </div>
-                </RedactableSection>
-                <RedactableSection
-                  title="Codex Work Surfaces"
-                  enabled={
-                    !disabledSections[buildCodexVisibilityKey("workSurfaces")]
-                  }
-                  onToggle={() =>
-                    toggleSection(buildCodexVisibilityKey("workSurfaces"))
-                  }
-                >
-                  <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                    {previewCodexData.workSurfaces.desktopPresence.length.toLocaleString()}{" "}
-                    desktop signals
-                  </div>
-                </RedactableSection>
-              </div>
-            )}
+          {parsed.reportType === "insight-harness" && previewCodexData && (
+            <div className="space-y-4">
+              <RedactableSection
+                title="Codex Tool Usage"
+                enabled={
+                  !disabledSections[buildCodexVisibilityKey("toolUsage")]
+                }
+                onToggle={() =>
+                  toggleSection(buildCodexVisibilityKey("toolUsage"))
+                }
+              >
+                <CodexHarnessDashboard codexData={previewCodexData} />
+              </RedactableSection>
+              <RedactableSection
+                title="Codex Skills"
+                enabled={
+                  !disabledSections[buildCodexVisibilityKey("skillInventory")]
+                }
+                onToggle={() =>
+                  toggleSection(buildCodexVisibilityKey("skillInventory"))
+                }
+              >
+                <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                  {previewCodexData.skillInventory.length.toLocaleString()}{" "}
+                  inventory items
+                </div>
+              </RedactableSection>
+              <RedactableSection
+                title="Codex Plugins"
+                enabled={!disabledSections[buildCodexVisibilityKey("plugins")]}
+                onToggle={() =>
+                  toggleSection(buildCodexVisibilityKey("plugins"))
+                }
+              >
+                <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                  {previewCodexData.plugins.length.toLocaleString()} plugins
+                </div>
+              </RedactableSection>
+              <RedactableSection
+                title="Codex Safety And Rules"
+                enabled={!disabledSections[buildCodexVisibilityKey("safety")]}
+                onToggle={() =>
+                  toggleSection(buildCodexVisibilityKey("safety"))
+                }
+              >
+                <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                  Safety metadata will be shown unless hidden.
+                </div>
+              </RedactableSection>
+              <RedactableSection
+                title="Codex Work Surfaces"
+                enabled={
+                  !disabledSections[buildCodexVisibilityKey("workSurfaces")]
+                }
+                onToggle={() =>
+                  toggleSection(buildCodexVisibilityKey("workSurfaces"))
+                }
+              >
+                <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                  {previewCodexData.workSurfaces.desktopPresence.length.toLocaleString()}{" "}
+                  desktop signals
+                </div>
+              </RedactableSection>
+            </div>
+          )}
 
           {/* ── Harness Report Preview — mirrors profile page layout ── */}
           {parsed.reportType === "insight-harness" && previewHarnessData ? (
@@ -2510,6 +2509,21 @@ export default function UploadPage() {
               >
                 <HowIWorkCluster harnessData={previewHarnessData} />
               </RedactableSection>
+
+              {/* Work Rhythm: parallel-session concurrency + when-I-work */}
+              {((previewHarnessData.concurrency?.maxConcurrent ?? 0) > 0 ||
+                previewHarnessData.temporal?.label) && (
+                <RedactableSection
+                  title="Work Rhythm"
+                  enabled={!disabledSections["workRhythm"]}
+                  onToggle={() => toggleSection("workRhythm")}
+                >
+                  <WorkRhythm
+                    concurrency={previewHarnessData.concurrency}
+                    temporal={previewHarnessData.temporal}
+                  />
+                </RedactableSection>
+              )}
 
               {/* Workflow Diagrams */}
               {previewHarnessData.workflowData && (

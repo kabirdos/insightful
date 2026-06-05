@@ -38,6 +38,16 @@ function buildFullHarnessData(): HarnessData {
     workflowData: null,
     integrityHash: "abc",
     skillVersion: null,
+    concurrency: {
+      maxConcurrent: 13,
+      medianConcurrent: 9,
+      sessionsCounted: 107,
+    },
+    temporal: {
+      hourCounts: { "15": 79 },
+      peakHour: 15,
+      label: "Afternoon peak",
+    },
   };
 }
 
@@ -110,6 +120,25 @@ describe("stripHiddenHarnessData", () => {
     const full = buildFullHarnessData();
     const result = stripHiddenHarnessData(full, []);
     expect(result).toBe(full);
+  });
+
+  it("strips concurrency and temporal when workRhythm is hidden", () => {
+    const result = stripHiddenHarnessData(buildFullHarnessData(), [
+      "workRhythm",
+    ]);
+    expect(result.concurrency).toBeNull();
+    expect(result.temporal).toBeNull();
+    expect(result.cliTools).toEqual({ gh: 1 }); // unrelated data untouched
+  });
+
+  it("keeps concurrency and temporal when workRhythm is not hidden", () => {
+    const result = stripHiddenHarnessData(buildFullHarnessData(), ["plugins"]);
+    expect(result.concurrency).toEqual({
+      maxConcurrent: 13,
+      medianConcurrent: 9,
+      sessionsCounted: 107,
+    });
+    expect(result.temporal?.label).toBe("Afternoon peak");
   });
 
   it("round-trips full HarnessData with empty-array fields and a section hidden", () => {
