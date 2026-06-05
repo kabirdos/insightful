@@ -227,8 +227,7 @@ export default function InsightDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>("dashboard");
-  const [activeTool, setActiveTool] =
-    useState<HarnessToolKey>("claude-code");
+  const [activeTool, setActiveTool] = useState<HarnessToolKey>("claude-code");
   // Set when the Dashboard's teaser card is clicked: we switch to the Skills
   // tab AND tell SkillsShowcaseSection which accordion item to auto-open.
   // Cleared on any manual tab change so a later direct tab-click doesn't
@@ -417,484 +416,491 @@ export default function InsightDetailPage() {
 
           {selectedTool === "claude-code" && claudeHarnessData && (
             <>
-          {/* Three-tab navigation — Dashboard (default) / Write-up / Claude Insights.
+              {/* Three-tab navigation — Dashboard (default) / Write-up / Claude Insights.
               Mirrors the insight-harness HTML report structure. A Skill
               Showcase tab will slot in as tab #4 when that feature ships. */}
-          <ProfileTabs active={activeTab} onChange={handleTabChange} />
+              <ProfileTabs active={activeTab} onChange={handleTabChange} />
 
-          {activeTab === "dashboard" && (
-            <>
-              {/* Hero Stats */}
-              {!isSectionHidden(hiddenSet, "heroStats") && (
-                <HeroStats
-                  stats={claudeHarnessData.stats}
-                  dayCount={report.dayCount}
-                  sessionCount={
-                    report.sessionCount ||
-                    claudeHarnessData?.stats?.sessionCount ||
-                    0
-                  }
-                  linesAdded={resolveLinesAdded({
-                    linesAdded: report.linesAdded,
-                    linesRemoved: report.linesRemoved,
-                    harnessData: claudeHarnessData,
-                  })}
-                  linesRemoved={resolveLinesRemoved({
-                    linesAdded: report.linesAdded,
-                    linesRemoved: report.linesRemoved,
-                    harnessData: claudeHarnessData,
-                  })}
-                />
-              )}
+              {activeTab === "dashboard" && (
+                <>
+                  {/* Hero Stats */}
+                  {!isSectionHidden(hiddenSet, "heroStats") && (
+                    <HeroStats
+                      stats={claudeHarnessData.stats}
+                      dayCount={report.dayCount}
+                      sessionCount={
+                        report.sessionCount ||
+                        claudeHarnessData?.stats?.sessionCount ||
+                        0
+                      }
+                      linesAdded={resolveLinesAdded({
+                        linesAdded: report.linesAdded,
+                        linesRemoved: report.linesRemoved,
+                        harnessData: claudeHarnessData,
+                      })}
+                      linesRemoved={resolveLinesRemoved({
+                        linesAdded: report.linesAdded,
+                        linesRemoved: report.linesRemoved,
+                        harnessData: claudeHarnessData,
+                      })}
+                    />
+                  )}
 
-              {/* Activity Heatmap — generated from aggregate stats */}
-              {!isSectionHidden(hiddenSet, "activityHeatmap") && (
-                <ActivityHeatmap
-                  totalSessions={
-                    report.sessionCount ??
-                    claudeHarnessData?.stats?.sessionCount ??
-                    undefined
-                  }
-                  totalTokens={report.totalTokens ?? undefined}
-                  dayCount={report.dayCount ?? undefined}
-                  dateRangeStart={report.dateRangeStart ?? undefined}
-                  slug={slug}
-                  models={claudeHarnessData?.models ?? undefined}
-                  perModelTokens={
-                    claudeHarnessData?.perModelTokens ?? undefined
-                  }
-                />
-              )}
+                  {/* Activity Heatmap — real per-day series when the harness ships
+                  dailyActivity, else generated from aggregate stats */}
+                  {!isSectionHidden(hiddenSet, "activityHeatmap") && (
+                    <ActivityHeatmap
+                      dailyData={claudeHarnessData?.dailyActivity ?? undefined}
+                      totalSessions={
+                        report.sessionCount ??
+                        claudeHarnessData?.stats?.sessionCount ??
+                        undefined
+                      }
+                      totalTokens={report.totalTokens ?? undefined}
+                      dayCount={report.dayCount ?? undefined}
+                      dateRangeStart={report.dateRangeStart ?? undefined}
+                      slug={slug}
+                      models={claudeHarnessData?.models ?? undefined}
+                      perModelTokens={
+                        claudeHarnessData?.perModelTokens ?? undefined
+                      }
+                    />
+                  )}
 
-              {/* Project Links — rich stacked cards with OG metadata.
+                  {/* Project Links — rich stacked cards with OG metadata.
               Rendered directly under the activity card per issue #27. */}
-              {report.reportProjects.length > 0 && (
-                <div className="mb-6">
-                  <ProjectLinks
-                    links={report.reportProjects.map((rp) => rp.project)}
-                  />
-                </div>
-              )}
+                  {report.reportProjects.length > 0 && (
+                    <div className="mb-6">
+                      <ProjectLinks
+                        links={report.reportProjects.map((rp) => rp.project)}
+                      />
+                    </div>
+                  )}
 
-              {/* How I Work cluster: Autonomy + Model Donut + File Ops */}
-              {!isSectionHidden(hiddenSet, "howIWork") && (
-                <HowIWorkCluster harnessData={claudeHarnessData} />
-              )}
+                  {/* How I Work cluster: Autonomy + Model Donut + File Ops */}
+                  {!isSectionHidden(hiddenSet, "howIWork") && (
+                    <HowIWorkCluster harnessData={claudeHarnessData} />
+                  )}
 
-              {/* Skills Teaser — hero-thumbnail cards for the top shareable
+                  {/* Skills Teaser — hero-thumbnail cards for the top shareable
                   skills. Clicking one switches to the Skills tab and opens
                   that deep-dive. Renders nothing when no skill carries
                   showcase data, so reports generated without --include-skills
                   aren't affected. Placed between How-I-Work and the
                   workflow diagram so the deep-dives sit next to the
                   behavioral context that motivates them. */}
-              {!isSectionHidden(hiddenSet, "skillInventory") &&
-                claudeHarnessData.skillInventory.length > 0 && (
-                  <SkillsTeaserCard
-                    skillInventory={filterList(
-                      claudeHarnessData.skillInventory,
-                      hiddenSet,
-                      "skillInventory",
-                      (s) => s.name,
+                  {!isSectionHidden(hiddenSet, "skillInventory") &&
+                    claudeHarnessData.skillInventory.length > 0 && (
+                      <SkillsTeaserCard
+                        skillInventory={filterList(
+                          claudeHarnessData.skillInventory,
+                          hiddenSet,
+                          "skillInventory",
+                          (s) => s.name,
+                        )}
+                        onNavigateToSkill={handleNavigateToSkill}
+                      />
                     )}
-                    onNavigateToSkill={handleNavigateToSkill}
-                  />
-                )}
 
-              {/* Workflow Diagrams */}
-              {claudeHarnessData.workflowData &&
-                !isSectionHidden(hiddenSet, "workflowData") && (
-                  <WorkflowDiagram
-                    workflowData={claudeHarnessData.workflowData}
-                    agentDispatch={claudeHarnessData.agentDispatch}
-                    authorHandle={report.author.username}
-                  />
-                )}
+                  {/* Workflow Diagrams */}
+                  {claudeHarnessData.workflowData &&
+                    !isSectionHidden(hiddenSet, "workflowData") && (
+                      <WorkflowDiagram
+                        workflowData={claudeHarnessData.workflowData}
+                        agentDispatch={claudeHarnessData.agentDispatch}
+                        authorHandle={report.author.username}
+                      />
+                    )}
 
-              {/* Plugins */}
-              {!isSectionHidden(hiddenSet, "plugins") &&
-                claudeHarnessData.plugins.length > 0 && (
-                  <CollapsibleSection
-                    icon="🔌"
-                    iconBgClass="bg-teal-100 dark:bg-teal-900/30"
-                    title="Plugins"
-                    defaultOpen={true}
-                  >
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {filterList(
-                        claudeHarnessData.plugins,
-                        hiddenSet,
-                        "plugins",
-                        (p) => p.name,
-                      ).map((p) => (
-                        <div
-                          key={p.name}
-                          className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
-                              {p.name}
-                            </span>
-                            <span
-                              className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
-                                p.active
-                                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                  : "bg-slate-100 text-slate-400 dark:bg-slate-800"
-                              }`}
+                  {/* Plugins */}
+                  {!isSectionHidden(hiddenSet, "plugins") &&
+                    claudeHarnessData.plugins.length > 0 && (
+                      <CollapsibleSection
+                        icon="🔌"
+                        iconBgClass="bg-teal-100 dark:bg-teal-900/30"
+                        title="Plugins"
+                        defaultOpen={true}
+                      >
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {filterList(
+                            claudeHarnessData.plugins,
+                            hiddenSet,
+                            "plugins",
+                            (p) => p.name,
+                          ).map((p) => (
+                            <div
+                              key={p.name}
+                              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
                             >
-                              {p.active ? "on" : "off"}
-                            </span>
-                          </div>
-                          {(p.version || p.marketplace) && (
-                            <div className="mt-0.5 text-[11px] text-slate-400">
-                              {p.version && `v${p.version}`}
-                              {p.version && p.marketplace && " · "}
-                              {p.marketplace}
+                              <div className="flex items-center justify-between">
+                                <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                  {p.name}
+                                </span>
+                                <span
+                                  className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
+                                    p.active
+                                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                      : "bg-slate-100 text-slate-400 dark:bg-slate-800"
+                                  }`}
+                                >
+                                  {p.active ? "on" : "off"}
+                                </span>
+                              </div>
+                              {(p.version || p.marketplace) && (
+                                <div className="mt-0.5 text-[11px] text-slate-400">
+                                  {p.version && `v${p.version}`}
+                                  {p.version && p.marketplace && " · "}
+                                  {p.marketplace}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </CollapsibleSection>
+                    )}
+
+                  {/* Tool Usage Treemap */}
+                  {!isSectionHidden(hiddenSet, "toolUsage") &&
+                    Object.keys(claudeHarnessData.toolUsage).length > 0 && (
+                      <ToolUsageTreemap
+                        toolUsage={claudeHarnessData.toolUsage}
+                      />
+                    )}
+
+                  {/* CLI Tools Donut */}
+                  {!isSectionHidden(hiddenSet, "cliTools") &&
+                    Object.keys(claudeHarnessData.cliTools).length > 0 && (
+                      <CliToolsDonut cliTools={claudeHarnessData.cliTools} />
+                    )}
+
+                  {/* Git Patterns */}
+                  {!isSectionHidden(hiddenSet, "gitPatterns") && (
+                    <GitPatternsDisplay
+                      gitPatterns={claudeHarnessData.gitPatterns}
+                    />
+                  )}
+
+                  {/* Permission Mode & Safety */}
+                  {!isSectionHidden(hiddenSet, "permissionModes") && (
+                    <PermissionModeDisplay
+                      permissionModes={claudeHarnessData.permissionModes}
+                      featurePills={claudeHarnessData.featurePills}
+                    />
+                  )}
+
+                  {/* Hooks & Safety */}
+                  {!isSectionHidden(hiddenSet, "hookDefinitions") && (
+                    <HooksSafetyTable
+                      hookDefinitions={claudeHarnessData.hookDefinitions}
+                    />
+                  )}
+
+                  {/* Agent Dispatch */}
+                  {!isSectionHidden(hiddenSet, "agentDispatch") &&
+                    claudeHarnessData.agentDispatch &&
+                    claudeHarnessData.agentDispatch.totalAgents > 0 && (
+                      <CollapsibleSection
+                        icon="🤖"
+                        iconBgClass="bg-indigo-100 dark:bg-indigo-900/30"
+                        title={`Agent Dispatch (${claudeHarnessData.agentDispatch.totalAgents} agents)`}
+                        defaultOpen={false}
+                      >
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          {Object.keys(claudeHarnessData.agentDispatch.types)
+                            .length > 0 && (
+                            <div>
+                              <h4 className="mb-2 text-xs font-semibold text-slate-500">
+                                Agent Types
+                              </h4>
+                              <MiniBarChart
+                                data={Object.entries(
+                                  claudeHarnessData.agentDispatch.types,
+                                ).map(([label, value]) => ({ label, value }))}
+                                title=""
+                                color="bg-indigo-500"
+                              />
+                            </div>
+                          )}
+                          {Object.keys(claudeHarnessData.agentDispatch.models)
+                            .length > 0 && (
+                            <div>
+                              <h4 className="mb-2 text-xs font-semibold text-slate-500">
+                                Model Tiering
+                              </h4>
+                              <MiniBarChart
+                                data={Object.entries(
+                                  claudeHarnessData.agentDispatch.models,
+                                ).map(([label, value]) => ({ label, value }))}
+                                title=""
+                                color="bg-purple-500"
+                              />
+                              {claudeHarnessData.agentDispatch.backgroundPct >
+                                0 && (
+                                <p className="mt-1 text-xs text-slate-400">
+                                  {
+                                    claudeHarnessData.agentDispatch
+                                      .backgroundPct
+                                  }
+                                  % run in background
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>
-                      ))}
-                    </div>
-                  </CollapsibleSection>
-                )}
+                        {claudeHarnessData.agentDispatch.customAgents.length >
+                          0 && (
+                          <div className="mt-3">
+                            <h4 className="mb-1 text-xs font-semibold text-slate-500">
+                              Custom Agents
+                            </h4>
+                            <div className="flex flex-wrap gap-1.5">
+                              {claudeHarnessData.agentDispatch.customAgents.map(
+                                (a) => (
+                                  <span
+                                    key={a}
+                                    className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
+                                  >
+                                    {a}
+                                  </span>
+                                ),
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </CollapsibleSection>
+                    )}
 
-              {/* Tool Usage Treemap */}
-              {!isSectionHidden(hiddenSet, "toolUsage") &&
-                Object.keys(claudeHarnessData.toolUsage).length > 0 && (
-                  <ToolUsageTreemap toolUsage={claudeHarnessData.toolUsage} />
-                )}
-
-              {/* CLI Tools Donut */}
-              {!isSectionHidden(hiddenSet, "cliTools") &&
-                Object.keys(claudeHarnessData.cliTools).length > 0 && (
-                  <CliToolsDonut cliTools={claudeHarnessData.cliTools} />
-                )}
-
-              {/* Git Patterns */}
-              {!isSectionHidden(hiddenSet, "gitPatterns") && (
-                <GitPatternsDisplay
-                  gitPatterns={claudeHarnessData.gitPatterns}
-                />
-              )}
-
-              {/* Permission Mode & Safety */}
-              {!isSectionHidden(hiddenSet, "permissionModes") && (
-                <PermissionModeDisplay
-                  permissionModes={claudeHarnessData.permissionModes}
-                  featurePills={claudeHarnessData.featurePills}
-                />
-              )}
-
-              {/* Hooks & Safety */}
-              {!isSectionHidden(hiddenSet, "hookDefinitions") && (
-                <HooksSafetyTable
-                  hookDefinitions={claudeHarnessData.hookDefinitions}
-                />
-              )}
-
-              {/* Agent Dispatch */}
-              {!isSectionHidden(hiddenSet, "agentDispatch") &&
-                claudeHarnessData.agentDispatch &&
-                claudeHarnessData.agentDispatch.totalAgents > 0 && (
-                  <CollapsibleSection
-                    icon="🤖"
-                    iconBgClass="bg-indigo-100 dark:bg-indigo-900/30"
-                    title={`Agent Dispatch (${claudeHarnessData.agentDispatch.totalAgents} agents)`}
-                    defaultOpen={false}
-                  >
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      {Object.keys(claudeHarnessData.agentDispatch.types)
-                        .length > 0 && (
-                        <div>
-                          <h4 className="mb-2 text-xs font-semibold text-slate-500">
-                            Agent Types
-                          </h4>
-                          <MiniBarChart
-                            data={Object.entries(
-                              claudeHarnessData.agentDispatch.types,
-                            ).map(([label, value]) => ({ label, value }))}
-                            title=""
-                            color="bg-indigo-500"
-                          />
-                        </div>
-                      )}
-                      {Object.keys(claudeHarnessData.agentDispatch.models)
-                        .length > 0 && (
-                        <div>
-                          <h4 className="mb-2 text-xs font-semibold text-slate-500">
-                            Model Tiering
-                          </h4>
-                          <MiniBarChart
-                            data={Object.entries(
-                              claudeHarnessData.agentDispatch.models,
-                            ).map(([label, value]) => ({ label, value }))}
-                            title=""
-                            color="bg-purple-500"
-                          />
-                          {claudeHarnessData.agentDispatch.backgroundPct >
-                            0 && (
-                            <p className="mt-1 text-xs text-slate-400">
-                              {claudeHarnessData.agentDispatch.backgroundPct}%
-                              run in background
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    {claudeHarnessData.agentDispatch.customAgents.length >
-                      0 && (
-                      <div className="mt-3">
-                        <h4 className="mb-1 text-xs font-semibold text-slate-500">
-                          Custom Agents
-                        </h4>
-                        <div className="flex flex-wrap gap-1.5">
-                          {claudeHarnessData.agentDispatch.customAgents.map(
-                            (a) => (
-                              <span
-                                key={a}
-                                className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
-                              >
-                                {a}
-                              </span>
+                  {/* Languages */}
+                  {!isSectionHidden(hiddenSet, "languages") &&
+                    Object.keys(claudeHarnessData.languages).length > 0 && (
+                      <CollapsibleSection
+                        icon="💻"
+                        iconBgClass="bg-green-100 dark:bg-green-900/30"
+                        title="Languages"
+                        defaultOpen={false}
+                      >
+                        <MiniBarChart
+                          data={Object.entries(
+                            filterRecord(
+                              claudeHarnessData.languages,
+                              hiddenSet,
+                              "languages",
                             ),
-                          )}
+                          )
+                            .sort((a, b) => b[1] - a[1])
+                            .slice(0, 12)
+                            .map(([label, value]) => ({ label, value }))}
+                          title=""
+                          color="bg-green-500"
+                        />
+                      </CollapsibleSection>
+                    )}
+
+                  {/* MCP Servers */}
+                  {!isSectionHidden(hiddenSet, "mcpServers") &&
+                    Object.keys(claudeHarnessData.mcpServers).length > 0 && (
+                      <CollapsibleSection
+                        icon="🔗"
+                        iconBgClass="bg-cyan-100 dark:bg-cyan-900/30"
+                        title="MCP Servers"
+                        defaultOpen={false}
+                      >
+                        <div className="space-y-1">
+                          {Object.entries(
+                            filterRecord(
+                              claudeHarnessData.mcpServers,
+                              hiddenSet,
+                              "mcpServers",
+                            ),
+                          )
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([server, calls]) => (
+                              <div
+                                key={server}
+                                className="flex justify-between border-b border-slate-100 py-1 dark:border-slate-800"
+                              >
+                                <span className="font-mono text-xs text-slate-600 dark:text-slate-400">
+                                  {server}
+                                </span>
+                                <span className="text-xs text-slate-400">
+                                  {calls.toLocaleString()} calls
+                                </span>
+                              </div>
+                            ))}
                         </div>
+                      </CollapsibleSection>
+                    )}
+
+                  {/* Versions */}
+                  {!isSectionHidden(hiddenSet, "versions") &&
+                    claudeHarnessData.versions.length > 0 && (
+                      <CollapsibleSection
+                        icon="📦"
+                        iconBgClass="bg-slate-100 dark:bg-slate-900/30"
+                        title="Claude Code Versions"
+                        defaultOpen={false}
+                      >
+                        <div className="flex flex-wrap gap-1.5">
+                          {filterList(
+                            claudeHarnessData.versions,
+                            hiddenSet,
+                            "versions",
+                            (v) => v,
+                          ).map((v) => (
+                            <span
+                              key={v}
+                              className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
+                            >
+                              {v}
+                            </span>
+                          ))}
+                        </div>
+                      </CollapsibleSection>
+                    )}
+
+                  {/* Harness Files */}
+                  {!isSectionHidden(hiddenSet, "harnessFiles") &&
+                    claudeHarnessData.harnessFiles.length > 0 && (
+                      <CollapsibleSection
+                        icon="📁"
+                        iconBgClass="bg-orange-100 dark:bg-orange-900/30"
+                        title="Harness File Ecosystem"
+                        defaultOpen={false}
+                      >
+                        <div className="space-y-1">
+                          {filterList(
+                            claudeHarnessData.harnessFiles,
+                            hiddenSet,
+                            "harnessFiles",
+                            (f) => f,
+                          ).map((f) => (
+                            <div
+                              key={f}
+                              className="border-b border-slate-100 py-1 font-mono text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400"
+                            >
+                              {f}
+                            </div>
+                          ))}
+                        </div>
+                      </CollapsibleSection>
+                    )}
+                </>
+              )}
+
+              {activeTab === "skills" && (
+                <>
+                  {!isSectionHidden(hiddenSet, "skillInventory") &&
+                    claudeHarnessData.skillInventory.length > 0 && (
+                      <div className="space-y-6">
+                        <SkillsShowcaseSection
+                          skillInventory={filterList(
+                            claudeHarnessData.skillInventory,
+                            hiddenSet,
+                            "skillInventory",
+                            (s) => s.name,
+                          )}
+                          autoOpenAnchor={pendingSkillAnchor}
+                        />
+                        <SkillCardGrid
+                          skillInventory={filterList(
+                            claudeHarnessData.skillInventory,
+                            hiddenSet,
+                            "skillInventory",
+                            (s) => s.name,
+                          )}
+                        />
                       </div>
                     )}
-                  </CollapsibleSection>
-                )}
+                </>
+              )}
 
-              {/* Languages */}
-              {!isSectionHidden(hiddenSet, "languages") &&
-                Object.keys(claudeHarnessData.languages).length > 0 && (
-                  <CollapsibleSection
-                    icon="💻"
-                    iconBgClass="bg-green-100 dark:bg-green-900/30"
-                    title="Languages"
-                    defaultOpen={false}
-                  >
-                    <MiniBarChart
-                      data={Object.entries(
-                        filterRecord(
-                          claudeHarnessData.languages,
-                          hiddenSet,
-                          "languages",
-                        ),
-                      )
-                        .sort((a, b) => b[1] - a[1])
-                        .slice(0, 12)
-                        .map(([label, value]) => ({ label, value }))}
-                      title=""
-                      color="bg-green-500"
-                    />
-                  </CollapsibleSection>
-                )}
-
-              {/* MCP Servers */}
-              {!isSectionHidden(hiddenSet, "mcpServers") &&
-                Object.keys(claudeHarnessData.mcpServers).length > 0 && (
-                  <CollapsibleSection
-                    icon="🔗"
-                    iconBgClass="bg-cyan-100 dark:bg-cyan-900/30"
-                    title="MCP Servers"
-                    defaultOpen={false}
-                  >
-                    <div className="space-y-1">
-                      {Object.entries(
-                        filterRecord(
-                          claudeHarnessData.mcpServers,
-                          hiddenSet,
-                          "mcpServers",
-                        ),
-                      )
-                        .sort((a, b) => b[1] - a[1])
-                        .map(([server, calls]) => (
-                          <div
-                            key={server}
-                            className="flex justify-between border-b border-slate-100 py-1 dark:border-slate-800"
-                          >
-                            <span className="font-mono text-xs text-slate-600 dark:text-slate-400">
-                              {server}
-                            </span>
-                            <span className="text-xs text-slate-400">
-                              {calls.toLocaleString()} calls
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-                  </CollapsibleSection>
-                )}
-
-              {/* Versions */}
-              {!isSectionHidden(hiddenSet, "versions") &&
-                claudeHarnessData.versions.length > 0 && (
-                  <CollapsibleSection
-                    icon="📦"
-                    iconBgClass="bg-slate-100 dark:bg-slate-900/30"
-                    title="Claude Code Versions"
-                    defaultOpen={false}
-                  >
-                    <div className="flex flex-wrap gap-1.5">
-                      {filterList(
-                        claudeHarnessData.versions,
-                        hiddenSet,
-                        "versions",
-                        (v) => v,
-                      ).map((v) => (
-                        <span
-                          key={v}
-                          className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
-                        >
-                          {v}
-                        </span>
-                      ))}
-                    </div>
-                  </CollapsibleSection>
-                )}
-
-              {/* Harness Files */}
-              {!isSectionHidden(hiddenSet, "harnessFiles") &&
-                claudeHarnessData.harnessFiles.length > 0 && (
-                  <CollapsibleSection
-                    icon="📁"
-                    iconBgClass="bg-orange-100 dark:bg-orange-900/30"
-                    title="Harness File Ecosystem"
-                    defaultOpen={false}
-                  >
-                    <div className="space-y-1">
-                      {filterList(
-                        claudeHarnessData.harnessFiles,
-                        hiddenSet,
-                        "harnessFiles",
-                        (f) => f,
-                      ).map((f) => (
-                        <div
-                          key={f}
-                          className="border-b border-slate-100 py-1 font-mono text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400"
-                        >
-                          {f}
-                        </div>
-                      ))}
-                    </div>
-                  </CollapsibleSection>
-                )}
-            </>
-          )}
-
-          {activeTab === "skills" && (
-            <>
-              {!isSectionHidden(hiddenSet, "skillInventory") &&
-                claudeHarnessData.skillInventory.length > 0 && (
-                  <div className="space-y-6">
-                    <SkillsShowcaseSection
-                      skillInventory={filterList(
-                        claudeHarnessData.skillInventory,
-                        hiddenSet,
-                        "skillInventory",
-                        (s) => s.name,
-                      )}
-                      autoOpenAnchor={pendingSkillAnchor}
-                    />
-                    <SkillCardGrid
-                      skillInventory={filterList(
-                        claudeHarnessData.skillInventory,
-                        hiddenSet,
-                        "skillInventory",
-                        (s) => s.name,
-                      )}
-                    />
-                  </div>
-                )}
-            </>
-          )}
-
-          {activeTab === "writeup" && (
-            <>
-              {/* Writeup Sections — Claude-authored prose summary of the
+              {activeTab === "writeup" && (
+                <>
+                  {/* Writeup Sections — Claude-authored prose summary of the
                   raw harness data. Rendered as its own tab so readers who
                   want the narrative don't scroll past all the dashboard
                   charts to find it. */}
-              {!isSectionHidden(hiddenSet, "writeupSections") &&
-              claudeHarnessData.writeupSections.length > 0 ? (
-                <div className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/50">
-                  {filterList(
-                    claudeHarnessData.writeupSections,
-                    hiddenSet,
-                    "writeupSections",
-                    (w) => w.title,
-                  ).map((section) => (
-                    <div key={section.title}>
-                      <h3 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
-                        {section.title}
-                      </h3>
-                      <div
-                        className="prose prose-slate max-w-none text-slate-700 dark:text-slate-300 dark:prose-invert [&_li]:mb-1 [&_p]:mb-3"
-                        dangerouslySetInnerHTML={{
-                          __html: section.contentHtml,
-                        }}
-                      />
+                  {!isSectionHidden(hiddenSet, "writeupSections") &&
+                  claudeHarnessData.writeupSections.length > 0 ? (
+                    <div className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/50">
+                      {filterList(
+                        claudeHarnessData.writeupSections,
+                        hiddenSet,
+                        "writeupSections",
+                        (w) => w.title,
+                      ).map((section) => (
+                        <div key={section.title}>
+                          <h3 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                            {section.title}
+                          </h3>
+                          <div
+                            className="prose prose-slate max-w-none text-slate-700 dark:text-slate-300 dark:prose-invert [&_li]:mb-1 [&_p]:mb-3"
+                            dangerouslySetInnerHTML={{
+                              __html: section.contentHtml,
+                            }}
+                          />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
-                  No write-up available for this report.
-                </div>
+                  ) : (
+                    <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
+                      No write-up available for this report.
+                    </div>
+                  )}
+                </>
               )}
-            </>
-          )}
 
-          {activeTab === "insights" && (
-            <>
-              {/* Narrative Sections — the Claude-generated analysis
+              {activeTab === "insights" && (
+                <>
+                  {/* Narrative Sections — the Claude-generated analysis
                   (At a Glance, Interaction Style, Impressive Workflows,
                   Friction, Suggestions, On the Horizon). */}
-              {SECTIONS.some(
-                (s) =>
-                  (report as unknown as Record<string, unknown>)[s.dataKey],
-              ) ? (
-                <div className="space-y-4">
-                  {SECTIONS.map((section) => {
-                    const data = (report as unknown as Record<string, unknown>)[
-                      section.dataKey
-                    ];
-                    if (!data) return null;
-                    const summary = getSectionSummary(section.key, report);
-                    const isAtAGlance = section.key === "at_a_glance";
-                    return (
-                      <CollapsibleSection
-                        key={section.key}
-                        icon={section.icon}
-                        iconBgClass={section.iconBgClass}
-                        title={section.label}
-                        summary={isAtAGlance ? null : summary}
-                        defaultOpen={isAtAGlance}
-                      >
-                        <SectionRenderer
-                          username={username}
-                          slug={slug}
-                          sectionKey={section.key}
-                          sectionType={section.sectionType}
-                          data={data}
-                          reportId={report.id}
-                          voteCount={report.voteCounts[section.key] ?? 0}
-                          voted={report.userVotes[section.key] ?? false}
-                          annotation={annotations[section.key]}
-                          hiddenItems={hiddenHarnessSections}
-                        />
-                      </CollapsibleSection>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
-                  No Claude insights available for this report.
-                </div>
+                  {SECTIONS.some(
+                    (s) =>
+                      (report as unknown as Record<string, unknown>)[s.dataKey],
+                  ) ? (
+                    <div className="space-y-4">
+                      {SECTIONS.map((section) => {
+                        const data = (
+                          report as unknown as Record<string, unknown>
+                        )[section.dataKey];
+                        if (!data) return null;
+                        const summary = getSectionSummary(section.key, report);
+                        const isAtAGlance = section.key === "at_a_glance";
+                        return (
+                          <CollapsibleSection
+                            key={section.key}
+                            icon={section.icon}
+                            iconBgClass={section.iconBgClass}
+                            title={section.label}
+                            summary={isAtAGlance ? null : summary}
+                            defaultOpen={isAtAGlance}
+                          >
+                            <SectionRenderer
+                              username={username}
+                              slug={slug}
+                              sectionKey={section.key}
+                              sectionType={section.sectionType}
+                              data={data}
+                              reportId={report.id}
+                              voteCount={report.voteCounts[section.key] ?? 0}
+                              voted={report.userVotes[section.key] ?? false}
+                              annotation={annotations[section.key]}
+                              hiddenItems={hiddenHarnessSections}
+                            />
+                          </CollapsibleSection>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
+                      No Claude insights available for this report.
+                    </div>
+                  )}
+                </>
               )}
-            </>
-          )}
 
-          <NextTabNav active={activeTab} onChange={handleTabChange} />
+              <NextTabNav active={activeTab} onChange={handleTabChange} />
             </>
           )}
         </>
