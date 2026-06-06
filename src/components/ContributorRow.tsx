@@ -23,7 +23,10 @@ interface ContributorRowProps {
 }
 
 function perWeek(value: number | null, dayCount: number | null): string | null {
-  if (value == null || dayCount == null || dayCount === 0) return null;
+  // A 0 value (e.g. a sourceless commitCount/linesAdded) must yield null, not
+  // "0" — rendering "0/wk" is a silent-zero false claim (issue #29). `!value`
+  // also drops null/undefined/NaN.
+  if (!value || dayCount == null || dayCount === 0) return null;
   const weeks = dayCount / 7;
   if (weeks === 0) return null;
   return Math.round(value / weeks).toLocaleString();

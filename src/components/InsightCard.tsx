@@ -158,23 +158,30 @@ export default function InsightCard({
       {/* Stats row */}
       {(sessionCount || messageCount || commitCount) && (
         <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
-          {messageCount != null && (
+          {/* Guard each metric on > 0, not just != null: a sourceless 0 (e.g.
+              commitCount/linesAdded on a machine without session-meta) must be
+              omitted, never rendered as "0 commits"/"+0" (issue #29). */}
+          {messageCount != null && messageCount > 0 && (
             <span>{messageCount.toLocaleString()} msgs</span>
           )}
-          {linesAdded != null && linesRemoved != null && (
+          {linesAdded != null && linesAdded > 0 && (
             <span className="text-green-600 dark:text-green-400">
               +{linesAdded.toLocaleString()}
             </span>
           )}
-          {linesRemoved != null && (
+          {linesRemoved != null && linesRemoved > 0 && (
             <span className="text-red-500 dark:text-red-400">
               -{linesRemoved.toLocaleString()}
             </span>
           )}
-          {fileCount != null && <span>{fileCount} files</span>}
-          {dayCount != null && <span>{dayCount} days</span>}
-          {msgsPerDay != null && <span>{msgsPerDay.toFixed(1)}/day</span>}
-          {commitCount != null && <span>{commitCount} commits</span>}
+          {fileCount != null && fileCount > 0 && <span>{fileCount} files</span>}
+          {dayCount != null && dayCount > 0 && <span>{dayCount} days</span>}
+          {msgsPerDay != null && msgsPerDay > 0 && (
+            <span>{msgsPerDay.toFixed(1)}/day</span>
+          )}
+          {commitCount != null && commitCount > 0 && (
+            <span>{commitCount} commits</span>
+          )}
         </div>
       )}
 

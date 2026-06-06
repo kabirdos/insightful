@@ -116,7 +116,12 @@ export default function LeaderboardRow({ row }: { row: LeaderboardRowData }) {
           <Stat label="Sessions" value={row.sessionCount.toLocaleString()} />
         </div>
         <div className="hidden md:block">
-          <Stat label="Active" value={`${row.durationHours}h`} />
+          {/* A sourceless 0h is a silent-zero false claim (issue #29) — show an
+              em dash instead, matching the Lines cell's no-data convention. */}
+          <Stat
+            label="Active"
+            value={row.durationHours > 0 ? `${row.durationHours}h` : "—"}
+          />
         </div>
         <div className="hidden lg:block">
           <Stat
