@@ -66,9 +66,17 @@ export async function DELETE(
       }
     }
 
-    await prisma.groupMember.delete({
-      where: { groupId_userId: { groupId, userId: targetUserId } },
-    });
+    // Removing a member also retracts their report shares into this
+    // group — otherwise remaining members could keep reading a departed
+    // member's group-visible reports through the stale share rows.
+    await prisma.$transaction([
+      prisma.groupMember.delete({
+        where: { groupId_userId: { groupId, userId: targetUserId } },
+      }),
+      prisma.reportGroupShare.deleteMany({
+        where: { groupId, report: { authorId: targetUserId } },
+      }),
+    ]);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

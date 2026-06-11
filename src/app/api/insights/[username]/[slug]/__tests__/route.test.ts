@@ -165,6 +165,7 @@ function buildReportFixture(authorId: string) {
       },
     ],
     annotations: [],
+    groupShares: [{ groupId: "g1" }],
     votes: [],
     highlights: [],
     _count: { comments: 0 },
@@ -260,6 +261,37 @@ describe("GET /api/insights/[username]/[slug] — non-owner visibility", () => {
 // ── Visibility boundary — owner ─────────────────────────────────────
 
 describe("GET /api/insights/[username]/[slug] — owner visibility", () => {
+  it("returns groupShareIds to the owner but not to other viewers", async () => {
+    // Owner sees the report's actual group shares (edit page seeds from
+    // this so a save can't silently widen sharing to all groups).
+    mockSession("user-1");
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportFixture("user-1"),
+    );
+    let response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    let body = await response.json();
+    expect(body.data.groupShareIds).toEqual(["g1"]);
+    // raw junction rows never flow through
+    expect(body.data.groupShares).toBeUndefined();
+
+    // Non-owner: no share ids at all.
+    vi.clearAllMocks();
+    mockSession("user-2");
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportFixture("user-1"),
+    );
+    response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    body = await response.json();
+    expect(body.data.groupShareIds).toBeUndefined();
+    expect(body.data.groupShares).toBeUndefined();
+  });
+
   it("returns hidden + visible projects when the owner passes ?includeHidden=true", async () => {
     // Author of the report is user-1 and the caller is user-1.
     mockSession("user-1");

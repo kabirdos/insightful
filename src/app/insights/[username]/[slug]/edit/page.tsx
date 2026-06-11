@@ -74,6 +74,8 @@ interface ReportData {
   authorId: string;
   isDraft: boolean;
   visibility: string;
+  /** Group ids this report is shared to; owner GET only. */
+  groupShareIds?: string[];
   reportType: string;
   sessionCount: number | null;
   messageCount: number | null;
@@ -518,14 +520,16 @@ export default function EditReportPage() {
   // Group-sharing visibility state. `visibility` mirrors the report's
   // current value (or, for fresh drafts of authors with groups, defaults
   // to "group" once groups load). `selectedGroupIds` drives the per-group
-  // share checkboxes. `sharesDefaulted` tracks that we couldn't read the
-  // report's existing group shares (the report GET doesn't return them),
-  // so we default-checked all the author's groups and surface a note.
+  // share checkboxes, seeded from the owner GET's `groupShareIds`.
+  // `sharesSeeded` guards the one-shot seeding effect; `sharesDefaulted`
+  // flags the legacy fallback (no groupShareIds in the response → all
+  // groups checked) so a note can warn that saving rewrites shares.
   const [myGroups, setMyGroups] = useState<MyGroup[]>([]);
   const [visibility, setVisibility] = useState<Visibility>("public");
   const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(
     new Set(),
   );
+  const [sharesSeeded, setSharesSeeded] = useState(false);
   const [sharesDefaulted, setSharesDefaulted] = useState(false);
 
   // Load the caller's groups so the "My groups" option can list them.
@@ -599,21 +603,26 @@ export default function EditReportPage() {
   }, [username, slug]);
 
   // Pre-check group shares once both the report and the caller's groups
-  // are known. The report GET does not return the report's existing
-  // ReportGroupShare rows, so we cannot reconstruct the exact prior
-  // selection — when the report is already group-shared we default to
-  // checking ALL the author's groups and flag it (sharesDefaulted) so the
-  // UI can warn that re-saving rewrites shares to the boxes shown. Runs
-  // once per report load (guarded by sharesDefaulted) so it never clobbers
-  // a selection the user has since edited.
+  // are known. The owner GET returns `groupShareIds` (the report's actual
+  // ReportGroupShare rows), so the checkboxes reflect the real prior
+  // selection. `sharesDefaulted` only flags the legacy fallback (response
+  // without groupShareIds → check all groups) so the UI can warn that
+  // re-saving rewrites shares to the boxes shown. Runs once per report
+  // load (guarded by seeding state) so it never clobbers a selection the
+  // user has since edited.
   useEffect(() => {
     if (!report || myGroups.length === 0) return;
-    if (sharesDefaulted) return;
+    if (sharesSeeded) return;
     if (report.visibility === "group") {
-      setSelectedGroupIds(new Set(myGroups.map((g) => g.id)));
-      setSharesDefaulted(true);
+      if (Array.isArray(report.groupShareIds)) {
+        setSelectedGroupIds(new Set(report.groupShareIds));
+      } else {
+        setSelectedGroupIds(new Set(myGroups.map((g) => g.id)));
+        setSharesDefaulted(true);
+      }
+      setSharesSeeded(true);
     }
-  }, [report, myGroups, sharesDefaulted]);
+  }, [report, myGroups, sharesSeeded]);
 
   // ── Project actions ────────────────────────────────────────────
   // Flip a ReportProject.hidden via PATCH. Updates local state

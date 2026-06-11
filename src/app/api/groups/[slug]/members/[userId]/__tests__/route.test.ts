@@ -16,6 +16,10 @@ vi.mock("@/lib/db", () => ({
       count: vi.fn(),
       delete: vi.fn(),
     },
+    reportGroupShare: {
+      deleteMany: vi.fn(),
+    },
+    $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   },
 }));
 
@@ -36,6 +40,8 @@ const mockAuth = auth as unknown as Mock;
 const mockMembership = getGroupMembership as unknown as Mock;
 const mockPrisma = prisma as unknown as {
   groupMember: { findUnique: Mock; count: Mock; delete: Mock };
+  reportGroupShare: { deleteMany: Mock };
+  $transaction: Mock;
 };
 
 function setSession(userId: string | null) {
@@ -93,6 +99,10 @@ describe("DELETE /api/groups/[slug]/members/[userId]", () => {
     const body = await res.json();
     expect(body.ok).toBe(true);
     expect(mockPrisma.groupMember.delete).toHaveBeenCalledTimes(1);
+    // Leaving also retracts the member's report shares into this group.
+    expect(mockPrisma.reportGroupShare.deleteMany).toHaveBeenCalledWith({
+      where: { groupId: "g1", report: { authorId: "user-2" } },
+    });
   });
 
   it("lets an owner remove another member → ok", async () => {
@@ -113,6 +123,9 @@ describe("DELETE /api/groups/[slug]/members/[userId]", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(true);
+    expect(mockPrisma.reportGroupShare.deleteMany).toHaveBeenCalledWith({
+      where: { groupId: "g1", report: { authorId: "user-3" } },
+    });
   });
 
   it("returns 403 when a non-owner tries to remove someone else", async () => {

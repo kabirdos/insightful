@@ -26,6 +26,14 @@ const joinSchema = z.object({
   token: z.string().min(1),
 });
 
+/**
+ * Thrown inside the join transaction when the conditional invite claim
+ * matches zero rows — the invite was revoked or expired between the
+ * precheck and the transaction. Translated to the same 410 the precheck
+ * emits.
+ */
+class InviteNoLongerActiveError extends Error {}
+
 /** True when an invite is currently usable (not revoked, not expired). */
 function inviteIsActive(invite: {
   revokedAt: Date | null;
@@ -89,21 +97,38 @@ export async function POST(request: Request) {
       });
     }
 
-    // New membership: create + increment usedCount atomically. A
-    // concurrent join racing past the `existing` check trips the
-    // unique [groupId, userId] constraint inside the transaction —
-    // caught below and reported as alreadyMember without double-counting.
+    // New membership: claim the invite + create the member atomically.
+    // The usedCount increment is CONDITIONAL on the invite still being
+    // active (not revoked, not expired) so a revoke racing in after the
+    // precheck above cannot admit the joiner — the claim matches zero
+    // rows and the whole transaction rolls back to a 410. A concurrent
+    // join racing past the `existing` check trips the unique
+    // [groupId, userId] constraint inside the transaction — caught below
+    // and reported as alreadyMember without double-counting.
     try {
       await prisma.$transaction(async (tx) => {
+        const claimed = await tx.groupInvite.updateMany({
+          where: {
+            id: invite.id,
+            revokedAt: null,
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          },
+          data: { usedCount: { increment: 1 } },
+        });
+        if (claimed.count === 0) {
+          throw new InviteNoLongerActiveError();
+        }
         await tx.groupMember.create({
           data: { groupId: invite.group.id, userId, role: "member" },
         });
-        await tx.groupInvite.update({
-          where: { id: invite.id },
-          data: { usedCount: { increment: 1 } },
-        });
       });
     } catch (error) {
+      if (error instanceof InviteNoLongerActiveError) {
+        return NextResponse.json(
+          { error: "Invite expired or revoked" },
+          { status: 410 },
+        );
+      }
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"

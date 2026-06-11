@@ -75,6 +75,13 @@ export async function GET(
           include: { project: true },
         },
         annotations: true,
+        // Which groups this report is shared to. Surfaced to the OWNER
+        // only (as `groupShareIds` below) so the edit page can render the
+        // report's real share state instead of guessing; stripped for
+        // everyone else.
+        groupShares: {
+          select: { groupId: true },
+        },
         votes: {
           select: { userId: true, sectionKey: true },
         },
@@ -155,7 +162,12 @@ export async function GET(
         : false;
     }
 
-    const { votes: _votes, highlights: _highlights, ...rest } = report;
+    const {
+      votes: _votes,
+      highlights: _highlights,
+      groupShares: _groupShares,
+      ...rest
+    } = report;
 
     // Apply server-side filtering of hidden harness/narrative data.
     // Owner with ?includeHidden=true gets unfiltered data (edit page).
@@ -170,6 +182,9 @@ export async function GET(
       {
         data: {
           ...filtered,
+          ...(viewerIsOwner
+            ? { groupShareIds: report.groupShares.map((s) => s.groupId) }
+            : {}),
           voteCounts,
           userVotes,
           userHighlights,

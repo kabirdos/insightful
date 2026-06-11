@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    groupInvite: { findUnique: vi.fn(), update: vi.fn() },
+    groupInvite: { findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     groupMember: { findUnique: vi.fn(), create: vi.fn() },
     $transaction: vi.fn(),
   },
@@ -25,7 +25,7 @@ import { POST as joinPOST, GET as joinGET } from "../route";
 
 const mockAuth = auth as unknown as Mock;
 const mockPrisma = prisma as unknown as {
-  groupInvite: { findUnique: Mock; update: Mock };
+  groupInvite: { findUnique: Mock; update: Mock; updateMany: Mock };
   groupMember: { findUnique: Mock; create: Mock };
   $transaction: Mock;
 };
@@ -111,7 +111,7 @@ describe("POST /api/groups/join", () => {
     mockPrisma.groupInvite.findUnique.mockResolvedValue(activeInvite);
     mockPrisma.groupMember.findUnique.mockResolvedValue(null);
     mockPrisma.groupMember.create.mockResolvedValue({ id: "m1" });
-    mockPrisma.groupInvite.update.mockResolvedValue({});
+    mockPrisma.groupInvite.updateMany.mockResolvedValue({ count: 1 });
 
     const res = await joinPOST(postRequest({ token: "t" }));
     expect(res.status).toBe(200);
@@ -119,8 +119,25 @@ describe("POST /api/groups/join", () => {
     expect(body.alreadyMember).toBe(false);
     expect(body.group.slug).toBe("hyperzen");
     expect(mockPrisma.groupMember.create).toHaveBeenCalledTimes(1);
-    const updateArgs = mockPrisma.groupInvite.update.mock.calls[0][0];
-    expect(updateArgs.data.usedCount).toEqual({ increment: 1 });
+    const claimArgs = mockPrisma.groupInvite.updateMany.mock.calls[0][0];
+    expect(claimArgs.data.usedCount).toEqual({ increment: 1 });
+    // The claim is conditional on the invite still being active, so a
+    // revoke racing in between precheck and transaction can't admit.
+    expect(claimArgs.where.revokedAt).toBeNull();
+    expect(claimArgs.where.OR).toBeTruthy();
+  });
+
+  it("returns 410 when the invite is revoked between precheck and claim", async () => {
+    setSession("user-1");
+    wireTransaction();
+    mockPrisma.groupInvite.findUnique.mockResolvedValue(activeInvite);
+    mockPrisma.groupMember.findUnique.mockResolvedValue(null);
+    // Conditional claim matches zero rows: revoked mid-flight.
+    mockPrisma.groupInvite.updateMany.mockResolvedValue({ count: 0 });
+
+    const res = await joinPOST(postRequest({ token: "t" }));
+    expect(res.status).toBe(410);
+    expect(mockPrisma.groupMember.create).not.toHaveBeenCalled();
   });
 
   it("returns alreadyMember:true without bumping usedCount when already in", async () => {
@@ -133,7 +150,7 @@ describe("POST /api/groups/join", () => {
     const body = await res.json();
     expect(body.alreadyMember).toBe(true);
     expect(mockPrisma.groupMember.create).not.toHaveBeenCalled();
-    expect(mockPrisma.groupInvite.update).not.toHaveBeenCalled();
+    expect(mockPrisma.groupInvite.updateMany).not.toHaveBeenCalled();
   });
 });
 
