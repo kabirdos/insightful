@@ -28,6 +28,8 @@ import HeroStats from "@/components/HeroStats";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
 import HowIWorkCluster from "@/components/HowIWorkCluster";
 import WorkRhythm from "@/components/WorkRhythm";
+import SignaturePatterns from "@/components/SignaturePatterns";
+import { deriveSignaturePatterns } from "@/lib/signature-patterns";
 import ToolUsageTreemap from "@/components/ToolUsageTreemap";
 import SkillCardGrid from "@/components/SkillCardGrid";
 import WorkflowDiagram from "@/components/WorkflowDiagram";
@@ -986,6 +988,16 @@ export default function EditReportPage() {
               })}
             />
           </HideableCard>
+
+          {deriveSignaturePatterns(harnessData).length > 0 && (
+            <HideableCard
+              title="Signature Patterns"
+              hidden={!!hiddenSections["signaturePatterns"]}
+              onToggle={() => toggleSection("signaturePatterns")}
+            >
+              <SignaturePatterns harnessData={harnessData} />
+            </HideableCard>
+          )}
 
           <HideableCard
             title="Activity Heatmap"
