@@ -24,13 +24,15 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  reports        InsightReport[]
-  votes          SectionVote[]
-  highlights     SectionHighlight[]
-  comments       Comment[]
-  projects       Project[]
-  harnessTokens  HarnessToken[]
-  harnessUploads HarnessUpload[]
+  reports          InsightReport[]
+  votes            SectionVote[]
+  highlights       SectionHighlight[]
+  comments         Comment[]
+  projects         Project[]
+  harnessTokens    HarnessToken[]
+  harnessUploads   HarnessUpload[]
+  groupMemberships GroupMember[]
+  createdGroups    Group[]           @relation("GroupCreator")
 }
 
 model InsightReport {
@@ -40,6 +42,7 @@ model InsightReport {
   slug        String
   publishedAt DateTime @default(now())
   isDraft     Boolean  @default(false)
+  visibility  String   @default("public")
 
   // Stats
   sessionCount   Int?
@@ -86,6 +89,7 @@ model InsightReport {
   highlights     SectionHighlight[]
   comments       Comment[]
   annotations    AuthorAnnotation[]
+  groupShares    ReportGroupShare[]
 
   @@unique([authorId, slug])
 }
@@ -232,4 +236,55 @@ model HarnessUpload {
 
   @@unique([userId, uploadId])
   @@index([userId, createdAt])
+}
+
+model Group {
+  id           String             @id @default(cuid())
+  slug         String             @unique
+  name         String
+  description  String?
+  createdById  String
+  createdBy    User               @relation("GroupCreator", fields: [createdById], references: [id])
+  members      GroupMember[]
+  invites      GroupInvite[]
+  reportShares ReportGroupShare[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  groupId  String
+  userId   String
+  role     String   @default("member")
+  joinedAt DateTime @default(now())
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId])
+}
+
+model GroupInvite {
+  id          String    @id @default(cuid())
+  groupId     String
+  token       String    @unique
+  createdById String
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  usedCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  group       Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model ReportGroupShare {
+  id        String        @id @default(cuid())
+  reportId  String
+  groupId   String
+  createdAt DateTime      @default(now())
+  report    InsightReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  group     Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([reportId, groupId])
+  @@index([groupId])
 }

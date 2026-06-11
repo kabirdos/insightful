@@ -73,6 +73,9 @@ interface ReportData {
   title: string;
   authorId: string;
   isDraft: boolean;
+  visibility: string;
+  /** Group ids this report is shared to; owner GET only. */
+  groupShareIds?: string[];
   reportType: string;
   sessionCount: number | null;
   messageCount: number | null;
@@ -93,6 +96,18 @@ interface ReportData {
   onTheHorizon: unknown;
   reportProjects: EditReportProject[];
   author: { id: string; username: string; displayName: string | null };
+}
+
+// Group-sharing visibility (plan D1-D3). The caller's groups feed the
+// per-group share checkboxes shown when visibility is "My groups".
+type Visibility = "public" | "group" | "private";
+
+interface MyGroup {
+  id: string;
+  slug: string;
+  name: string;
+  memberCount: number;
+  role: string;
 }
 
 export function getEditHarnessPreviewData(raw: unknown): {
@@ -502,6 +517,37 @@ export default function EditReportPage() {
   // sections without asking — codex P2 on 779cc45.
   const [pendingIsPublish, setPendingIsPublish] = useState(false);
 
+  // Group-sharing visibility state. `visibility` mirrors the report's
+  // current value (or, for fresh drafts of authors with groups, defaults
+  // to "group" once groups load). `selectedGroupIds` drives the per-group
+  // share checkboxes, seeded from the owner GET's `groupShareIds`.
+  // `sharesSeeded` guards the one-shot seeding effect; `sharesDefaulted`
+  // flags the legacy fallback (no groupShareIds in the response → all
+  // groups checked) so a note can warn that saving rewrites shares.
+  const [myGroups, setMyGroups] = useState<MyGroup[]>([]);
+  const [visibility, setVisibility] = useState<Visibility>("public");
+  const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [sharesSeeded, setSharesSeeded] = useState(false);
+  const [sharesDefaulted, setSharesDefaulted] = useState(false);
+
+  // Load the caller's groups so the "My groups" option can list them.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/groups")
+      .then((res) => (res.ok ? res.json() : { groups: [] }))
+      .then((json) => {
+        if (!cancelled) setMyGroups(json.groups ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setMyGroups([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     // includeHidden=true surfaces per-report hidden junction rows so
     // the owner can toggle them back on. The server enforces
@@ -531,6 +577,17 @@ export default function EditReportPage() {
             r.reportProjects = [];
           }
           setReport(r);
+          // Seed the visibility radio from the report's current value
+          // (defaults to "public" for legacy rows). Group-share
+          // pre-checking happens in a follow-up effect once both the
+          // report and the caller's groups have loaded.
+          if (
+            r.visibility === "public" ||
+            r.visibility === "group" ||
+            r.visibility === "private"
+          ) {
+            setVisibility(r.visibility);
+          }
           setHiddenSections(
             Object.fromEntries(
               (r.hiddenHarnessSections ?? []).map((key: string) => [key, true]),
@@ -544,6 +601,28 @@ export default function EditReportPage() {
         setLoading(false);
       });
   }, [username, slug]);
+
+  // Pre-check group shares once both the report and the caller's groups
+  // are known. The owner GET returns `groupShareIds` (the report's actual
+  // ReportGroupShare rows), so the checkboxes reflect the real prior
+  // selection. `sharesDefaulted` only flags the legacy fallback (response
+  // without groupShareIds → check all groups) so the UI can warn that
+  // re-saving rewrites shares to the boxes shown. Runs once per report
+  // load (guarded by seeding state) so it never clobbers a selection the
+  // user has since edited.
+  useEffect(() => {
+    if (!report || myGroups.length === 0) return;
+    if (sharesSeeded) return;
+    if (report.visibility === "group") {
+      if (Array.isArray(report.groupShareIds)) {
+        setSelectedGroupIds(new Set(report.groupShareIds));
+      } else {
+        setSelectedGroupIds(new Set(myGroups.map((g) => g.id)));
+        setSharesDefaulted(true);
+      }
+      setSharesSeeded(true);
+    }
+  }, [report, myGroups, sharesSeeded]);
 
   // ── Project actions ────────────────────────────────────────────
   // Flip a ReportProject.hidden via PATCH. Updates local state
@@ -682,6 +761,15 @@ export default function EditReportPage() {
     }
 
     body.hiddenHarnessSections = getHiddenKeypaths(hiddenSections);
+
+    // Group-sharing visibility. The PUT handler validates the enum and
+    // only accepts groupIds when visibility === "group" (it rejects
+    // groupIds otherwise with a 400), so we send groupIds exclusively on
+    // the "group" branch.
+    body.visibility = visibility;
+    if (visibility === "group") {
+      body.groupIds = Array.from(selectedGroupIds);
+    }
 
     return body;
   };
@@ -901,6 +989,29 @@ export default function EditReportPage() {
     codexHarnessData,
   } = getEditHarnessPreviewData(report.harnessData);
 
+  // Publish CTA label reflects the chosen visibility. When a draft author
+  // is sharing to groups, lead with the group name(s) instead of the
+  // public-publish wording (plan D3). "Make public" stays the wording for
+  // the public branch; "Publish privately" for private (the report stays
+  // off all public surfaces but the draft flag still flips so it's no
+  // longer an in-progress draft).
+  const selectedGroups = myGroups.filter((g) => selectedGroupIds.has(g.id));
+  let publishLabel = "Make public";
+  if (visibility === "group") {
+    publishLabel =
+      selectedGroups.length === 1
+        ? `Share to ${selectedGroups[0].name}`
+        : "Share to my groups";
+  } else if (visibility === "private") {
+    publishLabel = "Publish privately";
+  }
+  // Sharing to groups requires at least one group selected (the report
+  // would otherwise be visible to nobody).
+  const publishDisabled =
+    publishing ||
+    saving ||
+    (visibility === "group" && selectedGroupIds.size === 0);
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       {/* Header */}
@@ -923,10 +1034,10 @@ export default function EditReportPage() {
             <button
               type="button"
               onClick={handleMakePublic}
-              disabled={publishing || saving}
+              disabled={publishDisabled}
               className="rounded-lg border border-blue-600 bg-white px-4 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 disabled:opacity-50 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-blue-950/40"
             >
-              {publishing ? "Publishing…" : "Make public"}
+              {publishing ? "Publishing…" : publishLabel}
             </button>
           )}
           <button
@@ -946,6 +1057,120 @@ export default function EditReportPage() {
         Toggle sections on/off to control what&apos;s visible on your public
         profile. Hidden sections will be removed.
       </p>
+
+      {/* Visibility controls (plan D1-D3) */}
+      <div className="mb-8 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+          Visibility
+        </h2>
+        <p className="mb-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Who can see this report.
+        </p>
+        <div className="space-y-2">
+          {(
+            [
+              {
+                value: "public",
+                label: "Public",
+                hint: "Anyone can see it; it appears on the homepage and leaderboards.",
+              },
+              {
+                value: "group",
+                label: "My groups",
+                hint: "Only members of the groups you share it to.",
+              },
+              {
+                value: "private",
+                label: "Private",
+                hint: "Only you.",
+              },
+            ] as const
+          ).map((opt) => (
+            <label
+              key={opt.value}
+              className={clsx(
+                "flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors",
+                visibility === opt.value
+                  ? "border-blue-400 bg-blue-50 dark:border-blue-700 dark:bg-blue-950/30"
+                  : "border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50",
+              )}
+            >
+              <input
+                type="radio"
+                name="visibility"
+                value={opt.value}
+                checked={visibility === opt.value}
+                onChange={() => setVisibility(opt.value)}
+                className="mt-0.5"
+              />
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-slate-900 dark:text-white">
+                  {opt.label}
+                </span>
+                <span className="block text-xs text-slate-500 dark:text-slate-400">
+                  {opt.hint}
+                </span>
+              </span>
+            </label>
+          ))}
+        </div>
+
+        {visibility === "group" && (
+          <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-800">
+            {myGroups.length === 0 ? (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                You aren&apos;t in any groups yet.{" "}
+                <Link
+                  href="/groups"
+                  className="text-blue-600 hover:underline dark:text-blue-400"
+                >
+                  Create one
+                </Link>{" "}
+                to share privately.
+              </p>
+            ) : (
+              <>
+                <p className="mb-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+                  Share to:
+                </p>
+                <div className="space-y-1.5">
+                  {myGroups.map((g) => (
+                    <label
+                      key={g.id}
+                      className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedGroupIds.has(g.id)}
+                        onChange={(e) => {
+                          setSelectedGroupIds((prev) => {
+                            const next = new Set(prev);
+                            if (e.target.checked) next.add(g.id);
+                            else next.delete(g.id);
+                            return next;
+                          });
+                        }}
+                      />
+                      <span className="text-slate-800 dark:text-slate-200">
+                        {g.name}
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        {g.memberCount} member{g.memberCount === 1 ? "" : "s"}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                {sharesDefaulted && (
+                  <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-400">
+                    All your groups are pre-selected. Saving rewrites this
+                    report&apos;s shares to exactly the groups checked here.
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">

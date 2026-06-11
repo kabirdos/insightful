@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
 import { filterReportForListFeed } from "@/lib/filter-report-response";
-import { draftVisibilityClause } from "@/lib/draft-filter";
+import { reportVisibilityClause } from "@/lib/report-visibility";
 
 export const SORT_MAP: Record<
   string,
@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
   // /top is a public discovery surface — drafts are excluded
   // unconditionally regardless of viewer.
   const reports = await prisma.insightReport.findMany({
-    where: { AND: [where, draftVisibilityClause(null)] },
+    where: { AND: [where, reportVisibilityClause(null)] },
     orderBy,
     take: limit,
     select: {

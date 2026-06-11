@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { draftVisibilityClause } from "@/lib/draft-filter";
+import { reportVisibilityClause } from "@/lib/report-visibility";
 
 /**
  * POST /api/insights/[slug]/projects
@@ -30,7 +30,7 @@ export async function POST(
       where: {
         AND: [
           { slug, author: { username } },
-          draftVisibilityClause(session.user.id),
+          reportVisibilityClause(session.user.id),
         ],
       },
       select: { id: true, authorId: true },

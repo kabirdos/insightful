@@ -38,6 +38,7 @@ import {
 } from "@/lib/harness-idempotency";
 import { logHarnessRequest } from "@/lib/harness-logging";
 import { publishReport } from "@/lib/publish-report";
+import { resolvePublishVisibilityDefault } from "@/lib/report-visibility";
 import { buildReportEditUrl } from "@/lib/urls";
 import {
   getClaudeHarnessData,
@@ -599,6 +600,10 @@ async function handleBearer(request: Request): Promise<NextResponse> {
   let result: { slug: string; replayed: boolean };
   try {
     result = await withIdempotency(userId, uploadId, async () => {
+      const publishVisibility = await resolvePublishVisibilityDefault(
+        prisma,
+        userId,
+      );
       const created = await publishReport({
         userId,
         username,
@@ -607,6 +612,8 @@ async function handleBearer(request: Request): Promise<NextResponse> {
         projectIds: [],
         hiddenHarnessSections: [],
         isDraft: true,
+        visibility: publishVisibility.visibility,
+        groupIds: publishVisibility.groupIds,
       });
       return { slug: created.slug };
     });

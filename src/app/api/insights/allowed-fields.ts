@@ -39,4 +39,10 @@ export const ALLOWED_PUT_FIELDS = [
   // — listing the field here merely makes it eligible for the
   // allowlist gate before the handler validates the transition.
   "isDraft",
+  // Group sharing: "public" | "group" | "private". The PUT handler
+  // validates the enum and the interplay with `groupIds` (replace
+  // shares). `groupIds` is NOT listed here — it isn't a scalar column
+  // on InsightReport; the handler consumes it separately to rewrite
+  // the ReportGroupShare junction rows.
+  "visibility",
 ] as const;
