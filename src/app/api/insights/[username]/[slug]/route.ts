@@ -205,9 +205,10 @@ export async function PUT(
           reportVisibilityClause(session.user.id),
         ],
       },
-      // isDraft is selected so the one-way transition guard below
-      // can read the current draft state without a second fetch.
-      select: { id: true, authorId: true, isDraft: true },
+      // isDraft is selected so the one-way transition guard below can
+      // read the current draft state; visibility so the group-share
+      // validation can reason about the effective post-update value.
+      select: { id: true, authorId: true, isDraft: true, visibility: true },
     });
 
     if (!report) {
@@ -273,7 +274,81 @@ export async function PUT(
       }
     }
 
-    const updated = await prisma.insightReport.update({
+    // Group-sharing visibility (plan D2/D3). `visibility` arrives via
+    // the allowlist into updateData; `groupIds` is consumed directly
+    // from the body (not a scalar column) and replaces the report's
+    // ReportGroupShare rows.
+    const VISIBILITY_VALUES = ["public", "group", "private"] as const;
+    type Visibility = (typeof VISIBILITY_VALUES)[number];
+
+    let groupIds: string[] | undefined;
+    if (body.groupIds !== undefined) {
+      if (
+        !Array.isArray(body.groupIds) ||
+        !body.groupIds.every((g: unknown) => typeof g === "string")
+      ) {
+        return NextResponse.json(
+          { error: "groupIds must be an array of strings" },
+          { status: 400 },
+        );
+      }
+      groupIds = Array.from(new Set(body.groupIds as string[]));
+    }
+
+    if (Object.prototype.hasOwnProperty.call(updateData, "visibility")) {
+      const requested = updateData.visibility;
+      if (
+        typeof requested !== "string" ||
+        !VISIBILITY_VALUES.includes(requested as Visibility)
+      ) {
+        return NextResponse.json(
+          { error: 'visibility must be "public", "group", or "private"' },
+          { status: 400 },
+        );
+      }
+    }
+
+    // The visibility in effect after this update (requested value or, if
+    // unchanged, the current one). Group shares only make sense when the
+    // effective visibility is "group".
+    const effectiveVisibility = Object.prototype.hasOwnProperty.call(
+      updateData,
+      "visibility",
+    )
+      ? (updateData.visibility as Visibility)
+      : (report.visibility as Visibility);
+
+    if (groupIds !== undefined && effectiveVisibility !== "group") {
+      return NextResponse.json(
+        {
+          error: 'groupIds can only be set when visibility is "group"',
+        },
+        { status: 400 },
+      );
+    }
+
+    // Every supplied groupId must be a group the AUTHOR is currently a
+    // member of — you can't share a report into a group you don't belong
+    // to. Validated up front so the whole PUT 400s rather than partially
+    // applying.
+    if (groupIds !== undefined && groupIds.length > 0) {
+      const memberships = await prisma.groupMember.findMany({
+        where: { userId: report.authorId, groupId: { in: groupIds } },
+        select: { groupId: true },
+      });
+      const memberSet = new Set(memberships.map((m) => m.groupId));
+      const notAMember = groupIds.filter((g) => !memberSet.has(g));
+      if (notAMember.length > 0) {
+        return NextResponse.json(
+          {
+            error: `Not a member of group(s): ${notAMember.join(", ")}`,
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    const updateArgs = {
       where: { id: report.id },
       data: updateData,
       include: {
@@ -286,7 +361,31 @@ export async function PUT(
           },
         },
       },
-    });
+    };
+
+    // Only open a transaction when group shares must be rewritten. A
+    // pure title/stat/visibility edit (no `groupIds`) stays a single
+    // `update` — replacing shares wholesale alongside the update is the
+    // only path that needs the two writes to be atomic.
+    const updated =
+      groupIds === undefined
+        ? await prisma.insightReport.update(updateArgs)
+        : await prisma.$transaction(async (tx) => {
+            const row = await tx.insightReport.update(updateArgs);
+            await tx.reportGroupShare.deleteMany({
+              where: { reportId: report.id },
+            });
+            if (groupIds.length > 0) {
+              await tx.reportGroupShare.createMany({
+                data: groupIds.map((groupId) => ({
+                  reportId: report.id,
+                  groupId,
+                })),
+                skipDuplicates: true,
+              });
+            }
+            return row;
+          });
 
     return NextResponse.json({ data: updated });
   } catch (error) {
