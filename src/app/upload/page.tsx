@@ -1934,7 +1934,7 @@ export default function UploadPage() {
                 {showCurlFallback && (
                   <div className="mt-2">
                     <CommandBlock
-                      command="curl -sL https://github.com/craigdossantos/claude-toolkit/archive/main.tar.gz | tar xz -C /tmp && cp -r /tmp/claude-toolkit-main/skills/insight-harness ~/.claude/skills/ && rm -rf /tmp/claude-toolkit-main"
+                      command="curl -sL https://github.com/kabirdos/insight-harness/archive/main.tar.gz | tar xz -C /tmp && cp -r /tmp/insight-harness-main/skills/insight-harness ~/.claude/skills/ && rm -rf /tmp/insight-harness-main"
                       small
                     />
                   </div>
