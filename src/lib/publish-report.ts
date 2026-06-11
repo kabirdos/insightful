@@ -114,6 +114,17 @@ export interface PublishReportArgs {
   isDraft: boolean;
   /** Optional caller-supplied title; falls back to buildAutoTitle. */
   title?: string;
+  /**
+   * Visibility for the new row. Defaults to "public" when omitted so
+   * existing callers keep their behavior. The bearer-upload path passes
+   * the group-aware default resolved from the author's memberships (D3).
+   */
+  visibility?: string;
+  /**
+   * Group ids the new report should be shared to (junction rows). Only
+   * meaningful when `visibility` is "group". Defaults to none.
+   */
+  groupIds?: string[];
 }
 
 export interface PublishedReport {
@@ -136,6 +147,8 @@ export async function publishReport(
   args: PublishReportArgs,
 ): Promise<PublishedReport> {
   const { userId, username, parsed, redactions, projectIds, isDraft } = args;
+  const visibility = args.visibility ?? "public";
+  const groupIds = args.groupIds ?? [];
 
   // 1. Redaction. applyRedactions is a pure function on InsightsData —
   // empty list returns a deep clone unchanged.
@@ -184,6 +197,7 @@ export async function publishReport(
         title,
         slug,
         isDraft,
+        visibility,
         sessionCount: parsed.stats.sessionCount ?? null,
         messageCount: parsed.stats.messageCount ?? null,
         commitCount: parsed.stats.commitCount ?? null,
@@ -223,8 +237,7 @@ export async function publishReport(
           typeof claudeHarnessData?.stats.durationHours === "number"
             ? Math.round(claudeHarnessData.stats.durationHours)
             : null,
-        avgSessionMinutes:
-          claudeHarnessData?.stats.avgSessionMinutes ?? null,
+        avgSessionMinutes: claudeHarnessData?.stats.avgSessionMinutes ?? null,
         prCount: claudeHarnessData?.stats.prCount ?? null,
         autonomyLabel: claudeHarnessData?.autonomy.label ?? null,
         harnessData:
@@ -259,6 +272,16 @@ export async function publishReport(
           skipDuplicates: true,
         });
       }
+    }
+
+    if (groupIds.length > 0) {
+      await tx.reportGroupShare.createMany({
+        data: groupIds.map((groupId) => ({
+          reportId: row.id,
+          groupId,
+        })),
+        skipDuplicates: true,
+      });
     }
 
     return row;

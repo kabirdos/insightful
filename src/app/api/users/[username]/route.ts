@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { normalizeSetup } from "@/lib/profile-setup-normalize";
-import { draftVisibilityClause } from "@/lib/draft-filter";
+import { reportVisibilityClause } from "@/lib/report-visibility";
 
 export async function GET(
   request: Request,
@@ -31,7 +31,7 @@ export async function GET(
           // Filter drafts at the relation level so a non-owner viewing
           // someone else's profile does not enumerate that user's drafts.
           // The owner sees their own drafts because the OR branch matches.
-          where: draftVisibilityClause(viewerId),
+          where: reportVisibilityClause(viewerId),
           orderBy: { publishedAt: "desc" },
           select: {
             id: true,

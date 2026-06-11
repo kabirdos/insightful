@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 import { filterReportForListFeed } from "@/lib/filter-report-response";
-import { draftVisibilityClause } from "@/lib/draft-filter";
+import { reportVisibilityClause } from "@/lib/report-visibility";
 
 export interface LeaderboardRow {
   rank: number;
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
     // unconditionally (viewerId: null) so an owner's own draft never
     // leapfrogs their published ranking.
     const reports = await prisma.insightReport.findMany({
-      where: draftVisibilityClause(null),
+      where: reportVisibilityClause(null),
       orderBy: { publishedAt: "desc" },
       select: {
         publishedAt: true,

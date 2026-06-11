@@ -9,7 +9,7 @@ import {
   buildAgentPayload,
   AGENT_PAYLOAD_MEDIA_TYPE,
 } from "@/lib/agent-payload";
-import { draftVisibilityClause } from "@/lib/draft-filter";
+import { reportVisibilityClause } from "@/lib/report-visibility";
 
 const SECTION_KEYS = [
   "atAGlance",
@@ -46,7 +46,7 @@ export async function GET(
     // `select`, you MUST add those fields explicitly, or the UI will silently break.
     const report = await prisma.insightReport.findFirst({
       where: {
-        AND: [{ slug, author: { username } }, draftVisibilityClause(userId)],
+        AND: [{ slug, author: { username } }, reportVisibilityClause(userId)],
       },
       include: {
         author: {
@@ -202,7 +202,7 @@ export async function PUT(
       where: {
         AND: [
           { slug, author: { username } },
-          draftVisibilityClause(session.user.id),
+          reportVisibilityClause(session.user.id),
         ],
       },
       // isDraft is selected so the one-way transition guard below
@@ -314,7 +314,7 @@ export async function DELETE(
       where: {
         AND: [
           { slug, author: { username } },
-          draftVisibilityClause(session.user.id),
+          reportVisibilityClause(session.user.id),
         ],
       },
       select: { id: true, authorId: true },

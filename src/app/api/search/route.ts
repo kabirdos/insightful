@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { filterReportForListFeed } from "@/lib/filter-report-response";
-import { draftVisibilityClause } from "@/lib/draft-filter";
+import { reportVisibilityClause } from "@/lib/report-visibility";
 
 const SEARCHABLE_JSON_FIELDS = [
   "atAGlance",
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     // Fetch all reports with their content and author info
     // SQLite doesn't support JSON path queries, so we fetch and filter in-memory
     const allReports = await prisma.insightReport.findMany({
-      where: draftVisibilityClause(null),
+      where: reportVisibilityClause(null),
       include: {
         author: {
           select: {

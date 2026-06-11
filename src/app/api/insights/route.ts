@@ -11,7 +11,10 @@ import {
 import type { Prisma } from "@prisma/client";
 import { fetchLinkPreview } from "@/lib/link-preview";
 import { filterReportForListFeed } from "@/lib/filter-report-response";
-import { draftVisibilityClause } from "@/lib/draft-filter";
+import {
+  reportVisibilityClause,
+  resolvePublishVisibilityDefault,
+} from "@/lib/report-visibility";
 
 // Optional-nullable scalar helpers used across the POST body schema.
 // Every stat field is nullable in the DB — we reject only garbage
@@ -110,7 +113,7 @@ export async function GET(request: Request) {
   try {
     const session = await auth();
     const viewerId = session?.user?.id ?? null;
-    const draftWhere = draftVisibilityClause(viewerId);
+    const draftWhere = reportVisibilityClause(viewerId);
 
     const { searchParams } = new URL(request.url);
     const sort = searchParams.get("sort") ?? "newest";
@@ -494,11 +497,17 @@ export async function POST(request: Request) {
       const storedTotalTokens =
         typeof totalTokens === "number" ? totalTokens : derivedTotalTokens;
 
+      const publishVisibility = await resolvePublishVisibilityDefault(
+        tx,
+        user.id,
+      );
+
       const created = await tx.insightReport.create({
         data: {
           authorId: user.id,
           title,
           slug,
+          visibility: publishVisibility.visibility,
           sessionCount: sessionCount ?? null,
           messageCount: messageCount ?? null,
           commitCount: commitCount ?? null,
@@ -553,6 +562,16 @@ export async function POST(request: Request) {
             position: i,
           })),
           // Belt-and-suspenders against any upstream dedup miss.
+          skipDuplicates: true,
+        });
+      }
+
+      if (publishVisibility.groupIds.length > 0) {
+        await tx.reportGroupShare.createMany({
+          data: publishVisibility.groupIds.map((groupId) => ({
+            reportId: created.id,
+            groupId,
+          })),
           skipDuplicates: true,
         });
       }
