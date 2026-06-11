@@ -30,13 +30,25 @@ vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
 }));
 
+// resolveAgentViewer (now used by the GET handler) falls back to the
+// harness bearer when there is no session; mock verifyToken so the bearer
+// path is controllable while keeping parseToken's real format check.
+vi.mock("@/lib/harness-tokens", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/harness-tokens")>(
+    "@/lib/harness-tokens",
+  );
+  return { ...actual, verifyToken: vi.fn() };
+});
+
 // ── Imports after mocks ─────────────────────────────────────────────
 
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { verifyToken } from "@/lib/harness-tokens";
 import { GET as getInsight } from "../route";
 
 const mockAuth = auth as unknown as Mock;
+const mockVerifyToken = verifyToken as unknown as Mock;
 const mockPrisma = prisma as unknown as {
   insightReport: { findFirst: Mock };
   reportProject: { findMany: Mock };
@@ -571,5 +583,96 @@ describe("GET /api/insights/[username]/[slug] — agent payload (Accept negotiat
     expect(body.data).toBeDefined();
     // The human page renders the showcase image, so it must still ship.
     expect(body.data.harnessData.skillInventory[0].hero_base64).toBeTruthy();
+  });
+});
+
+// ── Bearer-auth viewer resolution (plan D7) ─────────────────────────
+
+describe("GET /api/insights/[username]/[slug] — bearer-auth viewer (D7)", () => {
+  const VALID_BEARER = `ih_${"a".repeat(76)}`;
+
+  function agentBearerRequest(token: string): Request {
+    return new Request("http://localhost/api/insights/u1/s1", {
+      method: "GET",
+      headers: {
+        accept: "application/vnd.insight-harness.agent.v1+json",
+        authorization: `Bearer ${token}`,
+      },
+    });
+  }
+
+  it("resolves the bearer owner as viewer so an entitled agent reads the report", async () => {
+    // No session; a valid bearer resolves to the group co-member user-7.
+    mockSession(null);
+    mockVerifyToken.mockResolvedValue({
+      userId: "user-7",
+      tokenId: "t1",
+      selector: "a".repeat(12),
+    });
+    // The DB returns the report — i.e. reportVisibilityClause(user-7) let
+    // it through (group co-member of the author).
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildReportFixture("author-1"),
+    );
+
+    const response = await getInsight(agentBearerRequest(VALID_BEARER), {
+      params: paramsPromise({ username: "u1", slug: "s1" }),
+    });
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.schema_version).toBe("1.0.0");
+
+    // The bearer-resolved id (not null) was threaded into the visibility
+    // clause: the OR branch only exists for a non-null viewer.
+    const findFirstArgs = mockPrisma.insightReport.findFirst.mock.calls[0]?.[0];
+    const visibilityClause = findFirstArgs?.where?.AND?.[1];
+    expect(visibilityClause.OR).toBeDefined();
+    expect(visibilityClause.OR).toContainEqual({ authorId: "user-7" });
+  });
+
+  it("404s when the bearer owner is not entitled (DB filters the row out)", async () => {
+    mockSession(null);
+    mockVerifyToken.mockResolvedValue({
+      userId: "user-9",
+      tokenId: "t1",
+      selector: "a".repeat(12),
+    });
+    // reportVisibilityClause(user-9) excludes the group report → no row.
+    mockPrisma.insightReport.findFirst.mockResolvedValue(null);
+
+    const response = await getInsight(agentBearerRequest(VALID_BEARER), {
+      params: paramsPromise({ username: "u1", slug: "s1" }),
+    });
+
+    expect(response.status).toBe(404);
+    // The clause carried the bearer-resolved id, so the DB scoped the
+    // lookup to what user-9 may see.
+    const findFirstArgs = mockPrisma.insightReport.findFirst.mock.calls[0]?.[0];
+    expect(findFirstArgs?.where?.AND?.[1].OR).toContainEqual({
+      authorId: "user-9",
+    });
+  });
+
+  it("treats a malformed bearer as anonymous (public-only clause)", async () => {
+    mockSession(null);
+    mockPrisma.insightReport.findFirst.mockResolvedValue(null);
+
+    const response = await getInsight(
+      agentBearerRequest(`xx_${"a".repeat(76)}`),
+      {
+        params: paramsPromise({ username: "u1", slug: "s1" }),
+      },
+    );
+
+    expect(response.status).toBe(404);
+    // Malformed token never hits the DB-backed verify.
+    expect(mockVerifyToken).not.toHaveBeenCalled();
+    // Anonymous → strictly-public clause (no OR, no viewer-specific branch).
+    const findFirstArgs = mockPrisma.insightReport.findFirst.mock.calls[0]?.[0];
+    expect(findFirstArgs?.where?.AND?.[1]).toEqual({
+      isDraft: false,
+      visibility: "public",
+    });
   });
 });

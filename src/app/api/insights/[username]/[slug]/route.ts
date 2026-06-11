@@ -10,6 +10,7 @@ import {
   AGENT_PAYLOAD_MEDIA_TYPE,
 } from "@/lib/agent-payload";
 import { reportVisibilityClause } from "@/lib/report-visibility";
+import { resolveAgentViewer } from "@/lib/harness-auth";
 
 const SECTION_KEYS = [
   "atAGlance",
@@ -28,8 +29,13 @@ export async function GET(
 ) {
   try {
     const { username, slug } = await params;
-    const session = await auth();
-    const userId = session?.user?.id ?? null;
+    // Viewer is the session user, or — when there is no session — the
+    // owner of a valid `Authorization: Bearer ih_…` token (plan D7). This
+    // lets an agent holding a user's token read the group-visible reports
+    // that user is entitled to. Anonymous/public behavior is unchanged:
+    // with no session and no valid bearer, userId is null and the public-
+    // only visibility clause applies exactly as before.
+    const { userId } = await resolveAgentViewer(request);
 
     // Owner can opt in to seeing hidden ReportProject rows via
     // ?includeHidden=true. Non-owners always see only visible rows,
