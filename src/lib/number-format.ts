@@ -59,6 +59,24 @@ export function formatInteger(value: number | bigint): string {
 }
 
 /**
+ * Per-week rate from a lifetime total and a day count. Returns `null`
+ * when the inputs can't support a real rate (missing value, missing or
+ * zero days) so callers can honor the no-silent-zero rule and omit the
+ * stat rather than fabricate a `0`. Mirrors the inline helper the
+ * homepage card (src/app/page.tsx) and /top use — extracted here so the
+ * group comparison grid reuses the same math instead of a third copy.
+ */
+export function perWeek(
+  value: number | null | undefined,
+  dayCount: number | null | undefined,
+): number | null {
+  if (value == null || dayCount == null || dayCount === 0) return null;
+  const weeks = dayCount / 7;
+  if (weeks === 0) return null;
+  return value / weeks;
+}
+
+/**
  * Currency variant of the compact format: `1234567 → "$1.2M"`.
  * Sub-dollar values fall through to two-decimal precision so
  * `$0.04` renders as expected instead of `$0`.

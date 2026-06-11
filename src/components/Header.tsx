@@ -16,6 +16,7 @@ import {
   Home,
   ChevronDown,
   GitFork,
+  Users,
 } from "lucide-react";
 import clsx from "clsx";
 import { buildProfileUrl } from "@/lib/urls";
@@ -74,6 +75,17 @@ export default function Header() {
               {label}
             </Link>
           ))}
+          {/* Groups is signed-in-only: invite-only groups are meaningless
+              to anonymous visitors. */}
+          {session?.user && (
+            <Link
+              href="/groups"
+              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+            >
+              <Users className="h-4 w-4" />
+              Groups
+            </Link>
+          )}
         </nav>
 
         {/* Desktop Right */}
@@ -136,6 +148,14 @@ export default function Header() {
                     >
                       <User className="h-4 w-4" />
                       Profile
+                    </Link>
+                    <Link
+                      href="/groups"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
+                    >
+                      <Users className="h-4 w-4" />
+                      Groups
                     </Link>
                     <Link
                       href="/upload"
@@ -213,6 +233,14 @@ export default function Header() {
                 >
                   <Upload className="h-4 w-4" />
                   Upload Report
+                </Link>
+                <Link
+                  href="/groups"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
+                  <Users className="h-4 w-4" />
+                  Groups
                 </Link>
                 <Link
                   href={buildProfileUrl(session.user.username)}
