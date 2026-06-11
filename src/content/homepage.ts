@@ -66,7 +66,7 @@ export const homepage = {
     // Option 2: Enhanced /insight-harness (requires install)
     option2Title: "Option 2: Run /insight-harness",
     option2InstallCommand:
-      "mkdir -p ~/.claude/skills/insight-harness/scripts && curl -sL https://raw.githubusercontent.com/craigdossantos/claude-toolkit/main/skills/insight-harness/SKILL.md -o ~/.claude/skills/insight-harness/SKILL.md && curl -sL https://raw.githubusercontent.com/craigdossantos/claude-toolkit/main/skills/insight-harness/scripts/extract.py -o ~/.claude/skills/insight-harness/scripts/extract.py",
+      "curl -sL https://github.com/kabirdos/insight-harness/archive/main.tar.gz | tar xz -C /tmp && cp -r /tmp/insight-harness-main/skills/insight-harness ~/.claude/skills/ && rm -rf /tmp/insight-harness-main",
     option2InstallHint: "Install the skill first — paste in your terminal:",
     option2RunCommand: "/insight-harness",
     option2RunHint: "Then run this in Claude Code:",
