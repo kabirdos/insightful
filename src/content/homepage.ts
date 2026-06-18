@@ -6,11 +6,11 @@
 export const homepage = {
   // ── Hero ──────────────────────────────────────────────────
   hero: {
-    headline: "See how developers use Claude Code and Codex",
+    headline: "Share how you work with Claude Code and Codex",
     subtext:
-      "Browse real developer workflows — the tools, skills, plugins, and patterns they use across actual agent sessions. All personal data removed.",
-    primaryCta: "Browse Profiles",
-    secondaryCta: "Upload Your Insights",
+      "Publish your skills, hooks, and workflow patterns as a public profile others — and their coding agents — can learn from. All personal data removed before anything is shared.",
+    primaryCta: "Share your setup",
+    secondaryCta: "Browse profiles",
   },
 
   // ── Profile sections ─────────────────────────────────────
@@ -19,7 +19,7 @@ export const homepage = {
     recentHeading: "Recent Profiles",
     emptyTitle: "No profiles shared yet",
     emptySubtext: "Be the first to share your agent harness insights!",
-    emptyCta: "Upload Your Insights",
+    emptyCta: "Share your setup",
     strengthsLabel: "Strengths:",
   },
 
@@ -104,6 +104,6 @@ export const homepage = {
     heading: "Ready to share your harness?",
     subtext:
       "Join developers who are learning from each other's agent workflows.",
-    cta: "Upload Your Insights",
+    cta: "Share your setup",
   },
 } as const;
