@@ -40,11 +40,9 @@ import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 import HeroStats from "@/components/HeroStats";
 import HowIWorkCluster from "@/components/HowIWorkCluster";
 import WorkRhythm from "@/components/WorkRhythm";
-import ToolUsageTreemap from "@/components/ToolUsageTreemap";
 import SkillCardGrid from "@/components/SkillCardGrid";
 import { SkillsTeaserCard } from "@/components/SkillsTeaserCard";
 import { SkillsShowcaseSection } from "@/components/SkillsShowcaseSection";
-import CliToolsDonut from "@/components/CliToolsDonut";
 import GitPatternsDisplay from "@/components/GitPatternsDisplay";
 import PermissionModeDisplay from "@/components/PermissionModeDisplay";
 import HooksSafetyTable from "@/components/HooksSafetyTable";
@@ -53,11 +51,11 @@ import WorkflowDiagram from "@/components/WorkflowDiagram";
 import MiniBarChart from "@/components/MiniBarChart";
 import ToolSelector from "@/components/ToolSelector";
 import CodexHarnessDashboard from "@/components/CodexHarnessDashboard";
+import TechnicalDetailSection from "@/components/TechnicalDetailSection";
 import {
   hideSetFromArray,
   isSectionHidden,
   filterList,
-  filterRecord,
 } from "@/lib/item-visibility";
 
 interface ReportData {
@@ -576,20 +574,6 @@ export default function InsightDetailPage() {
                       </CollapsibleSection>
                     )}
 
-                  {/* Tool Usage Treemap */}
-                  {!isSectionHidden(hiddenSet, "toolUsage") &&
-                    Object.keys(claudeHarnessData.toolUsage).length > 0 && (
-                      <ToolUsageTreemap
-                        toolUsage={claudeHarnessData.toolUsage}
-                      />
-                    )}
-
-                  {/* CLI Tools Donut */}
-                  {!isSectionHidden(hiddenSet, "cliTools") &&
-                    Object.keys(claudeHarnessData.cliTools).length > 0 && (
-                      <CliToolsDonut cliTools={claudeHarnessData.cliTools} />
-                    )}
-
                   {/* Git Patterns */}
                   {!isSectionHidden(hiddenSet, "gitPatterns") && (
                     <GitPatternsDisplay
@@ -687,120 +671,16 @@ export default function InsightDetailPage() {
                       </CollapsibleSection>
                     )}
 
-                  {/* Languages */}
-                  {!isSectionHidden(hiddenSet, "languages") &&
-                    Object.keys(claudeHarnessData.languages).length > 0 && (
-                      <CollapsibleSection
-                        icon="💻"
-                        iconBgClass="bg-green-100 dark:bg-green-900/30"
-                        title="Languages"
-                        defaultOpen={false}
-                      >
-                        <MiniBarChart
-                          data={Object.entries(
-                            filterRecord(
-                              claudeHarnessData.languages,
-                              hiddenSet,
-                              "languages",
-                            ),
-                          )
-                            .sort((a, b) => b[1] - a[1])
-                            .slice(0, 12)
-                            .map(([label, value]) => ({ label, value }))}
-                          title=""
-                          color="bg-green-500"
-                        />
-                      </CollapsibleSection>
-                    )}
-
-                  {/* MCP Servers */}
-                  {!isSectionHidden(hiddenSet, "mcpServers") &&
-                    Object.keys(claudeHarnessData.mcpServers).length > 0 && (
-                      <CollapsibleSection
-                        icon="🔗"
-                        iconBgClass="bg-cyan-100 dark:bg-cyan-900/30"
-                        title="MCP Servers"
-                        defaultOpen={false}
-                      >
-                        <div className="space-y-1">
-                          {Object.entries(
-                            filterRecord(
-                              claudeHarnessData.mcpServers,
-                              hiddenSet,
-                              "mcpServers",
-                            ),
-                          )
-                            .sort((a, b) => b[1] - a[1])
-                            .map(([server, calls]) => (
-                              <div
-                                key={server}
-                                className="flex justify-between border-b border-slate-100 py-1 dark:border-slate-800"
-                              >
-                                <span className="font-mono text-xs text-slate-600 dark:text-slate-400">
-                                  {server}
-                                </span>
-                                <span className="text-xs text-slate-400">
-                                  {calls.toLocaleString()} calls
-                                </span>
-                              </div>
-                            ))}
-                        </div>
-                      </CollapsibleSection>
-                    )}
-
-                  {/* Versions */}
-                  {!isSectionHidden(hiddenSet, "versions") &&
-                    claudeHarnessData.versions.length > 0 && (
-                      <CollapsibleSection
-                        icon="📦"
-                        iconBgClass="bg-slate-100 dark:bg-slate-900/30"
-                        title="Claude Code Versions"
-                        defaultOpen={false}
-                      >
-                        <div className="flex flex-wrap gap-1.5">
-                          {filterList(
-                            claudeHarnessData.versions,
-                            hiddenSet,
-                            "versions",
-                            (v) => v,
-                          ).map((v) => (
-                            <span
-                              key={v}
-                              className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
-                            >
-                              {v}
-                            </span>
-                          ))}
-                        </div>
-                      </CollapsibleSection>
-                    )}
-
-                  {/* Harness Files */}
-                  {!isSectionHidden(hiddenSet, "harnessFiles") &&
-                    claudeHarnessData.harnessFiles.length > 0 && (
-                      <CollapsibleSection
-                        icon="📁"
-                        iconBgClass="bg-orange-100 dark:bg-orange-900/30"
-                        title="Harness File Ecosystem"
-                        defaultOpen={false}
-                      >
-                        <div className="space-y-1">
-                          {filterList(
-                            claudeHarnessData.harnessFiles,
-                            hiddenSet,
-                            "harnessFiles",
-                            (f) => f,
-                          ).map((f) => (
-                            <div
-                              key={f}
-                              className="border-b border-slate-100 py-1 font-mono text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400"
-                            >
-                              {f}
-                            </div>
-                          ))}
-                        </div>
-                      </CollapsibleSection>
-                    )}
+                  {/* Full technical detail — the six low-signal-for-humans,
+                  high-signal-for-agents sections (tool usage, CLI commands, MCP
+                  servers, languages, versions, harness files) collapsed into one
+                  closed disclosure. The full data still ships to agents via the
+                  profile's JSON payload. Per-section visibility flags and
+                  per-item filters are preserved inside the component. */}
+                  <TechnicalDetailSection
+                    harnessData={claudeHarnessData}
+                    hiddenSet={hiddenSet}
+                  />
                 </>
               )}
 
