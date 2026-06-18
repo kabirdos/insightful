@@ -1101,19 +1101,19 @@ export default function HomePage() {
             {copy.hero.subtext}
           </p>
           <div className="mt-6 flex items-center justify-center gap-3">
-            <a
-              href="#profiles"
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-            >
-              {copy.hero.primaryCta}
-            </a>
             <Link
               href="/upload"
-              className="inline-flex items-center gap-2 rounded-lg border-2 border-blue-600 px-5 py-2.5 text-sm font-semibold text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
             >
               <Upload className="h-4 w-4" />
-              {copy.hero.secondaryCta}
+              {copy.hero.primaryCta}
             </Link>
+            <a
+              href="#profiles"
+              className="inline-flex items-center gap-2 rounded-lg border-2 border-blue-600 px-5 py-2.5 text-sm font-semibold text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+            >
+              {copy.hero.secondaryCta}
+            </a>
             <Link
               href="/install"
               className="hidden text-sm font-semibold text-slate-500 underline decoration-slate-300 underline-offset-4 transition-colors hover:text-slate-900 dark:text-slate-400 dark:decoration-slate-700 dark:hover:text-white sm:inline-flex"
