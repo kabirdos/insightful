@@ -18,6 +18,7 @@ import { useSession } from "next-auth/react";
 import { Calendar, Pencil, Sparkles } from "lucide-react";
 import SectionRenderer from "@/components/SectionRenderer";
 import ShareButton from "@/components/ShareButton";
+import LearnFromThis from "@/components/LearnFromThis";
 import CommentSection from "@/components/CommentSection";
 import ProjectLinks from "@/components/ProjectLinks";
 import SnapshotCard from "@/components/SnapshotCard";
@@ -396,6 +397,13 @@ export default function InsightDetailPage() {
       {/* ── Harness Report Layout ── */}
       {isHarness && harnessEnvelope ? (
         <>
+          {/* Learn-from-this CTA — the product thesis made visible: a human or
+          their agent can consume this profile's machine-readable payload (the
+          insight-harness skill's learn mode) and copy what's useful. Placed
+          above the tool selector so it's tool-agnostic (learn fetches the whole
+          envelope). */}
+          <LearnFromThis url={buildReportUrl(username, slug)} />
+
           <ToolSelector
             tools={availableTools}
             active={selectedTool}
