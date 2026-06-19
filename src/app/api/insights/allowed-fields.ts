@@ -34,6 +34,10 @@ export const ALLOWED_PUT_FIELDS = [
   "chartData",
   "detectedSkills",
   "hiddenHarnessSections",
+  // Narrative-section visibility. Mirrors hiddenHarnessSections: hiding a
+  // narrative section now records its key here instead of nulling the column,
+  // so hides are reversible (the section's JSON column is preserved).
+  "hiddenNarrativeSections",
   // R10/R11 (Wave 4 Unit 10): "Make public" flips a draft to public.
   // The PUT handler enforces one-way semantics (true → false only)
   // — listing the field here merely makes it eligible for the

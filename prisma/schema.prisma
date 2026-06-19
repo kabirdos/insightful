@@ -69,6 +69,10 @@ model InsightReport {
   autonomyLabel         String?
   harnessData           Json?
   hiddenHarnessSections String[] @default([])
+  // Narrative sections (atAGlance, interactionStyle, etc.) the author has
+  // hidden from the public view. Reversible: the section's JSON column is left
+  // intact; this array only suppresses display (mirrors hiddenHarnessSections).
+  hiddenNarrativeSections String[] @default([])
 
   // Content sections (stored as redacted JSON)
   atAGlance           Json?

@@ -49,6 +49,7 @@ export async function GET(
             dayCount: true,
             msgsPerDay: true,
             atAGlance: true,
+            hiddenNarrativeSections: true,
             _count: {
               select: {
                 comments: true,
@@ -68,6 +69,11 @@ export async function GET(
 
     const reports = user.reports.map((r) => {
       const atAGlance = r.atAGlance as Record<string, string> | null;
+      // Respect a hidden At-a-Glance: the section's JSON column persists (hides
+      // are reversible), so this public preview must check the flag itself.
+      const atAGlanceHidden = (r.hiddenNarrativeSections ?? []).includes(
+        "atAGlance",
+      );
       return {
         slug: r.slug,
         title: r.title,
@@ -82,7 +88,9 @@ export async function GET(
         fileCount: r.fileCount,
         dayCount: r.dayCount,
         msgsPerDay: r.msgsPerDay,
-        whatsWorkingPreview: atAGlance?.whats_working?.slice(0, 150) || null,
+        whatsWorkingPreview: atAGlanceHidden
+          ? null
+          : atAGlance?.whats_working?.slice(0, 150) || null,
         voteCount: r._count.votes,
         commentCount: r._count.comments,
         sectionTags: [],

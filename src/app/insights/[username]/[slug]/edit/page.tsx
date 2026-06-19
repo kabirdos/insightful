@@ -8,7 +8,7 @@ import {
   buildReportUrl,
 } from "@/lib/urls";
 import { useSession } from "next-auth/react";
-import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import EyeToggle from "@/components/EyeToggle";
 import HideableItem from "@/components/HideableItem";
 import type {
@@ -87,6 +87,7 @@ interface ReportData {
   linesRemoved: number | null;
   harnessData: HarnessToolsEnvelope | null;
   hiddenHarnessSections: string[];
+  hiddenNarrativeSections: string[];
   atAGlance: unknown;
   interactionStyle: unknown;
   projectAreas: unknown;
@@ -170,7 +171,9 @@ function HideableCard({
           {title}
         </span>
         {hidden && (
-          <span className="text-xs text-red-500">Will be removed</span>
+          <span className="text-xs text-slate-400">
+            Hidden — won&apos;t show publicly
+          </span>
         )}
       </div>
       {!hidden && children}
@@ -503,19 +506,6 @@ export default function EditReportPage() {
   const [hiddenSections, setHiddenSections] = useState<Record<string, boolean>>(
     {},
   );
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [pendingSave, setPendingSave] = useState<Record<
-    string,
-    unknown
-  > | null>(null);
-  // When the modal was triggered by the "Make public" path (vs the
-  // ordinary "Save Changes" path), confirm runs the publish flow
-  // (which router.refresh()es and flips local state) instead of
-  // executeSave (which router.push()es to the public URL). Without
-  // this flag, confirming a publish with hidden sections would
-  // either redirect to a still-draft URL or permanently delete the
-  // sections without asking — codex P2 on 779cc45.
-  const [pendingIsPublish, setPendingIsPublish] = useState(false);
 
   // Group-sharing visibility state. `visibility` mirrors the report's
   // current value (or, for fresh drafts of authors with groups, defaults
@@ -590,7 +580,10 @@ export default function EditReportPage() {
           }
           setHiddenSections(
             Object.fromEntries(
-              (r.hiddenHarnessSections ?? []).map((key: string) => [key, true]),
+              [
+                ...(r.hiddenHarnessSections ?? []),
+                ...(r.hiddenNarrativeSections ?? []),
+              ].map((key: string) => [key, true]),
             ),
           );
         }
@@ -753,12 +746,12 @@ export default function EditReportPage() {
   const buildSaveBody = () => {
     const body: Record<string, unknown> = {};
 
-    // Null out hidden narrative sections
-    for (const section of SECTIONS) {
-      if (hiddenSections[section.key]) {
-        body[section.key] = null;
-      }
-    }
+    // Record hidden narrative sections as keys (reversible). The section's JSON
+    // column is left intact — the server strips hidden sections from non-owner
+    // responses, and unhiding simply drops the key. No data is destroyed.
+    body.hiddenNarrativeSections = SECTIONS.filter(
+      (s) => hiddenSections[s.key],
+    ).map((s) => s.key);
 
     body.hiddenHarnessSections = getHiddenKeypaths(hiddenSections);
 
@@ -800,46 +793,9 @@ export default function EditReportPage() {
 
   const handleSave = async () => {
     if (!report) return;
-
-    const body = buildSaveBody();
-
-    // Check if any sections are being removed
-    const removedSections = SECTIONS.filter((s) => hiddenSections[s.key]).map(
-      (s) => s.label,
-    );
-
-    if (removedSections.length > 0) {
-      setPendingSave(body);
-      // Reset publish intent — the modal could otherwise have been
-      // opened by a prior Make public click whose pendingIsPublish
-      // is still set. Without this, confirming would route the
-      // plain save through executePublish() and leave the UI saying
-      // "public" while the server kept the row as draft. (codex P2
-      // on 16de842.)
-      setPendingIsPublish(false);
-      setShowConfirmModal(true);
-      return;
-    }
-
-    await executeSave(body);
-  };
-
-  const handleConfirmSave = async () => {
-    if (!pendingSave) return;
-    setShowConfirmModal(false);
-    if (pendingIsPublish) {
-      await executePublish(pendingSave);
-    } else {
-      await executeSave(pendingSave);
-    }
-    setPendingSave(null);
-    setPendingIsPublish(false);
-  };
-
-  const handleCancelSave = () => {
-    setShowConfirmModal(false);
-    setPendingSave(null);
-    setPendingIsPublish(false);
+    // Hiding sections is now non-destructive (recorded as keypaths, data
+    // preserved), so save proceeds directly — no destructive confirmation.
+    await executeSave(buildSaveBody());
   };
 
   /**
@@ -883,25 +839,12 @@ export default function EditReportPage() {
    * edit-page header reflect the new state without a hard reload.
    *
    * Pending visibility edits (hidden sections / per-item hides) ride
-   * along with the publish in a single PUT (codex P1 on fc78b3b).
-   * If those pending edits include narrative-section removals, route
-   * through the existing destructive-save confirmation modal so the
-   * author has a final chance to cancel before content is permanently
-   * deleted (codex P2 on 779cc45).
+   * along with the publish in a single PUT (codex P1 on fc78b3b). Hiding is
+   * non-destructive now, so no confirmation modal is needed before publish.
    */
   const handleMakePublic = async () => {
     if (!report) return;
-    const body = { ...buildSaveBody(), isDraft: false };
-    const removedSections = SECTIONS.filter((s) => hiddenSections[s.key]).map(
-      (s) => s.label,
-    );
-    if (removedSections.length > 0) {
-      setPendingSave(body);
-      setPendingIsPublish(true);
-      setShowConfirmModal(true);
-      return;
-    }
-    await executePublish(body);
+    await executePublish({ ...buildSaveBody(), isDraft: false });
   };
 
   // Hold the spinner until BOTH the report fetch and the next-auth
@@ -1779,7 +1722,9 @@ export default function EditReportPage() {
                   {section.label}
                 </span>
                 {isHidden && (
-                  <span className="text-xs text-red-500">Will be removed</span>
+                  <span className="text-xs text-slate-400">
+                    Hidden — won&apos;t show publicly
+                  </span>
                 )}
               </div>
               {!isHidden && data != null && (
@@ -1816,54 +1761,6 @@ export default function EditReportPage() {
           {saving ? "Saving..." : "Save Changes"}
         </button>
       </div>
-
-      {/* Confirmation modal for destructive saves */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="mx-4 max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-slate-900">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-              </div>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Confirm Removal
-              </h2>
-            </div>
-            <p className="mb-3 text-sm text-slate-600 dark:text-slate-400">
-              This will permanently remove the following sections from your
-              published report:
-            </p>
-            <ul className="mb-4 space-y-1">
-              {SECTIONS.filter((s) => hiddenSections[s.key]).map((s) => (
-                <li
-                  key={s.key}
-                  className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300"
-                >
-                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                  {s.label}
-                </li>
-              ))}
-            </ul>
-            <p className="mb-6 text-sm font-medium text-red-600 dark:text-red-400">
-              This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={handleCancelSave}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmSave}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
-              >
-                Remove &amp; Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
