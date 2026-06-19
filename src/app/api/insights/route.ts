@@ -9,6 +9,7 @@ import {
   toStoredHarnessData,
 } from "@/types/insights";
 import type { Prisma } from "@prisma/client";
+import { sanitizeNarrativeHideKeys } from "@/lib/filter-report-response";
 import { fetchLinkPreview } from "@/lib/link-preview";
 import { filterReportForListFeed } from "@/lib/filter-report-response";
 import {
@@ -83,6 +84,7 @@ const createInsightReportSchema = z.object({
   autonomyLabel: optionalNullableString,
   harnessData: z.unknown().optional(),
   hiddenHarnessSections: z.array(z.string()).optional(),
+  hiddenNarrativeSections: z.array(z.string()).optional(),
 });
 
 function toStoredTokenCount(value: unknown): bigint | null {
@@ -352,6 +354,7 @@ export async function POST(request: Request) {
       autonomyLabel,
       harnessData,
       hiddenHarnessSections,
+      hiddenNarrativeSections,
     } = parsed.data;
     const storedHarnessData = toStoredHarnessData(harnessData);
     const claudeHarnessData = getClaudeHarnessData(storedHarnessData);
@@ -551,6 +554,9 @@ export async function POST(request: Request) {
           hiddenHarnessSections: Array.isArray(hiddenHarnessSections)
             ? hiddenHarnessSections
             : [],
+          hiddenNarrativeSections: sanitizeNarrativeHideKeys(
+            hiddenNarrativeSections,
+          ),
         },
       });
 

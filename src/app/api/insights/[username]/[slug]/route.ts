@@ -3,7 +3,10 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import type { InsightReportDetailContract } from "@/types/api-contracts";
 import { ALLOWED_PUT_FIELDS } from "@/app/api/insights/allowed-fields";
-import { filterReportForResponse } from "@/lib/filter-report-response";
+import {
+  filterReportForResponse,
+  sanitizeNarrativeHideKeys,
+} from "@/lib/filter-report-response";
 import {
   wantsAgentPayload,
   buildAgentPayload,
@@ -249,6 +252,15 @@ export async function PUT(
       if (body[field] !== undefined) {
         updateData[field] = body[field];
       }
+    }
+
+    // Sanitize narrative hide keys against the canonical allowlist so the DB
+    // can't record a "hidden" key the filter won't strip (which would let
+    // search and the detail response disagree about what's hidden).
+    if (updateData.hiddenNarrativeSections !== undefined) {
+      updateData.hiddenNarrativeSections = sanitizeNarrativeHideKeys(
+        updateData.hiddenNarrativeSections,
+      );
     }
 
     // R10/R11 (Wave 4 Unit 10): isDraft is one-way. We allow

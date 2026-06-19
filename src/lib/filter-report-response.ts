@@ -21,19 +21,36 @@ interface FilterOptions {
 }
 
 /**
- * Narrative sections that can be hidden whole (matches the edit page's SECTIONS
- * and the camelCase Prisma columns). A key listed in a report's
- * hiddenNarrativeSections nulls the corresponding column in the response for
- * non-owners — non-destructively (the DB column is untouched).
+ * The canonical set of narrative sections that can be hidden whole (the
+ * camelCase Prisma columns). A key listed in a report's hiddenNarrativeSections
+ * nulls the corresponding column in the response for non-owners —
+ * non-destructively (the DB column is untouched).
+ *
+ * This is the single source of truth: write paths (POST/PUT) must sanitize
+ * incoming keys against it (see `sanitizeNarrativeHideKeys`) so the DB never
+ * records a "hidden" key the filter won't actually strip — otherwise search
+ * and the detail response would disagree about what's hidden.
  */
-const NARRATIVE_SECTION_KEYS = [
+export const NARRATIVE_SECTION_KEYS = [
   "atAGlance",
   "interactionStyle",
+  "projectAreas",
   "impressiveWorkflows",
   "frictionAnalysis",
   "suggestions",
   "onTheHorizon",
 ] as const;
+
+const NARRATIVE_SECTION_KEY_SET = new Set<string>(NARRATIVE_SECTION_KEYS);
+
+/**
+ * Keep only canonical, de-duplicated narrative hide keys. Applied on every
+ * write so the stored array can never contain a key the filter ignores.
+ */
+export function sanitizeNarrativeHideKeys(keys: unknown): string[] {
+  if (!Array.isArray(keys)) return [];
+  return [...new Set(keys.filter((k) => NARRATIVE_SECTION_KEY_SET.has(k)))];
+}
 
 /**
  * Filter a report's data for the response. Returns a new object with hidden
