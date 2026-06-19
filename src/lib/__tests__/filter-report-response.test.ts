@@ -534,6 +534,15 @@ describe("filterReportForResponse", () => {
     expect(report.impressiveWorkflows).not.toBeNull();
   });
 
+  it("nulls a whole projectAreas section when hidden (upload-set 7th key)", () => {
+    const report = makeReport({ hiddenNarrativeSections: ["projectAreas"] });
+    const result = filterReportForResponse(report, {
+      viewerIsOwner: false,
+      includeHidden: false,
+    });
+    expect(result.projectAreas).toBeNull();
+  });
+
   it("applies narrative hides even when no harness sections are hidden", () => {
     const report = makeReport({
       hiddenHarnessSections: [],

@@ -1526,8 +1526,7 @@ export default function UploadPage() {
         ? `${firstName}'s Insight Harness - ${titleDate}`
         : `${firstName}'s Claude Code Insights - ${titleDate}`;
 
-      // Map InsightsData snake_case keys to Prisma camelCase fields
-      // and remove disabled sections
+      // Map InsightsData snake_case keys to Prisma camelCase fields.
       const sectionMap: Record<keyof InsightsData, string> = {
         at_a_glance: "atAGlance",
         interaction_style: "interactionStyle",
@@ -1539,11 +1538,16 @@ export default function UploadPage() {
         fun_ending: "funEnding",
       };
 
+      // Persist EVERY narrative section's JSON so hides stay reversible (no
+      // data loss at upload), and record disabled sections as keys the server
+      // strips from non-owner responses. Mirrors the edit-page hide model.
       const sectionFields: Record<string, unknown> = {};
+      const hiddenNarrativeSections: string[] = [];
       for (const [dataKey, prismaKey] of Object.entries(sectionMap)) {
-        if (!disabledSet.has(dataKey)) {
-          sectionFields[prismaKey] =
-            redactedData[dataKey as keyof InsightsData] ?? null;
+        sectionFields[prismaKey] =
+          redactedData[dataKey as keyof InsightsData] ?? null;
+        if (disabledSet.has(dataKey)) {
+          hiddenNarrativeSections.push(prismaKey);
         }
       }
 
@@ -1581,6 +1585,7 @@ export default function UploadPage() {
           // docs/plans/2026-04-12-002 → "Storage Decision".
           harnessData: parsed.harnessData ?? null,
           hiddenHarnessSections,
+          hiddenNarrativeSections,
         }),
       });
 

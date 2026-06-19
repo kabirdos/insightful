@@ -751,9 +751,17 @@ export default function EditReportPage() {
     // Record hidden narrative sections as keys (reversible). The section's JSON
     // column is left intact — the server strips hidden sections from non-owner
     // responses, and unhiding simply drops the key. No data is destroyed.
-    body.hiddenNarrativeSections = SECTIONS.filter(
-      (s) => hiddenSections[s.key],
-    ).map((s) => s.key);
+    // Carry over hidden keys this page doesn't expose a toggle for (e.g.
+    // projectAreas, which can be hidden at upload) so an unrelated edit doesn't
+    // silently un-hide them.
+    const editManaged = new Set<string>(SECTIONS.map((s) => s.key));
+    const carriedOver = (report?.hiddenNarrativeSections ?? []).filter(
+      (key) => !editManaged.has(key),
+    );
+    body.hiddenNarrativeSections = [
+      ...carriedOver,
+      ...SECTIONS.filter((s) => hiddenSections[s.key]).map((s) => s.key),
+    ];
 
     body.hiddenHarnessSections = getHiddenKeypaths(hiddenSections);
 
