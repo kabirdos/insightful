@@ -66,6 +66,10 @@ export async function GET(request: Request) {
     const scored: ScoredReport[] = allReports.map((report) => {
       let score = 0;
       const matchedSections: string[] = [];
+      // Hidden narrative sections persist in the DB (hides are reversible) but
+      // must not be searchable — skipping them stops search from acting as an
+      // oracle over hidden content or revealing which hidden section matched.
+      const hiddenNarrative = new Set(report.hiddenNarrativeSections ?? []);
 
       // Check title
       if (report.title.toLowerCase().includes(searchTerm)) {
@@ -82,6 +86,7 @@ export async function GET(request: Request) {
 
       // Check JSON content fields
       for (const field of SEARCHABLE_JSON_FIELDS) {
+        if (hiddenNarrative.has(field)) continue;
         const value = report[field];
         if (value !== null && value !== undefined) {
           const jsonStr = JSON.stringify(value).toLowerCase();

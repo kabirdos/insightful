@@ -491,6 +491,73 @@ describe("filterReportForResponse", () => {
     expect(tools["claude-code"].skillInventory).toHaveLength(2);
     expect(tools.codex.skillInventory).toHaveLength(2);
   });
+
+  // ── Whole narrative-section hides (hiddenNarrativeSections) ──────────────
+  // These are the reversible replacement for the old destructive "null the
+  // column" hide. The response must clear the section for non-owners; the
+  // owner-edit path keeps it so they can toggle it back on.
+
+  it("nulls a whole narrative section for non-owners (hiddenNarrativeSections)", () => {
+    const report = makeReport({
+      hiddenNarrativeSections: ["impressiveWorkflows", "suggestions"],
+    });
+    const result = filterReportForResponse(report, {
+      viewerIsOwner: false,
+      includeHidden: false,
+    });
+    expect(result.impressiveWorkflows).toBeNull();
+    expect(result.suggestions).toBeNull();
+    // Sections NOT hidden stay intact.
+    expect(result.onTheHorizon).toEqual(report.onTheHorizon);
+  });
+
+  it("keeps hidden narrative sections for the owner edit view (includeHidden)", () => {
+    const report = makeReport({
+      hiddenNarrativeSections: ["impressiveWorkflows"],
+    });
+    const result = filterReportForResponse(report, {
+      viewerIsOwner: true,
+      includeHidden: true,
+    });
+    expect(result.impressiveWorkflows).toEqual(report.impressiveWorkflows);
+  });
+
+  it("does not mutate the source report when nulling narrative sections", () => {
+    const report = makeReport({
+      hiddenNarrativeSections: ["impressiveWorkflows"],
+    });
+    filterReportForResponse(report, {
+      viewerIsOwner: false,
+      includeHidden: false,
+    });
+    // The DB-backed object is untouched — the hide is non-destructive.
+    expect(report.impressiveWorkflows).not.toBeNull();
+  });
+
+  it("applies narrative hides even when no harness sections are hidden", () => {
+    const report = makeReport({
+      hiddenHarnessSections: [],
+      hiddenNarrativeSections: ["frictionAnalysis"],
+    });
+    const result = filterReportForResponse(report, {
+      viewerIsOwner: false,
+      includeHidden: false,
+    });
+    expect(result.frictionAnalysis).toBeNull();
+  });
+
+  it("ignores unknown keys in hiddenNarrativeSections", () => {
+    const report = makeReport({
+      hiddenNarrativeSections: ["totallyNotASection", "harnessData"],
+    });
+    const result = filterReportForResponse(report, {
+      viewerIsOwner: false,
+      includeHidden: false,
+    });
+    // Only the known narrative columns can be nulled — harnessData survives.
+    expect(result.harnessData).toEqual(report.harnessData);
+    expect(result.impressiveWorkflows).toEqual(report.impressiveWorkflows);
+  });
 });
 
 // ── Showcase-field regressions (Unit 5 of skill-showcase plan) ────────────
@@ -748,9 +815,11 @@ describe("filterReportForListFeed", () => {
   it("drops showcase bytes from compatible skill inventories inside envelopes", () => {
     const report = makeEnvelopeReport([]);
     const result = filterReportForListFeed(report);
-    const skills = (result.harnessData as unknown as {
-      skillInventory: Array<Record<string, unknown>>;
-    }).skillInventory;
+    const skills = (
+      result.harnessData as unknown as {
+        skillInventory: Array<Record<string, unknown>>;
+      }
+    ).skillInventory;
 
     for (const skill of skills) {
       expect(skill.readme_markdown).toBeNull();

@@ -21,6 +21,21 @@ interface FilterOptions {
 }
 
 /**
+ * Narrative sections that can be hidden whole (matches the edit page's SECTIONS
+ * and the camelCase Prisma columns). A key listed in a report's
+ * hiddenNarrativeSections nulls the corresponding column in the response for
+ * non-owners — non-destructively (the DB column is untouched).
+ */
+const NARRATIVE_SECTION_KEYS = [
+  "atAGlance",
+  "interactionStyle",
+  "impressiveWorkflows",
+  "frictionAnalysis",
+  "suggestions",
+  "onTheHorizon",
+] as const;
+
+/**
  * Filter a report's data for the response. Returns a new object with hidden
  * data stripped. When viewerIsOwner && includeHidden, returns data untouched.
  */
@@ -28,6 +43,9 @@ export function filterReportForResponse<
   T extends {
     harnessData?: unknown;
     hiddenHarnessSections?: string[] | null;
+    hiddenNarrativeSections?: string[] | null;
+    atAGlance?: unknown;
+    interactionStyle?: unknown;
     impressiveWorkflows?: unknown;
     frictionAnalysis?: unknown;
     projectAreas?: unknown;
@@ -37,15 +55,30 @@ export function filterReportForResponse<
 >(report: T, options: FilterOptions): T {
   const { viewerIsOwner, includeHidden } = options;
   const hiddenSections = report.hiddenHarnessSections ?? [];
+  const hiddenNarrative = report.hiddenNarrativeSections ?? [];
 
   // Owner with includeHidden=true gets unfiltered data (for edit page)
   if (viewerIsOwner && includeHidden) return report;
 
   // Nothing to filter
-  if (hiddenSections.length === 0) return report;
+  if (hiddenSections.length === 0 && hiddenNarrative.length === 0)
+    return report;
 
   const hidden = hideSetFromArray(hiddenSections);
   const result = { ...report };
+
+  // Null whole narrative sections the author has hidden. Non-destructive: the
+  // DB column is untouched; only this response copy is cleared, so the detail
+  // page's null-check skips the section. Owners re-fetch with includeHidden
+  // (edit page) to toggle them back on.
+  if (hiddenNarrative.length > 0) {
+    const narrativeHidden = new Set(hiddenNarrative);
+    for (const key of NARRATIVE_SECTION_KEYS) {
+      if (narrativeHidden.has(key)) {
+        (result as Record<string, unknown>)[key] = null;
+      }
+    }
+  }
 
   // Filter harnessData (the main privacy fix)
   if (result.harnessData && typeof result.harnessData === "object") {
