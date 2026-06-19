@@ -55,6 +55,8 @@ import HooksSafetyTable from "@/components/HooksSafetyTable";
 import WorkflowDiagram from "@/components/WorkflowDiagram";
 import HowIWorkCluster from "@/components/HowIWorkCluster";
 import WorkRhythm from "@/components/WorkRhythm";
+import SignaturePatterns from "@/components/SignaturePatterns";
+import { deriveSignaturePatterns } from "@/lib/signature-patterns";
 import ProjectLinks from "@/components/ProjectLinks";
 import MiniBarChart from "@/components/MiniBarChart";
 import CodexHarnessDashboard from "@/components/CodexHarnessDashboard";
@@ -2477,6 +2479,19 @@ export default function UploadPage() {
                   })}
                 />
               </RedactableSection>
+
+              {/* Signature Patterns — verified "how I work" characterizations,
+              derived from the harness data; leads the preview like the live
+              profile. Hidden when no pattern clears its evidence threshold. */}
+              {deriveSignaturePatterns(previewHarnessData).length > 0 && (
+                <RedactableSection
+                  title="Signature Patterns"
+                  enabled={!disabledSections["signaturePatterns"]}
+                  onToggle={() => toggleSection("signaturePatterns")}
+                >
+                  <SignaturePatterns harnessData={previewHarnessData} />
+                </RedactableSection>
+              )}
 
               {/* Activity Heatmap */}
               <RedactableSection

@@ -40,6 +40,7 @@ import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 import HeroStats from "@/components/HeroStats";
 import HowIWorkCluster from "@/components/HowIWorkCluster";
 import WorkRhythm from "@/components/WorkRhythm";
+import SignaturePatterns from "@/components/SignaturePatterns";
 import SkillCardGrid from "@/components/SkillCardGrid";
 import { SkillsTeaserCard } from "@/components/SkillsTeaserCard";
 import { SkillsShowcaseSection } from "@/components/SkillsShowcaseSection";
@@ -451,6 +452,15 @@ export default function InsightDetailPage() {
                         harnessData: claudeHarnessData,
                       })}
                     />
+                  )}
+
+                  {/* Signature Patterns — lead the Dashboard with 3–5 verified
+                  characterizations of how this person works, derived from the
+                  persisted harnessData (autonomy, sub-agents, explore-first,
+                  Claude+Codex, authorship). Renders nothing when no pattern
+                  clears its evidence threshold. */}
+                  {!isSectionHidden(hiddenSet, "signaturePatterns") && (
+                    <SignaturePatterns harnessData={claudeHarnessData} />
                   )}
 
                   {/* Activity Heatmap — real per-day series when the harness ships

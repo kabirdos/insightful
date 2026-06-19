@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { stripHiddenHarnessData } from "../harness-section-visibility";
+import {
+  stripHiddenHarnessData,
+  getHiddenKeypaths,
+  HIDEABLE_HARNESS_SECTION_KEYS,
+} from "../harness-section-visibility";
 import type { HarnessData } from "@/types/insights";
 
 function buildFullHarnessData(): HarnessData {
@@ -158,5 +162,34 @@ describe("stripHiddenHarnessData", () => {
     expect(result.cliTools).toEqual({ gh: 1 });
     expect(result.gitPatterns.prCount).toBe(1);
     expect(result.gitPatterns.branchPrefixes).toEqual({ feat: 1 });
+  });
+});
+
+describe("signaturePatterns visibility", () => {
+  // Regression: the upload/edit toggle keys "signaturePatterns", but only keys
+  // in HIDEABLE_HARNESS_SECTION_KEYS are persisted to hiddenHarnessSections.
+  // Without the allowlist entry the hide is silently dropped on publish/save
+  // and the section reappears on the public page.
+  it("is in the hideable allowlist so the hide persists", () => {
+    expect(HIDEABLE_HARNESS_SECTION_KEYS).toContain("signaturePatterns");
+  });
+
+  it("getHiddenKeypaths keeps a hidden signaturePatterns key", () => {
+    expect(getHiddenKeypaths({ signaturePatterns: true })).toContain(
+      "signaturePatterns",
+    );
+    expect(getHiddenKeypaths({ signaturePatterns: false })).not.toContain(
+      "signaturePatterns",
+    );
+  });
+
+  it("is derived, so stripping leaves the underlying HarnessData untouched", () => {
+    // The patterns are computed at render time, not stored, so hiding the
+    // section must not be in STRIPPABLE — the payload is unchanged.
+    const full = buildFullHarnessData();
+    const result = stripHiddenHarnessData(full, ["signaturePatterns"]);
+    expect(result.autonomy).toEqual(full.autonomy);
+    expect(result.agentDispatch).toEqual(full.agentDispatch);
+    expect(result.cliTools).toEqual(full.cliTools);
   });
 });

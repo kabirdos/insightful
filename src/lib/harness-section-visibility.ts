@@ -16,6 +16,7 @@ import {
 export const HIDEABLE_HARNESS_SECTION_KEYS = [
   "heroStats",
   "activityHeatmap",
+  "signaturePatterns",
   "howIWork",
   "workRhythm",
   "toolUsage",
