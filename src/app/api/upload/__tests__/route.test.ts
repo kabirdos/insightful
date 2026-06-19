@@ -37,6 +37,9 @@ vi.mock("@/lib/db", () => ({
       upsert: vi.fn(),
       updateMany: vi.fn(),
     },
+    groupMember: {
+      findMany: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }));
@@ -91,6 +94,7 @@ const mockPublish = publishReport as unknown as Mock;
 const mockLog = logHarnessRequest as unknown as Mock;
 const mockPrisma = prisma as unknown as {
   harnessUpload: { create: Mock };
+  groupMember: { findMany: Mock };
 };
 
 // ── Fixture loader ──────────────────────────────────────────────────
@@ -211,6 +215,8 @@ beforeEach(() => {
     isDraft: true,
   });
   mockPrisma.harnessUpload.create.mockResolvedValue({});
+  // Default: author belongs to no groups, so D3 keeps visibility public.
+  mockPrisma.groupMember.findMany.mockResolvedValue([]);
 });
 
 // ── Multipart path (legacy browser flow — regression guards) ────────
@@ -642,6 +648,35 @@ describe("POST /api/upload — bearer happy path", () => {
     } finally {
       vi.unstubAllEnvs();
     }
+  });
+});
+
+describe("POST /api/upload — bearer publish-time visibility default (D3)", () => {
+  it("publishes a public draft when the author has no group memberships", async () => {
+    mockPrisma.groupMember.findMany.mockResolvedValue([]);
+    const response = await uploadPOST(bearerRequest());
+    expect(response.status).toBe(200);
+    expect(mockPublish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        visibility: "public",
+        groupIds: [],
+      }),
+    );
+  });
+
+  it("defaults to group visibility shared to every membership when the author has groups", async () => {
+    mockPrisma.groupMember.findMany.mockResolvedValue([
+      { groupId: "g1" },
+      { groupId: "g2" },
+    ]);
+    const response = await uploadPOST(bearerRequest());
+    expect(response.status).toBe(200);
+    expect(mockPublish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        visibility: "group",
+        groupIds: ["g1", "g2"],
+      }),
+    );
   });
 });
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { draftVisibilityClause } from "@/lib/draft-filter";
+import { reportVisibilityClause } from "@/lib/report-visibility";
 
 /**
  * PATCH /api/insights/[slug]/projects/[projectId]
@@ -32,7 +32,7 @@ export async function PATCH(
       where: {
         AND: [
           { slug, author: { username } },
-          draftVisibilityClause(session.user.id),
+          reportVisibilityClause(session.user.id),
         ],
       },
       select: { id: true, authorId: true },

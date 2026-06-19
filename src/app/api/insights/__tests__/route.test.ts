@@ -34,6 +34,12 @@ vi.mock("@/lib/db", () => ({
     reportProject: {
       createMany: vi.fn(),
     },
+    reportGroupShare: {
+      createMany: vi.fn(),
+    },
+    groupMember: {
+      findMany: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }));
@@ -56,6 +62,8 @@ const mockPrisma = prisma as unknown as {
   insightReport: { create: Mock; findUnique: Mock };
   project: { findMany: Mock; findFirst: Mock; create: Mock };
   reportProject: { createMany: Mock };
+  reportGroupShare: { createMany: Mock };
+  groupMember: { findMany: Mock };
   $transaction: Mock;
 };
 
@@ -90,6 +98,8 @@ function postRequest(body: unknown, options: { raw?: string } = {}): Request {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Default: author belongs to no groups, so D3 keeps visibility public.
+  mockPrisma.groupMember.findMany.mockResolvedValue([]);
 });
 
 describe("POST /api/insights — auth", () => {
@@ -343,9 +353,7 @@ describe("POST /api/insights — save-side happy path", () => {
           stats: { totalTokens: 2000.6, sessionCount: 12 },
           toolUsage: { exec_command: 8 },
           cliTools: { git: 3 },
-          skillInventory: [
-            { name: "code-review", description: "Review code" },
-          ],
+          skillInventory: [{ name: "code-review", description: "Review code" }],
           plugins: [{ name: "github", enabled: true }],
           safety: {
             approvalsReviewer: "model",
@@ -376,6 +384,44 @@ describe("POST /api/insights — save-side happy path", () => {
         },
       },
     });
+  });
+});
+
+describe("POST /api/insights — publish-time visibility default (D3)", () => {
+  it("writes visibility:public and no group shares when the author has no groups", async () => {
+    mockSessionAndUser("user-1");
+    wireTransaction();
+    seedReportMock();
+    mockPrisma.groupMember.findMany.mockResolvedValue([]);
+
+    await insightsPOST(postRequest({ sessionCount: 1 }));
+
+    const createArgs = mockPrisma.insightReport.create.mock.calls[0][0];
+    expect(createArgs.data.visibility).toBe("public");
+    expect(mockPrisma.reportGroupShare.createMany).not.toHaveBeenCalled();
+  });
+
+  it("writes visibility:group and shares to every membership when the author has groups", async () => {
+    mockSessionAndUser("user-1");
+    wireTransaction();
+    seedReportMock();
+    mockPrisma.groupMember.findMany.mockResolvedValue([
+      { groupId: "g1" },
+      { groupId: "g2" },
+    ]);
+
+    await insightsPOST(postRequest({ sessionCount: 1 }));
+
+    const createArgs = mockPrisma.insightReport.create.mock.calls[0][0];
+    expect(createArgs.data.visibility).toBe("group");
+    expect(mockPrisma.reportGroupShare.createMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: [
+          { reportId: "rpt_1", groupId: "g1" },
+          { reportId: "rpt_1", groupId: "g2" },
+        ],
+      }),
+    );
   });
 });
 

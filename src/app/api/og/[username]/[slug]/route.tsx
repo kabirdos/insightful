@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 import { estimateApiCostUsd } from "@/lib/api-cost";
 import { normalizeHarnessData, type HarnessData } from "@/types/insights";
-import { draftVisibilityClause } from "@/lib/draft-filter";
+import { reportVisibilityClause } from "@/lib/report-visibility";
 import {
   formatCompactNumber,
   formatCompactCurrency,
@@ -142,7 +142,7 @@ export async function GET(
     // cached by social previews. Filter as anonymous (viewerId: null).
     const report = await prisma.insightReport.findFirst({
       where: {
-        AND: [{ slug, author: { username } }, draftVisibilityClause(null)],
+        AND: [{ slug, author: { username } }, reportVisibilityClause(null)],
       },
       include: {
         author: {

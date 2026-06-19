@@ -32,6 +32,35 @@ export interface AuthenticatedRequest {
 }
 
 /**
+ * Resolve the viewer behind a read request for visibility decisions
+ * (plan D7). Session first; if there is no session, a valid
+ * `Authorization: Bearer ih_…` resolves the token's owner so an agent
+ * holding a user's token can read the group-visible reports that user is
+ * entitled to.
+ *
+ * Reuses `verifyToken` (the same selector + bcrypt-secret check the
+ * upload route's `authenticateRequest` runs) — it rolls `lastUsedAt` /
+ * `expiresAt` forward on success exactly as upload does, which is the
+ * intended and only side effect. A malformed or unverifiable bearer
+ * resolves to `{ userId: null }` (anonymous), never an error: the caller
+ * then applies the public-only visibility clause.
+ */
+export async function resolveAgentViewer(
+  req: Request,
+): Promise<{ userId: string | null }> {
+  const session = await auth();
+  if (session?.user?.id) return { userId: session.user.id };
+
+  const raw = extractBearer(req);
+  if (raw && parseToken(raw)) {
+    const verified = await verifyToken(raw);
+    if (verified) return { userId: verified.userId };
+  }
+
+  return { userId: null };
+}
+
+/**
  * Extract the raw bearer token from the request, if any. Returns null
  * when the header is missing or doesn't start with `Bearer `.
  */

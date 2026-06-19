@@ -3,7 +3,25 @@ import {
   formatCompactNumber,
   formatInteger,
   formatCompactCurrency,
+  perWeek,
 } from "../number-format";
+
+describe("perWeek", () => {
+  it("converts a lifetime total over a day count into a weekly rate", () => {
+    // 70 over 14 days = 35/week.
+    expect(perWeek(70, 14)).toBe(35);
+    // 21 over a 7-day window = 21/week.
+    expect(perWeek(21, 7)).toBe(21);
+  });
+
+  it("returns null for sourceless inputs (no-silent-zero rule)", () => {
+    expect(perWeek(null, 7)).toBeNull();
+    expect(perWeek(undefined, 7)).toBeNull();
+    expect(perWeek(100, null)).toBeNull();
+    expect(perWeek(100, undefined)).toBeNull();
+    expect(perWeek(100, 0)).toBeNull();
+  });
+});
 
 describe("formatCompactNumber", () => {
   it("renders values under 1k as raw with commas", () => {

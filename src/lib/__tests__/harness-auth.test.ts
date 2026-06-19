@@ -27,7 +27,7 @@ vi.mock("@/lib/harness-tokens", async () => {
   };
 });
 
-import { authenticateRequest } from "../harness-auth";
+import { authenticateRequest, resolveAgentViewer } from "../harness-auth";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { verifyToken } from "@/lib/harness-tokens";
@@ -165,5 +165,67 @@ describe("authenticateRequest", () => {
     const result = await authenticateRequest(reqWith({}));
 
     expect(result).toBeNull();
+  });
+});
+
+describe("resolveAgentViewer", () => {
+  const validRaw = `ih_${"a".repeat(76)}`;
+
+  it("resolves the session user without touching the bearer path", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } });
+
+    const result = await resolveAgentViewer(
+      reqWith({ authorization: `Bearer ${validRaw}` }),
+    );
+
+    expect(result).toEqual({ userId: "user-1" });
+    // Session takes precedence; the token is never verified.
+    expect(mockVerifyToken).not.toHaveBeenCalled();
+  });
+
+  it("resolves the token owner when there is no session", async () => {
+    mockAuth.mockResolvedValue(null);
+    mockVerifyToken.mockResolvedValue({
+      userId: "user-9",
+      tokenId: "t1",
+      selector: "a".repeat(12),
+    });
+
+    const result = await resolveAgentViewer(
+      reqWith({ authorization: `Bearer ${validRaw}` }),
+    );
+
+    expect(result).toEqual({ userId: "user-9" });
+  });
+
+  it("returns null viewer for a malformed bearer (no DB call)", async () => {
+    mockAuth.mockResolvedValue(null);
+
+    const result = await resolveAgentViewer(
+      reqWith({ authorization: `Bearer xx_${"a".repeat(76)}` }),
+    );
+
+    expect(result).toEqual({ userId: null });
+    expect(mockVerifyToken).not.toHaveBeenCalled();
+  });
+
+  it("returns null viewer when a well-formed bearer fails verification", async () => {
+    mockAuth.mockResolvedValue(null);
+    mockVerifyToken.mockResolvedValue(null);
+
+    const result = await resolveAgentViewer(
+      reqWith({ authorization: `Bearer ${validRaw}` }),
+    );
+
+    expect(result).toEqual({ userId: null });
+  });
+
+  it("returns null viewer for an anonymous request with no bearer", async () => {
+    mockAuth.mockResolvedValue(null);
+
+    const result = await resolveAgentViewer(reqWith({}));
+
+    expect(result).toEqual({ userId: null });
+    expect(mockVerifyToken).not.toHaveBeenCalled();
   });
 });
