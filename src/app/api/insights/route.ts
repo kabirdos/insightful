@@ -113,9 +113,14 @@ function generateSlug(): string {
 
 export async function GET(request: Request) {
   try {
-    const session = await auth();
-    const viewerId = session?.user?.id ?? null;
-    const draftWhere = reportVisibilityClause(viewerId);
+    // Discover feed is a global aggregate/browse surface: it must only
+    // ever expose strictly-public reports (plan D6), matching /api/top,
+    // /api/leaderboard, /api/search, OG, and metadata. Pass `null` (not
+    // the viewer id) so a logged-in author's own drafts/private reports
+    // and any group-shared reports never leak into the cross-audience
+    // feed — those surface on the author's profile and group pages, not
+    // here.
+    const draftWhere = reportVisibilityClause(null);
 
     const { searchParams } = new URL(request.url);
     const sort = searchParams.get("sort") ?? "newest";
