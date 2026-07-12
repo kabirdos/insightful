@@ -240,3 +240,36 @@ describe("signaturePatterns visibility", () => {
     expect(result.cliTools).toEqual(full.cliTools);
   });
 });
+
+describe("selfDeclared (My Stack) visibility", () => {
+  const selfDeclared = {
+    fields: { editor: "Neovim", identity: "Ships tiny tools" },
+    declaredAt: "2026-07-01T00:00:00.000Z",
+  };
+
+  function withSelfDeclared(): HarnessData {
+    return { ...buildFullHarnessData(), selfDeclared };
+  }
+
+  it("registers selfDeclared as hideable + strippable", () => {
+    expect(HIDEABLE_HARNESS_SECTION_KEYS).toContain("selfDeclared");
+    // getHiddenKeypaths only keeps keys whose topKey is in the allowlist.
+    expect(getHiddenKeypaths({ selfDeclared: true })).toEqual(["selfDeclared"]);
+  });
+
+  it("nulls the whole island when hidden", () => {
+    const result = stripHiddenHarnessData(withSelfDeclared(), ["selfDeclared"]);
+    expect(result.selfDeclared).toBeNull();
+  });
+
+  it("round-trips untouched when not hidden", () => {
+    const result = stripHiddenHarnessData(withSelfDeclared(), ["plugins"]);
+    expect(result.selfDeclared).toEqual(selfDeclared);
+  });
+
+  it("does not mutate the source object when stripping", () => {
+    const source = withSelfDeclared();
+    stripHiddenHarnessData(source, ["selfDeclared"]);
+    expect(source.selfDeclared).toEqual(selfDeclared);
+  });
+});

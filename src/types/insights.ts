@@ -251,6 +251,29 @@ export interface TokenAttribution {
   unattributed: HarnessModelTokenBreakdown;
 }
 
+/**
+ * Author-declared "My Stack" — a small, ADDITIVE island the insight-harness
+ * skill (v2.13.0+) emits when the author self-reports their setup: voice, editor,
+ * terminal, mic, remote posture, plus a one-line identity. Values are
+ * PII-scrubbed and length-capped skill-side, but remain UNVERIFIED free text —
+ * every surfacing MUST label it "self-declared" and keep it visually distinct
+ * from harness-extracted stats. Absent (null) for reports predating v2.13.0.
+ */
+export interface SelfDeclaredFields {
+  voice?: string;
+  editor?: string;
+  terminal?: string;
+  mic?: string;
+  remote?: string;
+  identity?: string;
+}
+
+export interface SelfDeclared {
+  fields: SelfDeclaredFields;
+  /** ISO8601 timestamp the author declared their stack. May be "" if unknown. */
+  declaredAt: string;
+}
+
 export interface HarnessEnhancedStats {
   linesAdded: number | null;
   linesRemoved: number | null;
@@ -321,6 +344,10 @@ export interface HarnessData {
   dailyActivity?: HarnessDailyActivity[] | null;
   concurrency?: HarnessConcurrency | null;
   temporal?: HarnessTemporal | null;
+  // Author self-declared "My Stack" (insight-harness v2.13.0+). Additive,
+  // optional; null for older reports. UNVERIFIED free text — render it only via
+  // the self-declared-labeled card, never as an extracted stat.
+  selfDeclared?: SelfDeclared | null;
 }
 
 export type HarnessToolKey = "claude-code" | "codex";
@@ -612,6 +639,42 @@ function normalizeTokenAttribution(raw: unknown): TokenAttribution | null {
   };
 }
 
+/**
+ * The self-declared "My Stack" field keys. The skill emits only these; unknown
+ * keys are dropped so the card's fixed label map stays the single source of
+ * truth for what can render.
+ */
+const SELF_DECLARED_FIELD_KEYS = [
+  "voice",
+  "editor",
+  "terminal",
+  "mic",
+  "remote",
+  "identity",
+] as const;
+
+/**
+ * Normalize the author-declared "My Stack" island. Absent/non-object → `null`
+ * (older reports). Keeps only the known field keys with non-empty string values
+ * (trimmed) and drops everything else — a malformed or hostile DB row can never
+ * inject unlabeled keys or non-string values into the card. Returns `null` when
+ * nothing survives so the strip/feed/render paths treat "no stack" uniformly.
+ */
+function normalizeSelfDeclared(raw: unknown): SelfDeclared | null {
+  if (!isRecord(raw)) return null;
+  const rawFields = isRecord(raw.fields) ? raw.fields : {};
+  const fields: SelfDeclaredFields = {};
+  for (const key of SELF_DECLARED_FIELD_KEYS) {
+    const value = rawFields[key];
+    if (typeof value === "string" && value.trim().length > 0) {
+      fields[key] = value.trim();
+    }
+  }
+  if (Object.keys(fields).length === 0) return null;
+  const declaredAt = typeof raw.declaredAt === "string" ? raw.declaredAt : "";
+  return { fields, declaredAt };
+}
+
 function normalizeNonNegativeInteger(raw: unknown): number | undefined {
   if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0) {
     return undefined;
@@ -805,6 +868,7 @@ function normalizeLegacyHarnessData(raw: unknown): HarnessData | null {
     dailyActivity: (obj.dailyActivity as HarnessData["dailyActivity"]) ?? null,
     concurrency: (obj.concurrency as HarnessData["concurrency"]) ?? null,
     temporal: (obj.temporal as HarnessData["temporal"]) ?? null,
+    selfDeclared: normalizeSelfDeclared(obj.selfDeclared),
   };
 }
 

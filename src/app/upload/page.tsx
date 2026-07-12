@@ -66,6 +66,7 @@ import HooksSafetyTable from "@/components/HooksSafetyTable";
 import WorkflowDiagram from "@/components/WorkflowDiagram";
 import HowIWorkCluster from "@/components/HowIWorkCluster";
 import WorkRhythm from "@/components/WorkRhythm";
+import SelfDeclaredStack from "@/components/SelfDeclaredStack";
 import SignaturePatterns from "@/components/SignaturePatterns";
 import { deriveSignaturePatterns } from "@/lib/signature-patterns";
 import ProjectLinks from "@/components/ProjectLinks";
@@ -2554,6 +2555,21 @@ export default function UploadPage() {
                   <WorkRhythm
                     concurrency={previewHarnessData.concurrency}
                     temporal={previewHarnessData.temporal}
+                  />
+                </RedactableSection>
+              )}
+
+              {/* My Stack — author self-declared setup. Redact-toggle keeps it
+                  out of the published + agent views. Only shown when the author
+                  declared something (normalizer nulls empty/old reports). */}
+              {previewHarnessData.selfDeclared && (
+                <RedactableSection
+                  title="My Stack (self-declared)"
+                  enabled={!disabledSections["selfDeclared"]}
+                  onToggle={() => toggleSection("selfDeclared")}
+                >
+                  <SelfDeclaredStack
+                    selfDeclared={previewHarnessData.selfDeclared}
                   />
                 </RedactableSection>
               )}

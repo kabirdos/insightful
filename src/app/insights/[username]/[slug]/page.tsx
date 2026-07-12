@@ -40,6 +40,7 @@ import { resolveLinesAdded, resolveLinesRemoved } from "@/lib/lines-of-code";
 import HeroStats from "@/components/HeroStats";
 import HowIWorkCluster from "@/components/HowIWorkCluster";
 import WorkRhythm from "@/components/WorkRhythm";
+import SelfDeclaredStack from "@/components/SelfDeclaredStack";
 import SignaturePatterns from "@/components/SignaturePatterns";
 import SkillCardGrid from "@/components/SkillCardGrid";
 import { SkillsTeaserCard } from "@/components/SkillsTeaserCard";
@@ -520,6 +521,16 @@ export default function InsightDetailPage() {
                     <WorkRhythm
                       concurrency={claudeHarnessData.concurrency}
                       temporal={claudeHarnessData.temporal}
+                    />
+                  )}
+
+                  {/* My Stack — author self-declared setup. Explicitly labeled
+                  self-reported and styled distinctly from verified stats.
+                  Returns null when absent/empty, so older reports render
+                  nothing. */}
+                  {!isSectionHidden(hiddenSet, "selfDeclared") && (
+                    <SelfDeclaredStack
+                      selfDeclared={claudeHarnessData.selfDeclared}
                     />
                   )}
 

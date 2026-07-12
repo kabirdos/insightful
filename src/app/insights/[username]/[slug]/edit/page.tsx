@@ -28,6 +28,7 @@ import HeroStats from "@/components/HeroStats";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
 import HowIWorkCluster from "@/components/HowIWorkCluster";
 import WorkRhythm from "@/components/WorkRhythm";
+import SelfDeclaredStack from "@/components/SelfDeclaredStack";
 import SignaturePatterns from "@/components/SignaturePatterns";
 import { deriveSignaturePatterns } from "@/lib/signature-patterns";
 import ToolUsageTreemap from "@/components/ToolUsageTreemap";
@@ -1227,6 +1228,19 @@ export default function EditReportPage() {
                 concurrency={harnessData.concurrency}
                 temporal={harnessData.temporal}
               />
+            </HideableCard>
+          )}
+
+          {/* My Stack — author self-declared setup. Eye-toggle hides it from
+              the published + agent views. Only shown when the author declared
+              something (normalizer nulls empty/old reports). */}
+          {harnessData.selfDeclared && (
+            <HideableCard
+              title="My Stack (self-declared)"
+              hidden={!!hiddenSections["selfDeclared"]}
+              onToggle={() => toggleSection("selfDeclared")}
+            >
+              <SelfDeclaredStack selfDeclared={harnessData.selfDeclared} />
             </HideableCard>
           )}
 
