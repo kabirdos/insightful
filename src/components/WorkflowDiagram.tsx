@@ -52,9 +52,41 @@ function getPluginColor(plugin: string) {
   return PLUGIN_COLORS[plugin] || PLUGIN_COLORS.custom;
 }
 
+/**
+ * HTML-escape a string before embedding it in a Mermaid htmlLabel span.
+ * Mermaid runs with securityLevel:"loose" + htmlLabels:true (see
+ * useMermaid.ts), which skips its DOMPurify pass — so any harness-derived
+ * value interpolated into a node label would otherwise render as live HTML
+ * (e.g. an `<img src=x onerror=...>` skill key). Escaping the five
+ * significant characters renders them as inert text and also stops `"`
+ * from terminating the Mermaid node-text quotes.
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function formatCount(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
   return `${n}`;
+}
+
+/**
+ * Coerce a harness-derived count to a safe non-negative integer before it is
+ * interpolated into the Mermaid definition. Counts are typed `number`, but
+ * they originate from JSON.parse of user-uploaded HTML, so the TypeScript type
+ * is only a compile-time promise — a crafted payload could smuggle a string
+ * (e.g. `<img onerror=...>`) into a count field and inject markup via the
+ * unescaped `${count}` interpolations in node/edge labels. Non-finite or
+ * negative values collapse to 0.
+ */
+function toSafeCount(value: unknown): number {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
 }
 
 function topEntries(
@@ -186,19 +218,27 @@ export function buildWorkflowDiagram(
   const lines: string[] = [`flowchart ${direction}`];
 
   for (const skill of skills) {
-    const count = skillInvocations[skill] ?? 0;
+    const count = toSafeCount(skillInvocations[skill]);
     const id = skill.replace(/[^a-zA-Z0-9]/g, "_");
-    const { plugin, shortName } = parseSkillSource(skill);
-    const safeName = shortName.replace(/"/g, "'");
+    const { plugin } = parseSkillSource(skill);
+    // Both interpolations below are harness-derived (user-controlled skill
+    // keys), so each is defended twice: safeSkillKeyLabel() masks
+    // privacy-risky custom names (paths/URLs/ticket IDs), and escapeHtml()
+    // neutralizes any HTML metacharacters the mask lets through — a key like
+    // `<img src=x onerror=...>` isn't "risky" by the path/URL heuristic but
+    // must still not render as live markup under securityLevel:"loose".
+    const safeName = escapeHtml(safeSkillKeyLabel(skill));
+    const safePlugin = escapeHtml(plugin);
     // Three stacked lines, each with its own explicit inline font-size so
     // Mermaid's theme defaults can't shrink them. htmlLabels render these
     // as raw HTML inside a foreignObject, which means:
     //   - `<span style=...>` wins against any CSS cascade
     //   - securityLevel must be "loose" (see useMermaid.ts) or the style
-    //     attribute gets stripped by DOMPurify
+    //     attribute gets stripped by DOMPurify — which is why the label
+    //     values above are escaped at the source rather than by Mermaid.
     const label =
       `<span style='font-size:${nameSize}px;font-weight:700;line-height:1.15;display:block'>${safeName}</span>` +
-      `<span style='font-size:${metaSize}px;font-weight:500;opacity:0.72;line-height:1.1;display:block;margin-top:4px'>${plugin}</span>` +
+      `<span style='font-size:${metaSize}px;font-weight:500;opacity:0.72;line-height:1.1;display:block;margin-top:4px'>${safePlugin}</span>` +
       `<span style='font-size:${metaSize + 1}px;font-weight:700;line-height:1.1;display:block;margin-top:3px'>${count}× used</span>`;
     lines.push(`    ${id}["${label}"]`);
   }
@@ -212,7 +252,7 @@ export function buildWorkflowDiagram(
       const to = seq[i + 1];
       if (from && to && renderedSkills.has(from) && renderedSkills.has(to)) {
         const key = `${from}|||${to}`;
-        edgeCounts[key] = (edgeCounts[key] || 0) + pattern.count;
+        edgeCounts[key] = (edgeCounts[key] || 0) + toSafeCount(pattern.count);
       }
     }
   }

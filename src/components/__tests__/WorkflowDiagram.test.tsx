@@ -155,6 +155,73 @@ describe("buildWorkflowDiagram", () => {
     expect(result).toContain("font-size:16px");
     expect(result).not.toContain("font-size:24px");
   });
+
+  // Skill keys come from user-controlled harnessData and are rendered inside
+  // Mermaid htmlLabels with securityLevel:"loose" (Mermaid's DOMPurify pass is
+  // disabled). Any HTML in a label MUST therefore be escaped at build time or
+  // it renders as live markup. See useMermaid.ts for the invariant.
+  it("HTML-escapes a malicious skill key so it cannot render as live HTML", () => {
+    const payload = "<img src=x onerror=alert(1)>";
+    const data = makeWorkflowData({
+      skillInvocations: { [payload]: 3 },
+      workflowPatterns: [{ sequence: [payload, payload], count: 1 }],
+    });
+    const result = buildWorkflowDiagram(data);
+    // The raw tag must never reach the Mermaid definition — under
+    // securityLevel:"loose" it would render as a live <img> and fire onerror.
+    expect(result).not.toContain("<img");
+    expect(result).not.toContain("onerror=alert(1)>");
+    // It survives only as inert, escaped text.
+    expect(result).toContain("&lt;img");
+  });
+
+  it("HTML-escapes markup smuggled into the plugin segment of a skill key", () => {
+    const payload = "<script>alert(1)</script>:legit";
+    const data = makeWorkflowData({
+      skillInvocations: { [payload]: 2 },
+      workflowPatterns: [{ sequence: [payload, payload], count: 1 }],
+    });
+    const result = buildWorkflowDiagram(data);
+    expect(result).not.toContain("<script");
+    expect(result).not.toContain("</script>");
+    expect(result).toContain("&lt;script&gt;");
+  });
+
+  it("coerces harness-derived counts so a non-numeric count cannot inject HTML", () => {
+    // Counts are typed `number`, but the value ultimately comes from
+    // JSON.parse of user-uploaded HTML — the type is only a compile-time
+    // promise. A crafted string count would otherwise interpolate raw into
+    // the `${count}× used` label. Cast through unknown to model that reality.
+    const data = makeWorkflowData({
+      skillInvocations: {
+        "ce-work": "<img src=x onerror=alert(1)>" as unknown as number,
+      },
+      workflowPatterns: [
+        {
+          sequence: ["ce-work", "ce-work"],
+          count: "<b>x</b>" as unknown as number,
+        },
+      ],
+    });
+    const result = buildWorkflowDiagram(data);
+    expect(result).not.toContain("<img");
+    expect(result).not.toContain("<b>");
+    // Non-finite counts collapse to 0.
+    expect(result).toContain("0× used");
+  });
+
+  it("escapes double quotes so a skill key cannot break out of the node text", () => {
+    // A bare `"` would otherwise close the Mermaid `id["..."]` node-text
+    // delimiter and corrupt the definition.
+    const payload = 'evil"] node2["pwned';
+    const data = makeWorkflowData({
+      skillInvocations: { [payload]: 1 },
+      workflowPatterns: [{ sequence: [payload, payload], count: 1 }],
+    });
+    const result = buildWorkflowDiagram(data);
+    expect(result).not.toContain('"] node2["');
+    expect(result).toContain("&quot;");
+  });
 });
 
 describe("WorkflowDiagram module", () => {
