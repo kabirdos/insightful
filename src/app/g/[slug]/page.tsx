@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -14,6 +14,7 @@ import {
   perWeek,
 } from "@/lib/number-format";
 import CopyCommand from "@/components/CopyCommand";
+import LearnFromThis from "@/components/LearnFromThis";
 
 // ── API response shapes (authoritative: GET /api/groups/[slug]) ──────
 export interface LatestReport {
@@ -571,11 +572,6 @@ export default function GroupPage() {
     };
   }, [slug]);
 
-  const learnCommand = useMemo(
-    () => `Learn from this group: https://insightharness.com/g/${slug}`,
-    [slug],
-  );
-
   if (loading || sessionStatus === "loading") {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -628,16 +624,7 @@ export default function GroupPage() {
       </div>
 
       {/* Learn from this group */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-          Learn from this group
-        </h2>
-        <p className="mb-4 mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Paste into Claude Code with the insight-harness skill installed — your
-          agent fetches every member&apos;s setup and tells you what to copy.
-        </p>
-        <CopyCommand command={learnCommand} label="Copy" />
-      </div>
+      <LearnFromThis variant="group" url={`/g/${slug}`} />
     </div>
   );
 }
