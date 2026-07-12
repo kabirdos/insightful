@@ -254,6 +254,23 @@ export function filterReportForListFeed<
   } as T;
 }
 
+// Showcase fields to drop from list-feed skill entries, in BOTH casings: the
+// Claude extractor emits snake_case (readme_markdown / hero_base64 /
+// hero_mime_type); the Codex extractor emits camelCase (readmeMarkdown /
+// heroBase64 / heroMimeType, see codex_extract.py). A Codex or multi-tool
+// report stores the raw island, so we must strip whichever casing is present —
+// mirroring the both-casings HERO_KEYS approach in agent-payload.ts. Unlike the
+// agent payload (which keeps readme_markdown), list feeds drop the READMEs too:
+// cards never render them.
+const SHOWCASE_FIELD_KEYS = [
+  "readme_markdown",
+  "hero_base64",
+  "hero_mime_type",
+  "readmeMarkdown",
+  "heroBase64",
+  "heroMimeType",
+] as const;
+
 function stripShowcaseFieldsFromHarnessData(data: unknown): unknown {
   if (!isRecord(data)) return data;
 
@@ -261,7 +278,10 @@ function stripShowcaseFieldsFromHarnessData(data: unknown): unknown {
     const tools: Record<string, unknown> = { ...data.tools };
     let changed = false;
 
-    for (const toolKey of ["claude-code", "codex"]) {
+    // Iterate every tool slice, not just a hardcoded pair, so a Codex-only or
+    // future multi-tool envelope never ships showcase bytes from an unhandled
+    // slice.
+    for (const toolKey of Object.keys(tools)) {
       const stripped = stripShowcaseFieldsFromHarnessSlice(tools[toolKey]);
       if (stripped !== tools[toolKey]) {
         tools[toolKey] = stripped;
@@ -290,22 +310,20 @@ function stripShowcaseFieldsFromHarnessSlice(data: unknown): unknown {
     if (!isRecord(skill)) return skill;
 
     // Only strip if showcase fields are actually present — avoids unnecessary
-    // object allocation for reports without --include-skills data.
-    if (
-      skill.readme_markdown == null &&
-      skill.hero_base64 == null &&
-      skill.hero_mime_type == null
-    ) {
+    // object allocation for reports without --include-skills data. Checks both
+    // casings so Codex (camelCase) entries are caught too.
+    if (!SHOWCASE_FIELD_KEYS.some((key) => skill[key] != null)) {
       return skill;
     }
 
     changed = true;
-    return {
-      ...skill,
-      readme_markdown: null,
-      hero_base64: null,
-      hero_mime_type: null,
-    };
+    const stripped: Record<string, unknown> = { ...skill };
+    // Only null keys the source skill actually has, so we don't inject a
+    // snake_case null onto a camelCase Codex entry (or vice versa).
+    for (const key of SHOWCASE_FIELD_KEYS) {
+      if (key in stripped) stripped[key] = null;
+    }
+    return stripped;
   });
 
   return changed ? { ...data, skillInventory } : data;

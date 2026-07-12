@@ -199,6 +199,42 @@ function makeEnvelopeReport(hiddenHarnessSections: string[] = []) {
   };
 }
 
+// A Codex-only envelope with camelCase showcase fields — the shape Codex's
+// extractor actually emits. Distinct from makeEnvelopeReport, whose Codex slice
+// happens to use snake_case, so this exercises the camelCase strip path.
+function makeCodexOnlyEnvelope() {
+  return {
+    id: "report-codex-only",
+    authorId: "user-1",
+    harnessData: {
+      primaryTool: "codex",
+      tools: {
+        codex: {
+          tool: "codex",
+          stats: {
+            totalTokens: 200,
+            sessionCount: 4,
+            payloadFormatSessions: 3,
+            legacyFormatSessions: 1,
+          },
+          toolUsage: { exec_command: 8, apply_patch: 2 },
+          cliTools: { git: 5 },
+          skillInventory: [
+            {
+              name: "Codex Camel Skill",
+              description: "visible",
+              readmeMarkdown: "# Codex camel readme",
+              heroBase64: "CODEXCAMELBASE64",
+              heroMimeType: "image/png",
+            },
+          ],
+        },
+      },
+    },
+    hiddenHarnessSections: [] as string[],
+  };
+}
+
 describe("filterReportForResponse", () => {
   it("returns full payload when no hides", () => {
     const report = makeReport();
@@ -837,5 +873,32 @@ describe("filterReportForListFeed", () => {
     }
     expect(JSON.stringify(result)).not.toContain("PUBLICBASE64DATA");
     expect(JSON.stringify(result)).not.toContain("tools");
+  });
+
+  // Regression: Codex-generated reports emit camelCase showcase fields
+  // (heroBase64 / heroMimeType / readmeMarkdown). A Codex-only report has no
+  // Claude slice, so toListFeedHarnessData returns the whole envelope — the
+  // camelCase blobs must still be stripped or multi-MB base64 ships in the feed.
+  it("strips camelCase showcase bytes from a Codex-only envelope (no Claude slice)", () => {
+    const report = makeCodexOnlyEnvelope();
+    const result = filterReportForListFeed(report);
+
+    const codexSkills = (
+      result.harnessData as {
+        tools: { codex: { skillInventory: Array<Record<string, unknown>> } };
+      }
+    ).tools.codex.skillInventory;
+
+    for (const skill of codexSkills) {
+      expect(skill.heroBase64).toBeNull();
+      expect(skill.heroMimeType).toBeNull();
+      expect(skill.readmeMarkdown).toBeNull();
+    }
+    // Non-showcase fields preserved so cards still render.
+    expect(codexSkills[0].name).toBe("Codex Camel Skill");
+
+    const json = JSON.stringify(result);
+    expect(json).not.toContain("CODEXCAMELBASE64");
+    expect(json).not.toContain("Codex camel readme");
   });
 });
