@@ -387,6 +387,159 @@ describe("POST /api/insights — save-side happy path", () => {
   });
 });
 
+// ── Stored-XSS sanitization ─────────────────────────────────────────
+
+describe("POST /api/insights — harnessData XSS sanitization", () => {
+  // The report page renders
+  // harnessData.tools["claude-code"].writeupSections[].contentHtml with
+  // dangerouslySetInnerHTML. Unlike the upload path (which sanitizes inside
+  // parseHarnessHtml), the POST path persists the body directly — and the PUT
+  // allowlist deliberately excludes harnessData for exactly this reason. So the
+  // POST path MUST run the same allowlist sanitizer before the value is
+  // stored. These tests read what was handed to insightReport.create (i.e.
+  // what actually lands in the DB) and assert the HTML is neutralized while the
+  // JSON envelope shape is preserved. Both the legacy-flat and multi-tool
+  // envelope input shapes are covered.
+
+  function storedClaudeWriteup(): Array<{
+    title: string;
+    contentHtml: string;
+  }> {
+    const createArgs = mockPrisma.insightReport.create.mock.calls[0][0];
+    const harnessData = createArgs.data.harnessData as {
+      tools: {
+        "claude-code"?: {
+          writeupSections: Array<{ title: string; contentHtml: string }>;
+        };
+      };
+    };
+    return harnessData.tools["claude-code"]?.writeupSections ?? [];
+  }
+
+  it("neutralizes script/img-onerror in contentHtml (flat legacy shape)", async () => {
+    mockSessionAndUser("user-1");
+    wireTransaction();
+    seedReportMock();
+
+    await insightsPOST(
+      postRequest({
+        sessionCount: 5,
+        reportType: "insight-harness",
+        harnessData: {
+          stats: { sessionCount: 5, lifetimeTokens: 100 },
+          autonomy: { label: "balanced" },
+          featurePills: [],
+          writeupSections: [
+            {
+              title: "Injected",
+              contentHtml:
+                '<p onclick="steal()">hi</p><img src=x onerror="alert(1)"><script>alert(2)</script>',
+            },
+          ],
+        },
+      }),
+    );
+
+    const html = storedClaudeWriteup()[0].contentHtml;
+    // Disallowed tags and every event handler are gone; the <script> body is
+    // dropped entirely (not just its tag), and safe text survives.
+    expect(html).not.toContain("<script");
+    expect(html).not.toContain("<img");
+    expect(html).not.toContain("onerror");
+    expect(html).not.toContain("onclick");
+    expect(html).not.toContain("alert(2)");
+    expect(html).toContain("hi");
+  });
+
+  it("neutralizes script/img-onerror in the claude slice of a multi-tool envelope, preserving the envelope", async () => {
+    mockSessionAndUser("user-1");
+    wireTransaction();
+    seedReportMock();
+
+    await insightsPOST(
+      postRequest({
+        sessionCount: 5,
+        reportType: "insight-harness",
+        harnessData: {
+          primaryTool: "claude-code",
+          tools: {
+            "claude-code": {
+              stats: { sessionCount: 5, lifetimeTokens: 100 },
+              autonomy: { label: "balanced" },
+              featurePills: [],
+              writeupSections: [
+                {
+                  title: "Injected",
+                  contentHtml:
+                    '<img src=x onerror="alert(1)"><script>document.cookie</script><b onmouseover="x()">bold</b>',
+                },
+              ],
+            },
+            codex: {
+              tool: "codex",
+              stats: { totalTokens: 100 },
+              toolUsage: {},
+              cliTools: {},
+              skillInventory: [],
+              plugins: [],
+              safety: {
+                approvalModes: [],
+                trustLevels: [],
+                rulesAllowlist: [],
+              },
+              workflowData: null,
+              workSurfaces: { desktopPresence: [] },
+              localOnly: true,
+            },
+          },
+        },
+      }),
+    );
+
+    const html = storedClaudeWriteup()[0].contentHtml;
+    expect(html).not.toContain("<script");
+    expect(html).not.toContain("<img");
+    expect(html).not.toContain("onerror");
+    expect(html).not.toContain("onmouseover");
+    expect(html).not.toContain("document.cookie");
+    expect(html).toContain("bold");
+
+    // Sanitizing must not restructure the JSON column: the envelope, its
+    // primaryTool, and the untouched codex slice all survive.
+    const createArgs = mockPrisma.insightReport.create.mock.calls[0][0];
+    expect(createArgs.data.harnessData.primaryTool).toBe("claude-code");
+    expect(createArgs.data.harnessData.tools.codex).toBeDefined();
+    expect(createArgs.data.harnessData.tools.codex.tool).toBe("codex");
+  });
+
+  it("round-trips legitimate formatting HTML unchanged", async () => {
+    mockSessionAndUser("user-1");
+    wireTransaction();
+    seedReportMock();
+
+    const safeHtml =
+      "<p>You use <strong>Edit</strong> over <em>Write</em>.</p>" +
+      "<ul><li>one</li><li>two</li></ul>" +
+      '<a href="https://example.com">docs</a>' +
+      "<code>npm run dev</code>";
+
+    await insightsPOST(
+      postRequest({
+        sessionCount: 5,
+        reportType: "insight-harness",
+        harnessData: {
+          stats: { sessionCount: 5, lifetimeTokens: 100 },
+          autonomy: { label: "balanced" },
+          featurePills: [],
+          writeupSections: [{ title: "Safe", contentHtml: safeHtml }],
+        },
+      }),
+    );
+
+    expect(storedClaudeWriteup()[0].contentHtml).toBe(safeHtml);
+  });
+});
+
 describe("POST /api/insights — publish-time visibility default (D3)", () => {
   it("writes visibility:public and no group shares when the author has no groups", async () => {
     mockSessionAndUser("user-1");

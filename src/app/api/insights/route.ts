@@ -10,6 +10,7 @@ import {
 } from "@/types/insights";
 import type { Prisma } from "@prisma/client";
 import { sanitizeNarrativeHideKeys } from "@/lib/filter-report-response";
+import { sanitizeHarnessWriteupSections } from "@/lib/harness-parser";
 import { fetchLinkPreview } from "@/lib/link-preview";
 import { filterReportForListFeed } from "@/lib/filter-report-response";
 import {
@@ -357,6 +358,16 @@ export async function POST(request: Request) {
       hiddenNarrativeSections,
     } = parsed.data;
     const storedHarnessData = toStoredHarnessData(harnessData);
+    // Stored-XSS defense: harnessData arrives here as untrusted JSON (the PUT
+    // allowlist excludes it for exactly this reason). Unlike the upload path —
+    // which sanitizes inside parseHarnessHtml — the POST path persists the body
+    // verbatim, and writeupSections[].contentHtml is later rendered with
+    // dangerouslySetInnerHTML on the report page. Scrub it through the same
+    // allowlist sanitizer before it's stored. Mutates in place: the JSON column
+    // shape is preserved, only the HTML string contents are neutralized.
+    if (storedHarnessData) {
+      sanitizeHarnessWriteupSections(storedHarnessData);
+    }
     const claudeHarnessData = getClaudeHarnessData(storedHarnessData);
     const codexHarnessData = getCodexHarnessData(storedHarnessData);
     const derivedTotalTokens =
