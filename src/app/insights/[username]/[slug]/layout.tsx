@@ -4,6 +4,14 @@ import { buildOgImageUrl } from "@/lib/urls";
 import { formatCompactNumber as formatTokens } from "@/lib/number-format";
 import { reportVisibilityClause } from "@/lib/report-visibility";
 
+// Published harness profiles are meant to be human-shareable and
+// search-indexable, but NOT slurped into AI training corpora. `noai`/
+// `noimageai` are the DeviantArt-originated opt-out directives read from
+// the `robots` meta name. Next's typed `robots` object doesn't model
+// these keys, so we emit them via `other`. Deliberately no `noindex`/
+// `nofollow` here — default index/follow behavior stays intact for search.
+const AI_OPT_OUT_META = { robots: "noai, noimageai" } as const;
+
 export async function generateMetadata({
   params,
 }: {
@@ -31,7 +39,7 @@ export async function generateMetadata({
     },
   });
 
-  if (!report) return {};
+  if (!report) return { other: { ...AI_OPT_OUT_META } };
 
   const name = report.author.displayName || report.author.username;
   const isHarness = report.reportType === "insight-harness";
@@ -60,6 +68,7 @@ export async function generateMetadata({
   return {
     title,
     description,
+    other: { ...AI_OPT_OUT_META },
     openGraph: {
       title,
       description,
