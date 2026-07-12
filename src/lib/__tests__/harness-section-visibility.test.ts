@@ -165,6 +165,53 @@ describe("stripHiddenHarnessData", () => {
   });
 });
 
+describe("per-X token-map visibility", () => {
+  const breakdown = { input: 1, output: 1, cache_read: 1, cache_create: 1 };
+
+  function withTokenMaps(): HarnessData {
+    return {
+      ...buildFullHarnessData(),
+      perRepoTokens: { insightful: breakdown },
+      perSkillTokens: { review: breakdown },
+      perSubagentTokens: { explorer: breakdown },
+      perToolTokens: { Bash: breakdown },
+    };
+  }
+
+  it("registers all four token keys as hideable + strippable", () => {
+    for (const key of [
+      "perRepoTokens",
+      "perSkillTokens",
+      "perSubagentTokens",
+      "perToolTokens",
+    ]) {
+      expect(HIDEABLE_HARNESS_SECTION_KEYS).toContain(key);
+      // getHiddenKeypaths only keeps keys whose topKey is in the allowlist.
+      expect(getHiddenKeypaths({ [key]: true })).toEqual([key]);
+    }
+  });
+
+  it("nulls only the hidden map, leaving the other three intact", () => {
+    const result = stripHiddenHarnessData(withTokenMaps(), ["perRepoTokens"]);
+    expect(result.perRepoTokens).toBeNull();
+    expect(result.perSkillTokens).toEqual({ review: breakdown });
+    expect(result.perSubagentTokens).toEqual({ explorer: breakdown });
+    expect(result.perToolTokens).toEqual({ Bash: breakdown });
+  });
+
+  it("round-trips untouched when nothing is hidden", () => {
+    const result = stripHiddenHarnessData(withTokenMaps(), []);
+    expect(result.perRepoTokens).toEqual({ insightful: breakdown });
+    expect(result.perToolTokens).toEqual({ Bash: breakdown });
+  });
+
+  it("does not mutate the source object when stripping", () => {
+    const source = withTokenMaps();
+    stripHiddenHarnessData(source, ["perRepoTokens"]);
+    expect(source.perRepoTokens).toEqual({ insightful: breakdown });
+  });
+});
+
 describe("signaturePatterns visibility", () => {
   // Regression: the upload/edit toggle keys "signaturePatterns", but only keys
   // in HIDEABLE_HARNESS_SECTION_KEYS are persisted to hiddenHarnessSections.

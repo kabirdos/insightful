@@ -233,6 +233,24 @@ export interface HarnessModelTokenBreakdown {
   cache_create: number;
 }
 
+/**
+ * Metadata describing how the four per-X token-spend maps (perRepoTokens,
+ * perSkillTokens, perSubagentTokens, perToolTokens) were computed. Emitted by
+ * the insight-harness extractor (v2.12.0+) so the UI can label the charts
+ * honestly. All four maps + this block are 30-DAY figures from a JSONL scan —
+ * they do NOT reconcile with the LIFETIME perModelTokens map from stats-cache.
+ */
+export interface TokenAttribution {
+  /** How multi-tool turns were split across their tools. */
+  rule: "proportional" | "primary" | "shared-bucket";
+  /** Whether subagent spend includes descendant messages or only the parent. */
+  subagentMode: "descendant" | "parent-only";
+  /** How cwd paths were reduced to non-PII repo labels. */
+  cwdLabeling: "basename" | "basename-hash";
+  /** Tokens that could not be attributed to any bucket. */
+  unattributed: HarnessModelTokenBreakdown;
+}
+
 export interface HarnessEnhancedStats {
   linesAdded: number | null;
   linesRemoved: number | null;
@@ -292,6 +310,14 @@ export interface HarnessData {
   skillVersion: string | null;
   enhancedStats?: HarnessEnhancedStats | null;
   perModelTokens?: Record<string, HarnessModelTokenBreakdown> | null;
+  // Per-X token-spend maps (insight-harness v2.12.0+). Each is a 30-DAY figure
+  // from a JSONL scan — additive, optional, and defaulted to `null` for older
+  // reports so the UI can tell "no data" (null) from "zero attribution" ({}).
+  perRepoTokens?: Record<string, HarnessModelTokenBreakdown> | null;
+  perSkillTokens?: Record<string, HarnessModelTokenBreakdown> | null;
+  perSubagentTokens?: Record<string, HarnessModelTokenBreakdown> | null;
+  perToolTokens?: Record<string, HarnessModelTokenBreakdown> | null;
+  tokenAttribution?: TokenAttribution | null;
   dailyActivity?: HarnessDailyActivity[] | null;
   concurrency?: HarnessConcurrency | null;
   temporal?: HarnessTemporal | null;
@@ -522,6 +548,70 @@ function normalizeNumberMap(raw: unknown): Record<string, number> {
   );
 }
 
+/**
+ * Shape guard for a single 4-way token breakdown entry. Rejects anything that
+ * would poison downstream cost math (missing keys, non-numeric, NaN/Infinity).
+ */
+function isTokenBreakdown(value: unknown): value is HarnessModelTokenBreakdown {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.input === "number" &&
+    Number.isFinite(value.input) &&
+    typeof value.output === "number" &&
+    Number.isFinite(value.output) &&
+    typeof value.cache_read === "number" &&
+    Number.isFinite(value.cache_read) &&
+    typeof value.cache_create === "number" &&
+    Number.isFinite(value.cache_create)
+  );
+}
+
+/**
+ * Normalize a per-X token map. Absent (undefined/non-object) input → `null`
+ * (distinguishes "no data, old report" from "zero attribution, {}"). Malformed
+ * entries are silently dropped so a single bad DB row can't break cost math.
+ */
+function normalizeBreakdownMap(
+  raw: unknown,
+): Record<string, HarnessModelTokenBreakdown> | null {
+  if (!isRecord(raw)) return null;
+  const out: Record<string, HarnessModelTokenBreakdown> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (!isTokenBreakdown(value)) continue;
+    out[key] = {
+      input: value.input,
+      output: value.output,
+      cache_read: value.cache_read,
+      cache_create: value.cache_create,
+    };
+  }
+  return out;
+}
+
+/**
+ * Normalize the tokenAttribution metadata block. Absent → `null`. Present but
+ * malformed enum values fall back to the extractor defaults so the field always
+ * type-checks.
+ */
+function normalizeTokenAttribution(raw: unknown): TokenAttribution | null {
+  if (!isRecord(raw)) return null;
+  const { rule, subagentMode, cwdLabeling } = raw;
+  return {
+    rule:
+      rule === "primary" || rule === "shared-bucket" ? rule : "proportional",
+    subagentMode: subagentMode === "parent-only" ? "parent-only" : "descendant",
+    cwdLabeling: cwdLabeling === "basename" ? "basename" : "basename-hash",
+    unattributed: isTokenBreakdown(raw.unattributed)
+      ? {
+          input: raw.unattributed.input,
+          output: raw.unattributed.output,
+          cache_read: raw.unattributed.cache_read,
+          cache_create: raw.unattributed.cache_create,
+        }
+      : { input: 0, output: 0, cache_read: 0, cache_create: 0 },
+  };
+}
+
 function normalizeNonNegativeInteger(raw: unknown): number | undefined {
   if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0) {
     return undefined;
@@ -707,6 +797,11 @@ function normalizeLegacyHarnessData(raw: unknown): HarnessData | null {
     enhancedStats: (obj.enhancedStats as HarnessData["enhancedStats"]) ?? null,
     perModelTokens:
       (obj.perModelTokens as HarnessData["perModelTokens"]) ?? null,
+    perRepoTokens: normalizeBreakdownMap(obj.perRepoTokens),
+    perSkillTokens: normalizeBreakdownMap(obj.perSkillTokens),
+    perSubagentTokens: normalizeBreakdownMap(obj.perSubagentTokens),
+    perToolTokens: normalizeBreakdownMap(obj.perToolTokens),
+    tokenAttribution: normalizeTokenAttribution(obj.tokenAttribution),
     dailyActivity: (obj.dailyActivity as HarnessData["dailyActivity"]) ?? null,
     concurrency: (obj.concurrency as HarnessData["concurrency"]) ?? null,
     temporal: (obj.temporal as HarnessData["temporal"]) ?? null,

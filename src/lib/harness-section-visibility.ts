@@ -35,6 +35,12 @@ export const HIDEABLE_HARNESS_SECTION_KEYS = [
   "harnessFiles",
   "safety",
   "workSurfaces",
+  // Per-X token-spend donuts (v2.12.0+). Individually hideable — the per-repo
+  // breakdown in particular can be sensitive (repo basenames).
+  "perRepoTokens",
+  "perSkillTokens",
+  "perSubagentTokens",
+  "perToolTokens",
 ] as const;
 
 const STRIPPABLE_HARNESS_DATA_KEYS = new Set<string>([
@@ -58,6 +64,10 @@ const STRIPPABLE_HARNESS_DATA_KEYS = new Set<string>([
   "harnessFiles",
   "safety",
   "workSurfaces",
+  "perRepoTokens",
+  "perSkillTokens",
+  "perSubagentTokens",
+  "perToolTokens",
 ]);
 
 const TOOL_KEY_ORDER: HarnessToolKey[] = ["claude-code", "codex"];
@@ -224,6 +234,20 @@ function stripHiddenLegacyHarnessData(
       case "workRhythm":
         copy.concurrency = null;
         copy.temporal = null;
+        break;
+      // Per-X token maps: strip to null (the field's "no data" sentinel) so the
+      // donut disappears from non-owner + agent views.
+      case "perRepoTokens":
+        copy.perRepoTokens = null;
+        break;
+      case "perSkillTokens":
+        copy.perSkillTokens = null;
+        break;
+      case "perSubagentTokens":
+        copy.perSubagentTokens = null;
+        break;
+      case "perToolTokens":
+        copy.perToolTokens = null;
         break;
     }
   }

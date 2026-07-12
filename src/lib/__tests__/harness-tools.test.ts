@@ -272,3 +272,78 @@ describe("harness tools normalization", () => {
     expect(stored?.tools.codex?.stats.legacyFormatSessions).toBeUndefined();
   });
 });
+
+describe("per-X token-map normalization", () => {
+  it("defaults all four maps + tokenAttribution to null for a pre-2.12 blob", () => {
+    // legacyClaude() carries none of the v2.12 keys.
+    const data = getClaudeHarnessData(legacyClaude());
+    expect(data?.perRepoTokens).toBeNull();
+    expect(data?.perSkillTokens).toBeNull();
+    expect(data?.perSubagentTokens).toBeNull();
+    expect(data?.perToolTokens).toBeNull();
+    expect(data?.tokenAttribution).toBeNull();
+  });
+
+  it("keeps well-formed breakdown entries", () => {
+    const data = getClaudeHarnessData(
+      legacyClaude({
+        perRepoTokens: {
+          insightful: {
+            input: 1,
+            output: 2,
+            cache_read: 3,
+            cache_create: 4,
+          },
+        },
+      }),
+    );
+    expect(data?.perRepoTokens).toEqual({
+      insightful: { input: 1, output: 2, cache_read: 3, cache_create: 4 },
+    });
+  });
+
+  it("drops malformed entries so cost math can't be poisoned", () => {
+    const perToolTokens = {
+      Bash: { input: 5, output: 5, cache_read: 5, cache_create: 5 },
+      // Missing keys — dropped.
+      Bad: { input: 1 },
+      // Non-finite value — dropped.
+      Worse: { input: Number.NaN, output: 1, cache_read: 1, cache_create: 1 },
+    } as unknown as HarnessData["perToolTokens"];
+
+    const data = getClaudeHarnessData(legacyClaude({ perToolTokens }));
+    expect(Object.keys(data?.perToolTokens ?? {})).toEqual(["Bash"]);
+  });
+
+  it("preserves an explicit empty map as {} (zero attribution, not null)", () => {
+    const data = getClaudeHarnessData(legacyClaude({ perSkillTokens: {} }));
+    // Present-but-empty means "new report, no per-skill spend" — distinct from
+    // the pre-2.12 `null` (no data at all).
+    expect(data?.perSkillTokens).toEqual({});
+    expect(data?.perSkillTokens).not.toBeNull();
+  });
+
+  it("normalizes tokenAttribution, defaulting unknown enums", () => {
+    const data = getClaudeHarnessData(
+      legacyClaude({
+        tokenAttribution: {
+          rule: "proportional",
+          subagentMode: "descendant",
+          cwdLabeling: "basename-hash",
+          unattributed: {
+            input: 10,
+            output: 0,
+            cache_read: 0,
+            cache_create: 0,
+          },
+        },
+      }),
+    );
+    expect(data?.tokenAttribution).toEqual({
+      rule: "proportional",
+      subagentMode: "descendant",
+      cwdLabeling: "basename-hash",
+      unattributed: { input: 10, output: 0, cache_read: 0, cache_create: 0 },
+    });
+  });
+});

@@ -262,6 +262,36 @@ interface ModelTokenBreakdown {
 }
 
 /**
+ * Convert a single 4-way token breakdown into an estimated USD cost.
+ *
+ * cache reads bill at 10% of the input rate (90% discount); cache creation at
+ * 125% (25% premium) — matching Anthropic prompt-cache pricing. `modelHint`
+ * selects the rate; when absent or unmatched we use the Sonnet 4.6 fallback.
+ *
+ * Extracted from estimateApiCostUsd's Path 1 so the per-repo / per-skill /
+ * per-tool / per-subagent breakdowns (which are NOT keyed by model) can be
+ * priced with the exact same math.
+ */
+export function breakdownToUsd(
+  breakdown: ModelTokenBreakdown,
+  modelHint?: string,
+): number {
+  if (!breakdown || typeof breakdown !== "object") return 0;
+  const rate = modelHint ? lookupModelRate(modelHint) : FALLBACK_RATE;
+  const inp = breakdown.input ?? 0;
+  const out = breakdown.output ?? 0;
+  const cr = breakdown.cache_read ?? 0;
+  const cc = breakdown.cache_create ?? 0;
+  if (inp + out + cr + cc <= 0) return 0;
+  return (
+    (inp / 1_000_000) * rate.inputUsdPerMTok +
+    (out / 1_000_000) * rate.outputUsdPerMTok +
+    (cr / 1_000_000) * rate.inputUsdPerMTok * 0.1 + // cache reads: 90% discount
+    (cc / 1_000_000) * rate.inputUsdPerMTok * 1.25 // cache creation: 25% premium
+  );
+}
+
+/**
  * Estimate the API cost in USD using the best available data.
  *
  * Tries three paths in order of accuracy:
@@ -283,17 +313,7 @@ export function estimateApiCostUsd(
     if (entries.length > 0) {
       let total = 0;
       for (const [name, breakdown] of entries) {
-        const rate = lookupModelRate(name);
-        const inp = breakdown.input ?? 0;
-        const out = breakdown.output ?? 0;
-        const cr = breakdown.cache_read ?? 0;
-        const cc = breakdown.cache_create ?? 0;
-        if (inp + out + cr + cc <= 0) continue;
-        total +=
-          (inp / 1_000_000) * rate.inputUsdPerMTok +
-          (out / 1_000_000) * rate.outputUsdPerMTok +
-          (cr / 1_000_000) * rate.inputUsdPerMTok * 0.1 + // cache reads: 90% discount
-          (cc / 1_000_000) * rate.inputUsdPerMTok * 1.25; // cache creation: 25% premium
+        total += breakdownToUsd(breakdown, name);
       }
       if (total > 0) return total;
     }
@@ -335,6 +355,53 @@ export function estimateApiCostUsd(
     return (fallbackTotalTokens / 1_000_000) * blendedRate(FALLBACK_RATE);
   }
   return 0;
+}
+
+/**
+ * The model with the highest total token volume in a perModelTokens map, used
+ * as the rate hint for the per-X breakdowns (which are not model-keyed).
+ * Returns undefined for a missing/empty map so callers fall back to Sonnet 4.6.
+ */
+export function dominantModelName(
+  perModelTokens: Record<string, ModelTokenBreakdown> | null | undefined,
+): string | undefined {
+  if (!perModelTokens || typeof perModelTokens !== "object") return undefined;
+  let best: string | undefined;
+  let bestTotal = -1;
+  for (const [name, b] of Object.entries(perModelTokens)) {
+    if (!b || typeof b !== "object") continue;
+    const total =
+      (b.input ?? 0) +
+      (b.output ?? 0) +
+      (b.cache_read ?? 0) +
+      (b.cache_create ?? 0);
+    if (total > bestTotal) {
+      bestTotal = total;
+      best = name;
+    }
+  }
+  return best;
+}
+
+/**
+ * Estimate a per-bucket USD cost for a per-X token map (per-repo, per-skill,
+ * per-tool, per-subagent). Every bucket is priced at the DOMINANT model's rate
+ * (approach A) because the buckets are not themselves model-keyed — a subagent
+ * that ran on a cheaper model may actually cost less than shown, so surfacing
+ * copy must say "estimated at your dominant model's rates". Returns {} for a
+ * missing/empty input map.
+ */
+export function estimateBreakdownCosts(
+  perX: Record<string, ModelTokenBreakdown> | null | undefined,
+  perModelTokens: Record<string, ModelTokenBreakdown> | null | undefined,
+): Record<string, number> {
+  if (!perX || typeof perX !== "object") return {};
+  const dominant = dominantModelName(perModelTokens);
+  const out: Record<string, number> = {};
+  for (const [key, breakdown] of Object.entries(perX)) {
+    out[key] = breakdownToUsd(breakdown, dominant);
+  }
+  return out;
 }
 
 /** Exported for tests. */

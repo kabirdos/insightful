@@ -34,6 +34,17 @@ import ToolUsageTreemap from "@/components/ToolUsageTreemap";
 import SkillCardGrid from "@/components/SkillCardGrid";
 import WorkflowDiagram from "@/components/WorkflowDiagram";
 import CliToolsDonut from "@/components/CliToolsDonut";
+import RepoTokensDonut from "@/components/RepoTokensDonut";
+import SkillTokensDonut from "@/components/SkillTokensDonut";
+import ToolTokensDonut from "@/components/ToolTokensDonut";
+import SubagentTokensDonut from "@/components/SubagentTokensDonut";
+import {
+  hasAnyTokenBreakdown,
+  isNonEmptyBreakdownMap,
+  TOKEN_SECTION_NOTE,
+  TOKEN_SECTION_TITLE,
+  TOKEN_SECTION_WINDOW,
+} from "@/lib/token-attribution";
 import GitPatternsDisplay from "@/components/GitPatternsDisplay";
 import PermissionModeDisplay from "@/components/PermissionModeDisplay";
 import HooksSafetyTable from "@/components/HooksSafetyTable";
@@ -1217,6 +1228,58 @@ export default function EditReportPage() {
                 temporal={harnessData.temporal}
               />
             </HideableCard>
+          )}
+
+          {/* Where tokens went (last 30 days). Each donut is its own hideable
+              card — the per-repo breakdown is the sensitive one. Only rendered
+              when at least one map has data (pre-2.12 reports skip it). */}
+          {hasAnyTokenBreakdown(harnessData) && (
+            <div className="space-y-3">
+              <div>
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  {TOKEN_SECTION_TITLE} ({TOKEN_SECTION_WINDOW})
+                </span>
+                <p className="mt-0.5 text-xs text-slate-400">
+                  {TOKEN_SECTION_NOTE}
+                </p>
+              </div>
+              {isNonEmptyBreakdownMap(harnessData.perRepoTokens) && (
+                <HideableCard
+                  title="Tokens by repository"
+                  hidden={!!hiddenSections["perRepoTokens"]}
+                  onToggle={() => toggleSection("perRepoTokens")}
+                >
+                  <RepoTokensDonut harnessData={harnessData} />
+                </HideableCard>
+              )}
+              {isNonEmptyBreakdownMap(harnessData.perSkillTokens) && (
+                <HideableCard
+                  title="Tokens by skill"
+                  hidden={!!hiddenSections["perSkillTokens"]}
+                  onToggle={() => toggleSection("perSkillTokens")}
+                >
+                  <SkillTokensDonut harnessData={harnessData} />
+                </HideableCard>
+              )}
+              {isNonEmptyBreakdownMap(harnessData.perToolTokens) && (
+                <HideableCard
+                  title="Tokens by tool"
+                  hidden={!!hiddenSections["perToolTokens"]}
+                  onToggle={() => toggleSection("perToolTokens")}
+                >
+                  <ToolTokensDonut harnessData={harnessData} />
+                </HideableCard>
+              )}
+              {isNonEmptyBreakdownMap(harnessData.perSubagentTokens) && (
+                <HideableCard
+                  title="Tokens by subagent"
+                  hidden={!!hiddenSections["perSubagentTokens"]}
+                  onToggle={() => toggleSection("perSubagentTokens")}
+                >
+                  <SubagentTokensDonut harnessData={harnessData} />
+                </HideableCard>
+              )}
+            </div>
           )}
 
           {harnessData.workflowData && (
