@@ -391,6 +391,67 @@ const ALLOWED_BEARER_CONTENT_TYPES = new Set([
   "text/html",
 ]);
 
+/** Thrown by readBodyUnderCap when the streamed body passes the byte cap. */
+class UploadTooLargeError extends Error {}
+
+/**
+ * Read a request body into memory under a hard byte cap, aborting the
+ * stream as soon as the running total exceeds `maxBytes`. Unlike
+ * request.arrayBuffer(), this never buffers more than the cap (plus at
+ * most one trailing chunk), so a chunked body that lies about — or omits —
+ * its Content-Length cannot be used to exhaust server memory. Counting raw
+ * bytes as they arrive preserves the "byte size, not UTF-16 length"
+ * property: multibyte HTML cannot slip past the limit. Throws
+ * UploadTooLargeError once the cap is exceeded.
+ */
+async function readBodyUnderCap(
+  request: Request,
+  maxBytes: number,
+): Promise<Uint8Array> {
+  const body = request.body;
+  // Some runtimes expose a null body for an empty request — fall back to
+  // arrayBuffer, still bounded by the same cap.
+  if (!body) {
+    const buffer = new Uint8Array(await request.arrayBuffer());
+    if (buffer.byteLength > maxBytes) throw new UploadTooLargeError();
+    return buffer;
+  }
+
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  let tooLarge = false;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        tooLarge = true;
+        break;
+      }
+      chunks.push(value);
+    }
+  } finally {
+    // Best-effort cancel so we stop pulling bytes we would only discard;
+    // swallow any rejection so it can't mask the UploadTooLargeError below.
+    if (tooLarge) await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+
+  if (tooLarge) throw new UploadTooLargeError();
+
+  if (chunks.length === 1) return chunks[0];
+  const merged = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return merged;
+}
+
 async function handleBearer(request: Request): Promise<NextResponse> {
   const startedAt = Date.now();
   const contentLengthHeader = request.headers.get("content-length");
@@ -533,10 +594,31 @@ async function handleBearer(request: Request): Promise<NextResponse> {
     );
   }
 
-  let bodyBytes: ArrayBuffer;
+  // Read the body under a hard byte cap. A chunked request with a
+  // blank/absent Content-Length skips the early reject above, so calling
+  // request.arrayBuffer() here would let a client stream an unbounded
+  // body fully into memory before we ever check the size — a DoS surface.
+  // readBodyUnderCap aborts the stream the moment the running byte count
+  // passes MAX_UPLOAD_BYTES.
+  let bodyBytes: Uint8Array;
   try {
-    bodyBytes = await request.arrayBuffer();
-  } catch {
+    bodyBytes = await readBodyUnderCap(request, MAX_UPLOAD_BYTES);
+  } catch (e) {
+    if (e instanceof UploadTooLargeError) {
+      await recordFailure(userId, uploadId);
+      logHarnessRequest({
+        uploadId,
+        userId,
+        tokenSelectorPrefix,
+        contentLength,
+        statusCode: 413,
+        durationMs: Date.now() - startedAt,
+      });
+      return NextResponse.json(
+        { error: "File too large (max 10MB)" },
+        { status: 413 },
+      );
+    }
     await recordFailure(userId, uploadId);
     logHarnessRequest({
       uploadId,
@@ -548,25 +630,6 @@ async function handleBearer(request: Request): Promise<NextResponse> {
     });
     return NextResponse.json(
       { error: "Failed to read request body" },
-      { status: 400 },
-    );
-  }
-
-  // Hard byte-size cap. arrayBuffer().byteLength counts actual bytes
-  // on the wire, so multibyte HTML cannot bypass the limit by virtue
-  // of UTF-16 string-length being smaller than the UTF-8 byte length.
-  if (bodyBytes.byteLength > MAX_UPLOAD_BYTES) {
-    await recordFailure(userId, uploadId);
-    logHarnessRequest({
-      uploadId,
-      userId,
-      tokenSelectorPrefix,
-      contentLength,
-      statusCode: 400,
-      durationMs: Date.now() - startedAt,
-    });
-    return NextResponse.json(
-      { error: "File too large (max 10MB)" },
       { status: 400 },
     );
   }

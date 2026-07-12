@@ -411,6 +411,45 @@ describe("POST /api/upload — bearer body size cap", () => {
     const body = await response.json();
     expect(body.error).toMatch(/too large/i);
   });
+
+  it("returns 413 when a chunked body without Content-Length exceeds the cap", async () => {
+    // No Content-Length header, so the early header reject can't catch this.
+    // The body is streamed in 1MB chunks totalling 11MB; the route must
+    // abort the stream once the running byte count passes the 10MB cap
+    // rather than buffering the whole body into memory first.
+    const oneMb = new Uint8Array(1024 * 1024);
+    const chunks = Array.from({ length: 11 }, () => oneMb);
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (const chunk of chunks) controller.enqueue(chunk);
+        controller.close();
+      },
+    });
+    const response = await uploadPOST(
+      new Request("http://localhost/api/upload", {
+        method: "POST",
+        headers: {
+          "content-type": "application/octet-stream",
+          authorization: `Bearer ih_${"a".repeat(76)}`,
+          "x-upload-id": VALID_UUID,
+        },
+        body: stream,
+        // Required by undici when the body is a ReadableStream.
+        duplex: "half",
+      } as RequestInit & { duplex: "half" }),
+    );
+    expect(response.status).toBe(413);
+    const body = await response.json();
+    expect(body.error).toMatch(/too large/i);
+    // The oversize body must never reach the parser/publish path.
+    expect(mockPublish).not.toHaveBeenCalled();
+    // A failed-attempt row is still recorded for the rate-limit cap.
+    expect(mockPrisma.harnessUpload.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId: "user-1", success: false }),
+      }),
+    );
+  });
 });
 
 describe("POST /api/upload — bearer X-Upload-Id validation", () => {
