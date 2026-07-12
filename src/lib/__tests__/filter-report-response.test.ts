@@ -949,3 +949,45 @@ describe("per-X token maps across views", () => {
     expect(hd.perSkillTokens).toEqual({ review: breakdown });
   });
 });
+
+describe("selfDeclared (My Stack) across views", () => {
+  const selfDeclared = {
+    fields: { editor: "Neovim", identity: "Ships tiny tools" },
+    declaredAt: "2026-07-01T00:00:00.000Z",
+  };
+
+  function reportWithSelfDeclared(hiddenHarnessSections: string[] = []) {
+    const base = makeReport({ hiddenHarnessSections });
+    return {
+      ...base,
+      harnessData: {
+        ...(base.harnessData as Record<string, unknown>),
+        selfDeclared,
+      },
+    };
+  }
+
+  it("keeps the small self-declared island in list feeds (mirrors workRhythm)", () => {
+    const feed = filterReportForListFeed(reportWithSelfDeclared());
+    const hd = feed.harnessData as Record<string, unknown>;
+    expect(hd.selfDeclared).toEqual(selfDeclared);
+  });
+
+  it("keeps it in the full (detail/agent) view", () => {
+    const full = filterReportForResponse(reportWithSelfDeclared(), {
+      viewerIsOwner: false,
+      includeHidden: false,
+    });
+    const hd = full.harnessData as Record<string, unknown>;
+    expect(hd.selfDeclared).toEqual(selfDeclared);
+  });
+
+  it("strips it from the full non-owner view when hidden", () => {
+    const full = filterReportForResponse(
+      reportWithSelfDeclared(["selfDeclared"]),
+      { viewerIsOwner: false, includeHidden: false },
+    );
+    const hd = full.harnessData as Record<string, unknown>;
+    expect(hd.selfDeclared).toBeNull();
+  });
+});

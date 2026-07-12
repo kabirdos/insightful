@@ -347,3 +347,82 @@ describe("per-X token-map normalization", () => {
     });
   });
 });
+
+describe("selfDeclared (My Stack) normalization", () => {
+  it("defaults to null for a pre-2.13 blob with no selfDeclared island", () => {
+    const data = getClaudeHarnessData(legacyClaude());
+    expect(data?.selfDeclared).toBeNull();
+  });
+
+  it("keeps known string fields and the declaredAt timestamp", () => {
+    const data = getClaudeHarnessData(
+      legacyClaude({
+        selfDeclared: {
+          fields: {
+            voice: "Wispr Flow",
+            editor: "Neovim",
+            terminal: "Ghostty",
+            mic: "Shure MV7",
+            remote: "Tailscale",
+            identity: "Weekend hacker shipping tiny tools",
+          },
+          declaredAt: "2026-07-01T12:00:00.000Z",
+        },
+      } as unknown as Partial<HarnessData>),
+    );
+    expect(data?.selfDeclared).toEqual({
+      fields: {
+        voice: "Wispr Flow",
+        editor: "Neovim",
+        terminal: "Ghostty",
+        mic: "Shure MV7",
+        remote: "Tailscale",
+        identity: "Weekend hacker shipping tiny tools",
+      },
+      declaredAt: "2026-07-01T12:00:00.000Z",
+    });
+  });
+
+  it("trims whitespace and drops empty / non-string / unknown fields", () => {
+    const data = getClaudeHarnessData(
+      legacyClaude({
+        selfDeclared: {
+          fields: {
+            voice: "  Talon  ",
+            editor: "",
+            terminal: 42,
+            unknownKey: "should be dropped",
+          },
+          declaredAt: "2026-07-01T00:00:00.000Z",
+        },
+      } as unknown as Partial<HarnessData>),
+    );
+    expect(data?.selfDeclared?.fields).toEqual({ voice: "Talon" });
+  });
+
+  it("returns null when no field survives (empty stack is 'no data')", () => {
+    const data = getClaudeHarnessData(
+      legacyClaude({
+        selfDeclared: {
+          fields: { editor: "   ", terminal: 7 },
+          declaredAt: "2026-07-01T00:00:00.000Z",
+        },
+      } as unknown as Partial<HarnessData>),
+    );
+    expect(data?.selfDeclared).toBeNull();
+  });
+
+  it("defaults declaredAt to '' when missing or non-string", () => {
+    const data = getClaudeHarnessData(
+      legacyClaude({
+        selfDeclared: {
+          fields: { editor: "Zed" },
+        },
+      } as unknown as Partial<HarnessData>),
+    );
+    expect(data?.selfDeclared).toEqual({
+      fields: { editor: "Zed" },
+      declaredAt: "",
+    });
+  });
+});

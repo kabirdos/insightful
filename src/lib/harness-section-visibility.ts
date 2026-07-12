@@ -19,6 +19,9 @@ export const HIDEABLE_HARNESS_SECTION_KEYS = [
   "signaturePatterns",
   "howIWork",
   "workRhythm",
+  // Author self-declared "My Stack" (v2.13.0+). Its own island, so hiding the
+  // section can strip it whole from non-owner + agent views.
+  "selfDeclared",
   "toolUsage",
   "workflowData",
   "skillInventory",
@@ -48,6 +51,7 @@ const STRIPPABLE_HARNESS_DATA_KEYS = new Set<string>([
   // section can fully strip them from non-owner payloads (unlike heroStats /
   // activityHeatmap / howIWork, whose data is shared across stat sections).
   "workRhythm",
+  "selfDeclared",
   "toolUsage",
   "workflowData",
   "skillInventory",
@@ -234,6 +238,12 @@ function stripHiddenLegacyHarnessData(
       case "workRhythm":
         copy.concurrency = null;
         copy.temporal = null;
+        break;
+      case "selfDeclared":
+        // Author-declared "My Stack": strip the whole island so it vanishes
+        // from non-owner + agent views. Reassign (don't mutate) — copy shares
+        // the reference via the `...data` spread above.
+        copy.selfDeclared = null;
         break;
       // Per-X token maps: strip to null (the field's "no data" sentinel) so the
       // donut disappears from non-owner + agent views.
