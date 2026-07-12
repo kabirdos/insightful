@@ -1,0 +1,1384 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>How I Work — Craig (kabirdos) · Claude + Codex</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "system-ui", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+      }
+      .font-mono {
+        font-family: "JetBrains Mono", monospace;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 text-slate-900">
+    <div class="mx-auto max-w-4xl px-4 pt-6">
+      <div
+        class="rounded-lg border border-dashed border-violet-300 bg-violet-50 px-4 py-2.5 text-[12px] text-violet-700"
+      >
+        <strong class="font-bold">MOCKUP · real data, proposed layout.</strong>
+        Built from your actual <b>/insight-harness</b> extractions today (Claude
+        + Codex). Green = verified from harness data · amber = author-declared.
+        New blocks vs the live site: <b>Signature Patterns</b>, <b>My Stack</b>,
+        and the cross-surface story.
+      </div>
+    </div>
+
+    <main class="mx-auto max-w-4xl px-4 py-8 space-y-8">
+      <!-- MASTHEAD -->
+      <header class="border-b border-slate-200 pb-6">
+        <div
+          class="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-600"
+        >
+          Insight Harness · How I Work
+        </div>
+        <h1 class="mt-1 text-4xl font-extrabold tracking-tight text-slate-900">
+          Craig <span class="text-slate-400 font-bold">· kabirdos</span>
+        </h1>
+        <div
+          class="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500"
+        >
+          <span
+            class="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-green-700"
+            >✓ Verified from harness</span
+          >
+          <span
+            >Claude Code + Codex · last 30 days · 7 agent surfaces
+            detected</span
+          >
+        </div>
+      </header>
+
+      <!-- CROSS-SURFACE HERO -->
+      <section>
+        <div
+          class="mb-4 rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-cyan-50/60 px-6 py-6 text-center"
+        >
+          <div
+            class="text-5xl font-extrabold leading-none tracking-tight text-slate-900 sm:text-7xl"
+          >
+            12.9B
+          </div>
+          <div
+            class="mt-2 text-[13px] font-bold uppercase tracking-[0.1em] text-slate-500"
+          >
+            Lifetime Tokens · Claude + Codex
+          </div>
+          <div class="mt-1.5 text-[13px] font-medium text-slate-400">
+            8.2B in the last 30 days · ~$18K estimated API cost · paid on flat
+            plans
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div
+            class="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 text-center"
+          >
+            <div
+              class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-blue-500 to-violet-500"
+            ></div>
+            <div
+              class="text-[30px] font-extrabold leading-none tracking-tight text-slate-900"
+            >
+              912
+            </div>
+            <div class="mt-2 flex justify-center">
+              <svg
+                class="spark"
+                data-seed="912"
+                data-color="#8b5cf6"
+                width="80"
+                height="24"
+              ></svg>
+            </div>
+            <div
+              class="mt-1 text-xs font-medium uppercase tracking-wider text-slate-500"
+            >
+              Sessions
+            </div>
+            <div class="mt-1.5 text-[11px] text-slate-400">
+              (106 Claude · 806 Codex)
+            </div>
+          </div>
+          <div
+            class="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 text-center"
+          >
+            <div
+              class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-blue-500 to-violet-500"
+            ></div>
+            <div
+              class="text-[30px] font-extrabold leading-none tracking-tight text-slate-900"
+            >
+              169
+            </div>
+            <div class="mt-2 flex justify-center">
+              <svg
+                class="spark"
+                data-seed="5070"
+                data-color="#3b82f6"
+                width="80"
+                height="24"
+              ></svg>
+            </div>
+            <div
+              class="mt-1 text-xs font-medium uppercase tracking-wider text-slate-500"
+            >
+              PRs · 30d
+            </div>
+            <div class="mt-1.5 text-[11px] text-slate-400">(feat-heavy)</div>
+          </div>
+          <div
+            class="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 text-center"
+          >
+            <div
+              class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-blue-500 to-violet-500"
+            ></div>
+            <div
+              class="text-[30px] font-extrabold leading-none tracking-tight text-slate-900"
+            >
+              2,511
+            </div>
+            <div class="mt-2 flex justify-center">
+              <svg
+                class="spark"
+                data-seed="2511"
+                data-color="#06b6d4"
+                width="80"
+                height="24"
+              ></svg>
+            </div>
+            <div
+              class="mt-1 text-xs font-medium uppercase tracking-wider text-slate-500"
+            >
+              Msgs / day
+            </div>
+            <div class="mt-1.5 text-[11px] text-slate-400">(Claude)</div>
+          </div>
+          <div
+            class="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 text-center"
+          >
+            <div
+              class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-blue-500 to-violet-500"
+            ></div>
+            <div
+              class="text-[30px] font-extrabold leading-none tracking-tight text-slate-900"
+            >
+              304
+            </div>
+            <div class="mt-2 flex justify-center">
+              <svg
+                class="spark"
+                data-seed="304"
+                data-color="#6366f1"
+                width="80"
+                height="24"
+              ></svg>
+            </div>
+            <div
+              class="mt-1 text-xs font-medium uppercase tracking-wider text-slate-500"
+            >
+              Sub-agents
+            </div>
+            <div class="mt-1.5 text-[11px] text-slate-400">
+              (45% background)
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== SIGNATURE PATTERNS (NEW, cross-surface, all verified) ===== -->
+      <section class="space-y-4">
+        <div class="flex items-baseline gap-3 border-b border-slate-200 pb-2">
+          <h2 class="text-xl font-bold tracking-tight text-slate-900">
+            Signature patterns
+          </h2>
+          <span class="font-mono text-xs text-slate-400"
+            >how I actually work · drawn from real data</span
+          >
+        </div>
+
+        <!-- lead: Fire-and-Forget (dark autonomy box) -->
+        <div
+          class="rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <div class="text-2xl font-extrabold">Fire-and-Forget</div>
+            <span
+              class="shrink-0 rounded-full border border-green-400/30 bg-green-400/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-green-300"
+              >✓ Verified</span
+            >
+          </div>
+          <div class="mt-1 text-sm text-slate-300">
+            I set work in motion and step away. For every message I send, Claude
+            sends ~13 back — then a hook auto-approves and a sound tells me it's
+            done.
+          </div>
+          <div
+            class="mt-3 flex flex-wrap gap-5 border-t border-white/10 pt-3 text-xs text-slate-400"
+          >
+            <div>
+              <span class="font-semibold text-white">1 : 13</span> human : agent
+              turns
+            </div>
+            <div>
+              <span class="font-semibold text-white">2,038</span> sent ·
+              <span class="font-semibold text-white">26,832</span> back
+            </div>
+            <div>
+              <span class="font-semibold text-white">99%</span>
+              bypassPermissions
+            </div>
+            <div>
+              <span class="font-semibold text-white">3.4%</span> error rate
+            </div>
+          </div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div
+            class="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5"
+          >
+            <div
+              class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-blue-500 to-violet-500"
+            ></div>
+            <div class="flex items-start justify-between gap-2">
+              <h3 class="font-bold text-slate-900">
+                Two engines: Claude codes, Codex runs ops
+              </h3>
+              <span
+                class="shrink-0 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-green-700"
+                >Verified</span
+              >
+            </div>
+            <p class="mt-1 text-sm text-slate-600">
+              Claude is the coding harness; Codex is the email &amp; workspace
+              automation engine. I even call
+              <span class="font-mono text-[12px]">codex</span> from inside
+              Claude.
+            </p>
+            <div
+              class="mt-3 rounded-lg bg-slate-50 px-3 py-2 font-mono text-[11px] leading-relaxed text-slate-500"
+            >
+              ▸ Claude 6.6B tok / coding · Codex 1.55B tok / Gmail+Workspace ·
+              <span class="text-slate-700">codex</span> called 71× from Claude ·
+              <span class="text-slate-700">codex</span> branch prefix 27×
+            </div>
+          </div>
+
+          <div
+            class="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5"
+          >
+            <div
+              class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-blue-500 to-violet-500"
+            ></div>
+            <div class="flex items-start justify-between gap-2">
+              <h3 class="font-bold text-slate-900">
+                Orchestrates 304 sub-agents
+              </h3>
+              <span
+                class="shrink-0 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-green-700"
+                >Verified</span
+              >
+            </div>
+            <p class="mt-1 text-sm text-slate-600">
+              Fan out, synthesize in the foreground. Workers run on Sonnet,
+              synthesis on Opus — model-tiered to cut cost.
+            </p>
+            <div
+              class="mt-3 rounded-lg bg-slate-50 px-3 py-2 font-mono text-[11px] leading-relaxed text-slate-500"
+            >
+              ▸ 304 agents · <span class="text-slate-700">45%</span> background
+              · sonnet 69 / opus 18 · top type: general-purpose (216)
+            </div>
+          </div>
+
+          <div
+            class="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5"
+          >
+            <div
+              class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-blue-500 to-violet-500"
+            ></div>
+            <div class="flex items-start justify-between gap-2">
+              <h3 class="font-bold text-slate-900">
+                Explores before building — 74%
+              </h3>
+              <span
+                class="shrink-0 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-green-700"
+                >Verified</span
+              >
+            </div>
+            <p class="mt-1 text-sm text-slate-600">
+              Strong explore-first discipline — and an honest gap: testing
+              before shipping is rare. The data shows the real shape, warts and
+              all.
+            </p>
+            <div
+              class="mt-3 rounded-lg bg-slate-50 px-3 py-2 font-mono text-[11px] leading-relaxed text-slate-500"
+            >
+              ▸ exploreBeforeImpl <span class="text-slate-700">74%</span> ·
+              testBeforeShip <span class="text-amber-600">3%</span> · across 106
+              sessions
+            </div>
+          </div>
+
+          <div
+            class="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5"
+          >
+            <div
+              class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-blue-500 to-violet-500"
+            ></div>
+            <div class="flex items-start justify-between gap-2">
+              <h3 class="font-bold text-slate-900">Builds the tools he uses</h3>
+              <span
+                class="shrink-0 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-green-700"
+                >Verified</span
+              >
+            </div>
+            <p class="mt-1 text-sm text-slate-600">
+              Several of the skills in this profile are self-authored —
+              including insight-harness itself.
+            </p>
+            <div
+              class="mt-3 rounded-lg bg-slate-50 px-3 py-2 font-mono text-[11px] leading-relaxed text-slate-500"
+            >
+              ▸ authored:
+              <span class="text-slate-700"
+                >html-report, last30days, research-orchestrator,
+                frontend-design, ux-mockup, handoff</span
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== MY STACK (NEW, self-declared) ===== -->
+      <section class="space-y-3">
+        <div class="flex items-baseline gap-3 border-b border-slate-200 pb-2">
+          <h2 class="text-xl font-bold tracking-tight text-slate-900">
+            My stack
+          </h2>
+          <span class="font-mono text-xs text-slate-400"
+            >the parts the harness can't see · you fill these in</span
+          >
+        </div>
+        <div
+          class="rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/40 p-6"
+        >
+          <span
+            class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700"
+            >✎ Self-declared · not verified · example values</span
+          >
+          <div class="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
+            <div>
+              <div
+                class="text-[11px] font-bold uppercase tracking-wide text-amber-600"
+              >
+                Editor
+              </div>
+              <div class="text-sm text-slate-800">
+                VS Code <span class="text-slate-400">· ← your editor</span>
+              </div>
+            </div>
+            <div>
+              <div
+                class="text-[11px] font-bold uppercase tracking-wide text-amber-600"
+              >
+                Voice
+              </div>
+              <div class="text-slate-400 text-sm italic">
+                add a voice tool (optional)
+              </div>
+            </div>
+            <div>
+              <div
+                class="text-[11px] font-bold uppercase tracking-wide text-amber-600"
+              >
+                Deploy
+              </div>
+              <div class="text-sm text-slate-800">
+                Vercel + Railway
+                <span class="text-slate-400">· inferred from CLI, confirm</span>
+              </div>
+            </div>
+            <div>
+              <div
+                class="text-[11px] font-bold uppercase tracking-wide text-amber-600"
+              >
+                Token saver
+              </div>
+              <div class="text-sm text-slate-800">rtk (Rust Token Killer)</div>
+            </div>
+            <div>
+              <div
+                class="text-[11px] font-bold uppercase tracking-wide text-amber-600"
+              >
+                Plans
+              </div>
+              <div class="text-slate-400 text-sm italic">
+                Claude Max + Codex (confirm)
+              </div>
+            </div>
+            <div>
+              <div
+                class="text-[11px] font-bold uppercase tracking-wide text-amber-600"
+              >
+                Links
+              </div>
+              <div class="text-slate-400 text-sm italic">
+                add GitHub / site / X
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== PER-SURFACE TABS ===== -->
+      <section>
+        <div
+          class="mb-5 inline-flex rounded-lg border border-slate-200 bg-white p-1"
+        >
+          <button
+            id="tab-claude"
+            onclick="showTab('claude')"
+            class="rounded-md px-4 py-1.5 text-sm font-semibold"
+          >
+            Claude Code
+          </button>
+          <button
+            id="tab-codex"
+            onclick="showTab('codex')"
+            class="rounded-md px-4 py-1.5 text-sm font-semibold"
+          >
+            Codex
+          </button>
+        </div>
+
+        <!-- ========== CLAUDE PANEL ========== -->
+        <div id="panel-claude" class="space-y-6">
+          <!-- ACTIVITY HEATMAPS (the colored charts) -->
+          <div class="rounded-xl border border-slate-200 bg-white p-6">
+            <h3 class="mb-4 text-[15px] font-bold text-slate-900">Activity</h3>
+            <div class="grid gap-6 lg:grid-cols-3">
+              <div
+                id="hm-sessions"
+                class="rounded-lg border border-slate-100 bg-slate-50/70 p-4"
+              ></div>
+              <div
+                id="hm-tokens"
+                class="rounded-lg border border-slate-100 bg-slate-50/70 p-4"
+              ></div>
+              <div
+                id="hm-cost"
+                class="rounded-lg border border-slate-100 bg-slate-50/70 p-4"
+              ></div>
+            </div>
+          </div>
+
+          <!-- HOW I WORK CLUSTER: autonomy gauge + model donut + fileop bar -->
+          <div class="rounded-xl border border-slate-200 bg-white p-6">
+            <h3 class="mb-4 text-[15px] font-bold text-slate-900">
+              How I Work
+            </h3>
+            <div class="grid gap-6 md:grid-cols-3">
+              <!-- autonomy gauge -->
+              <div class="text-center">
+                <svg
+                  width="160"
+                  height="90"
+                  viewBox="0 0 160 90"
+                  class="mx-auto"
+                >
+                  <path
+                    d="M 15 85 A 65 65 0 0 1 145 85"
+                    fill="none"
+                    stroke="#e2e8f0"
+                    stroke-width="12"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M 15 85 A 65 65 0 0 1 145 85"
+                    fill="none"
+                    stroke="url(#gaugeg)"
+                    stroke-width="12"
+                    stroke-linecap="round"
+                    stroke-dasharray="204"
+                    stroke-dashoffset="45"
+                  />
+                  <defs>
+                    <linearGradient id="gaugeg" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stop-color="#93c5fd" />
+                      <stop offset="50%" stop-color="#3b82f6" />
+                      <stop offset="100%" stop-color="#1d4ed8" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div class="mt-2 text-2xl font-extrabold text-slate-900">
+                  Fire-and-Forget
+                </div>
+                <div class="mt-1.5 text-xs text-slate-500">
+                  For every message you send, Claude sends ~13 back
+                </div>
+                <div class="mx-auto mt-2 max-w-[160px]">
+                  <div
+                    class="flex h-2 overflow-hidden rounded-full bg-slate-100"
+                  >
+                    <div
+                      class="rounded-l-full bg-slate-400"
+                      style="width: 7%"
+                    ></div>
+                    <div
+                      class="rounded-r-full bg-blue-500"
+                      style="width: 93%"
+                    ></div>
+                  </div>
+                  <div
+                    class="mt-1 flex justify-between text-[10px] text-slate-400"
+                  >
+                    <span>You 2,038</span><span>Claude 26,832</span>
+                  </div>
+                </div>
+              </div>
+              <!-- model donut -->
+              <div class="flex items-center justify-center">
+                <div id="model-donut" class="flex items-center gap-4"></div>
+              </div>
+              <!-- file ops -->
+              <div class="flex flex-col justify-center">
+                <div class="mb-2 text-xs font-semibold text-slate-500">
+                  File Operations
+                </div>
+                <div class="mb-2 grid grid-cols-2 gap-1.5 text-[11px]">
+                  <div
+                    class="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5"
+                  >
+                    <div class="flex items-center gap-1.5">
+                      <span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span
+                      ><span class="text-slate-600">Read</span>
+                    </div>
+                    <span class="font-semibold text-slate-900">41%</span>
+                  </div>
+                  <div
+                    class="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5"
+                  >
+                    <div class="flex items-center gap-1.5">
+                      <span class="h-2.5 w-2.5 rounded-full bg-blue-400"></span
+                      ><span class="text-slate-600">Edit</span>
+                    </div>
+                    <span class="font-semibold text-slate-900">43%</span>
+                  </div>
+                  <div
+                    class="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5"
+                  >
+                    <div class="flex items-center gap-1.5">
+                      <span class="h-2.5 w-2.5 rounded-full bg-blue-300"></span
+                      ><span class="text-slate-600">Write</span>
+                    </div>
+                    <span class="font-semibold text-slate-900">16%</span>
+                  </div>
+                </div>
+                <div class="flex h-4 overflow-hidden rounded-md">
+                  <div class="bg-blue-500" style="width: 41%"></div>
+                  <div class="bg-blue-400" style="width: 43%"></div>
+                  <div class="bg-blue-300" style="width: 16%"></div>
+                </div>
+                <div class="mt-2.5 text-xs italic text-slate-500">
+                  Surgical Editor — edits over rewrites
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CLI TOOLS DONUT -->
+          <div class="rounded-xl border border-slate-200 bg-white p-6">
+            <h3 class="mb-4 text-[15px] font-bold text-slate-900">CLI Tools</h3>
+            <div id="cli-donut" class="flex flex-wrap items-center gap-8"></div>
+          </div>
+
+          <!-- TOOL USAGE + SKILLS -->
+          <div class="grid gap-4 lg:grid-cols-2">
+            <div class="rounded-xl border border-slate-200 bg-white p-5">
+              <h3
+                class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400"
+              >
+                Tool Usage
+              </h3>
+              <div id="tool-bars" class="space-y-1.5"></div>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-white p-5">
+              <div class="mb-3 flex items-center justify-between">
+                <h3
+                  class="text-xs font-semibold uppercase tracking-wider text-slate-400"
+                >
+                  Skills &amp; Commands
+                </h3>
+                <span class="font-mono text-[11px] text-slate-400"
+                  >34 used</span
+                >
+              </div>
+              <div id="skill-rows" class="space-y-2"></div>
+            </div>
+          </div>
+
+          <!-- HOOKS (copyable) + MCP -->
+          <div class="grid gap-4 lg:grid-cols-2">
+            <div class="rounded-xl border border-slate-200 bg-white p-5">
+              <div class="mb-2 flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-slate-700">
+                  Hooks worth stealing
+                </h3>
+                <span class="font-mono text-[11px] text-slate-400"
+                  >9 active</span
+                >
+              </div>
+              <p class="mb-2 text-sm text-slate-600">
+                Auto-approve + auto-format + session-save = unattended runs.
+              </p>
+              <div class="space-y-1.5 font-mono text-[11px]">
+                <div
+                  class="flex justify-between border-b border-slate-100 py-1"
+                >
+                  <span class="text-slate-600">PostToolUse · Write|Edit</span
+                  ><span class="text-slate-400">format_and_lint.py</span>
+                </div>
+                <div
+                  class="flex justify-between border-b border-slate-100 py-1"
+                >
+                  <span class="text-slate-600"
+                    >PermissionRequest · Task|mcp</span
+                  ><span class="text-slate-400">auto_approve.py</span>
+                </div>
+                <div
+                  class="flex justify-between border-b border-slate-100 py-1"
+                >
+                  <span class="text-slate-600">PreToolUse · Write|Edit</span
+                  ><span class="text-slate-400">validate_file_write.py</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-slate-600">SessionEnd · (all)</span
+                  ><span class="text-slate-400">save_session.py</span>
+                </div>
+              </div>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-white p-5">
+              <h3
+                class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400"
+              >
+                MCP Servers
+              </h3>
+              <div
+                class="flex justify-between border-b border-slate-100 py-1.5"
+              >
+                <span class="font-mono text-xs text-slate-600"
+                  >agentchat
+                  <span class="font-sans text-slate-400"
+                    >· multi-agent</span
+                  ></span
+                ><span class="font-mono text-xs text-slate-400">198</span>
+              </div>
+              <div
+                class="flex justify-between border-b border-slate-100 py-1.5"
+              >
+                <span class="font-mono text-xs text-slate-600">vidiq</span
+                ><span class="font-mono text-xs text-slate-400">16</span>
+              </div>
+              <div
+                class="flex justify-between border-b border-slate-100 py-1.5"
+              >
+                <span class="font-mono text-xs text-slate-600"
+                  >Granola
+                  <span class="font-sans text-slate-400">· meetings</span></span
+                ><span class="font-mono text-xs text-slate-400">12</span>
+              </div>
+              <div class="flex justify-between py-1.5">
+                <span class="font-mono text-xs text-slate-600"
+                  >Google Drive</span
+                ><span class="font-mono text-xs text-slate-400">5</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- WORK SURFACES -->
+          <div class="rounded-xl border border-slate-200 bg-white p-5">
+            <h3
+              class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400"
+            >
+              Work Surfaces · 7 agent tools detected
+            </h3>
+            <div class="flex flex-wrap gap-2">
+              <span
+                class="rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700"
+                >Claude Code (cli 113 · sdk 13)</span
+              >
+              <span
+                class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600"
+                >Codex CLI</span
+              >
+              <span
+                class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600"
+                >Codex desktop</span
+              >
+              <span
+                class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600"
+                >Cursor</span
+              >
+              <span
+                class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600"
+                >Claude desktop</span
+              >
+              <span
+                class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600"
+                >Gemini CLI</span
+              >
+              <span
+                class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600"
+                >GitHub Copilot</span
+              >
+              <span
+                class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600"
+                >Factory</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== CODEX PANEL ========== -->
+        <div id="panel-codex" class="hidden space-y-6">
+          <div
+            class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950"
+          >
+            <div class="flex gap-3">
+              <span class="mt-0.5 shrink-0">ℹ️</span>
+              <p>
+                Codex is profiled from local CLI + desktop signals. Inventory
+                items are shown as discovered capabilities; counts appear where
+                the extractor provided them.
+              </p>
+            </div>
+          </div>
+
+          <!-- codex stat cards -->
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="rounded-lg border border-slate-200 bg-white p-4">
+              <div
+                class="mb-3 flex h-9 w-9 items-center justify-center rounded-md bg-blue-50 text-blue-600"
+              >
+                ⌨
+              </div>
+              <div class="text-2xl font-bold tracking-tight text-slate-950">
+                1.55B
+              </div>
+              <div class="mt-1 text-xs font-medium uppercase text-slate-500">
+                Tokens
+              </div>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-white p-4">
+              <div
+                class="mb-3 flex h-9 w-9 items-center justify-center rounded-md bg-blue-50 text-blue-600"
+              >
+                ▤
+              </div>
+              <div class="text-2xl font-bold tracking-tight text-slate-950">
+                806
+              </div>
+              <div class="mt-1 text-xs font-medium uppercase text-slate-500">
+                Sessions
+              </div>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-white p-4">
+              <div
+                class="mb-3 flex h-9 w-9 items-center justify-center rounded-md bg-blue-50 text-blue-600"
+              >
+                ▦
+              </div>
+              <div class="text-2xl font-bold tracking-tight text-slate-950">
+                791
+              </div>
+              <div class="mt-1 text-xs font-medium uppercase text-slate-500">
+                Payload sessions
+              </div>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-white p-4">
+              <div
+                class="mb-3 flex h-9 w-9 items-center justify-center rounded-md bg-blue-50 text-blue-600"
+              >
+                ▥
+              </div>
+              <div class="text-2xl font-bold tracking-tight text-slate-950">
+                15
+              </div>
+              <div class="mt-1 text-xs font-medium uppercase text-slate-500">
+                Legacy sessions
+              </div>
+            </div>
+          </div>
+
+          <!-- codex identity callout -->
+          <div
+            class="rounded-r-lg border-l-[3px] border-blue-500 bg-blue-50 p-3 text-sm text-blue-700"
+          >
+            On Codex you mostly run <b>email &amp; workspace automation</b> —
+            Gmail triage/labeling at scale, with Granola, Google Workspace and
+            Slack wired in. Distinct from your Claude coding harness.
+          </div>
+
+          <div class="grid gap-6 lg:grid-cols-2">
+            <div class="rounded-lg border border-slate-200 bg-white p-5">
+              <div class="mb-4 flex items-center gap-2">
+                <span
+                  class="flex h-8 w-8 items-center justify-center rounded-md bg-slate-100 text-slate-600"
+                  >🔧</span
+                >
+                <h3 class="text-sm font-bold text-slate-950">Tool Usage</h3>
+              </div>
+              <div id="codex-tool-bars" class="space-y-1.5"></div>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-white p-5">
+              <div class="mb-4 flex items-center gap-2">
+                <span
+                  class="flex h-8 w-8 items-center justify-center rounded-md bg-slate-100 text-slate-600"
+                  >⌘</span
+                >
+                <h3 class="text-sm font-bold text-slate-950">CLI Commands</h3>
+              </div>
+              <div id="codex-cli-bars" class="space-y-1.5"></div>
+            </div>
+          </div>
+
+          <div class="rounded-lg border border-slate-200 bg-white p-5">
+            <div class="mb-4 flex items-center gap-2">
+              <span
+                class="flex h-8 w-8 items-center justify-center rounded-md bg-slate-100 text-slate-600"
+                >◇</span
+              >
+              <h3 class="text-sm font-bold text-slate-950">Skills Inventory</h3>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <!-- filled by JS -->
+              <span id="codex-skills"></span>
+            </div>
+          </div>
+
+          <div class="grid gap-6 lg:grid-cols-2">
+            <div class="rounded-lg border border-slate-200 bg-white p-5">
+              <div class="mb-4 flex items-center gap-2">
+                <span
+                  class="flex h-8 w-8 items-center justify-center rounded-md bg-slate-100 text-slate-600"
+                  >📦</span
+                >
+                <h3 class="text-sm font-bold text-slate-950">
+                  Plugins · 12 enabled
+                </h3>
+              </div>
+              <div id="codex-plugins" class="grid grid-cols-2 gap-2"></div>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-white p-5">
+              <div class="mb-4 flex items-center gap-2">
+                <span
+                  class="flex h-8 w-8 items-center justify-center rounded-md bg-slate-100 text-slate-600"
+                  >🛡</span
+                >
+                <h3 class="text-sm font-bold text-slate-950">
+                  Safety &amp; Rules
+                </h3>
+              </div>
+              <div class="space-y-3 text-sm">
+                <div>
+                  <div class="text-xs font-semibold uppercase text-slate-400">
+                    Approvals reviewer
+                  </div>
+                  <div class="mt-1 text-slate-700">
+                    user · approve mode · trusted
+                  </div>
+                </div>
+                <div>
+                  <div class="text-xs font-semibold uppercase text-slate-400">
+                    Rules allowlist
+                  </div>
+                  <div
+                    class="mt-2 flex flex-wrap gap-1.5"
+                    id="codex-rules"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="border-t border-slate-200 pt-5 text-[12px] text-slate-400">
+        <div class="mb-2 flex flex-wrap gap-5">
+          <span class="inline-flex items-center gap-1.5"
+            ><span
+              class="inline-block h-2.5 w-2.5 rounded-sm bg-green-600"
+            ></span
+            ><b class="text-green-700">Verified</b> — derived from PII-scrubbed
+            local harness data</span
+          >
+          <span class="inline-flex items-center gap-1.5"
+            ><span
+              class="inline-block h-2.5 w-2.5 rounded-sm bg-amber-500"
+            ></span
+            ><b class="text-amber-600">Self-declared</b> — entered by the
+            author</span
+          >
+        </div>
+        Generated by <b>insight-harness</b> from your real Claude + Codex
+        extractions on 2026-06-04 · narrative auto-drafted from the data, then
+        lightly edited. <br />Mockup layout · numbers are your actual harness
+        data; My Stack values are placeholder examples.
+      </footer>
+    </main>
+
+    <script>
+      // ---------- tabs ----------
+      function showTab(which) {
+        const claude = which === "claude";
+        document
+          .getElementById("panel-claude")
+          .classList.toggle("hidden", !claude);
+        document
+          .getElementById("panel-codex")
+          .classList.toggle("hidden", claude);
+        const on = "bg-slate-900 text-white",
+          off = "text-slate-600";
+        document.getElementById("tab-claude").className =
+          "rounded-md px-4 py-1.5 text-sm font-semibold " + (claude ? on : off);
+        document.getElementById("tab-codex").className =
+          "rounded-md px-4 py-1.5 text-sm font-semibold " + (claude ? off : on);
+      }
+
+      // ---------- sparklines (live HeroStats) ----------
+      function seededSparkline(seed, length = 10) {
+        let s = Math.abs(seed) || 1;
+        const p = [];
+        for (let i = 0; i < length; i++) {
+          s = (s * 16807 + 12345) % 2147483647;
+          p.push((s % 100) / 100);
+        }
+        return p.map((v, i) => {
+          const a = p[i - 1] ?? v,
+            b = p[i + 1] ?? v;
+          return (a + v + b) / 3;
+        });
+      }
+      document.querySelectorAll("svg.spark").forEach((svg) => {
+        const data = seededSparkline(parseInt(svg.dataset.seed, 10)),
+          c = svg.dataset.color || "#6366f1";
+        const w = 80,
+          h = 24,
+          pad = 2,
+          mn = Math.min(...data),
+          mx = Math.max(...data),
+          r = mx - mn || 1;
+        const pts = data
+          .map(
+            (v, i) =>
+              `${pad + (i / (data.length - 1)) * (w - pad * 2)},${h - pad - ((v - mn) / r) * (h - pad * 2)}`,
+          )
+          .join(" ");
+        svg.innerHTML = `<polyline points="${pad},${h - pad} ${pts} ${w - pad},${h - pad}" fill="${c}" fill-opacity="0.1" stroke="none"/><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+      });
+
+      // ---------- model donut (live ModelDonutChart) ----------
+      function donut(el, models, colors, size = 140) {
+        const entries = Object.entries(models).sort((a, b) => b[1] - a[1]);
+        const total = entries.reduce((s, [, v]) => s + v, 0);
+        const cx = size / 2,
+          cy = size / 2,
+          radius = size / 2 - 8,
+          sw = size * 0.18,
+          ir = radius - sw / 2,
+          circ = 2 * Math.PI * ir;
+        let off = 0,
+          c = "";
+        entries.forEach(([n, v]) => {
+          const pct = v / total,
+            dl = pct * circ;
+          const col = colors(n);
+          c += `<circle cx="${cx}" cy="${cy}" r="${ir}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-dasharray="${dl} ${circ - dl}" stroke-dashoffset="${-off * circ}" transform="rotate(-90 ${cx} ${cy})"/>`;
+          off += pct;
+        });
+        const legend = entries
+          .map(
+            ([n, v]) =>
+              `<div class="flex items-center gap-2"><span class="inline-block h-2.5 w-2.5 rounded-full" style="background:${colors(n)}"></span><span class="text-xs font-medium text-slate-700">${n}</span><span class="text-xs text-slate-400">${Math.round((v / total) * 100)}%</span></div>`,
+          )
+          .join("");
+        el.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${c}<text x="${cx}" y="${cy - 4}" text-anchor="middle" font-size="14" font-weight="700" fill="#334155">${entries.length}</text><text x="${cx}" y="${cy + 10}" text-anchor="middle" font-size="9" fill="#94a3b8">models</text></svg><div class="space-y-1.5">${legend}</div>`;
+      }
+      const MC = { opus: "#7c3aed", sonnet: "#2563eb", haiku: "#06b6d4" };
+      donut(
+        document.getElementById("model-donut"),
+        { "Opus 4.8": 21, "Opus 4.7": 30, "Sonnet 4.6": 8, "Haiku 4.5": 4 },
+        (n) => {
+          const l = n.toLowerCase();
+          for (const k in MC) if (l.includes(k)) return MC[k];
+          return "#f59e0b";
+        },
+      );
+
+      // ---------- CLI tools donut (live CliToolsDonut) ----------
+      (function () {
+        const cli = {
+          cd: 1868,
+          echo: 636,
+          git: 628,
+          ls: 287,
+          gh: 228,
+          grep: 218,
+          python3: 160,
+          curl: 102,
+          codex: 71,
+          npm: 68,
+          railway: 65,
+        };
+        const COMMON = new Set([
+          "git",
+          "npm",
+          "npx",
+          "node",
+          "python3",
+          "python",
+          "pip",
+          "yarn",
+          "pnpm",
+          "tsc",
+        ]);
+        const UC = [
+          "#1d4ed8",
+          "#3b82f6",
+          "#60a5fa",
+          "#93c5fd",
+          "#bfdbfe",
+          "#818cf8",
+          "#a78bfa",
+        ];
+        const entries = Object.entries(cli).sort((a, b) => b[1] - a[1]);
+        const total = entries.reduce((s, [, v]) => s + v, 0);
+        const uncommon = entries.filter(([n]) => !COMMON.has(n)),
+          common = entries.filter(([n]) => COMMON.has(n));
+        const commonTotal = common.reduce((s, [, v]) => s + v, 0);
+        const segs = [];
+        if (commonTotal > 0)
+          segs.push({ n: "Common", v: commonTotal, c: "#cbd5e1" });
+        uncommon.forEach(([n, v], i) =>
+          segs.push({ n, v, c: UC[i % UC.length] }),
+        );
+        const size = 180,
+          cx = 90,
+          cy = 90,
+          radius = 65,
+          sw = 24,
+          circ = 2 * Math.PI * radius;
+        let off = 0,
+          c = "";
+        segs.forEach((s) => {
+          const pct = s.v / total,
+            dl = pct * circ;
+          c += `<circle cx="${cx}" cy="${cy}" r="${radius}" fill="none" stroke="${s.c}" stroke-width="${sw}" stroke-dasharray="${dl} ${circ - dl}" stroke-dashoffset="${-off * circ}" transform="rotate(-90 ${cx} ${cy})"/>`;
+          off += pct;
+        });
+        const ucLegend = uncommon
+          .map(
+            ([n, v], i) =>
+              `<div class="flex items-center gap-2"><div class="h-2.5 w-2.5 shrink-0 rounded-full" style="background:${UC[i % UC.length]}"></div><span class="text-[13px] font-semibold text-slate-900">${n}</span><span class="ml-auto text-xs text-slate-500">${v} calls · ${Math.round((v / total) * 100)}%</span></div>`,
+          )
+          .join("");
+        const cLegend = common
+          .map(
+            ([n, v]) =>
+              `<div class="flex items-center gap-1"><div class="h-2 w-2 rounded-full bg-slate-300"></div><span class="text-xs text-slate-400">${n} ${v}</span></div>`,
+          )
+          .join("");
+        document.getElementById("cli-donut").innerHTML =
+          `<div class="shrink-0"><svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${c}<text x="${cx}" y="${cy - 8}" text-anchor="middle" font-size="14" font-weight="800" fill="#0f172a">${total}</text><text x="${cx}" y="${cy + 6}" text-anchor="middle" font-size="11" fill="#64748b">CLI calls</text></svg></div>` +
+          `<div class="min-w-[200px] flex-1"><div class="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Uncommon (stand-out)</div><div class="mb-4 flex flex-col gap-1.5">${ucLegend}</div><div class="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Common (expected)</div><div class="flex flex-wrap gap-3">${cLegend}</div></div>`;
+      })();
+
+      // ---------- horizontal bars (live BarChart) ----------
+      function bars(el, data, color = "bg-blue-500", fmt = (v) => v) {
+        const entries = Object.entries(data)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 8);
+        const max = entries[0][1];
+        el.innerHTML = entries
+          .map(
+            ([l, v]) =>
+              `<div class="flex items-center gap-2"><span class="w-28 truncate font-mono text-xs text-slate-600">${l}</span><div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full ${color}" style="width:${Math.max(3, (v / max) * 100)}%"></div></div><span class="w-12 text-right font-mono text-xs text-slate-400">${fmt(v)}</span></div>`,
+          )
+          .join("");
+      }
+      bars(
+        document.getElementById("tool-bars"),
+        {
+          Bash: 5985,
+          Edit: 1849,
+          Read: 1770,
+          Write: 709,
+          TaskUpdate: 402,
+          Agent: 304,
+          TaskCreate: 216,
+          AskUserQuestion: 209,
+        },
+        "bg-blue-500",
+      );
+      bars(document.getElementById("codex-tool-bars"), {
+        _search_email_ids: 3110,
+        update_plan: 999,
+        _search_emails: 858,
+        write_stdin: 742,
+        _batch_modify_email: 736,
+        _apply_labels: 717,
+        _bulk_label: 511,
+        _archive_emails: 302,
+      });
+      bars(document.getElementById("codex-cli-bars"), {
+        sed: 3945,
+        nl: 2243,
+        git: 2138,
+        rg: 1538,
+        cat: 524,
+        find: 324,
+        grep: 311,
+        python3: 227,
+      });
+
+      // ---------- skills rows w/ install ----------
+      (function () {
+        const skills = [
+          ["superpowers:brainstorming", 17, false],
+          ["html-report", 13, true],
+          ["systematic-debugging", 6, false],
+          ["ce-plan", 5, false],
+          ["last30days", 5, true],
+          ["research-orchestrator", 5, true],
+          ["frontend-design", 5, true],
+          ["ux-mockup", 4, true],
+        ];
+        const max = 17;
+        document.getElementById("skill-rows").innerHTML = skills
+          .map(
+            ([n, v, auth]) =>
+              `<div class="flex items-center gap-2"><span class="flex w-32 items-center gap-1.5 truncate font-mono text-xs text-slate-600">${n}${auth ? ' <span class="rounded bg-violet-100 px-1 py-0.5 font-sans text-[9px] font-bold uppercase text-violet-700">★</span>' : ""}</span><div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-blue-500" style="width:${Math.max(3, (v / max) * 100)}%"></div></div><span class="w-6 text-right font-mono text-xs text-slate-400">${v}</span><button class="shrink-0 rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 hover:bg-blue-100">Install</button></div>`,
+          )
+          .join("");
+      })();
+
+      // ---------- activity heatmaps (live ActivityHeatmap) ----------
+      function hashString(str) {
+        let h = 5381;
+        for (let i = 0; i < str.length; i++) {
+          h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+        }
+        return Math.abs(h);
+      }
+      function genDaily(total, days, seed) {
+        if (days <= 0) return [];
+        let s = hashString(seed);
+        const d = [];
+        let rem = total;
+        for (let i = 0; i < days - 1; i++) {
+          s = (s * 16807 + 12345) % 2147483647;
+          const w = 0.5 + (s % 100) / 100;
+          const avg = rem / (days - i);
+          const v = Math.round(avg * w);
+          d.push(Math.max(0, v));
+          rem -= d[d.length - 1];
+        }
+        d.push(Math.max(0, rem));
+        return d;
+      }
+      const SCALES = {
+        blue: [
+          "bg-blue-100",
+          "bg-blue-300",
+          "bg-blue-400",
+          "bg-blue-500",
+          "bg-blue-700",
+        ],
+        amber: [
+          "bg-amber-100",
+          "bg-amber-300",
+          "bg-amber-400",
+          "bg-amber-500",
+          "bg-amber-700",
+        ],
+        green: [
+          "bg-green-100",
+          "bg-green-300",
+          "bg-green-400",
+          "bg-green-500",
+          "bg-green-700",
+        ],
+      };
+      const TXT = {
+        blue: "text-blue-800",
+        amber: "text-amber-800",
+        green: "text-green-800",
+      };
+      function levelBg(scale, v, max) {
+        if (v === 0)
+          return ["bg-slate-100", "text-slate-400 border border-slate-200"];
+        const pct = v / Math.max(max, 1);
+        const sw = SCALES[scale];
+        const t =
+          pct <= 0.6
+            ? scale === "blue"
+              ? "text-blue-900"
+              : scale === "amber"
+                ? "text-amber-900"
+                : "text-green-900"
+            : "text-white";
+        const idx =
+          pct <= 0.2 ? 0 : pct <= 0.4 ? 1 : pct <= 0.6 ? 2 : pct <= 0.8 ? 3 : 4;
+        return [sw[idx], t];
+      }
+      function fmtCompact(n) {
+        if (n >= 1e9) return (n / 1e9).toFixed(1) + "B";
+        if (n >= 1e6) return (n / 1e6).toFixed(1) + "M";
+        if (n >= 1e3) return (n / 1e3).toFixed(1) + "k";
+        return Math.round(n).toString();
+      }
+      function heatmap(elId, title, total, scale, bigFmt, cellFmt, seed) {
+        const CELLS = 28,
+          days = 28;
+        const gen = genDaily(total, days, seed);
+        const arr = Array(CELLS).fill(0);
+        for (let i = 0; i < days; i++) arr[i] = gen[i];
+        const max = Math.max(...arr, 1);
+        const nz = arr.filter((v) => v > 0);
+        const min = nz.length ? Math.min(...nz) : 0;
+        const cells = arr
+          .map((v) => {
+            const [bg, tx] = levelBg(scale, v, max);
+            return `<div class="flex aspect-square min-w-0 items-center justify-center rounded text-center text-[9px] font-semibold ${bg} ${tx}">${v > 0 ? cellFmt(v) : ""}</div>`;
+          })
+          .join("");
+        const sw = SCALES[scale]
+          .map((s) => `<span class="h-2.5 w-5 rounded-sm ${s}"></span>`)
+          .join("");
+        document.getElementById(elId).innerHTML =
+          `<div class="mb-2 text-[11px] font-bold uppercase tracking-wider ${TXT[scale]}">${title}</div>` +
+          `<div class="mb-4"><div class="text-4xl font-extrabold leading-none tracking-tight text-slate-900 sm:text-5xl">${bigFmt(total)}</div><div class="mt-1 text-xs font-medium text-slate-500">${title.toLowerCase() === "est. cost" ? "estimated API cost" : "total " + title.toLowerCase()}</div></div>` +
+          `<div class="grid gap-1" style="grid-template-columns:repeat(7,minmax(0,1fr))">${cells}</div>` +
+          `<div class="mt-3 flex items-center justify-between gap-3 text-[10px] text-slate-500"><span>Low ${cellFmt(min)}</span><div class="flex items-center gap-1">${sw}</div><span>High ${cellFmt(max)}</span></div>`;
+      }
+      heatmap(
+        "hm-sessions",
+        "Sessions",
+        106,
+        "blue",
+        (n) => n.toLocaleString(),
+        (v) => v.toString(),
+        "kabirdos-sessions",
+      );
+      heatmap(
+        "hm-tokens",
+        "Tokens",
+        6628741841,
+        "amber",
+        fmtCompact,
+        fmtCompact,
+        "kabirdos-tokens",
+      );
+      heatmap(
+        "hm-cost",
+        "Est. Cost",
+        18400,
+        "green",
+        (n) => "$" + fmtCompact(n),
+        (v) => "$" + fmtCompact(v),
+        "kabirdos-cost",
+      );
+
+      // ---------- codex inventory fills ----------
+      (function () {
+        const skills = [
+          "agent-browser",
+          "code-review",
+          "git-worktree",
+          "gmail-cleanup",
+          "handoff",
+          "plan-review",
+          "prd",
+          "qa-checklist",
+          "ralph",
+          "set-goal",
+          "ux-mockup",
+          "last30days",
+          "insight-harness",
+          "video-course-site",
+          "manual-qa-collab",
+          "iterative:brainstorming",
+          "iterative:implementing",
+          "iterative:research",
+        ];
+        document.getElementById("codex-skills").outerHTML = skills
+          .map(
+            (s) =>
+              `<span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">${s}</span>`,
+          )
+          .join("");
+        const plugins = [
+          "browser",
+          "chrome",
+          "computer-use",
+          "documents",
+          "github",
+          "gmail",
+          "google-calendar",
+          "google-drive",
+          "granola",
+          "presentations",
+          "slack",
+          "spreadsheets",
+        ];
+        document.getElementById("codex-plugins").innerHTML = plugins
+          .map(
+            (p) =>
+              `<div class="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2"><span class="min-w-0 break-words font-mono text-xs font-semibold text-slate-700">${p}</span><span class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700">on</span></div>`,
+          )
+          .join("");
+        const rules = [
+          "/bin/zsh",
+          "agent-browser",
+          "gh",
+          "git",
+          "mkdir",
+          "npm",
+          "open",
+          "python3",
+          "vercel",
+        ];
+        document.getElementById("codex-rules").innerHTML = rules
+          .map(
+            (r) =>
+              `<span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 font-mono">${r}</span>`,
+          )
+          .join("");
+      })();
+
+      showTab("claude");
+    </script>
+  </body>
+</html>

@@ -63,3 +63,8 @@ graphify-out/
 
 # Local MCP server config (machine-specific paths; keep out of shared repo)
 .mcp.json
+
+# Heavy one-off design assets (screenshots, mockup previews) — keep out of the
+# repo by default; commit a specific mockup deliberately with `git add -f`.
+docs/screenshots/
+docs/mockups/
