@@ -37,9 +37,6 @@ export const HIDEABLE_HARNESS_SECTION_KEYS = [
   "workSurfaces",
 ] as const;
 
-export type HideableHarnessSectionKey =
-  (typeof HIDEABLE_HARNESS_SECTION_KEYS)[number];
-
 const STRIPPABLE_HARNESS_DATA_KEYS = new Set<string>([
   // concurrency + temporal are used only by the Work Rhythm card, so hiding the
   // section can fully strip them from non-owner payloads (unlike heroStats /
@@ -120,16 +117,6 @@ function hiddenSectionsForTool(
 }
 
 /**
- * Extract hidden section keys from a disabled-sections record.
- * Returns top-level keys for backward compat.
- */
-export function getHiddenHarnessSections(
-  disabledSections: Record<string, boolean>,
-): HideableHarnessSectionKey[] {
-  return HIDEABLE_HARNESS_SECTION_KEYS.filter((key) => disabledSections[key]);
-}
-
-/**
  * Extract ALL hidden keypaths (both section-level and item-level) from a
  * disabled-sections record. A keypath is valid if its topKey is in the
  * HIDEABLE_HARNESS_SECTION_KEYS allowlist.
@@ -145,13 +132,6 @@ export function getHiddenKeypaths(
     if (!parsed) return false;
     return allowedTopKeys.has(parsed.topKey);
   });
-}
-
-export function isHarnessSectionHidden(
-  hiddenSections: string[] | null | undefined,
-  key: HideableHarnessSectionKey,
-): boolean {
-  return hiddenSections?.includes(key) ?? false;
 }
 
 /**

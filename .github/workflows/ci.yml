@@ -48,7 +48,7 @@ jobs:
       # force-install just that optional dep (kept out of the lockfile).
       - run: npm install --no-save @rollup/rollup-linux-x64-gnu
       - run: npx prisma generate
-      - run: npx vitest run
+      - run: npm test
 
   build:
     name: Build
