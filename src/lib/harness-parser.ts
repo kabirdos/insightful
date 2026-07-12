@@ -41,7 +41,7 @@ export function parseHarnessHtml(html: string): HarnessToolsEnvelope {
     );
   }
 
-  sanitizeClaudeWriteupSections(parsed);
+  sanitizeHarnessWriteupSections(parsed);
 
   const data = toStoredHarnessData(parsed);
   if (!data) {
@@ -53,16 +53,25 @@ export function parseHarnessHtml(html: string): HarnessToolsEnvelope {
   return data;
 }
 
-function sanitizeClaudeWriteupSections(parsed: unknown) {
+/**
+ * Sanitize every `writeupSections[].contentHtml` string in place, covering
+ * both the legacy flat HarnessData shape and the multi-tool envelope
+ * (`{ tools: { "claude-code": {...} } }`). Only the Claude Code slice carries
+ * writeup HTML; the Codex slice has no HTML-rendered fields.
+ *
+ * Exported so the POST /api/insights path can reuse the exact same allowlist
+ * sanitizer the upload path already runs. The report page renders contentHtml
+ * with dangerouslySetInnerHTML, so any write path that persists harnessData
+ * MUST scrub it first — the upload path does this inside parseHarnessHtml, the
+ * POST path calls this directly. Mutates the passed object; shape is preserved,
+ * only string contents change.
+ */
+export function sanitizeHarnessWriteupSections(parsed: unknown) {
   if (!parsed || typeof parsed !== "object") return;
   const obj = parsed as Record<string, unknown>;
   const candidates: unknown[] = [obj];
 
-  if (
-    obj.tools &&
-    typeof obj.tools === "object" &&
-    !Array.isArray(obj.tools)
-  ) {
+  if (obj.tools && typeof obj.tools === "object" && !Array.isArray(obj.tools)) {
     candidates.push((obj.tools as Record<string, unknown>)["claude-code"]);
   }
 
