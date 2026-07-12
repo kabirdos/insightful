@@ -9,6 +9,11 @@ import { normalizeHarnessData, type HarnessData } from "@/types/insights";
 import ShareButton from "@/components/ShareButton";
 import { buildReportUrl } from "@/lib/urls";
 import { formatCompactNumber as formatNumber } from "@/lib/number-format";
+import {
+  perWeekLabel,
+  sortLabel,
+  LIFETIME_TOKENS_LABEL,
+} from "@/lib/metric-labels";
 
 interface TopReport {
   slug: string;
@@ -43,11 +48,11 @@ function perWeek(value: number | null, dayCount: number | null): string | null {
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest" },
-  { value: "tokens", label: "Most Tokens" },
-  { value: "sessions", label: "Most Sessions" },
-  { value: "commits", label: "Most Commits" },
-  { value: "duration", label: "Most Active" },
-  { value: "prs", label: "Most PRs" },
+  { value: "tokens", label: sortLabel("tokens") },
+  { value: "sessions", label: sortLabel("sessions") },
+  { value: "commits", label: sortLabel("commits") },
+  { value: "duration", label: sortLabel("active") },
+  { value: "prs", label: sortLabel("prs") },
 ];
 
 const REPORT_TYPE_OPTIONS = [
@@ -118,7 +123,7 @@ function ProfileCard({ report }: { report: TopReport }) {
                 {formatNumber(lifetimeTokens)}
               </div>
               <div className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500">
-                lifetime tokens
+                {LIFETIME_TOKENS_LABEL}
               </div>
             </div>
           )}
@@ -140,7 +145,7 @@ function ProfileCard({ report }: { report: TopReport }) {
             <strong className="text-slate-700 dark:text-slate-200">
               {tokensWk}
             </strong>{" "}
-            tokens/wk
+            {perWeekLabel("tokens")}
           </span>
         )}
         {sessionsWk && (
@@ -148,7 +153,7 @@ function ProfileCard({ report }: { report: TopReport }) {
             <strong className="text-slate-700 dark:text-slate-200">
               {sessionsWk}
             </strong>{" "}
-            sessions/wk
+            {perWeekLabel("sessions")}
           </span>
         )}
         {commitsWk && (
@@ -156,7 +161,7 @@ function ProfileCard({ report }: { report: TopReport }) {
             <strong className="text-slate-700 dark:text-slate-200">
               {commitsWk}
             </strong>{" "}
-            commits/wk
+            {perWeekLabel("commits")}
           </span>
         )}
       </div>

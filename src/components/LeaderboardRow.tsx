@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { buildProfileUrl } from "@/lib/urls";
 import type { LeaderboardRow as LeaderboardRowData } from "@/app/api/leaderboard/route";
 import { formatCompactNumber } from "@/lib/number-format";
+import { statLabel } from "@/lib/metric-labels";
 
 const formatTokens = formatCompactNumber;
 const formatLines = formatCompactNumber;
@@ -113,19 +114,22 @@ export default function LeaderboardRow({ row }: { row: LeaderboardRowData }) {
           <Stat label="30d Tokens" value={formatTokens(row.totalTokens)} />
         </div>
         <div className="hidden md:block">
-          <Stat label="Sessions" value={row.sessionCount.toLocaleString()} />
+          <Stat
+            label={statLabel("sessions")}
+            value={row.sessionCount.toLocaleString()}
+          />
         </div>
         <div className="hidden md:block">
           {/* A sourceless 0h is a silent-zero false claim (issue #29) — show an
               em dash instead, matching the Lines cell's no-data convention. */}
           <Stat
-            label="Active"
+            label={statLabel("active")}
             value={row.durationHours > 0 ? `${row.durationHours}h` : "—"}
           />
         </div>
         <div className="hidden lg:block">
           <Stat
-            label="Lines"
+            label={statLabel("lines")}
             value={<Lines added={row.linesAdded} removed={row.linesRemoved} />}
             mono={false}
           />

@@ -13,6 +13,12 @@ import {
   formatInteger,
   perWeek,
 } from "@/lib/number-format";
+import {
+  METRIC_LABELS,
+  perWeekLabel,
+  statLabel,
+  LIFETIME_TOKENS_LABEL,
+} from "@/lib/metric-labels";
 import CopyCommand from "@/components/CopyCommand";
 import LearnFromThis from "@/components/LearnFromThis";
 
@@ -167,28 +173,28 @@ export function MemberCard({ member }: { member: GroupMember }) {
   const stats: { label: string; value: string; color: string }[] = [];
   if (sessionsWk != null) {
     stats.push({
-      label: "sessions / wk",
+      label: perWeekLabel("sessions"),
       value: Math.round(sessionsWk).toLocaleString(),
       color: "text-green-600 dark:text-green-400",
     });
   }
   if (hoursWk != null && hoursWk > 0) {
     stats.push({
-      label: "active / wk",
+      label: perWeekLabel("active"),
       value: formatHours(hoursWk),
       color: "text-cyan-600 dark:text-cyan-400",
     });
   }
   if (commitsWk != null && commitsWk > 0) {
     stats.push({
-      label: "commits / wk",
+      label: perWeekLabel("commits"),
       value: Math.round(commitsWk).toLocaleString(),
       color: "text-violet-600 dark:text-violet-400",
     });
   }
   if (r.prCount != null && r.prCount > 0) {
     stats.push({
-      label: "PRs",
+      label: METRIC_LABELS.prs,
       value: formatInteger(r.prCount),
       color: "text-slate-800 dark:text-slate-200",
     });
@@ -206,7 +212,7 @@ export function MemberCard({ member }: { member: GroupMember }) {
             {formatCompactNumber(lifetimeTokens)}
           </div>
           <div className="mt-1 text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500">
-            lifetime tokens
+            {LIFETIME_TOKENS_LABEL}
           </div>
         </div>
       )}
@@ -317,9 +323,9 @@ function GroupLeaderboard({
           <tr className="border-b border-slate-200 bg-slate-50 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:border-slate-700 dark:bg-slate-900/60">
             <th className="px-4 py-2.5">#</th>
             <th className="px-4 py-2.5">Member</th>
-            <th className="px-4 py-2.5 text-right">Lifetime tokens</th>
-            <th className="px-4 py-2.5 text-right">Sessions</th>
-            <th className="px-4 py-2.5 text-right">Commits</th>
+            <th className="px-4 py-2.5 text-right">{LIFETIME_TOKENS_LABEL}</th>
+            <th className="px-4 py-2.5 text-right">{statLabel("sessions")}</th>
+            <th className="px-4 py-2.5 text-right">{statLabel("commits")}</th>
           </tr>
         </thead>
         <tbody>

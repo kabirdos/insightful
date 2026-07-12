@@ -21,6 +21,11 @@ import {
   formatCompactNumber,
   formatCompactCurrency,
 } from "@/lib/number-format";
+import {
+  METRIC_LABELS,
+  perWeekLabel,
+  LIFETIME_TOKENS_LABEL,
+} from "@/lib/metric-labels";
 
 // Parse a skill identifier into its plugin source and short name.
 // Skills are in the form "plugin-name:skill-name" or just "skill-name" (custom).
@@ -617,7 +622,7 @@ function ProfileCard({
                     {formatTokens(lifetimeTokens)}
                   </div>
                   <div className="mt-1 text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500">
-                    lifetime tokens
+                    {LIFETIME_TOKENS_LABEL}
                   </div>
                 </div>
               )}
@@ -637,7 +642,7 @@ function ProfileCard({
                   {formatTokens(tokensWk)}
                 </div>
                 <div className="mt-1 text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">
-                  tokens / wk
+                  {perWeekLabel("tokens")}
                 </div>
               </div>
             )}
@@ -652,7 +657,7 @@ function ProfileCard({
                   {formatCost(costWk)}
                 </div>
                 <div className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">
-                  api cost / wk
+                  {perWeekLabel("apiCost")}
                 </div>
               </div>
             )}
@@ -684,7 +689,7 @@ function ProfileCard({
                     : "text-[9px] text-slate-400",
                 )}
               >
-                sessions / wk
+                {perWeekLabel("sessions")}
               </span>
             </div>
           )}
@@ -706,7 +711,7 @@ function ProfileCard({
                     : "text-[9px] text-slate-400",
                 )}
               >
-                active / wk
+                {perWeekLabel("active")}
               </span>
             </div>
           )}
@@ -727,7 +732,7 @@ function ProfileCard({
                   : "text-[9px] text-slate-400",
               )}
             >
-              skills
+              {METRIC_LABELS.skills}
             </span>
           </div>
           {(() => {
@@ -786,7 +791,7 @@ function ProfileCard({
                       : "text-[9px] text-slate-400",
                   )}
                 >
-                  lines
+                  {METRIC_LABELS.lines}
                 </span>
               </div>
             );
@@ -797,7 +802,7 @@ function ProfileCard({
                 {Math.round(commitsWk).toLocaleString()}
               </span>
               <span className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                commits / wk
+                {perWeekLabel("commits")}
               </span>
             </div>
           )}
@@ -921,7 +926,10 @@ function Leaderboard({
     <div>
       <div className="mb-4 flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-          Ranked by {rank === "weekly" ? "tokens / week" : "lifetime tokens"}
+          Ranked by{" "}
+          {rank === "weekly"
+            ? `${METRIC_LABELS.tokens} / week`
+            : LIFETIME_TOKENS_LABEL}
         </p>
         <div className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5 text-xs dark:border-slate-700 dark:bg-slate-900">
           {ranks.map((r) => (
@@ -1037,8 +1045,7 @@ export default function HomePage() {
         const rows = (json.data ?? []) as LeaderboardRowData[];
         setLeaderRows((prev) => (leaderPage === 1 ? rows : [...prev, ...rows]));
         const pagination = json.pagination as
-          | { page: number; totalPages: number }
-          | undefined;
+          { page: number; totalPages: number } | undefined;
         setLeaderHasMore(
           pagination ? pagination.page < pagination.totalPages : false,
         );
