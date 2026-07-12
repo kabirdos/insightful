@@ -53,6 +53,12 @@ import MiniBarChart from "@/components/MiniBarChart";
 import ToolSelector from "@/components/ToolSelector";
 import CodexHarnessDashboard from "@/components/CodexHarnessDashboard";
 import TechnicalDetailSection from "@/components/TechnicalDetailSection";
+import WhereTokensWent from "@/components/WhereTokensWent";
+import RepoTokensDonut from "@/components/RepoTokensDonut";
+import SkillTokensDonut from "@/components/SkillTokensDonut";
+import ToolTokensDonut from "@/components/ToolTokensDonut";
+import SubagentTokensDonut from "@/components/SubagentTokensDonut";
+import { hasVisibleTokenBreakdown } from "@/lib/token-attribution";
 import {
   hideSetFromArray,
   isSectionHidden,
@@ -515,6 +521,27 @@ export default function InsightDetailPage() {
                       concurrency={claudeHarnessData.concurrency}
                       temporal={claudeHarnessData.temporal}
                     />
+                  )}
+
+                  {/* Where tokens went (last 30 days) — per-repo / per-skill /
+                  per-tool / per-subagent spend. Each donut is individually
+                  hideable and returns null when its map is null/empty, so
+                  pre-2.12 reports render nothing and the section is absent. */}
+                  {hasVisibleTokenBreakdown(claudeHarnessData, hiddenSet) && (
+                    <WhereTokensWent>
+                      {!isSectionHidden(hiddenSet, "perRepoTokens") && (
+                        <RepoTokensDonut harnessData={claudeHarnessData} />
+                      )}
+                      {!isSectionHidden(hiddenSet, "perSkillTokens") && (
+                        <SkillTokensDonut harnessData={claudeHarnessData} />
+                      )}
+                      {!isSectionHidden(hiddenSet, "perToolTokens") && (
+                        <ToolTokensDonut harnessData={claudeHarnessData} />
+                      )}
+                      {!isSectionHidden(hiddenSet, "perSubagentTokens") && (
+                        <SubagentTokensDonut harnessData={claudeHarnessData} />
+                      )}
+                    </WhereTokensWent>
                   )}
 
                   {/* Skills Teaser — hero-thumbnail cards for the top shareable

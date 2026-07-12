@@ -49,6 +49,17 @@ import ActivityHeatmap from "@/components/ActivityHeatmap";
 import ToolUsageTreemap from "@/components/ToolUsageTreemap";
 import SkillCardGrid from "@/components/SkillCardGrid";
 import CliToolsDonut from "@/components/CliToolsDonut";
+import RepoTokensDonut from "@/components/RepoTokensDonut";
+import SkillTokensDonut from "@/components/SkillTokensDonut";
+import ToolTokensDonut from "@/components/ToolTokensDonut";
+import SubagentTokensDonut from "@/components/SubagentTokensDonut";
+import {
+  hasAnyTokenBreakdown,
+  isNonEmptyBreakdownMap,
+  TOKEN_SECTION_NOTE,
+  TOKEN_SECTION_TITLE,
+  TOKEN_SECTION_WINDOW,
+} from "@/lib/token-attribution";
 import GitPatternsDisplay from "@/components/GitPatternsDisplay";
 import PermissionModeDisplay from "@/components/PermissionModeDisplay";
 import HooksSafetyTable from "@/components/HooksSafetyTable";
@@ -2545,6 +2556,62 @@ export default function UploadPage() {
                     temporal={previewHarnessData.temporal}
                   />
                 </RedactableSection>
+              )}
+
+              {/* Where tokens went (last 30 days). Each donut toggles
+                  independently; the per-repo breakdown is the sensitive one.
+                  Only shown when at least one map has data. */}
+              {hasAnyTokenBreakdown(previewHarnessData) && (
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      {TOKEN_SECTION_TITLE} ({TOKEN_SECTION_WINDOW})
+                    </span>
+                    <p className="mt-0.5 text-[11px] text-slate-400">
+                      {TOKEN_SECTION_NOTE}
+                    </p>
+                  </div>
+                  {isNonEmptyBreakdownMap(previewHarnessData.perRepoTokens) && (
+                    <RedactableSection
+                      title="Tokens by repository"
+                      enabled={!disabledSections["perRepoTokens"]}
+                      onToggle={() => toggleSection("perRepoTokens")}
+                    >
+                      <RepoTokensDonut harnessData={previewHarnessData} />
+                    </RedactableSection>
+                  )}
+                  {isNonEmptyBreakdownMap(
+                    previewHarnessData.perSkillTokens,
+                  ) && (
+                    <RedactableSection
+                      title="Tokens by skill"
+                      enabled={!disabledSections["perSkillTokens"]}
+                      onToggle={() => toggleSection("perSkillTokens")}
+                    >
+                      <SkillTokensDonut harnessData={previewHarnessData} />
+                    </RedactableSection>
+                  )}
+                  {isNonEmptyBreakdownMap(previewHarnessData.perToolTokens) && (
+                    <RedactableSection
+                      title="Tokens by tool"
+                      enabled={!disabledSections["perToolTokens"]}
+                      onToggle={() => toggleSection("perToolTokens")}
+                    >
+                      <ToolTokensDonut harnessData={previewHarnessData} />
+                    </RedactableSection>
+                  )}
+                  {isNonEmptyBreakdownMap(
+                    previewHarnessData.perSubagentTokens,
+                  ) && (
+                    <RedactableSection
+                      title="Tokens by subagent"
+                      enabled={!disabledSections["perSubagentTokens"]}
+                      onToggle={() => toggleSection("perSubagentTokens")}
+                    >
+                      <SubagentTokensDonut harnessData={previewHarnessData} />
+                    </RedactableSection>
+                  )}
+                </div>
               )}
 
               {/* Workflow Diagrams */}

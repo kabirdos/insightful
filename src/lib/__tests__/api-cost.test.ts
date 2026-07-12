@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  breakdownToUsd,
+  dominantModelName,
   estimateApiCostUsd,
+  estimateBreakdownCosts,
   getPricingAsOf,
   lookupModelRate,
   __testing__,
@@ -385,6 +388,141 @@ describe("estimateApiCostUsd — 4-way cache-aware Path 1", () => {
     // = 1 * 5 + 1.5 * 25 + 44 * 0.5 + 3.5 * 6.25
     // = 5 + 37.5 + 22 + 21.875 = 86.375
     expect(cost).toBeCloseTo(86.375, 3);
+  });
+});
+
+describe("breakdownToUsd", () => {
+  it("prices a single 4-way breakdown at the hinted model's rate", () => {
+    // Sonnet 4.6: 100K input, 50K output, 1M cache_read, 200K cache_create
+    // = 0.30 + 0.75 + 0.30 + 0.75 = 2.10 (matches the Path-1 4-way test)
+    const cost = breakdownToUsd(
+      {
+        input: 100_000,
+        output: 50_000,
+        cache_read: 1_000_000,
+        cache_create: 200_000,
+      },
+      "claude-sonnet-4-6",
+    );
+    expect(cost).toBeCloseTo(2.1, 5);
+  });
+
+  it("uses the Sonnet 4.6 fallback rate when no model hint is given", () => {
+    const cost = breakdownToUsd({
+      input: 1_000_000,
+      output: 0,
+      cache_read: 0,
+      cache_create: 0,
+    });
+    // Sonnet 4.6 input rate is $3/MTok.
+    expect(cost).toBeCloseTo(3.0, 5);
+  });
+
+  it("returns 0 for an all-zero breakdown", () => {
+    expect(
+      breakdownToUsd(
+        { input: 0, output: 0, cache_read: 0, cache_create: 0 },
+        "opus",
+      ),
+    ).toBe(0);
+  });
+});
+
+describe("dominantModelName", () => {
+  it("picks the model with the highest total token volume", () => {
+    expect(
+      dominantModelName({
+        "claude-haiku-4-5": {
+          input: 10,
+          output: 0,
+          cache_read: 0,
+          cache_create: 0,
+        },
+        "claude-opus-4-6": {
+          input: 1_000,
+          output: 500,
+          cache_read: 9_000,
+          cache_create: 0,
+        },
+      }),
+    ).toBe("claude-opus-4-6");
+  });
+
+  it("returns undefined for a missing or empty map", () => {
+    expect(dominantModelName(null)).toBeUndefined();
+    expect(dominantModelName(undefined)).toBeUndefined();
+    expect(dominantModelName({})).toBeUndefined();
+  });
+});
+
+describe("estimateBreakdownCosts", () => {
+  it("returns {} for a missing per-X map", () => {
+    expect(estimateBreakdownCosts(null, null)).toEqual({});
+    expect(estimateBreakdownCosts(undefined, {})).toEqual({});
+  });
+
+  it("sum of per-bucket costs ≈ whole-set cost (two-bucket fixture)", () => {
+    // Dominant model is Sonnet 4.6 (only model present).
+    const perModelTokens = {
+      "claude-sonnet-4-6": {
+        input: 5_000_000,
+        output: 1_000_000,
+        cache_read: 40_000_000,
+        cache_create: 2_000_000,
+      },
+    };
+    const bucketA = {
+      input: 100_000,
+      output: 50_000,
+      cache_read: 1_000_000,
+      cache_create: 200_000,
+    };
+    const bucketB = {
+      input: 300_000,
+      output: 20_000,
+      cache_read: 4_000_000,
+      cache_create: 500_000,
+    };
+    const perX = { repoA: bucketA, repoB: bucketB };
+
+    const costs = estimateBreakdownCosts(perX, perModelTokens);
+    const sumOfBuckets = costs.repoA + costs.repoB;
+
+    // Whole-set: merge the two buckets and price once at the dominant rate.
+    const merged = {
+      input: bucketA.input + bucketB.input,
+      output: bucketA.output + bucketB.output,
+      cache_read: bucketA.cache_read + bucketB.cache_read,
+      cache_create: bucketA.cache_create + bucketB.cache_create,
+    };
+    const wholeSet = breakdownToUsd(merged, "claude-sonnet-4-6");
+
+    expect(sumOfBuckets).toBeGreaterThan(0);
+    expect(sumOfBuckets).toBeCloseTo(wholeSet, 6);
+  });
+
+  it("prices every bucket at the DOMINANT model's rate, not a minor one", () => {
+    // Opus dominates by volume, so buckets bill at Opus 4.6 ($5/MTok input),
+    // never the trivial Haiku entry.
+    const perModelTokens = {
+      "claude-haiku-4-5": {
+        input: 1,
+        output: 0,
+        cache_read: 0,
+        cache_create: 0,
+      },
+      "claude-opus-4-6": {
+        input: 10_000_000,
+        output: 0,
+        cache_read: 0,
+        cache_create: 0,
+      },
+    };
+    const perX = {
+      x: { input: 1_000_000, output: 0, cache_read: 0, cache_create: 0 },
+    };
+    const costs = estimateBreakdownCosts(perX, perModelTokens);
+    expect(costs.x).toBeCloseTo(5.0, 5);
   });
 });
 

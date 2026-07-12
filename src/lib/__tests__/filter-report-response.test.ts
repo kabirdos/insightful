@@ -902,3 +902,50 @@ describe("filterReportForListFeed", () => {
     expect(json).not.toContain("Codex camel readme");
   });
 });
+
+describe("per-X token maps across views", () => {
+  const breakdown = { input: 1, output: 1, cache_read: 1, cache_create: 1 };
+
+  function reportWithTokenMaps(hiddenHarnessSections: string[] = []) {
+    const base = makeReport({ hiddenHarnessSections });
+    return {
+      ...base,
+      harnessData: {
+        ...(base.harnessData as Record<string, unknown>),
+        perRepoTokens: { insightful: breakdown },
+        perSkillTokens: { review: breakdown },
+        perSubagentTokens: { explorer: breakdown },
+        perToolTokens: { Bash: breakdown },
+      },
+    };
+  }
+
+  it("drops all four bulky maps from list feeds", () => {
+    const feed = filterReportForListFeed(reportWithTokenMaps());
+    const hd = feed.harnessData as Record<string, unknown>;
+    expect(hd.perRepoTokens).toBeNull();
+    expect(hd.perSkillTokens).toBeNull();
+    expect(hd.perSubagentTokens).toBeNull();
+    expect(hd.perToolTokens).toBeNull();
+  });
+
+  it("keeps all four maps in the full (detail/agent) view", () => {
+    const full = filterReportForResponse(reportWithTokenMaps(), {
+      viewerIsOwner: false,
+      includeHidden: false,
+    });
+    const hd = full.harnessData as Record<string, unknown>;
+    expect(hd.perRepoTokens).toEqual({ insightful: breakdown });
+    expect(hd.perToolTokens).toEqual({ Bash: breakdown });
+  });
+
+  it("strips only a hidden map from the full non-owner view", () => {
+    const full = filterReportForResponse(
+      reportWithTokenMaps(["perRepoTokens"]),
+      { viewerIsOwner: false, includeHidden: false },
+    );
+    const hd = full.harnessData as Record<string, unknown>;
+    expect(hd.perRepoTokens).toBeNull();
+    expect(hd.perSkillTokens).toEqual({ review: breakdown });
+  });
+});

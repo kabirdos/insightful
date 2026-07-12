@@ -242,7 +242,9 @@ export function filterReportForListFeed<
   });
 
   const harnessData = toListFeedHarnessData(
-    stripShowcaseFieldsFromHarnessData(filtered.harnessData),
+    stripTokenBreakdownsFromHarnessData(
+      stripShowcaseFieldsFromHarnessData(filtered.harnessData),
+    ),
   );
   if (harnessData === filtered.harnessData) {
     return filtered;
@@ -293,6 +295,58 @@ function stripShowcaseFieldsFromHarnessData(data: unknown): unknown {
   }
 
   return stripShowcaseFieldsFromHarnessSlice(data);
+}
+
+/**
+ * The four per-X token maps (perRepoTokens / perSkillTokens / perSubagentTokens
+ * / perToolTokens). Bulky — a heavy user has 30+ repos and dozens of tools — so
+ * they're dropped from list feeds (homepage, /top, /api/search), which never
+ * render them. Full report + agent views keep them (see filterReportForResponse
+ * / buildAgentPayload). Mirrors the showcase-byte drop above.
+ */
+const TOKEN_BREAKDOWN_FEED_KEYS = [
+  "perRepoTokens",
+  "perSkillTokens",
+  "perSubagentTokens",
+  "perToolTokens",
+] as const;
+
+function stripTokenBreakdownsFromHarnessData(data: unknown): unknown {
+  if (!isRecord(data)) return data;
+
+  if (isRecord(data.tools)) {
+    const tools: Record<string, unknown> = { ...data.tools };
+    let changed = false;
+
+    for (const toolKey of ["claude-code", "codex"]) {
+      const stripped = stripTokenBreakdownsFromSlice(tools[toolKey]);
+      if (stripped !== tools[toolKey]) {
+        tools[toolKey] = stripped;
+        changed = true;
+      }
+    }
+
+    return changed ? { ...data, tools } : data;
+  }
+
+  return stripTokenBreakdownsFromSlice(data);
+}
+
+function stripTokenBreakdownsFromSlice(data: unknown): unknown {
+  if (!isRecord(data)) return data;
+
+  let changed = false;
+  const out: Record<string, unknown> = { ...data };
+  for (const key of TOKEN_BREAKDOWN_FEED_KEYS) {
+    // Only touch present, non-null maps — avoids allocating a copy for the
+    // common pre-2.12 report where these keys are absent/null already.
+    if (out[key] != null) {
+      out[key] = null;
+      changed = true;
+    }
+  }
+
+  return changed ? out : data;
 }
 
 function toListFeedHarnessData(data: unknown): unknown {
