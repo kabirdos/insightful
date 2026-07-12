@@ -1,5 +1,6 @@
 import type { ChartData, SkillKey, InsightsData } from "@/types/insights";
 import SkillBadges from "./SkillBadges";
+import { statLabel } from "@/lib/metric-labels";
 
 interface SnapshotCardProps {
   sessionCount: number | null;
@@ -86,28 +87,28 @@ export default function SnapshotCard({
         </div>
         <div className="flex flex-wrap gap-6">
           {sessionsPerWeek != null && (
-            <StatCell value={sessionsPerWeek} label="Sessions" />
+            <StatCell value={sessionsPerWeek} label={statLabel("sessions")} />
           )}
           {msgsPerWeek != null && (
-            <StatCell value={msgsPerWeek} label="Messages" />
+            <StatCell value={msgsPerWeek} label={statLabel("messages")} />
           )}
           {commitsPerWeek != null && (
-            <StatCell value={commitsPerWeek} label="Commits" />
+            <StatCell value={commitsPerWeek} label={statLabel("commits")} />
           )}
           {filesPerWeek != null && (
-            <StatCell value={filesPerWeek} label="Files" />
+            <StatCell value={filesPerWeek} label={statLabel("files")} />
           )}
           {linesAddedPerWeek != null && (
             <StatCell
               value={`+${linesAddedPerWeek}`}
-              label="Added"
+              label={statLabel("linesAdded")}
               className="text-green-600 dark:text-green-400"
             />
           )}
           {linesRemovedPerWeek != null && (
             <StatCell
               value={`-${linesRemovedPerWeek}`}
-              label="Removed"
+              label={statLabel("linesRemoved")}
               className="text-red-600 dark:text-red-400"
             />
           )}
@@ -140,11 +141,11 @@ export default function SnapshotCard({
         </div>
       )}
 
-      {/* Features Used */}
+      {/* Skills */}
       {detectedSkills.length > 0 && (
         <div className="mt-5 border-t border-slate-100 pt-5 dark:border-slate-800">
           <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Features Used
+            {statLabel("skills")}
           </h3>
           <SkillBadges skills={detectedSkills} />
         </div>
