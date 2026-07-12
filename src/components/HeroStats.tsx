@@ -1,7 +1,15 @@
 "use client";
 
-import type { HarnessStats } from "@/types/insights";
-import { formatCompactNumber } from "@/lib/number-format";
+import type {
+  HarnessStats,
+  HarnessModelTokenBreakdown,
+} from "@/types/insights";
+import {
+  formatCompactNumber,
+  formatCompactCurrency,
+  perWeek as perWeekRate,
+} from "@/lib/number-format";
+import { estimateApiCostUsd } from "@/lib/api-cost";
 
 interface HeroStatsProps {
   stats: HarnessStats;
@@ -9,6 +17,20 @@ interface HeroStatsProps {
   sessionCount: number | null;
   linesAdded?: number | null;
   linesRemoved?: number | null;
+  /**
+   * Top-level per-model token counts (harnessData.models) used for the
+   * estimated API-cost stat. Same source the homepage card and OG image
+   * pass to estimateApiCostUsd, so cost numbers agree across surfaces.
+   */
+  models?: Record<string, number> | null;
+  /** 4-way per-model breakdown for the most accurate API-cost estimate. */
+  perModelTokens?: Record<string, HarnessModelTokenBreakdown> | null;
+  /**
+   * Authoritative report-column token total used as the cost fallback when
+   * no per-model breakdown is present. Falls back to stats.totalTokens when
+   * omitted (e.g. the upload preview, which has no report row yet).
+   */
+  totalTokens?: number | null;
 }
 
 function perWeek(value: number, dayCount: number | null): string | null {
@@ -82,6 +104,8 @@ const STAT_COLORS: Record<string, string> = {
   "Active Time": "#06b6d4",
   Skills: "#f59e0b",
   "Lines of Code": "#22c55e",
+  // Amber accent for the money stat, matching the homepage card's cost color.
+  "api cost / wk": "#d97706",
 };
 
 function StatCard({
@@ -147,7 +171,8 @@ function LinesStatCard({
   const sparkData = seededSparkline(numericSeed);
   const color = STAT_COLORS["Lines of Code"];
   const addedStr = `+${formatCompactNumber(added)}`;
-  const removedStr = removed != null ? `-${formatCompactNumber(removed)}` : null;
+  const removedStr =
+    removed != null ? `-${formatCompactNumber(removed)}` : null;
   // Hero card width is the constraint here. Inside `max-w-5xl px-4`
   // the grid switches to four columns at `sm:` (640px), which actually
   // *narrows* each card vs the 2-column mobile layout, so the inline
@@ -197,8 +222,27 @@ export default function HeroStats({
   sessionCount,
   linesAdded,
   linesRemoved,
+  models,
+  perModelTokens,
+  totalTokens,
 }: HeroStatsProps) {
   const sessions = sessionCount || stats.sessionCount || 0;
+
+  // Estimated API cost — the "$X at API rates vs a flat plan" flex. Uses the
+  // exact same helper, inputs, and formatter the homepage card and OG image
+  // use (estimateApiCostUsd → per-week slice → formatCompactCurrency), so the
+  // number agrees across every surface. Prefer the report-column token total
+  // for the fallback path, mirroring the homepage's `effectiveTokens`.
+  const effectiveTokens = totalTokens ?? stats.totalTokens ?? 0;
+  const totalCost = estimateApiCostUsd(
+    models ?? undefined,
+    effectiveTokens,
+    perModelTokens ?? null,
+  );
+  const costWk = perWeekRate(totalCost, dayCount);
+  // No silent zeros: omit the card entirely when there's no cost to show
+  // (old/Codex-only reports with no tokens or model data) rather than "$0".
+  const showCostCard = costWk != null && costWk > 0;
   // Lines of Code now lives in the top-four card slot (issue #44),
   // replacing Skills. We track "present vs missing" distinctly from
   // "zero" so the gitPatterns fallback (#35) — which only ships
@@ -276,6 +320,18 @@ export default function HeroStats({
               numericSeed={stats.skillsUsedCount * 31}
             />
           )
+        )}
+        {/* Estimated API cost — the money stat. `label` is the literal
+            "api cost / wk" string the homepage card uses so a label sweep
+            catches both; `rate` is null because the "/wk" already lives in
+            the label (the value is the per-week cost itself). */}
+        {showCostCard && (
+          <StatCard
+            value={formatCompactCurrency(costWk)}
+            label="api cost / wk"
+            rate={null}
+            numericSeed={Math.round(costWk * 100) || 1}
+          />
         )}
       </div>
     </div>

@@ -2482,6 +2482,8 @@ export default function UploadPage() {
                     linesRemoved: parsed.stats.linesRemoved ?? null,
                     harnessData: previewHarnessData,
                   })}
+                  models={previewHarnessData.models}
+                  perModelTokens={previewHarnessData.perModelTokens}
                 />
               </RedactableSection>
 

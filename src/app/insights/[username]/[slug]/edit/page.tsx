@@ -1162,6 +1162,9 @@ export default function EditReportPage() {
                 linesRemoved: report.linesRemoved,
                 harnessData,
               })}
+              models={harnessData.models}
+              perModelTokens={harnessData.perModelTokens}
+              totalTokens={report.totalTokens ?? undefined}
             />
           </HideableCard>
 
