@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { TrendingUp } from "lucide-react";
 import type {
   HarnessStats,
   HarnessModelTokenBreakdown,
@@ -10,6 +12,7 @@ import {
   perWeek as perWeekRate,
 } from "@/lib/number-format";
 import { estimateApiCostUsd } from "@/lib/api-cost";
+import { METRIC_LABELS, perWeekLabel } from "@/lib/metric-labels";
 
 interface HeroStatsProps {
   stats: HarnessStats;
@@ -31,6 +34,14 @@ interface HeroStatsProps {
    * omitted (e.g. the upload preview, which has no report row yet).
    */
   totalTokens?: number | null;
+  /**
+   * Server-computed token-rank percentile among strictly-public reports
+   * (from the report GET's `rank.percentile`, UX audit rec #8). The chip
+   * renders only when this is <= 50 so it's always a flex, never a shame
+   * badge. Absent on private/group/draft reports and on the edit/upload
+   * previews, which simply don't pass it.
+   */
+  rankPercentile?: number | null;
 }
 
 function perWeek(value: number, dayCount: number | null): string | null {
@@ -105,7 +116,7 @@ const STAT_COLORS: Record<string, string> = {
   Skills: "#f59e0b",
   "Lines of Code": "#22c55e",
   // Amber accent for the money stat, matching the homepage card's cost color.
-  "api cost / wk": "#d97706",
+  [perWeekLabel("apiCost")]: "#d97706",
 };
 
 function StatCard({
@@ -225,6 +236,7 @@ export default function HeroStats({
   models,
   perModelTokens,
   totalTokens,
+  rankPercentile,
 }: HeroStatsProps) {
   const sessions = sessionCount || stats.sessionCount || 0;
 
@@ -259,8 +271,26 @@ export default function HeroStats({
   // otherwise fall back to totalTokens as a reasonable proxy.
   const lifetimeTokens = stats.lifetimeTokens || stats.totalTokens || 0;
 
+  // Rank chip: only a flex, never a shame badge — render only for the
+  // top half. Bottom-half (or unranked) reports show nothing.
+  const showRankChip = rankPercentile != null && rankPercentile <= 50;
+
   return (
     <div className="mb-8">
+      {/* Token-rank chip — server-computed percentile among the public
+          reports /top lists; links there so the claim is one click from
+          its evidence. */}
+      {showRankChip && (
+        <div className="mb-4 flex justify-center">
+          <Link
+            href="/top"
+            className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-100 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-400 dark:hover:bg-amber-950/70"
+          >
+            <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" />
+            Top {rankPercentile}% by {METRIC_LABELS.tokens}
+          </Link>
+        </div>
+      )}
       {/* Lifetime tokens banner — uses the same Inter extrabold /
           tracking-tight / leading-none treatment as StatCard values so the
           hero number reads as "the biggest stat card" rather than a
@@ -321,14 +351,15 @@ export default function HeroStats({
             />
           )
         )}
-        {/* Estimated API cost — the money stat. `label` is the literal
-            "api cost / wk" string the homepage card uses so a label sweep
-            catches both; `rate` is null because the "/wk" already lives in
-            the label (the value is the per-week cost itself). */}
+        {/* Estimated API cost — the money stat. Label comes from the
+            canonical metric-labels module (same call the homepage card
+            makes) so the vocabulary can never drift between surfaces;
+            `rate` is null because the "/wk" already lives in the label
+            (the value is the per-week cost itself). */}
         {showCostCard && (
           <StatCard
             value={formatCompactCurrency(costWk)}
-            label="api cost / wk"
+            label={perWeekLabel("apiCost")}
             rate={null}
             numericSeed={Math.round(costWk * 100) || 1}
           />

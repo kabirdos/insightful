@@ -93,6 +93,12 @@ interface ReportData {
   autonomyLabel: string | null;
   harnessData: StoredHarnessData | null;
   hiddenHarnessSections: string[];
+  /**
+   * Token-rank percentile among strictly-public reports, computed
+   * server-side in the report GET (UX audit rec #8). Absent for
+   * private/group/draft reports and for reports without a token total.
+   */
+  rank?: { percentile: number; totalPublic: number } | null;
   author: {
     username: string;
     displayName: string | null;
@@ -454,6 +460,7 @@ export default function InsightDetailPage() {
                       models={claudeHarnessData.models}
                       perModelTokens={claudeHarnessData.perModelTokens}
                       totalTokens={report.totalTokens ?? undefined}
+                      rankPercentile={report.rank?.percentile ?? null}
                     />
                   )}
 

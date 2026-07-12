@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import HeroStats from "@/components/HeroStats";
 import type { HarnessStats } from "@/types/insights";
+import { perWeekLabel } from "@/lib/metric-labels";
 
 // Feature B7: the report hero surfaces an estimated API-cost stat — the
 // "$X at API rates vs a flat plan" flex. It must reuse src/lib/api-cost.ts
@@ -86,5 +87,72 @@ describe("HeroStats — estimated API cost", () => {
       />,
     );
     expect(html).not.toContain("api cost / wk");
+  });
+
+  it("sources the cost label from the canonical metric-labels module", () => {
+    // Guard against vocabulary drift: the hero's label must be the exact
+    // string perWeekLabel("apiCost") produces (same call the homepage makes).
+    const html = renderToStaticMarkup(
+      <HeroStats
+        stats={{ ...baseStats, totalTokens: 10_000_000 }}
+        dayCount={7}
+        sessionCount={0}
+      />,
+    );
+    expect(html).toContain(perWeekLabel("apiCost"));
+  });
+});
+
+// UX audit rec #8: a server-computed token-rank percentile renders as a
+// "Top X% by tokens" chip linking to /top. It must only ever be a flex:
+// bottom-half percentiles (> 50) and absent ranks render nothing.
+
+describe("HeroStats — rank chip", () => {
+  const rankableStats = { ...baseStats, totalTokens: 10_000_000 };
+
+  it("renders 'Top X% by tokens' linking to /top when percentile is in the top half", () => {
+    const html = renderToStaticMarkup(
+      <HeroStats
+        stats={rankableStats}
+        dayCount={7}
+        sessionCount={0}
+        rankPercentile={12}
+      />,
+    );
+    expect(html).toContain("Top 12% by tokens");
+    expect(html).toContain('href="/top"');
+  });
+
+  it("renders at the 50% boundary (still top half)", () => {
+    const html = renderToStaticMarkup(
+      <HeroStats
+        stats={rankableStats}
+        dayCount={7}
+        sessionCount={0}
+        rankPercentile={50}
+      />,
+    );
+    expect(html).toContain("Top 50% by tokens");
+  });
+
+  it("renders nothing for bottom-half percentiles (never a shame badge)", () => {
+    const html = renderToStaticMarkup(
+      <HeroStats
+        stats={rankableStats}
+        dayCount={7}
+        sessionCount={0}
+        rankPercentile={51}
+      />,
+    );
+    expect(html).not.toContain("by tokens");
+    expect(html).not.toContain('href="/top"');
+  });
+
+  it("renders nothing when no rank is provided (private/group/draft or preview surfaces)", () => {
+    const html = renderToStaticMarkup(
+      <HeroStats stats={rankableStats} dayCount={7} sessionCount={0} />,
+    );
+    expect(html).not.toContain("by tokens");
+    expect(html).not.toContain('href="/top"');
   });
 });
