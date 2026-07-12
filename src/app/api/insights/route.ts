@@ -501,10 +501,8 @@ export async function POST(request: Request) {
       }
 
       // Dedupe: a single report cannot reference the same Project
-      // twice (unique constraint on [reportId, projectId]). The old
-      // ProjectLink model accepted duplicate names because each was
-      // its own row; the new model does not. Dedup preserves first-
-      // occurrence order so positions stay intuitive.
+      // twice (unique constraint on [reportId, projectId]). Dedup
+      // preserves first-occurrence order so positions stay intuitive.
       const seen = new Set<string>();
       const uniqueProjectIds: string[] = [];
       for (const id of resolvedProjectIds) {

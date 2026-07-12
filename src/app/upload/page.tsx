@@ -1490,10 +1490,10 @@ export default function UploadPage() {
     try {
       // Apply redactions client-side
       const redactedData = applyRedactions(parsed.data, redactions);
-      // Use getHiddenKeypaths (not getHiddenHarnessSections) so item-level
+      // Use getHiddenKeypaths (not a top-level-only helper) so item-level
       // keypaths like `skillInventory.<slug>` survive into the persisted
-      // hiddenHarnessSections array. The top-level-only helper silently
-      // dropped them, breaking per-item hides.
+      // hiddenHarnessSections array. A top-level-only helper would silently
+      // drop them, breaking per-item hides.
       const hiddenHarnessSections = getHiddenKeypaths(disabledSections);
 
       // Build the disabled sections set
