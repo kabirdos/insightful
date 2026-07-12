@@ -50,10 +50,16 @@ export function useMermaid(options: UseMermaidOptions = {}): UseMermaidReturn {
               mermaidInstance.initialize({
                 startOnLoad: false,
                 theme: "neutral",
-                // "loose" allows inline style attributes in htmlLabels, which
-                // we rely on for per-line font sizing inside node labels.
-                // The label content is derived from privacy-sanitized data —
-                // see src/lib/privacy-safe-workflow.ts.
+                // "loose" is required, not incidental: our node labels are
+                // inline-styled <span>s (per-line font sizing). Under the
+                // default "strict" level Mermaid encodes those tags as text
+                // and DOMPurify strips the style attributes, which breaks the
+                // label layout — so tightening to "strict" is not an option
+                // here. INVARIANT: because "loose" skips Mermaid's sanitizer,
+                // every harness-derived string interpolated into a label MUST
+                // be HTML-escaped at build time. buildWorkflowDiagram() in
+                // WorkflowDiagram.tsx enforces this via escapeHtml(), layered
+                // on the privacy masking in src/lib/privacy-safe-workflow.ts.
                 securityLevel: "loose",
                 themeVariables: {
                   fontSize: "24px",
