@@ -25,6 +25,8 @@ vi.mock("@/lib/db", () => ({
     insightReport: {
       create: vi.fn(),
       findUnique: vi.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
     },
     project: {
       findMany: vi.fn(),
@@ -54,12 +56,17 @@ vi.mock("@/lib/link-preview", () => ({
 
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { POST as insightsPOST } from "../route";
+import { GET as insightsGET, POST as insightsPOST } from "../route";
 
 const mockAuth = auth as unknown as Mock;
 const mockPrisma = prisma as unknown as {
   user: { findUnique: Mock };
-  insightReport: { create: Mock; findUnique: Mock };
+  insightReport: {
+    create: Mock;
+    findUnique: Mock;
+    findMany: Mock;
+    count: Mock;
+  };
   project: { findMany: Mock; findFirst: Mock; create: Mock };
   reportProject: { createMany: Mock };
   reportGroupShare: { createMany: Mock };
@@ -480,5 +487,167 @@ describe("POST /api/insights — slug collision", () => {
 
     const response = await insightsPOST(postRequest({ sessionCount: 1 }));
     expect(response.status).toBe(500);
+  });
+});
+
+// ── GET /api/insights — discover-feed visibility ────────────────────
+//
+// The discover feed is a global aggregate/browse surface: it must expose
+// ONLY strictly-public reports, exactly like /api/top, /api/leaderboard,
+// /api/search, OG, and metadata. Regression guard for the leak where the
+// list passed `reportVisibilityClause(viewerId)` — which surfaces a
+// logged-in author's own drafts/private reports (the `{authorId}` OR
+// branch has no isDraft guard) and group-shared reports into the feed.
+
+/**
+ * Evaluate the exact Prisma WHERE shapes `reportVisibilityClause`
+ * produces against a plain fixture. Handles BOTH the public-only clause
+ * (`{ isDraft, visibility }`) and the viewer-scoped OR clause (public
+ * branch + `{ authorId }` branch + group branch) so a regression that
+ * re-introduces the viewer-scoped clause is genuinely caught: the
+ * fixtures' drafts/private/group reports would start matching and appear
+ * in the feed.
+ */
+function matchesVisibilityWhere(
+  report: {
+    authorId: string;
+    isDraft: boolean;
+    visibility: string;
+    viewerInGroup: boolean;
+  },
+  where: Record<string, unknown>,
+): boolean {
+  if (Array.isArray(where.OR)) {
+    return (where.OR as Array<Record<string, unknown>>).some((branch) =>
+      matchesVisibilityWhere(report, branch),
+    );
+  }
+  const keys = Object.keys(where);
+  // The `{ authorId: viewerId }` branch: any of the author's own reports,
+  // drafts and private included (this is the leak the fix closes).
+  if (keys.length === 1 && "authorId" in where) {
+    return report.authorId === where.authorId;
+  }
+  let ok = true;
+  if ("isDraft" in where) ok = ok && report.isDraft === where.isDraft;
+  if ("visibility" in where) ok = ok && report.visibility === where.visibility;
+  // The group branch carries a `groupShares.some(...)` sub-filter; our
+  // fixtures flag group membership via `viewerInGroup`.
+  if ("groupShares" in where) ok = ok && report.viewerInGroup === true;
+  return ok;
+}
+
+interface FeedFixture {
+  id: string;
+  authorId: string;
+  isDraft: boolean;
+  visibility: string;
+  viewerInGroup: boolean;
+}
+
+function toFeedRow(fixture: FeedFixture) {
+  return {
+    ...fixture,
+    slug: `${fixture.id}-slug`,
+    publishedAt: new Date("2026-05-01T00:00:00.000Z"),
+    harnessData: null,
+    hiddenHarnessSections: [],
+    votes: [],
+    _count: { comments: 0, votes: 0 },
+    author: {
+      id: fixture.authorId,
+      username: "someone",
+      displayName: "Someone",
+      avatarUrl: null,
+    },
+  };
+}
+
+function getRequest(url = "http://localhost/api/insights"): Request {
+  return new Request(url, { method: "GET" });
+}
+
+describe("GET /api/insights — discover-feed visibility", () => {
+  const VIEWER = "viewer-1";
+
+  // A public report by someone else (must appear), plus three reports the
+  // leaking clause would have surfaced to the logged-in viewer: their own
+  // draft, their own private report, and a report shared into a group the
+  // viewer belongs to.
+  const dataset: FeedFixture[] = [
+    {
+      id: "public-other",
+      authorId: "author-x",
+      isDraft: false,
+      visibility: "public",
+      viewerInGroup: false,
+    },
+    {
+      id: "own-draft",
+      authorId: VIEWER,
+      isDraft: true,
+      visibility: "public",
+      viewerInGroup: false,
+    },
+    {
+      id: "own-private",
+      authorId: VIEWER,
+      isDraft: false,
+      visibility: "private",
+      viewerInGroup: false,
+    },
+    {
+      id: "group-shared",
+      authorId: "author-y",
+      isDraft: false,
+      visibility: "group",
+      viewerInGroup: true,
+    },
+  ];
+
+  beforeEach(() => {
+    // The list query filters at the DB layer via the WHERE clause; the
+    // mock honors it so the response reflects what Postgres would return.
+    mockPrisma.insightReport.findMany.mockImplementation(
+      async (args: { where: Record<string, unknown> }) =>
+        dataset
+          .filter((r) => matchesVisibilityWhere(r, args.where))
+          .map(toFeedRow),
+    );
+    mockPrisma.insightReport.count.mockImplementation(
+      async (args: { where: Record<string, unknown> }) =>
+        dataset.filter((r) => matchesVisibilityWhere(r, args.where)).length,
+    );
+  });
+
+  it("passes the strictly-public clause to both the list and the count query", async () => {
+    // A logged-in viewer must not widen the feed's WHERE clause.
+    mockAuth.mockResolvedValue({ user: { id: VIEWER } });
+
+    await insightsGET(getRequest());
+
+    const publicOnly = { isDraft: false, visibility: "public" };
+    expect(mockPrisma.insightReport.findMany.mock.calls[0][0].where).toEqual(
+      publicOnly,
+    );
+    expect(mockPrisma.insightReport.count.mock.calls[0][0].where).toEqual(
+      publicOnly,
+    );
+  });
+
+  it("excludes the viewer's own draft and private reports from the feed", async () => {
+    mockAuth.mockResolvedValue({ user: { id: VIEWER } });
+
+    const response = await insightsGET(getRequest());
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    const ids = body.data.map((r: { id: string }) => r.id);
+    expect(ids).toContain("public-other");
+    expect(ids).not.toContain("own-draft");
+    expect(ids).not.toContain("own-private");
+    // Group-shared reports surface on group pages, never the global feed.
+    expect(ids).not.toContain("group-shared");
+    expect(body.pagination.total).toBe(1);
   });
 });
