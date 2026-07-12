@@ -17,6 +17,7 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     insightReport: {
       findFirst: vi.fn(),
+      count: vi.fn(),
     },
     reportProject: {
       findMany: vi.fn(),
@@ -50,7 +51,7 @@ import { GET as getInsight } from "../route";
 const mockAuth = auth as unknown as Mock;
 const mockVerifyToken = verifyToken as unknown as Mock;
 const mockPrisma = prisma as unknown as {
-  insightReport: { findFirst: Mock };
+  insightReport: { findFirst: Mock; count: Mock };
   reportProject: { findMany: Mock };
 };
 
@@ -715,5 +716,145 @@ describe("GET /api/insights/[username]/[slug] — bearer-auth viewer (D7)", () =
       isDraft: false,
       visibility: "public",
     });
+  });
+});
+
+// ── Token-rank percentile (UX audit rec #8) ─────────────────────────
+
+describe("GET /api/insights/[username]/[slug] — rank percentile", () => {
+  // The rank field is derived from strictly-public data (same scope as
+  // /api/top) and must only be computed/included for reports that are
+  // themselves in that pool: public, non-draft, with a non-null token
+  // total. Everything else skips the count queries entirely.
+
+  function buildRankableReport(
+    overrides: Partial<{
+      isDraft: boolean;
+      visibility: string;
+      totalTokens: number | null;
+    }> = {},
+  ) {
+    return {
+      ...buildReportFixture("user-1"),
+      isDraft: false,
+      visibility: "public",
+      totalTokens: 5_000_000,
+      ...overrides,
+    };
+  }
+
+  it("includes rank for a public non-draft report and scopes counts to public reports", async () => {
+    mockSession(null);
+    mockPrisma.insightReport.findFirst.mockResolvedValue(buildRankableReport());
+    // First count = reports with MORE tokens (11), second = comparable pool (100).
+    mockPrisma.insightReport.count
+      .mockResolvedValueOnce(11)
+      .mockResolvedValueOnce(100);
+
+    const response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    // ceil(11/100 * 100) = 11 → "Top 11%".
+    expect(body.data.rank).toEqual({ percentile: 11, totalPublic: 100 });
+
+    // Both counts must be scoped with the strictly-public visibility clause
+    // (the same reportVisibilityClause(null) shape /api/top uses), so the
+    // chip's claim agrees with what /top actually lists.
+    const publicClause = { isDraft: false, visibility: "public" };
+    expect(mockPrisma.insightReport.count).toHaveBeenCalledTimes(2);
+    expect(mockPrisma.insightReport.count).toHaveBeenNthCalledWith(1, {
+      where: { AND: [publicClause, { totalTokens: { gt: 5_000_000 } }] },
+    });
+    expect(mockPrisma.insightReport.count).toHaveBeenNthCalledWith(2, {
+      where: { AND: [publicClause, { totalTokens: { not: null } }] },
+    });
+  });
+
+  it("floors the best report at Top 1% instead of Top 0%", async () => {
+    mockSession(null);
+    mockPrisma.insightReport.findFirst.mockResolvedValue(buildRankableReport());
+    // Nobody has more tokens → 0 higher of 100.
+    mockPrisma.insightReport.count
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(100);
+
+    const response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    const body = await response.json();
+    expect(body.data.rank).toEqual({ percentile: 1, totalPublic: 100 });
+  });
+
+  it("omits rank and skips the count queries for a draft report (owner view)", async () => {
+    // A draft is only reachable by its owner via the visibility clause;
+    // it is not in the public pool, so no rank and no extra queries.
+    mockSession("user-1");
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildRankableReport({ isDraft: true }),
+    );
+
+    const response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.data.rank).toBeUndefined();
+    expect(mockPrisma.insightReport.count).not.toHaveBeenCalled();
+  });
+
+  it("omits rank and skips the count queries for group/private reports", async () => {
+    for (const visibility of ["group", "private"]) {
+      vi.clearAllMocks();
+      mockSession("user-1");
+      mockPrisma.insightReport.findFirst.mockResolvedValue(
+        buildRankableReport({ visibility }),
+      );
+
+      const response = await getInsight(
+        getRequest("http://localhost/api/insights/u1/s1"),
+        { params: paramsPromise({ username: "u1", slug: "s1" }) },
+      );
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.data.rank).toBeUndefined();
+      expect(mockPrisma.insightReport.count).not.toHaveBeenCalled();
+    }
+  });
+
+  it("omits rank when the report has no token total", async () => {
+    mockSession(null);
+    mockPrisma.insightReport.findFirst.mockResolvedValue(
+      buildRankableReport({ totalTokens: null }),
+    );
+
+    const response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.data.rank).toBeUndefined();
+    expect(mockPrisma.insightReport.count).not.toHaveBeenCalled();
+  });
+
+  it("still serves the report when the rank counts fail (rank is decorative)", async () => {
+    mockSession(null);
+    mockPrisma.insightReport.findFirst.mockResolvedValue(buildRankableReport());
+    mockPrisma.insightReport.count.mockRejectedValue(new Error("db down"));
+
+    const response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.data.rank).toBeUndefined();
+    expect(body.data.slug).toBe("s1");
   });
 });

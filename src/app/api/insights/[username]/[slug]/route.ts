@@ -194,10 +194,54 @@ export async function GET(
       includeHidden: includeHiddenRequested,
     });
 
+    // Token-rank percentile among strictly-public reports (UX audit rec #8).
+    // Scope matches /api/top exactly: reportVisibilityClause(null) — public,
+    // non-draft — so the chip's claim agrees with what /top actually lists.
+    // Only computed for reports that are themselves in that pool (public,
+    // non-draft, with a real token total); private/group/draft reports skip
+    // the extra queries and the field is simply absent from the response.
+    // Derived from public data only, so it is safe to show to any viewer.
+    let rank: { percentile: number; totalPublic: number } | null = null;
+    if (
+      report.isDraft === false &&
+      report.visibility === "public" &&
+      report.totalTokens != null
+    ) {
+      try {
+        const publicScope = reportVisibilityClause(null);
+        const [higher, totalPublic] = await Promise.all([
+          prisma.insightReport.count({
+            where: {
+              AND: [publicScope, { totalTokens: { gt: report.totalTokens } }],
+            },
+          }),
+          prisma.insightReport.count({
+            where: { AND: [publicScope, { totalTokens: { not: null } }] },
+          }),
+        ]);
+        if (totalPublic > 0) {
+          // percentile = share of the comparable pool that outranks this
+          // report, ceil'd and floored at 1 so the best report reads
+          // "Top 1%" rather than "Top 0%". Approximate by design.
+          rank = {
+            percentile: Math.min(
+              100,
+              Math.max(1, Math.ceil((higher / totalPublic) * 100)),
+            ),
+            totalPublic,
+          };
+        }
+      } catch (rankError) {
+        // The rank chip is decorative — never fail the report GET over it.
+        console.error("rank percentile computation failed:", rankError);
+      }
+    }
+
     return NextResponse.json(
       {
         data: {
           ...filtered,
+          ...(rank ? { rank } : {}),
           ...(viewerIsOwner
             ? { groupShareIds: report.groupShares.map((s) => s.groupId) }
             : {}),
