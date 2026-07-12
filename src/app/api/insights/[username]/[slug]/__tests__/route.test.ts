@@ -578,6 +578,9 @@ describe("GET /api/insights/[username]/[slug] — agent payload (Accept negotiat
     // Negotiated by Accept → must advertise Vary so caches don't cross the
     // human and agent representations of the same URL.
     expect(response.headers.get("vary")).toContain("Accept");
+    // Auth-gated + viewer-specific (bearer/session resolves the viewer) →
+    // must never be stored by a shared cache.
+    expect(response.headers.get("cache-control")).toBe("no-store");
 
     const body = await response.json();
     // Self-describing envelope — NOT wrapped in { data } like the human path.
@@ -611,6 +614,9 @@ describe("GET /api/insights/[username]/[slug] — agent payload (Accept negotiat
     expect(response.status).toBe(200);
     // Both negotiated branches advertise Vary: Accept.
     expect(response.headers.get("vary")).toContain("Accept");
+    // Viewer-specific human payload (owner-only fields, group visibility) →
+    // never cache.
+    expect(response.headers.get("cache-control")).toBe("no-store");
     const body = await response.json();
     expect(body.data).toBeDefined();
     // The human page renders the showcase image, so it must still ship.
@@ -678,6 +684,9 @@ describe("GET /api/insights/[username]/[slug] — bearer-auth viewer (D7)", () =
     });
 
     expect(response.status).toBe(404);
+    // Whether this URL 404s is viewer-dependent (an entitled viewer sees the
+    // report), so the not-found response must not be cached either.
+    expect(response.headers.get("cache-control")).toBe("no-store");
     // The clause carried the bearer-resolved id, so the DB scoped the
     // lookup to what user-9 may see.
     const findFirstArgs = mockPrisma.insightReport.findFirst.mock.calls[0]?.[0];

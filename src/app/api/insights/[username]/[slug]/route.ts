@@ -98,7 +98,17 @@ export async function GET(
     });
 
     if (!report) {
-      return NextResponse.json({ error: "Insight not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Insight not found" },
+        {
+          status: 404,
+          // Whether this URL 404s is viewer-dependent: a group member (via
+          // session or bearer) sees the report where an anonymous caller
+          // gets 404. Never cache, so a shared cache can't serve one
+          // viewer's 404 to an entitled viewer.
+          headers: { "cache-control": "no-store" },
+        },
+      );
     }
 
     // Agent-consumable payload via content negotiation. The same canonical URL
@@ -118,6 +128,9 @@ export async function GET(
           // shared cache could hand a browser the agent envelope (or vice
           // versa). Set on both negotiated branches.
           vary: "Accept",
+          // Auth-gated and viewer-specific (session/bearer resolves the
+          // viewer; group-visible reports differ per viewer); never cache.
+          "cache-control": "no-store",
         },
       });
     }
@@ -195,7 +208,9 @@ export async function GET(
       },
       // Pair with the agent branch's Vary so a shared cache never serves this
       // human payload to a request that negotiated the agent media type.
-      { headers: { vary: "Accept" } },
+      // Viewer-specific too: group-visible reports and owner-only fields
+      // (groupShareIds, userVotes/highlights) differ per viewer — never cache.
+      { headers: { vary: "Accept", "cache-control": "no-store" } },
     );
   } catch (error) {
     console.error("GET /api/insights/[slug] error:", error);
