@@ -220,13 +220,16 @@ export async function GET(
           }),
         ]);
         if (totalPublic > 0) {
-          // percentile = share of the comparable pool that outranks this
-          // report, ceil'd and floored at 1 so the best report reads
-          // "Top 1%" rather than "Top 0%". Approximate by design.
+          // One-based rank as a percentile: this report's rank is
+          // `higher + 1` (1 = nobody outranks it), expressed as a share of
+          // the comparable pool and ceil'd. The best report reads "Top 1%"
+          // and the worst reads "Top 100%" — the [1,100] clamp keeps both
+          // ends honest (last place = (totalPublic/totalPublic)*100 = 100).
+          // Approximate by design.
           rank = {
             percentile: Math.min(
               100,
-              Math.max(1, Math.ceil((higher / totalPublic) * 100)),
+              Math.max(1, Math.ceil(((higher + 1) / totalPublic) * 100)),
             ),
             totalPublic,
           };

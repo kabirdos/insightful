@@ -758,8 +758,9 @@ describe("GET /api/insights/[username]/[slug] — rank percentile", () => {
     expect(response.status).toBe(200);
     const body = await response.json();
 
-    // ceil(11/100 * 100) = 11 → "Top 11%".
-    expect(body.data.rank).toEqual({ percentile: 11, totalPublic: 100 });
+    // One-based rank: this report's rank is higher + 1 = 12 of 100, so
+    // ceil((11 + 1)/100 * 100) = 12 → "Top 12%".
+    expect(body.data.rank).toEqual({ percentile: 12, totalPublic: 100 });
 
     // Both counts must be scoped with the strictly-public visibility clause
     // (the same reportVisibilityClause(null) shape /api/top uses), so the
@@ -774,10 +775,10 @@ describe("GET /api/insights/[username]/[slug] — rank percentile", () => {
     });
   });
 
-  it("floors the best report at Top 1% instead of Top 0%", async () => {
+  it("ranks the best report as Top 1% (one-based rank, never Top 0%)", async () => {
     mockSession(null);
     mockPrisma.insightReport.findFirst.mockResolvedValue(buildRankableReport());
-    // Nobody has more tokens → 0 higher of 100.
+    // Nobody has more tokens → 0 higher of 100, so this report is rank 1.
     mockPrisma.insightReport.count
       .mockResolvedValueOnce(0)
       .mockResolvedValueOnce(100);
@@ -787,7 +788,26 @@ describe("GET /api/insights/[username]/[slug] — rank percentile", () => {
       { params: paramsPromise({ username: "u1", slug: "s1" }) },
     );
     const body = await response.json();
+    // ceil((0 + 1)/100 * 100) = 1 → "Top 1%".
     expect(body.data.rank).toEqual({ percentile: 1, totalPublic: 100 });
+  });
+
+  it("ranks the worst report as Top 100% (last place, clamp keeps it honest)", async () => {
+    mockSession(null);
+    mockPrisma.insightReport.findFirst.mockResolvedValue(buildRankableReport());
+    // Everyone else outranks this report: 99 higher of a 100-report pool,
+    // so its one-based rank is 100 → "Top 100%".
+    mockPrisma.insightReport.count
+      .mockResolvedValueOnce(99)
+      .mockResolvedValueOnce(100);
+
+    const response = await getInsight(
+      getRequest("http://localhost/api/insights/u1/s1"),
+      { params: paramsPromise({ username: "u1", slug: "s1" }) },
+    );
+    const body = await response.json();
+    // ceil((99 + 1)/100 * 100) = 100 → "Top 100%".
+    expect(body.data.rank).toEqual({ percentile: 100, totalPublic: 100 });
   });
 
   it("omits rank and skips the count queries for a draft report (owner view)", async () => {
