@@ -96,6 +96,10 @@ model InsightReport {
   groupShares    ReportGroupShare[]
 
   @@unique([authorId, slug])
+  // Covers the token-rank count queries in the report GET route, which filter
+  // on visibility + isDraft and range/existence-check totalTokens. Without it
+  // both counts full-scan InsightReport as the table grows.
+  @@index([visibility, isDraft, totalTokens])
 }
 
 /// User-owned project in the library. Persists across reports.
