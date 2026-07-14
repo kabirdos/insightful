@@ -451,6 +451,7 @@ export default function InsightDetailPage() {
                         linesRemoved: report.linesRemoved,
                         harnessData: claudeHarnessData,
                       })}
+                      perModelTokens={claudeHarnessData?.perModelTokens}
                     />
                   )}
 

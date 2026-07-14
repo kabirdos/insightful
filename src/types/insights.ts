@@ -119,6 +119,13 @@ export interface ParsedInsightsReport {
 export interface HarnessStats {
   totalTokens: number;
   lifetimeTokens?: number;
+  // 30-day "new work" tokens (input + output). `totalTokens` is 4-way
+  // throughput (adds cache_read + cache_creation), which cache reads dominate
+  // 100-1000x — so it reads as a misleading "billions" headline. Emitted by
+  // extract.py >= 2.14.0; absent on older reports (fall back to totalTokens).
+  newTokens?: number;
+  cacheReadTokens?: number;
+  cacheReadRatio?: number;
   durationHours: number;
   avgSessionMinutes: number;
   skillsUsedCount: number;

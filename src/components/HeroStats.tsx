@@ -1,6 +1,9 @@
 "use client";
 
-import type { HarnessStats } from "@/types/insights";
+import type {
+  HarnessStats,
+  HarnessModelTokenBreakdown,
+} from "@/types/insights";
 import { formatCompactNumber } from "@/lib/number-format";
 
 interface HeroStatsProps {
@@ -9,6 +12,19 @@ interface HeroStatsProps {
   sessionCount: number | null;
   linesAdded?: number | null;
   linesRemoved?: number | null;
+  // Lifetime per-model token breakdown (input/output/cache). Used to derive a
+  // lifetime "new work" figure for the banner so it doesn't headline the
+  // cache-dominated 4-way throughput total. Absent when no stats-cache exists.
+  perModelTokens?: Record<string, HarnessModelTokenBreakdown> | null;
+}
+
+/** A cache-read subtitle like "105:1 cached · 3.96B reads", or null. */
+function cacheSubtitle(
+  ratio: number | undefined,
+  reads: number | undefined,
+): string | null {
+  if (!ratio || !reads || reads <= 0) return null;
+  return `${ratio}:1 cached · ${formatCompactNumber(reads)} reads`;
 }
 
 function perWeek(value: number, dayCount: number | null): string | null {
@@ -89,16 +105,21 @@ function StatCard({
   label,
   rate,
   numericSeed,
+  subtitleOverride,
 }: {
   value: string;
   label: string;
   rate: string | null;
   numericSeed: number;
+  // When set, replaces the "(X total)" per-week subtitle and shows `value`
+  // (not the rate) as the headline. Used by the Tokens card to headline
+  // new-work tokens with a cache-read efficiency subtitle.
+  subtitleOverride?: string | null;
 }) {
   const sparkData = seededSparkline(numericSeed);
   const color = STAT_COLORS[label] || "#6366f1";
-  const primaryDisplay = rate ? `${rate}/wk` : value;
-  const subtitle = rate ? `(${value} total)` : null;
+  const primaryDisplay = subtitleOverride ? value : rate ? `${rate}/wk` : value;
+  const subtitle = subtitleOverride ?? (rate ? `(${value} total)` : null);
   // Shrink the font when the display is long so "1.5M/wk" stays on one line
   // in narrow columns (mobile shows 2 cards per row).
   const displayLength = primaryDisplay.length;
@@ -147,7 +168,8 @@ function LinesStatCard({
   const sparkData = seededSparkline(numericSeed);
   const color = STAT_COLORS["Lines of Code"];
   const addedStr = `+${formatCompactNumber(added)}`;
-  const removedStr = removed != null ? `-${formatCompactNumber(removed)}` : null;
+  const removedStr =
+    removed != null ? `-${formatCompactNumber(removed)}` : null;
   // Hero card width is the constraint here. Inside `max-w-5xl px-4`
   // the grid switches to four columns at `sm:` (640px), which actually
   // *narrows* each card vs the 2-column mobile layout, so the inline
@@ -197,6 +219,7 @@ export default function HeroStats({
   sessionCount,
   linesAdded,
   linesRemoved,
+  perModelTokens,
 }: HeroStatsProps) {
   const sessions = sessionCount || stats.sessionCount || 0;
   // Lines of Code now lives in the top-four card slot (issue #44),
@@ -211,38 +234,73 @@ export default function HeroStats({
   const removedRaw = linesRemoved ?? 0;
   const showLinesCard = addedRaw > 0 || removedRaw > 0;
 
-  // Lifetime tokens: use the explicit lifetimeTokens field if present,
-  // otherwise fall back to totalTokens as a reasonable proxy.
-  const lifetimeTokens = stats.lifetimeTokens || stats.totalTokens || 0;
+  // Headline "new work" tokens (input + output) rather than the 4-way
+  // throughput total (`totalTokens`), which cache reads dominate 100-1000x —
+  // headlining it reads as a misleading "billions". New reports (extract.py
+  // >= 2.14.0) carry `newTokens`; older reports fall back to `totalTokens`.
+  const newTokens =
+    typeof stats.newTokens === "number" && stats.newTokens > 0
+      ? stats.newTokens
+      : null;
+  const tokensDisplay = newTokens ?? stats.totalTokens ?? 0;
+  const tokenCacheSub = cacheSubtitle(
+    stats.cacheReadRatio,
+    stats.cacheReadTokens,
+  );
+
+  // Lifetime banner: derive lifetime new-work tokens from the per-model
+  // breakdown (input+output), which is lifetime-scoped. This deliberately
+  // avoids `lifetimeTokens`/`totalTokens` — both cache-dominated throughput.
+  // When there's no per-model data (no stats-cache) we hide the banner: the
+  // 30-day Tokens card already carries the number, and falling back to
+  // throughput would resurrect the misleading "billions" headline.
+  const pm = perModelTokens ? Object.values(perModelTokens) : [];
+  const lifetimeNew = pm.reduce(
+    (sum, m) => sum + (m.input || 0) + (m.output || 0),
+    0,
+  );
+  const lifetimeCacheRead = pm.reduce((sum, m) => sum + (m.cache_read || 0), 0);
+  const lifetimeCacheRatio =
+    lifetimeNew > 0 ? Math.round(lifetimeCacheRead / lifetimeNew) : 0;
+  const lifetimeCacheSub = cacheSubtitle(lifetimeCacheRatio, lifetimeCacheRead);
 
   return (
     <div className="mb-8">
       {/* Lifetime tokens banner — uses the same Inter extrabold /
           tracking-tight / leading-none treatment as StatCard values so the
           hero number reads as "the biggest stat card" rather than a
-          stylistically separate element. */}
-      {lifetimeTokens > 0 && (
+          stylistically separate element. Shows lifetime *new work* (not
+          cache-dominated throughput) and only when per-model data exists. */}
+      {lifetimeNew > 0 && (
         <div className="mb-6 rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-cyan-50/60 px-6 py-5 text-center dark:border-blue-900/40 dark:from-blue-950/30 dark:to-cyan-950/20">
           <div className="text-5xl font-extrabold leading-none tracking-tight text-slate-900 sm:text-7xl dark:text-slate-100">
-            {formatCompactNumber(lifetimeTokens)}
+            {formatCompactNumber(lifetimeNew)}
           </div>
           <div className="mt-2 text-[13px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-slate-400">
             Lifetime Tokens
           </div>
-          {stats.totalTokens > 0 && stats.totalTokens !== lifetimeTokens && (
+          {lifetimeCacheSub && (
             <div className="mt-1.5 text-[13px] font-medium text-slate-400 dark:text-slate-500">
-              {formatCompactNumber(stats.totalTokens)} in last 30 days
+              {lifetimeCacheSub}
+            </div>
+          )}
+          {newTokens && newTokens > 0 && (
+            <div className="mt-1 text-[13px] font-medium text-slate-400 dark:text-slate-500">
+              {formatCompactNumber(newTokens)} in last 30 days
             </div>
           )}
         </div>
       )}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {stats.totalTokens > 0 && (
+        {tokensDisplay > 0 && (
           <StatCard
-            value={formatCompactNumber(stats.totalTokens)}
+            value={formatCompactNumber(tokensDisplay)}
             label="Tokens"
-            rate={perWeek(stats.totalTokens, dayCount)}
-            numericSeed={stats.totalTokens}
+            // New-work reports headline the total (no /wk) with a cache
+            // subtitle; older reports keep the legacy per-week rate.
+            rate={newTokens ? null : perWeek(stats.totalTokens, dayCount)}
+            numericSeed={tokensDisplay}
+            subtitleOverride={newTokens ? tokenCacheSub : null}
           />
         )}
         {sessions > 0 && (
